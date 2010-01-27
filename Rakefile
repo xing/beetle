@@ -3,7 +3,7 @@ require 'rake/testtask'
 
 task :trace do
   trap('INT'){ EM.stop_event_loop }
-  Bandersnatch::Base.configuration do |config|
+  Bandersnatch.configuration do |config|
     config.logger.formatter = XINGLogging::SyslogCompliantLogFormatter.new
   end
 

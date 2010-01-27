@@ -13,6 +13,10 @@ module Bandersnatch
   autoload "Configuration", lib_dir + 'configuration'
   autoload "Message", lib_dir + 'message'
 
+  def self.configuration
+    yield config
+  end
+
   protected
 
     def self.config

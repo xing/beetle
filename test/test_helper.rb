@@ -11,7 +11,7 @@ class Test::Unit::TestCase
   extend ActiveSupport::Testing::Declarative
 end
 
-Bandersnatch::Base.configuration do |config|
+Bandersnatch.configuration do |config|
   config.config_file = File.expand_path(File.dirname(__FILE__) + '/bandersnatch.yml')
   config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end

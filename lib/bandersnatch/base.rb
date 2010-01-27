@@ -1,6 +1,10 @@
 module Bandersnatch
   class Error < StandardError; end
-
+  #
+  # TODO TODO TODO FIXME
+  # Refactorings incomming.
+  # * extract to publisher and subscriber base classes
+  # * only keep the neccassary code in Base
   class Base
 
     RECOVER_AFTER = 10.seconds
@@ -26,11 +30,6 @@ module Bandersnatch
     def error(text)
       logger.error text
       raise Error.new(text)
-    end
-
-    # TODO: move to module
-    def self.configuration
-      yield Bandersnatch.config
     end
 
     def load_config(file_name=nil)
