@@ -36,10 +36,10 @@ begin
     gemspec.description = "A high available/reliabile messaging infrastructure"
     gemspec.email = "developers@xing.com"
     gemspec.authors = ["Stefan Kaes", "Pascal Friederich"]
-    gemspec.add_dependency('uuid4r', '0.1.1')
-    gemspec.add_dependency('bunny')
-    gemspec.add_dependency('redis', '1.2.1')
-    gemspec.add_dependency('amqp')
+    gemspec.add_dependency('uuid4r', '>=0.1.1')
+    gemspec.add_dependency('bunny', '>=0.6.0')
+    gemspec.add_dependency('redis', '>=1.2.1')
+    gemspec.add_dependency('amqp', '>=0.6.6')
     gemspec.add_development_dependency('mocha')
     gemspec.add_development_dependency('active_support', '2.3.5')
   end
