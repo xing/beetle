@@ -1,13 +1,20 @@
 require 'rake'
 require 'rake/testtask'
+require 'lib/bandersnatch'
 
-task :trace do
-  trap('INT'){ EM.stop_event_loop }
+namespace :bandersnatch do
   Bandersnatch.configuration do |config|
-    config.logger.formatter = XINGLogging::SyslogCompliantLogFormatter.new
+    config.config_file = File.dirname(__FILE__) + '/test/bandersnatch.yml'
   end
 
-  Bandersnatch::Base.new(:sub).trace
+  task :test do
+    Bandersnatch::Client.new.test
+  end
+
+  task :trace do
+    trap('INT'){ EM.stop_event_loop }
+    Bandersnatch::Client.new.trace
+  end
 end
 
 task :default do
