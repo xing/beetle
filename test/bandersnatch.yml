@@ -1,0 +1,90 @@
+# list all standard exchanges used by the main xing app, along with their options for declaration
+# used by producers and consumers
+exchanges:
+  test:
+    type: "topic"
+    durable: true
+  deadletter:
+    type: "topic"
+    durable: true
+  redundant:
+    type: "topic"
+    durable: true
+
+# list all standard queues along with their binding declaration
+# this section is only used by consumers
+queues:
+  test:                  # binding options
+    exchange: "test"     # Bandersnatch default is the name of the queue
+    passive: false       # amqp default is false
+    durable: true        # amqp default is false
+    exclusive: false     # amqp default is false
+    auto_delete: false   # amqp default is false
+    nowait: true         # amqp default is true
+    key: "#"             # listen to every message
+  deadletter:
+    exchange: "deadletter"
+    durable: true
+    key: "#"
+  redundant:
+    exchange: "redundant"
+    durable: true
+    key: "#"
+  additional_queue:
+    exchange: "redundant"
+    durable: true
+    key: "#"
+
+# list all messages we can publish
+messages:
+  test:
+    queue: "test"
+    # Spefify the queue for listeners (default is message name)
+    key: "test"
+    # Specifies the routing key pattern for message subscription.
+    ttl: <%= 1.hour %>
+    # Specifies the time interval after which messages are silently dropped (seconds)
+    mandatory: true
+    # default is false
+    # Tells the server how to react if the message
+    # cannot be routed to a queue. If set to _true_, the server will return an unroutable message
+    # with a Return method. If this flag is zero, the server silently drops the message.
+    immediate: false
+    # default is false
+    # Tells the server how to react if the message
+    # cannot be routed to a queue consumer immediately. If set to _true_, the server will return an
+    # undeliverable message with a Return method. If set to _false_, the server will queue the message,
+    # but with no guarantee that it will ever be consumed.
+    persistent: true
+    # default is false
+    # Tells the server whether to persist the message
+    # If set to _true_, the message will be persisted to disk and not lost if the server restarts.
+    # If set to _false_, the message will not be persisted across server restart. Setting to _true_
+    # incurs a performance penalty as there is an extra cost associated with disk access.
+  deadletter:
+    key: "deadletter"
+    persistent: true
+  redundant:
+    key: "redundant"
+    persistent: true
+    redundant: true
+
+development: &development
+    hostname: localhost:5672, localhost:5673
+    # hostname: localhost:5672
+
+test:
+    <<: *development
+    hostname: localhost:5672
+
+edge:
+    <<: *development
+    hostname: ext-xeapp53-201
+
+preview:
+    <<: *development
+    hostname: ext-xeapp52-200
+
+production:
+    <<: *development
+    hostname: ext-xemq53-1
