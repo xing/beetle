@@ -13,5 +13,5 @@ end
 
 Bandersnatch::Base.configuration do |config|
   config.config_file = File.expand_path(File.dirname(__FILE__) + '/bandersnatch.yml')
-  config.logger = Logger.new('../test.log')
+  config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end
