@@ -80,6 +80,11 @@ module Bandersnatch
     end
 
     private
+      def create_exchange!(name, opts)
+        bunny.exchange(name, opts)
+      end
+
+      # TODO: Refactor, fethch the keys and stuff itself
       def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
         queue = bunny.queue(queue_name, creation_keys)
         queue.bind(exchange(exchange_name), binding_keys)

@@ -129,41 +129,6 @@ module Bandersnatch
     end
   end
 
-  class SubscriberExchangeManagementTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:sub)
-    end
-
-    test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @bs.exchanges_for_current_server)
-      assert !@bs.exchange_exists?("some_message")
-    end
-
-    test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @bs.register_exchange("some_exchange", "type" => "topic", "durable" => true)
-      m = mock("AMQP")
-      m.expects(:topic).with("some_exchange", :durable => true).returns(42)
-      @bs.expects(:mq).returns(m)
-      ex = @bs.exchange("some_exchange")
-      assert @bs.exchange_exists?("some_exchange")
-      ex2 = @bs.exchange("some_exchange")
-      assert_equal ex2, ex
-    end
-
-    test "should create exchanges for all registered messages and servers" do
-      @bs.servers = %w(x y)
-      messages = %w(a b)
-      exchange_creation = sequence("exchange creation")
-      @bs.messages = []
-      @bs.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @bs.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @bs.expects(:create_exchange).with("b").in_sequence(exchange_creation)
-      @bs.expects(:set_current_server).with('y').in_sequence(exchange_creation)
-      @bs.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @bs.expects(:create_exchange).with("b").in_sequence(exchange_creation)
-      @bs.create_exchanges(messages)
-    end
-  end
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup

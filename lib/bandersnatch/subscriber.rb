@@ -6,6 +6,10 @@ module Bandersnatch
     end
 
     private
+      def create_exchange!(name, opts)
+        mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
+      end
+
       def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
         queue = mq.queue(queue_name, creation_keys)
         queue.bind(exchange(exchange_name), binding_keys)
