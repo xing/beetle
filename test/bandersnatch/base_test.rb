@@ -47,10 +47,6 @@ module Bandersnatch
     test "initially we should have no exchanges" do
       assert_equal({}, @bs.instance_variable_get("@exchanges"))
     end
-
-    test "initially we should have no handlers" do
-      assert_equal({}, @bs.instance_variable_get("@handlers"))
-    end
   end
 
   class BandersnatchHandlerRegistrationTest < Test::Unit::TestCase
@@ -68,27 +64,6 @@ module Bandersnatch
       opts = {"durable" => true}
       @bs.register_queue "some_queue", opts
       assert_equal({:durable => true}, @bs.amqp_config["queues"]["some_queue"])
-    end
-
-    test "registering a handler for a message should store it in the configuration with symbolized option keys" do
-      opts = {"ack" => true}
-      @bs.register_handler("some_message", opts){ |*args| 42 }
-      opts, block = @bs.instance_variable_get("@handlers")["some_message"].first
-      assert_equal({:ack => true}, opts)
-      assert_equal 42, block.call
-    end
-
-    test "should allow registration of multiple handlers for a message" do
-      opts = {}
-      @bs.register_handler("a message", { :queue => "queue_1" } ) { |*args| "handler 1" }
-      @bs.register_handler("a message", { :queue => "queue_2" }) { |*args| "handler 2" }
-      handlers = @bs.instance_variable_get("@handlers")["a message"]
-      handler1, handler2 = handlers
-      assert_equal 2, handlers.size
-      assert_equal "queue_1", handler1[0][:queue]
-      assert_equal "handler 1", handler1[1].call
-      assert_equal "queue_2", handler2[0][:queue]
-      assert_equal "handler 2", handler2[1].call
     end
   end
 

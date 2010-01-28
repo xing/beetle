@@ -1,5 +1,11 @@
 module Bandersnatch
   class Client
+    attr_reader :handlers
+
+    def initialize
+      @handlers = {}
+    end
+
     # TODO: refactoring helper code, will be replaced
     def publish(message_name, data, opts={})
       publisher.publish(message_name, data, opts={})
@@ -18,6 +24,12 @@ module Bandersnatch
     # TODO: refactoring helper code, will be replaced
     def test
       publisher.test
+    end
+
+    def register_handler(messages, opts, &block)
+      Array(messages).each do |message|
+        (@handlers[message] ||= []) << [opts.symbolize_keys, block]
+      end
     end
 
     private

@@ -9,14 +9,13 @@ module Bandersnatch
 
     RECOVER_AFTER = 10.seconds
 
-    attr_accessor :options, :amqp_config, :exchanges, :queues, :handlers, :messages, :servers, :server, :mode
+    attr_accessor :options, :amqp_config, :exchanges, :queues, :messages, :servers, :server, :mode
 
     def initialize(client, options = {})
       @client = client
       @options = options
       @exchanges = {}
       @queues = {}
-      @handlers = {}
       @messages = {}
       @bunnies = {}
       @amqp_connections = {}
@@ -88,12 +87,6 @@ module Bandersnatch
       @amqp_config["queues"][name] = opts.symbolize_keys
     end
 
-    def register_handler(messages, opts, &block)
-      Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, block]
-      end
-    end
-
     def exchanges_for_current_server
       @exchanges[@server] ||= {}
     end
@@ -135,7 +128,7 @@ module Bandersnatch
 
     def queues_with_handlers(messages)
       messages.map do |name|
-        @handlers[name].map {|opts, _| opts[:queue] || name }
+        @client.handlers[name].map {|opts, _| opts[:queue] || name }
       end.flatten
     end
 
