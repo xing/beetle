@@ -163,8 +163,8 @@ module Bandersnatch
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
-      @sub = Subscriber.new(client)
+      @client = mock("client")
+      @sub = Subscriber.new(@client)
     end
 
     test "subscribe should create subscriptions for all servers" do
@@ -188,7 +188,7 @@ module Bandersnatch
         assert_equal server, m.server
         assert_nil m.uuid
       end
-      @sub.register_handler("some_message", opts, &proc)
+      @client.stubs(:handlers).returns({"some_message" => [[opts.symbolize_keys, proc]]})
       q = mock("QUEUE")
       q.expects(:subscribe).with({:ack => true, :key => "some_key.#"}).yields(header, Message.encode("data"))
       @sub.expects(:queues).returns({"some_message" => q})
@@ -197,6 +197,7 @@ module Bandersnatch
     end
 
     test "subscribe should fail if no handler exists for given message" do
+      @client.stubs(:handlers).returns({})
       assert_raises(Error){ @sub.send(:subscribe_message, "some_message") }
     end
 

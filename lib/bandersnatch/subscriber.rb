@@ -30,7 +30,7 @@ module Bandersnatch
       end
 
       def subscribe_message(message)
-        handlers = Array(@handlers[message])
+        handlers = Array(@client.handlers[message])
         error("no handler for message #{message}") if handlers.empty?
         handlers.each do |opts, block|
           opts = opts.dup
