@@ -11,7 +11,8 @@ module Bandersnatch
 
     attr_accessor :options, :amqp_config, :exchanges, :queues, :handlers, :messages, :servers, :server, :mode
 
-    def initialize(options = {})
+    def initialize(client, options = {})
+      @client = client
       @options = options
       @exchanges = {}
       @queues = {}

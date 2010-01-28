@@ -1,6 +1,5 @@
 module Bandersnatch
   class Publisher < Base
-
     PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]
 
     def publish(message_name, data, opts={})

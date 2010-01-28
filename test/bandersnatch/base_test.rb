@@ -4,7 +4,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Bandersnatch
   class AMQPConfigTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new
+      @bs = Base.new(nil)
     end
 
     test "should load default config file" do
@@ -55,7 +55,7 @@ module Bandersnatch
 
   class BandersnatchHandlerRegistrationTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new
+      @bs = Base.new(nil)
     end
 
     test "registering an exchange should store it in the configuration with symbolized option keys" do
@@ -94,7 +94,7 @@ module Bandersnatch
 
   class ServerManagementTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new
+      @bs = Base.new(nil)
     end
 
     test "marking the current server as dead should add it to the dead servers hash and remove it from the active servers list" do
