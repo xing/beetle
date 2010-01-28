@@ -9,6 +9,15 @@ module Bandersnatch
       end
     end
 
+    def test
+      error "testing only allowed in development environment" unless RAILS_ENV=="development"
+      trap("INT") { exit(1) }
+      while true
+        publish "redundant", "hello, I'm redundant!"
+        sleep 1
+      end
+    end
+
     private
       def subscribe(messages=nil)
         messages ||= @messages.keys
