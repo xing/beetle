@@ -25,6 +25,10 @@ module Bandersnatch
       load_config(@options[:config_file])
     end
 
+    def stop
+      stop!
+    end
+
     def error(text)
       logger.error text
       raise Error.new(text)
@@ -73,10 +77,6 @@ module Bandersnatch
 
     def mq
       @mqs[@server] ||= MQ.new(amqp_connection)
-    end
-
-    def stop
-      stop!
     end
 
     def register_exchange(name, opts)
