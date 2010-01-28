@@ -30,7 +30,7 @@ end
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
-    gemspec.name    = 'banderstnatch'
+    gemspec.name    = 'bandersnatch'
     gemspec.version = '0.0.1'
     gemspec.summary = "Messages :P"
     gemspec.description = "A high available/reliabile messaging infrastructure"
@@ -38,9 +38,9 @@ begin
     gemspec.authors = ["Stefan Kaes", "Pascal Friederich"]
     gemspec.add_dependency('uuid4r', '>=0.1.1')
     gemspec.add_dependency('bunny', '>=0.6.0')
-    gemspec.add_dependency('redis', '>=1.2.1')
+    gemspec.add_dependency('redis', '>=0.1.2')
     gemspec.add_dependency('amqp', '>=0.6.6')
-    gemspec.add_dependency('active_support', '2.3.5')
+    gemspec.add_dependency('activesupport', '>=2.3.4')
 
     gemspec.add_development_dependency('mocha')
   end
