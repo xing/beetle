@@ -4,7 +4,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Bandersnatch
   class PublisherTest < Test::Unit::TestCase
     def setup
-      @pub = Publisher.new
+      client = mock("client")
+      @pub = Publisher.new(client)
     end
 
     test "acccessing a bunny for a server which doesn't have one should create it and associate it with the server" do
@@ -24,7 +25,8 @@ module Bandersnatch
 
   class PublisherPublishingTest < Test::Unit::TestCase
     def setup
-      @pub = Publisher.new
+      client = mock("client")
+      @pub = Publisher.new(client)
     end
 
     test "publishing should try to recycle dead servers before trying to publish the message" do
@@ -132,7 +134,8 @@ module Bandersnatch
 
   class PublisherQueueManagementTest < Test::Unit::TestCase
     def setup
-      @pub = Publisher.new
+      client = mock("client")
+      @pub = Publisher.new(client)
     end
 
     test "initially there should be no queues for the current server" do
@@ -156,7 +159,8 @@ module Bandersnatch
 
   class ExchangeManagementTest < Test::Unit::TestCase
     def setup
-      @pub = Publisher.new
+      client = mock("client")
+      @pub = Publisher.new(client)
     end
 
     test "initially there should be no exchanges for the current server" do

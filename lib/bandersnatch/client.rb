@@ -22,11 +22,11 @@ module Bandersnatch
 
     private
       def publisher
-        @publisher ||= Publisher.new
+        @publisher ||= Publisher.new(self)
       end
 
       def subscriber
-        @subscriber ||= Subscriber.new
+        @subscriber ||= Subscriber.new(self)
       end
   end
 end

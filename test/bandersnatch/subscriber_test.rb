@@ -4,7 +4,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Bandersnatch
   class SubscriberTest < Test::Unit::TestCase
     def setup
-      @sub = Subscriber.new
+      client = mock("client")
+      @sub = Subscriber.new(client)
     end
 
     test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
@@ -33,7 +34,8 @@ module Bandersnatch
 
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
-      @sub = Subscriber.new
+      client = mock("client")
+      @sub = Subscriber.new(client)
     end
 
     test "initially there should be no queues for the current server" do
@@ -57,7 +59,8 @@ module Bandersnatch
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase
     def setup
-      @sub = Subscriber.new
+      client = mock("client")
+      @sub = Subscriber.new(client)
     end
 
     test "initially there should be no exchanges for the current server" do
@@ -93,7 +96,8 @@ module Bandersnatch
 
   class DeDuplificationTest < Test::Unit::TestCase
     def setup
-      @sub = Subscriber.new
+      client = mock("client")
+      @sub = Subscriber.new(client)
       @handler = mock("handler")
       @queue = 'somequeue'
       @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler)
@@ -159,7 +163,8 @@ module Bandersnatch
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup
-      @sub = Subscriber.new
+      client = mock("client")
+      @sub = Subscriber.new(client)
     end
 
     test "subscribe should create subscriptions for all servers" do
