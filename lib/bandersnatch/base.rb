@@ -8,7 +8,7 @@ module Bandersnatch
   class Base
 
     QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
-    # QUEUE_BINDING_KEYS = [:key, :no_wait] # Whats that for?
+    QUEUE_BINDING_KEYS  = [:key, :no_wait]
 
     attr_accessor :options, :exchanges, :queues, :trace, :servers, :server, :messages, :amqp_config
 
