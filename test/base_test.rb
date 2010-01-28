@@ -63,33 +63,6 @@ module Bandersnatch
     end
   end
 
-  class SubscriberTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:sub)
-    end
-
-    test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
-      @bs.expects(:new_amqp_connection).returns(42)
-      assert_equal 42, @bs.amqp_connection
-      connections = @bs.instance_variable_get("@amqp_connections")
-      assert_equal 42, connections[@bs.server]
-    end
-
-    test "new amqp connections should be created using current host and port" do
-      m = mock("dummy")
-      AMQP.expects(:connect).with(:host => @bs.current_host, :port => @bs.current_port).returns(m)
-      assert_equal m, @bs.new_amqp_connection
-    end
-
-    test "mq instances should be created for the current server if accessed" do
-      @bs.expects(:amqp_connection).returns(11)
-      MQ.expects(:new).with(11).returns(42)
-      assert_equal 42, @bs.mq
-      mqs = @bs.instance_variable_get("@mqs")
-      assert_equal 42, mqs[@bs.server]
-    end
-  end
-
   class BandersnatchHandlerRegistrationTest < Test::Unit::TestCase
     def setup
       @bs = Base.new(:sub)

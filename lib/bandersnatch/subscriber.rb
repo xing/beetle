@@ -22,5 +22,13 @@ module Bandersnatch
         @mqs = {}
         EM.stop_event_loop
       end
+
+      def new_amqp_connection
+        AMQP.connect(:host => current_host, :port => current_port)
+      end
+
+      def amqp_connection
+        @amqp_connections[@server] ||= new_amqp_connection
+      end
   end
 end
