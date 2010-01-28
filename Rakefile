@@ -40,8 +40,9 @@ begin
     gemspec.add_dependency('bunny', '>=0.6.0')
     gemspec.add_dependency('redis', '>=1.2.1')
     gemspec.add_dependency('amqp', '>=0.6.6')
+    gemspec.add_dependency('active_support', '2.3.5')
+
     gemspec.add_development_dependency('mocha')
-    gemspec.add_development_dependency('active_support', '2.3.5')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
