@@ -6,7 +6,6 @@ module Bandersnatch
     EXPIRE_AFTER = 1.day
 
     attr_reader :server, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    cattr_reader :redis
 
     def initialize(server, header, body)
       @server = server
@@ -65,17 +64,10 @@ module Bandersnatch
       def new_in_queue?(queue)
         message_id = "msgid:#{queue}:#{uuid}"
         new_message = redis.setnx(message_id, Time.now.to_s(:db))
-        if new_message
-          redis.expire(message_id, EXPIRE_AFTER.to_s) rescue logger.error("error setting expiration date for #{message_id}\n#{$!}")
-        else
+        redis.expire(message_id, EXPIRE_AFTER) rescue logger.error("error setting expiration date for #{message_id}\n#{$!}")
+        unless new_message
           logger.debug "received duplicate message: #{message_id} on queue: #{queue} (identifier: #{message_id})"
         end
-        # puts
-        # puts "ID: #{message_id.inspect}"
-        # puts "expire in: #{redis.ttl(message_id)}"
-        # puts new_message.inspect
-        # puts new_message ? "new" : "old"
-        # puts
         new_message
       end
 
