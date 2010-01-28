@@ -160,29 +160,6 @@ module Bandersnatch
       queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
     end
 
-    def trace
-      @trace = true
-      listen do
-        register_handler("redundant", :queue => "additional_queue", :ack => true, :key => '#') {|msg| puts "------===== Additional Handler =====-----" }
-        register_handler(@messages.keys, :ack => true, :key => '#') do |msg|
-          puts "-----===== new message =====-----"
-          puts "SERVER: #{msg.server}"
-          puts "HEADER: #{msg.header.inspect}"
-          puts "UUID: #{msg.uuid}" if msg.uuid
-          puts "DATA: #{msg.data}"
-        end
-      end
-    end
-
-    def test
-      error "testing only allowed in development environment" unless RAILS_ENV=="development"
-      trap("INT") { exit(1) }
-      while true
-        publish "redundant", "hello, I'm redundant!"
-        sleep 1
-      end
-    end
-
     def autoload(glob)
       Dir[glob + '/**/config/amqp_messaging.rb'].each do |f|
         eval(File.read f)

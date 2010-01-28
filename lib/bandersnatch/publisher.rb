@@ -75,6 +75,20 @@ module Bandersnatch
       published
     end
 
+    def trace
+      @trace = true
+      listen do
+        register_handler("redundant", :queue => "additional_queue", :ack => true, :key => '#') {|msg| puts "------===== Additional Handler =====-----" }
+        register_handler(@messages.keys, :ack => true, :key => '#') do |msg|
+          puts "-----===== new message =====-----"
+          puts "SERVER: #{msg.server}"
+          puts "HEADER: #{msg.header.inspect}"
+          puts "UUID: #{msg.uuid}" if msg.uuid
+          puts "DATA: #{msg.data}"
+        end
+      end
+    end
+
     private
       def create_exchange!(name, opts)
         bunny.exchange(name, opts)
