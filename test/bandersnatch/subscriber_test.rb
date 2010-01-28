@@ -4,8 +4,16 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Bandersnatch
   class SubscriberTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @sub = Subscriber.new(client)
+    end
+
+    test "initially there should be no amqp connections" do
+      assert_equal({}, @sub.instance_variable_get("@amqp_connections"))
+    end
+
+    test "initially there should be no instances of MQ" do
+      assert_equal({}, @sub.instance_variable_get("@mqs"))
     end
 
     test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
@@ -18,7 +26,7 @@ module Bandersnatch
 
     test "new amqp connections should be created using current host and port" do
       m = mock("dummy")
-      AMQP.expects(:connect).with(:host => @sub.current_host, :port => @sub.current_port).returns(m)
+      AMQP.expects(:connect).with(:host => @sub.send(:current_host), :port => @sub.send(:current_port)).returns(m)
       # TODO: smarter way to test? what triggers the amqp_connection private method call?
       assert_equal m, @sub.send(:new_amqp_connection)
     end
@@ -26,7 +34,7 @@ module Bandersnatch
     test "mq instances should be created for the current server if accessed" do
       @sub.expects(:amqp_connection).returns(11)
       MQ.expects(:new).with(11).returns(42)
-      assert_equal 42, @sub.mq
+      assert_equal 42, @sub.send(:mq)
       mqs = @sub.instance_variable_get("@mqs")
       assert_equal 42, mqs[@sub.server]
     end
@@ -34,13 +42,13 @@ module Bandersnatch
 
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @sub = Subscriber.new(client)
     end
 
     test "initially there should be no queues for the current server" do
-      assert_equal({}, @sub.queues)
-      assert !@sub.queues["some_queue"]
+      assert_equal({}, @sub.send(:queues))
+      assert !@sub.send(:queues)["some_queue"]
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
@@ -52,14 +60,14 @@ module Bandersnatch
       m.expects(:queue).with("some_queue", :durable => true).returns(q)
       @sub.expects(:mq).returns(m)
 
-      @sub.bind_queue("some_queue")
-      assert_equal q, @sub.queues["some_queue"]
+      @sub.send(:bind_queue, "some_queue")
+      assert_equal q, @sub.send(:queues)["some_queue"]
     end
   end
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @sub = Subscriber.new(client)
     end
 
@@ -78,25 +86,11 @@ module Bandersnatch
       ex2 = @sub.exchange("some_exchange")
       assert_equal ex2, ex
     end
-
-    test "should create exchanges for all registered messages and servers" do
-      @sub.servers = %w(x y)
-      messages = %w(a b)
-      exchange_creation = sequence("exchange creation")
-      @sub.messages = []
-      @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
-      @sub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
-      @sub.create_exchanges(messages)
-    end
   end
 
   class DeDuplificationTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @sub = Subscriber.new(client)
       @handler = mock("handler")
       @queue = 'somequeue'
@@ -163,8 +157,8 @@ module Bandersnatch
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup
-      @client = mock("client")
-      @sub = Subscriber.new(@client)
+      client = Client.new
+      @sub = Subscriber.new(client)
     end
 
     test "subscribe should create subscriptions for all servers" do
@@ -172,7 +166,7 @@ module Bandersnatch
       @sub.messages = {"a" => 1, "b" => 2}
       @sub.expects(:subscribe_message).with("a").times(2)
       @sub.expects(:subscribe_message).with("b").times(2)
-      @sub.send(:subscribe)
+      @sub.subscribe
     end
 
     test "subscribe_message should subscribe with a subscription callback created from the registered block" do
@@ -188,7 +182,7 @@ module Bandersnatch
         assert_equal server, m.server
         assert_nil m.uuid
       end
-      @client.stubs(:handlers).returns({"some_message" => [[opts.symbolize_keys, proc]]})
+      @sub.register_handler("some_message", opts, &proc)
       q = mock("QUEUE")
       q.expects(:subscribe).with({:ack => true, :key => "some_key.#"}).yields(header, Message.encode("data"))
       @sub.expects(:queues).returns({"some_message" => q})
@@ -197,7 +191,6 @@ module Bandersnatch
     end
 
     test "subscribe should fail if no handler exists for given message" do
-      @client.stubs(:handlers).returns({})
       assert_raises(Error){ @sub.send(:subscribe_message, "some_message") }
     end
 
@@ -207,6 +200,38 @@ module Bandersnatch
       @sub.expects(:bind_queues).with(["a"])
       @sub.expects(:subscribe)
       @sub.listen(["a"]) {}
+    end
+  end
+
+  class HandlersTest < Test::Unit::TestCase
+    def setup
+      client = Client.new
+      @sub = Subscriber.new(client)
+    end
+
+    test "initially we should have no handlers" do
+      assert_equal({}, @sub.instance_variable_get("@handlers"))
+    end
+
+    test "registering a handler for a message should store it in the configuration with symbolized option keys" do
+      opts = {"ack" => true}
+      @sub.register_handler("some_message", opts){ |*args| 42 }
+      opts, block = @sub.instance_variable_get("@handlers")["some_message"].first
+      assert_equal({:ack => true}, opts)
+      assert_equal 42, block.call
+    end
+
+    test "should allow registration of multiple handlers for a message" do
+      opts = {}
+      @sub.register_handler("a message", { :queue => "queue_1" } ) { |*args| "handler 1" }
+      @sub.register_handler("a message", { :queue => "queue_2" }) { |*args| "handler 2" }
+      handlers = @sub.instance_variable_get("@handlers")["a message"]
+      handler1, handler2 = handlers
+      assert_equal 2, handlers.size
+      assert_equal "queue_1", handler1[0][:queue]
+      assert_equal "handler 1", handler1[1].call
+      assert_equal "queue_2", handler2[0][:queue]
+      assert_equal "handler 2", handler2[1].call
     end
   end
 end

@@ -4,7 +4,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Bandersnatch
   class PublisherTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @pub = Publisher.new(client)
     end
 
@@ -17,15 +17,23 @@ module Bandersnatch
 
     test "new bunnies should be created using current host and port and they should be started" do
       m = mock("dummy")
-      Bunny.expects(:new).with(:host => @pub.current_host, :port => @pub.current_port, :logging => false).returns(m)
+      Bunny.expects(:new).with(:host => @pub.send(:current_host), :port => @pub.send(:current_port), :logging => false).returns(m)
       m.expects(:start)
       assert_equal m, @pub.new_bunny
+    end
+
+    test "initially there should be no bunnies" do
+      assert_equal({}, @pub.instance_variable_get("@bunnies"))
+    end
+
+    test "initially there should be no dead servers" do
+      assert_equal({}, @pub.instance_variable_get("@dead_servers"))
     end
   end
 
   class PublisherPublishingTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @pub = Publisher.new(client)
     end
 
@@ -134,7 +142,7 @@ module Bandersnatch
 
   class PublisherQueueManagementTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @pub = Publisher.new(client)
     end
 
@@ -157,9 +165,9 @@ module Bandersnatch
     end
   end
 
-  class ExchangeManagementTest < Test::Unit::TestCase
+  class PublisherExchangeManagementTest < Test::Unit::TestCase
     def setup
-      client = mock("client")
+      client = Client.new
       @pub = Publisher.new(client)
     end
 
@@ -177,6 +185,61 @@ module Bandersnatch
       assert @pub.exchange_exists?("some_exchange")
       ex2 = @pub.exchange("some_exchange")
       assert_equal ex2, ex
+    end
+  end
+
+  class PublisherServerManagementTest < Test::Unit::TestCase
+    def setup
+      client = Client.new
+      @pub = Publisher.new(client)
+    end
+
+    test "marking the current server as dead should add it to the dead servers hash and remove it from the active servers list" do
+      @pub.servers = ["localhost:1111", "localhost:2222"]
+      @pub.send(:set_current_server, "localhost:2222")
+      @pub.send(:mark_server_dead)
+      assert_equal ["localhost:1111"], @pub.servers
+      dead = @pub.instance_variable_get "@dead_servers"
+      assert_equal ["localhost:2222"], dead.keys
+      assert_kind_of Time, dead["localhost:2222"]
+    end
+
+    test "should create exchanges for all registered messages and servers" do
+      @pub.servers = %w(x y)
+      messages = %w(a b)
+      exchange_creation = sequence("exchange creation")
+      @pub.messages = []
+      @pub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
+      @pub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
+      @pub.create_exchanges(messages)
+    end
+
+    test "recycle_dead_servers should move servers from the dead server hash to the servers list only if the have been markd dead for longer than 10 seconds" do
+      @pub.servers = ["a:1", "b:2"]
+      @pub.send(:set_current_server, "a:1")
+      @pub.send(:mark_server_dead)
+      assert_equal ["b:2"], @pub.servers
+      dead = @pub.instance_variable_get("@dead_servers")
+      dead["a:1"] = 9.seconds.ago
+      @pub.send(:recycle_dead_servers)
+      assert_equal ["a:1"], dead.keys
+      dead["a:1"] = 11.seconds.ago
+      @pub.send(:recycle_dead_servers)
+      assert_equal ["b:2", "a:1"], @pub.servers
+      assert_equal({}, dead)
+    end
+
+    test "select_next_server should cycle through the list of all servers" do
+      @pub.servers = ["a:1", "b:2"]
+      @pub.send(:set_current_server, "a:1")
+      @pub.send(:select_next_server)
+      assert_equal "b:2", @pub.server
+      @pub.send(:select_next_server)
+      assert_equal "a:1", @pub.server
     end
   end
 end
