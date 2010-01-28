@@ -7,9 +7,8 @@ module Bandersnatch
   # * only keep the neccassary code in Base
   class Base
 
-    RECOVER_AFTER = 10.seconds
     QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
-    QUEUE_BINDING_KEYS = [:key, :no_wait]
+    # QUEUE_BINDING_KEYS = [:key, :no_wait] # Whats that for?
 
     attr_accessor :options, :exchanges, :queues, :trace, :servers, :server, :messages, :amqp_config
 
@@ -72,8 +71,6 @@ module Bandersnatch
         end
       end
     end
-
-    EXCHANGE_CREATION_KEYS = [:auto_delete, :durable, :internal, :nowait, :passive]
 
     def create_exchange(name)
       opts = @amqp_config["exchanges"][name].symbolize_keys

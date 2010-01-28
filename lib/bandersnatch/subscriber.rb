@@ -1,6 +1,10 @@
 module Bandersnatch
   class Subscriber < Base
+
     attr_accessor :handlers
+
+    EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]
+    RECOVER_AFTER           = 10.seconds
 
     def initialize(client, options = {})
       super

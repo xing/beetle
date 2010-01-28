@@ -24,11 +24,6 @@ module Bandersnatch
     end
 
     # TODO: refactoring helper code, will be replaced
-    def trace
-      subscriber.trace
-    end
-
-    # TODO: refactoring helper code, will be replaced
     def test
       publisher.test
     end

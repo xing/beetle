@@ -1,5 +1,6 @@
 module Bandersnatch
   class Publisher < Base
+
     PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]
 
     def initialize(servers)
