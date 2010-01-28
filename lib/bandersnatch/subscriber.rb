@@ -1,10 +1,5 @@
 module Bandersnatch
   class Subscriber < Base
-    def initialize
-      # legacy, will get removed after refactoring
-      super(:sub)
-    end
-
     private
       def create_exchange!(name, opts)
         mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
