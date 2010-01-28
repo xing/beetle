@@ -73,14 +73,6 @@ module Bandersnatch
       recycle.each {|s| @dead_servers.delete(s)}
     end
 
-    def amqp_connection
-      @amqp_connections[@server] ||= new_amqp_connection
-    end
-
-    def new_amqp_connection
-      AMQP.connect(:host => current_host, :port => current_port)
-    end
-
     def mq
       @mqs[@server] ||= MQ.new(amqp_connection)
     end

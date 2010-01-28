@@ -2,6 +2,35 @@ require File.expand_path(File.dirname(__FILE__) + '/test_helper')
 
 
 module Bandersnatch
+  class SubscriberTest < Test::Unit::TestCase
+    def setup
+      @sub = Subscriber.new
+    end
+
+    test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
+      @sub.expects(:new_amqp_connection).returns(42)
+      # TODO: smarter way to test? what triggers the amqp_connection private method call?
+      assert_equal 42, @sub.send(:amqp_connection)
+      connections = @sub.instance_variable_get("@amqp_connections")
+      assert_equal 42, connections[@sub.server]
+    end
+
+    test "new amqp connections should be created using current host and port" do
+      m = mock("dummy")
+      AMQP.expects(:connect).with(:host => @sub.current_host, :port => @sub.current_port).returns(m)
+      # TODO: smarter way to test? what triggers the amqp_connection private method call?
+      assert_equal m, @sub.send(:new_amqp_connection)
+    end
+
+    test "mq instances should be created for the current server if accessed" do
+      @sub.expects(:amqp_connection).returns(11)
+      MQ.expects(:new).with(11).returns(42)
+      assert_equal 42, @sub.mq
+      mqs = @sub.instance_variable_get("@mqs")
+      assert_equal 42, mqs[@sub.server]
+    end
+  end
+
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
       @sub = Subscriber.new
