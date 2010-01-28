@@ -11,10 +11,8 @@ module Bandersnatch
 
     attr_accessor :options, :amqp_config, :exchanges, :queues, :handlers, :messages, :servers, :server, :mode
 
-    def initialize(mode, options = {})
+    def initialize(options = {})
       @options = options
-      @mode = mode.to_sym
-      error("Bandersnatch: unknown mode '#{mode}'. shoud be :pub or :sub") unless [:pub, :sub].include?(@mode)
       @exchanges = {}
       @queues = {}
       @handlers = {}

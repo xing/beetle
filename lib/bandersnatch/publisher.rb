@@ -1,9 +1,5 @@
 module Bandersnatch
   class Publisher < Base
-    def initialize
-      # legacy, will get removed after refactoring
-      super(:pub)
-    end
 
     PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]
 

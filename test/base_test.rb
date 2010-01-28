@@ -4,17 +4,7 @@ require File.expand_path(File.dirname(__FILE__) + '/test_helper')
 module Bandersnatch
   class AMQPConfigTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(:pub)
-    end
-
-    test "mode should be set if valid" do
-      assert_equal :pub, @bs.mode
-      bs = Base.new(:sub)
-      assert_equal :sub, bs.mode
-    end
-
-    test "initializing should fail for invalid mode" do
-      assert_raises(Error) { Base.new(:murks) }
+      @bs = Base.new
     end
 
     test "should load default config file" do
@@ -65,7 +55,7 @@ module Bandersnatch
 
   class BandersnatchHandlerRegistrationTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(:sub)
+      @bs = Base.new
     end
 
     test "registering an exchange should store it in the configuration with symbolized option keys" do
@@ -105,7 +95,7 @@ module Bandersnatch
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(:sub)
+      @bs = Base.new
     end
 
     test "subscribe should create subscriptions for all servers" do
@@ -153,7 +143,7 @@ module Bandersnatch
 
   class ServerManagementTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(:sub)
+      @bs = Base.new
     end
 
     test "marking the current server as dead should add it to the dead servers hash and remove it from the active servers list" do
@@ -213,7 +203,7 @@ module Bandersnatch
 
   class DeDuplificationTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(:sub)
+      @bs = Base.new
       @handler = mock("handler")
       @queue = 'somequeue'
       @callback = @bs.create_subscription_callback('servername', @queue, @handler)
