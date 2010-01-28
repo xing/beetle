@@ -55,12 +55,12 @@ module Bandersnatch
       message.insert_id('somequeue')
     end
 
-    # test "inserting a messages uuid for the same queu into the database should fail the second time" do
-    #   body = Message.encode('my message', :with_uuid => true)
-    #   message = Message.new('server', {}, body)
-    # 
-    #   assert message.insert_id('somequeue')
-    #   assert !message.insert_id('somequeue')
-    # end
+    test "inserting a messages uuid for the same queu into the database should fail the second time" do
+      body = Message.encode('my message', :with_uuid => true)
+      message = Message.new('server', {}, body)
+
+      assert message.insert_id('somequeue')
+      assert !message.insert_id('somequeue')
+    end
   end
 end
