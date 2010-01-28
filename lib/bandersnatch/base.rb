@@ -9,20 +9,20 @@ module Bandersnatch
 
     RECOVER_AFTER = 10.seconds
 
-    attr_accessor :options, :amqp_config, :exchanges, :queues, :messages, :servers, :server, :mode
+    attr_accessor :options, :exchanges, :queues, :trace
 
     def initialize(client, options = {})
-      @client = client
       @options = options
+      @client = client
+      @servers = @client.servers
+      @messages = @client.messages
+      @amqp_config = @client.amqp_config
+      @server = @servers[rand @servers.size]
       @exchanges = {}
-      @queues = {}
-      @messages = {}
-      @bunnies = {}
-      @amqp_connections = {}
-      @mqs = {}
+
+      @amqp_connections = {} # move to subscriber
+      @mqs = {} # move to subscriber
       @trace = false
-      @dead_servers = {}
-      load_config(@options[:config_file])
     end
 
     def stop
@@ -32,51 +32,6 @@ module Bandersnatch
     def error(text)
       logger.error text
       raise Error.new(text)
-    end
-
-    def load_config(file_name=nil)
-      file_name ||= Bandersnatch.config.config_file
-      @amqp_config = YAML::load(ERB.new(IO.read(file_name)).result)
-      @servers = @amqp_config[RAILS_ENV]['hostname'].split(/ *, */)
-      @server = @servers[rand @servers.size]
-      @messages = @amqp_config['messages']
-    end
-
-    def current_host
-      @server.split(':').first
-    end
-
-    def current_port
-      @server =~ /:(\d+)$/ ? $1.to_i : 5672
-    end
-
-    def set_current_server(s)
-      @server = s
-    end
-
-    def mark_server_dead
-      logger.info "server #{@server} down: #{$!}"
-      @dead_servers[@server] = Time.now
-      @servers.delete @server
-      @server = @servers[rand @servers.size]
-    end
-
-    def select_next_server
-      set_current_server(@servers[(@servers.index(@server)+1) % @servers.size])
-    end
-
-    def recycle_dead_servers
-      recycle = []
-      @dead_servers.each do |s, dead_since|
-        recycle << s if dead_since < 10.seconds.ago
-      end
-      @servers.concat recycle
-      logger.debug "servers #{@servers.inspect}"
-      recycle.each {|s| @dead_servers.delete(s)}
-    end
-
-    def mq
-      @mqs[@server] ||= MQ.new(amqp_connection)
     end
 
     def register_exchange(name, opts)
@@ -101,7 +56,7 @@ module Bandersnatch
     end
 
     def create_exchanges(messages)
-      servers.each do |s|
+      @servers.each do |s|
         set_current_server s
         messages.each do |name|
           create_exchange(name)
@@ -117,43 +72,6 @@ module Bandersnatch
       exchanges_for_current_server[name] = create_exchange!(name, opts)
     end
 
-    def bind_queues(messages)
-      servers.each do |s|
-        set_current_server s
-        queues_with_handlers(messages).each do |name|
-          bind_queue(name)
-        end
-      end
-    end
-
-    def queues_with_handlers(messages)
-      messages.map do |name|
-        @client.handlers[name].map {|opts, _| opts[:queue] || name }
-      end.flatten
-    end
-
-    def queues
-      @queues[@server] ||= {}
-    end
-
-    QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
-    QUEUE_BINDING_KEYS = [:key, :no_wait]
-
-    def bind_queue(name)
-      logger.debug("Binding #{name}")
-      opts = @amqp_config["queues"][name].dup
-      opts.symbolize_keys!
-      exchange_name = opts.delete(:exchange) || name
-      queue_name = name
-      if @trace
-        opts.merge!(:durable => true, :auto_delete => true)
-        queue_name = "trace-#{name}-#{`hostname`.chomp}"
-      end
-      binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
-      creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
-      queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
-    end
-
     def autoload(glob)
       Dir[glob + '/**/config/amqp_messaging.rb'].each do |f|
         eval(File.read f)
@@ -161,12 +79,24 @@ module Bandersnatch
     end
 
     private
-      def logger
-        self.class.logger
-      end
+    def current_host
+      @server.split(':').first
+    end
 
-      def self.logger
-        Bandersnatch.config.logger
-      end
+    def current_port
+      @server =~ /:(\d+)$/ ? $1.to_i : 5672
+    end
+
+    def set_current_server(s)
+      @server = s
+    end
+
+    def logger
+      self.class.logger
+    end
+
+    def self.logger
+      Bandersnatch.config.logger
+    end
   end
 end
