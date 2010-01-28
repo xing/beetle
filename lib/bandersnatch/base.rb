@@ -8,8 +8,10 @@ module Bandersnatch
   class Base
 
     RECOVER_AFTER = 10.seconds
+    QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
+    QUEUE_BINDING_KEYS = [:key, :no_wait]
 
-    attr_accessor :options, :exchanges, :queues, :trace
+    attr_accessor :options, :exchanges, :queues, :trace, :servers, :server, :messages, :amqp_config
 
     def initialize(client, options = {})
       @options = options
@@ -19,6 +21,7 @@ module Bandersnatch
       @amqp_config = @client.amqp_config
       @server = @servers[rand @servers.size]
       @exchanges = {}
+      @queues = {}
 
       @amqp_connections = {} # move to subscriber
       @mqs = {} # move to subscriber
@@ -32,6 +35,15 @@ module Bandersnatch
     def error(text)
       logger.error text
       raise Error.new(text)
+    end
+
+    def bind_queues(messages)
+      @servers.each do |s|
+        set_current_server s
+        queues_with_handlers(messages).each do |name|
+          bind_queue(name)
+        end
+      end
     end
 
     def register_exchange(name, opts)
@@ -76,6 +88,25 @@ module Bandersnatch
       Dir[glob + '/**/config/amqp_messaging.rb'].each do |f|
         eval(File.read f)
       end
+    end
+
+    def queues
+      @queues[@server] ||= {}
+    end
+
+    def bind_queue(name, trace = false)
+      logger.debug("Binding #{name}")
+      opts = @amqp_config["queues"][name].dup
+      opts.symbolize_keys!
+      exchange_name = opts.delete(:exchange) || name
+      queue_name = name
+      if @trace
+        opts.merge!(:durable => true, :auto_delete => true)
+        queue_name = "trace-#{name}-#{`hostname`.chomp}"
+      end
+      binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
+      creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
+      queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
     end
 
     private

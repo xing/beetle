@@ -5,7 +5,6 @@ module Bandersnatch
     def initialize(client, options = {})
       super
       @handlers = {}
-      @queues = {}
     end
 
     def listen(messages=@messages.keys)
@@ -17,7 +16,7 @@ module Bandersnatch
     end
 
     def subscribe(messages=nil)
-      messages ||= @client.messages.keys
+      messages ||= @messages.keys
       Array(messages).each do |message|
         @servers.each do |s|
           set_current_server s
@@ -33,41 +32,10 @@ module Bandersnatch
     end
 
     private
-    def bind_queues(messages)
-      @servers.each do |s|
-        set_current_server s
-        queues_with_handlers(messages).each do |name|
-          bind_queue(name)
-        end
-      end
-    end
-
     def queues_with_handlers(messages)
       messages.map do |name|
         @handlers[name].map {|opts, _| opts[:queue] || name }
       end.flatten
-    end
-
-    def queues
-      @queues[@server] ||= {}
-    end
-
-    QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
-    QUEUE_BINDING_KEYS = [:key, :no_wait]
-
-    def bind_queue(name, trace = false)
-      logger.debug("Binding #{name}")
-      opts = @amqp_config["queues"][name].dup
-      opts.symbolize_keys!
-      exchange_name = opts.delete(:exchange) || name
-      queue_name = name
-      if @trace
-        opts.merge!(:durable => true, :auto_delete => true)
-        queue_name = "trace-#{name}-#{`hostname`.chomp}"
-      end
-      binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
-      creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
-      queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
     end
 
     def mq
