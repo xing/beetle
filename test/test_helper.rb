@@ -4,6 +4,7 @@ require 'rubygems'
 require 'active_support'
 require 'active_support/testing/declarative'
 require 'test/unit'
+require 'redgreen' rescue nil
 require 'mocha'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/bandersnatch')
 
