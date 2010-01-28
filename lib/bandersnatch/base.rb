@@ -22,9 +22,6 @@ module Bandersnatch
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
-
-      @amqp_connections = {} # move to subscriber
-      @mqs = {} # move to subscriber
       @trace = false
     end
 

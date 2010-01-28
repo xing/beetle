@@ -5,6 +5,8 @@ module Bandersnatch
     def initialize(client, options = {})
       super
       @handlers = {}
+      @amqp_connections = {}
+      @mqs = {}
     end
 
     def listen(messages=@messages.keys)
