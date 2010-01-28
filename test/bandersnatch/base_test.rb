@@ -69,11 +69,12 @@ module Bandersnatch
 
   class ServerManagementTest < Test::Unit::TestCase
     def setup
-      @bs = Base.new(nil)
+      @client = mock('client')
+      @bs = Base.new(@client)
     end
 
     test "marking the current server as dead should add it to the dead servers hash and remove it from the active servers list" do
-      @bs.servers = ["localhost:1111", "localhost:2222"]
+      @client.servers = ["localhost:1111", "localhost:2222"]
       @bs.set_current_server("localhost:2222")
       @bs.mark_server_dead
       assert_equal ["localhost:1111"], @bs.servers
@@ -103,7 +104,7 @@ module Bandersnatch
     end
 
     test "select_next_server should cycle through the list of all servers" do
-      @bs.servers = ["a:1", "b:2"]
+      @client.servers = ["a:1", "b:2"]
       @bs.set_current_server("a:1")
       @bs.select_next_server
       assert_equal "b:2", @bs.server
@@ -112,7 +113,7 @@ module Bandersnatch
     end
 
     test "recycle_dead_servers should move servers from the dead server hash to the servers list only if the have been markd dead for longer than 10 seconds" do
-      @bs.servers = ["a:1", "b:2"]
+      @@client.servers = ["a:1", "b:2"]
       @bs.set_current_server "a:1"
       @bs.mark_server_dead
       assert_equal ["b:2"], @bs.servers
