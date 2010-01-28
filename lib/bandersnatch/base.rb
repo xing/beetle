@@ -183,27 +183,6 @@ module Bandersnatch
       end
     end
 
-    def can_do(modul, opts={})
-      x = modul.underscore
-      prefix = x.gsub('/','.')
-      exchange = x.split('/')[1,-1].join('_')
-      exchange = x if x.blank?
-      abilities = opts.delete(:abilities) || :on_message
-      register_exchange(exchange, :durable => true)
-      register_queue(exchange, :durable => true)
-      abilities.each do |a|
-        message = "#{exchange}_#{a}"
-        @messages[message] = {:persistent => true}
-        register_handler(a, :ack => true, :key => "#{prefix}.#{a}.#") do |server, header, body|
-          begin
-            modul.send(a, header, body)
-            header.ack if opts[:ack]
-          rescue Exception
-          end
-        end
-      end
-    end
-
     def autoload(glob)
       Dir[glob + '/**/config/amqp_messaging.rb'].each do |f|
         eval(File.read f)
