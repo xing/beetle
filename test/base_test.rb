@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/test_helper')
 
 
 module Bandersnatch
-  class ConfigTest < Test::Unit::TestCase
+  class AMQPConfigTest < Test::Unit::TestCase
     def setup
       @bs = Base.new(:pub)
     end
@@ -61,27 +61,6 @@ module Bandersnatch
     test "initially we should have no handlers" do
       assert_equal({}, @bs.instance_variable_get("@handlers"))
     end
-  end
-
-  class BandersnatchPublisherTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:pub)
-    end
-
-    test "acccessing a bunny for a server which doesn't have one should create it and associate it with the server" do
-      @bs.expects(:new_bunny).returns(42)
-      assert_equal 42, @bs.bunny
-      bunnies = @bs.instance_variable_get("@bunnies")
-      assert_equal(42, bunnies[@bs.server])
-    end
-
-    test "new bunnies should be created using current host and port and they should be started" do
-      m = mock("dummy")
-      Bunny.expects(:new).with(:host => @bs.current_host, :port => @bs.current_port, :logging => false).returns(m)
-      m.expects(:start)
-      assert_equal m, @bs.new_bunny
-    end
-
   end
 
   class SubscriberTest < Test::Unit::TestCase
@@ -183,76 +162,6 @@ module Bandersnatch
       @bs.expects(:create_exchange).with("a").in_sequence(exchange_creation)
       @bs.expects(:create_exchange).with("b").in_sequence(exchange_creation)
       @bs.create_exchanges(messages)
-    end
-  end
-
-  class PublisherExchangeManagementTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:pub)
-    end
-
-    test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @bs.exchanges_for_current_server)
-      assert !@bs.exchange_exists?("some_message")
-    end
-
-    test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @bs.register_exchange("some_exchange", "type" => "topic", "durable" => true)
-      m = mock("Bunny")
-      m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true).returns(42)
-      @bs.expects(:bunny).returns(m)
-      ex = @bs.exchange("some_exchange")
-      assert @bs.exchange_exists?("some_exchange")
-      ex2 = @bs.exchange("some_exchange")
-      assert_equal ex2, ex
-    end
-  end
-
-  class SubscriberQueueManagementTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:sub)
-    end
-
-    test "initially there should be no queues for the current server" do
-      assert_equal({}, @bs.queues)
-      assert !@bs.queues["some_queue"]
-    end
-
-    test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @bs.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
-      @bs.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("MQ")
-      m.expects(:queue).with("some_queue", :durable => true).returns(q)
-      @bs.expects(:mq).returns(m)
-
-      @bs.bind_queue("some_queue")
-      assert_equal q, @bs.queues["some_queue"]
-    end
-  end
-
-  class PublisherQueueManagementTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:pub)
-    end
-
-    test "initially there should be no queues for the current server" do
-      assert_equal({}, @bs.queues)
-      assert !@bs.queues["some_queue"]
-    end
-
-    test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @bs.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
-      @bs.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("Bunny")
-      m.expects(:queue).with("some_queue", :durable => true).returns(q)
-      @bs.expects(:bunny).returns(m)
-
-      @bs.bind_queue("some_queue")
-      assert_equal q, @bs.queues["some_queue"]
     end
   end
 
@@ -362,115 +271,6 @@ module Bandersnatch
       assert_equal ["b:2", "a:1"], @bs.servers
       assert_equal({}, dead)
     end
-  end
-
-  class PublisherPublishingTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(:pub)
-    end
-
-    test "publishing should try to recycle dead servers before trying to publish the message" do
-      publishing = sequence('publishing')
-      data = "XXX"
-      @bs.expects(:recycle_dead_servers).in_sequence(publishing)
-      @bs.expects(:publish_with_failover).with("mama", "mama", data, {}).in_sequence(publishing)
-      @bs.publish("mama", data)
-    end
-
-    test "publishing should fail over to the next server" do
-      failover = sequence('failover')
-      data = "XXX"
-      opts = {}
-      @bs.expects(:select_next_server).in_sequence(failover)
-      e = mock("exchange")
-      @bs.expects(:exchange).with("mama").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
-      @bs.expects(:stop_bunny).in_sequence(failover)
-      @bs.expects(:mark_server_dead).in_sequence(failover)
-      @bs.expects(:error).in_sequence(failover)
-      @bs.publish_with_failover("mama", "mama", data, opts)
-    end
-
-    test "redundant publishing should send the message to two servers" do
-      data = "XXX"
-      opts = {}
-      redundant = sequence("redundant")
-      @bs.servers = ["someserver", "someotherserver"]
-
-      e = mock("exchange")
-      @bs.expects(:select_next_server).in_sequence(redundant)
-      @bs.expects(:exchange).with("mama").returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
-      @bs.expects(:select_next_server).in_sequence(redundant)
-      @bs.expects(:exchange).with("mama").returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
-
-      assert_equal 2, @bs.publish_with_redundancy("mama", "mama", data, opts)
-    end
-
-    test "redundant publishing should fallback to failover publishing if less than one server is available" do
-      @bs.server = ["a server"]
-      data = "XXX"
-      opts = {}
-      @bs.expects(:publish_with_failover).with("mama", "mama", data, opts).returns(1)
-      assert_equal 1, @bs.publish_with_redundancy("mama", "mama", data, opts)
-    end
-
-    test "redundant publishing should try switching servers until a server is available for publishing" do
-      @bs.servers = %w(server1 server2 server3)
-      data = "XXX"
-      opts = {}
-      redundant = sequence("redundant")
-
-      e = mock("exchange")
-
-      @bs.expects(:select_next_server).in_sequence(redundant)
-      @bs.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
-
-      @bs.expects(:select_next_server).in_sequence(redundant)
-      @bs.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @bs.expects(:stop_bunny).in_sequence(redundant)
-      @bs.expects(:mark_server_dead).in_sequence(redundant)
-
-      @bs.expects(:select_next_server).in_sequence(redundant)
-      @bs.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
-
-      assert_equal 2, @bs.publish_with_redundancy("mama", "mama", data, opts)
-    end
-
-    test "publishing should use the message ttl passed in the options hash to encode the message body" do
-      data = "XXX"
-      opts = {:ttl => 1.day}
-      Message.expects(:encode).with(data, :ttl => 1.day)
-      @bs.expects(:select_next_server)
-      e = mock("exchange")
-      @bs.expects(:exchange).returns(e)
-      e.expects(:publish)
-      assert_equal 1, @bs.publish_with_failover("mama", "mama", data, opts)
-    end
-
-    test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
-      data = "XXX"
-      opts = {:ttl => 1.day}
-      Message.expects(:encode).with(data, :ttl => 1.day)
-      @bs.expects(:select_next_server)
-      e = mock("exchange")
-      @bs.expects(:exchange).returns(e)
-      e.expects(:publish)
-      assert_equal 1, @bs.publish_with_redundancy("mama", "mama", data, opts)
-    end
-
-    test "publishing should use the message ttl from the message configuration if no ttl is passed in via the options hash" do
-      data = "XXX"
-      opts = {}
-      @bs.messages["mama"] = {:ttl => 1.hour}
-      @bs.expects(:publish_with_failover).with("mama", "mama", data, :ttl => 1.hour).returns(1)
-      assert_equal 1, @bs.publish("mama", data)
-    end
-
   end
 
   class DeDuplificationTest < Test::Unit::TestCase
