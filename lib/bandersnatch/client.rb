@@ -7,7 +7,7 @@ module Bandersnatch
 
     # TODO: refactoring helper code, will be replaced
     def subscribe(messages = nil)
-      subscribe.subscribe(messages)
+      subscriber.subscribe(messages)
     end
 
     # TODO: refactoring helper code, will be replaced
