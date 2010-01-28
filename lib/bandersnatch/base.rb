@@ -130,12 +130,7 @@ module Bandersnatch
     def create_exchange(name)
       opts = @amqp_config["exchanges"][name].symbolize_keys
       opts[:type] = opts[:type].to_sym
-      case @mode
-      when :pub
-        exchanges_for_current_server[name] = bunny.exchange(name, opts)
-      when :sub
-        exchanges_for_current_server[name] = mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
-      end
+      exchanges_for_current_server[name] = create_exchange!(name, opts)
     end
 
     def bind_queues(messages)
