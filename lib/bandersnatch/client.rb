@@ -2,8 +2,8 @@ module Bandersnatch
   class Client
     def initialize
       # TODO: refactoring helper code, will be replaced
-      @publisher = Publisher.new(:pub)
-      @subscriber = Subscriber.new(:sub)
+      @publisher = Publisher.new
+      @subscriber = Subscriber.new
     end
 
     # TODO: refactoring helper code, will be replaced
