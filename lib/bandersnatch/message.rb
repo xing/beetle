@@ -53,7 +53,11 @@ module Bandersnatch
     end
 
     def self.redis
-      @redis ||= Redis.new
+      @redis ||= Redis.new(:host => "rofl")
+    end
+
+    def self.redis=redis
+      @redis = redis
     end
 
     private

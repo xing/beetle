@@ -7,6 +7,7 @@ module Bandersnatch
       @messages = {}
       @options = options
       load_config(options[:config_file])
+      Message.redis = Redis.new(@amqp_config[Bandersnatch.config.environment]["msg_id_store"].symbolize_keys)
     end
 
     def current_server
