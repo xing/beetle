@@ -2,11 +2,12 @@ module Bandersnatch
   class Client
     attr_reader :amqp_config, :servers, :messages
 
-    def initialize
+    def initialize(options = {})
       @servers = []
       @messages = {}
       @amqp_config = {}
-      load_config(nil) # JA MANN später!
+      @options = options
+      load_config(options[:config_file])
     end
 
     def current_server
@@ -26,7 +27,7 @@ module Bandersnatch
     end
 
     def test
-      error "testing only allowed in development environment" unless RAILS_ENV=="development"
+      error "testing only allowed in development environment" unless Bandersnatch.config.environment == "development"
       trap("INT") { exit(1) }
       while true
         publisher.publish "redundant", "hello, I'm redundant!"
@@ -49,10 +50,10 @@ module Bandersnatch
 
     private
 
-    def load_config(file_name=nil)
+    def load_config(file_name)
       file_name ||= Bandersnatch.config.config_file
       @amqp_config = YAML::load(ERB.new(IO.read(file_name)).result)
-      @servers = @amqp_config[RAILS_ENV]['hostname'].split(/ *, */)
+      @servers = @amqp_config[Bandersnatch.config.environment]['hostname'].split(/ *, */)
       @messages = @amqp_config['messages']
     end
 

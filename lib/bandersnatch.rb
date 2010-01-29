@@ -7,8 +7,6 @@ require 'uuid4r'
 require 'active_support'
 require 'redis'
 
-RAILS_ENV = ENV['RAILS_ENV'] || 'development' unless defined?(RAILS_ENV)
-
 module Bandersnatch
   lib_dir = File.dirname(__FILE__) + '/bandersnatch/'
   Dir["#{lib_dir}/*.rb"].each do |libfile|

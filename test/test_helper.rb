@@ -1,5 +1,3 @@
-RAILS_ENV = 'test'
-
 require 'rubygems'
 require 'active_support'
 require 'active_support/testing/declarative'
@@ -13,6 +11,7 @@ class Test::Unit::TestCase
 end
 
 Bandersnatch.configuration do |config|
+  config.environment = "test"
   config.config_file = File.expand_path(File.dirname(__FILE__) + '/bandersnatch.yml')
   config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end
