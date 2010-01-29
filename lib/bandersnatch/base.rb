@@ -29,6 +29,7 @@ module Bandersnatch
     end
 
     private
+
     def error(text)
       logger.error text
       raise Error.new(text)

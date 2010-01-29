@@ -72,6 +72,7 @@ module Bandersnatch
     end
 
     private
+
     def bunny
       @bunnies[@server] ||= new_bunny
     end
