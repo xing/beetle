@@ -22,6 +22,10 @@ module Bandersnatch
       subscriber.listen
     end
 
+    def stop_listening
+      Em.stop_event_loop
+    end
+
     def register_handler(messages, opts, &block)
       subscriber.register_handler(messages, opts, &block)
     end
