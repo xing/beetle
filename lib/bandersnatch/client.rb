@@ -14,7 +14,7 @@ module Bandersnatch
     end
 
     def publish(message_name, data, opts={})
-      publisher.publish(message_name, data, opts={})
+      publisher.publish(message_name, data, opts)
     end
 
     def listen
@@ -22,7 +22,7 @@ module Bandersnatch
     end
 
     def stop_listening
-      EM.stop_event_loop
+      subscriber.stop
     end
 
     def register_handler(messages, opts, &block)
@@ -52,8 +52,9 @@ module Bandersnatch
     end
 
     def autoload(glob)
+      b = binding
       Dir[glob].each do |f|
-        eval(File.read f)
+        eval(File.read(f), b, f)
       end
     end
 

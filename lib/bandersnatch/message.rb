@@ -57,26 +57,26 @@ module Bandersnatch
     end
 
     private
-      def redis
-        self.class.redis
-      end
 
-      def new_in_queue?(queue)
-        message_id = "msgid:#{queue}:#{uuid}"
-        new_message = redis.setnx(message_id, Time.now.to_s(:db))
-        redis.expire(message_id, EXPIRE_AFTER) rescue logger.error("error setting expiration date for #{message_id}\n#{$!}")
-        unless new_message
-          logger.debug "received duplicate message: #{message_id} on queue: #{queue} (identifier: #{message_id})"
-        end
-        new_message
-      end
+    def redis
+      self.class.redis
+    end
 
-      def logger
-        self.class.logger
+    def new_in_queue?(queue)
+      message_id = "msgid:#{queue}:#{uuid}"
+      new_message = redis.setnx(message_id, Time.now.to_s(:db))
+      unless new_message
+        logger.debug "received duplicate message: #{message_id} on queue: #{queue} (identifier: #{message_id})"
       end
+      new_message
+    end
 
-      def self.logger
-        Bandersnatch.config.logger
-      end
+    def logger
+      self.class.logger
+    end
+
+    def self.logger
+      Bandersnatch.config.logger
+    end
   end
 end
