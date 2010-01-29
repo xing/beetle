@@ -20,13 +20,7 @@ module Bandersnatch
   protected
 
   def self.config
-    @config ||=
-      begin
-        conf = Configuration.new
-        conf.logger = Logger.new(STDOUT)
-        conf.environment = ENV['RAILS_ENV'] || "development"
-        conf
-      end
+    @config ||= Configuration.new
   end
 
 end
