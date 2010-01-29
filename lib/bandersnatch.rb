@@ -19,13 +19,15 @@ module Bandersnatch
 
   protected
 
-    def self.config
-      @config ||= begin
+  def self.config
+    @config ||=
+      begin
         conf = Configuration.new
         conf.logger = Logger.new(STDOUT)
         conf.config_file = File.expand_path(File.dirname(__FILE__) + '/../config/bandersnatch.yml')
+        conf.environment = ENV['RAILS_ENV'] || "development"
         conf
       end
-    end
+  end
 
 end
