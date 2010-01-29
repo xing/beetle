@@ -76,8 +76,9 @@ module Bandersnatch
           elsif message.insert_id(queue)
             begin
               block.call(message)
-            rescue Exception
-              logger.warn "Error during invocation of message handler for #{message}"
+            rescue Exception => e
+              logger.warn "Exception '#{e}' during invocation of message handler for #{message}"
+              logger.warn "Backtrace: #{e.backtrace.join("\n")}"
             end
           end
 
