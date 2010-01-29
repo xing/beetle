@@ -9,15 +9,6 @@ module Bandersnatch
       @bunnies = {}
     end
 
-    def test
-      error "testing only allowed in development environment" unless RAILS_ENV=="development"
-      trap("INT") { exit(1) }
-      while true
-        publish "redundant", "hello, I'm redundant!"
-        sleep 1
-      end
-    end
-
     def publish(message_name, data, opts={})
       opts = (@messages[message_name]||{}).symbolize_keys.merge(opts.symbolize_keys)
       exchange_name = opts.delete(:exchange) || message_name

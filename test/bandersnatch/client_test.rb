@@ -30,7 +30,7 @@ module Bandersnatch
 
     test "should instanciate a subscriber when used for subscribing" do
       Subscriber.expects(:new).returns(stub_everything("subscriber"))
-      Client.new.subscribe(:foo_bar)
+      Client.new.register_handler(:superman, {}, &lambda{})
     end
 
     test "should instanciate a subscriber when used for publishing" do

@@ -13,23 +13,25 @@ module Bandersnatch
       @server
     end
 
-    # TODO: refactoring helper code, will be replaced
     def publish(message_name, data, opts={})
       publisher.publish(message_name, data, opts={})
     end
 
-    # TODO: refactoring helper code, will be replaced
-    def subscribe(messages = nil)
-      subscriber.subscribe(messages)
-    end
-
-    # TODO: refactoring helper code, will be replaced
-    def test
-      publisher.test
+    def listen
+      subscriber.listen
     end
 
     def register_handler(messages, opts, &block)
       subscriber.register_handler(messages, opts, &block)
+    end
+
+    def test
+      error "testing only allowed in development environment" unless RAILS_ENV=="development"
+      trap("INT") { exit(1) }
+      while true
+        publisher.publish "redundant", "hello, I'm redundant!"
+        sleep 1
+      end
     end
 
     def trace
