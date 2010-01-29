@@ -72,19 +72,10 @@ messages:
 development: &development
     hostname: localhost:5672, localhost:5673
     # hostname: localhost:5672
+    msg_id_store:
+      host: localhost
+      db: 4
 
 test:
     <<: *development
     hostname: localhost:5672
-
-edge:
-    <<: *development
-    hostname: ext-xeapp53-201
-
-preview:
-    <<: *development
-    hostname: ext-xeapp52-200
-
-production:
-    <<: *development
-    hostname: ext-xemq53-1
