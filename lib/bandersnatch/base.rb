@@ -76,12 +76,6 @@ module Bandersnatch
       exchanges_for_current_server[name] = create_exchange!(name, opts)
     end
 
-    def autoload(glob)
-      Dir[glob + '/**/config/amqp_messaging.rb'].each do |f|
-        eval(File.read f)
-      end
-    end
-
     def queues
       @queues[@server] ||= {}
     end
