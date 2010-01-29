@@ -170,7 +170,7 @@ module Bandersnatch
       @sub.messages = {"a" => 1, "b" => 2}
       @sub.expects(:subscribe_message).with("a").times(2)
       @sub.expects(:subscribe_message).with("b").times(2)
-      @sub.subscribe
+      @sub.send(:subscribe)
     end
 
     test "subscribe_message should subscribe with a subscription callback created from the registered block" do
