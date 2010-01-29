@@ -16,6 +16,10 @@ module Bandersnatch
       assert_equal({}, @sub.instance_variable_get("@mqs"))
     end
 
+    test "initially we should not be in trace mode" do
+      assert !@sub.trace
+    end
+
     test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
       @sub.expects(:new_amqp_connection).returns(42)
       # TODO: smarter way to test? what triggers the amqp_connection private method call?
@@ -52,7 +56,7 @@ module Bandersnatch
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @sub.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
+      @sub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -72,18 +76,18 @@ module Bandersnatch
     end
 
     test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @sub.exchanges_for_current_server)
-      assert !@sub.exchange_exists?("some_message")
+      assert_equal({}, @sub.send(:exchanges_for_current_server))
+      assert !@sub.send(:exchange_exists?, "some_message")
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @sub.register_exchange("some_exchange", "type" => "topic", "durable" => true)
+      @sub.instance_variable_get("@amqp_config")["exchanges"].merge!({ "some_exchange" => { "type" => "topic", "durable" => true } })
       m = mock("AMQP")
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
       @sub.expects(:mq).returns(m)
-      ex = @sub.exchange("some_exchange")
-      assert @sub.exchange_exists?("some_exchange")
-      ex2 = @sub.exchange("some_exchange")
+      ex = @sub.send(:exchange, "some_exchange")
+      assert @sub.send(:exchange_exists?, "some_exchange")
+      ex2 = @sub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
   end

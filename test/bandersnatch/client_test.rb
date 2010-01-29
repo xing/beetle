@@ -19,10 +19,6 @@ module Bandersnatch
       assert @client.messages.include? "deadletter"
       assert @client.messages.include? "test"
     end
-
-    test "initially we should not be in trace mode" do
-      assert !@client.instance_variable_get("@trace")
-    end
   end
 
   class ClientTest < Test::Unit::TestCase

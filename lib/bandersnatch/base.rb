@@ -28,6 +28,7 @@ module Bandersnatch
       stop!
     end
 
+    private
     def error(text)
       logger.error text
       raise Error.new(text)
@@ -40,10 +41,6 @@ module Bandersnatch
           bind_queue(name)
         end
       end
-    end
-
-    def register_exchange(name, opts)
-      @amqp_config["exchanges"][name] = opts.symbolize_keys
     end
 
     def register_queue(name, opts)
@@ -90,7 +87,9 @@ module Bandersnatch
 
     def bind_queue(name, trace = false)
       logger.debug("Binding #{name}")
-      opts = @amqp_config["queues"][name].dup
+      queue_opts = @amqp_config["queues"][name]
+      error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
+      opts = queue_opts.dup
       opts.symbolize_keys!
       exchange_name = opts.delete(:exchange) || name
       queue_name = name
@@ -103,7 +102,6 @@ module Bandersnatch
       queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
     end
 
-    private
     def current_host
       @server.split(':').first
     end
