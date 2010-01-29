@@ -3,7 +3,7 @@ module Bandersnatch
 
     PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]
 
-    def initialize(servers)
+    def initialize(client, options = {})
       super
       @dead_servers = {}
       @bunnies = {}
