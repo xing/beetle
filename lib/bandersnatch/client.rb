@@ -48,6 +48,7 @@ module Bandersnatch
     end
 
     private
+
     def load_config(file_name=nil)
       file_name ||= Bandersnatch.config.config_file
       @amqp_config = YAML::load(ERB.new(IO.read(file_name)).result)

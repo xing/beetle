@@ -28,6 +28,7 @@ module Bandersnatch
     end
 
     private
+
     def subscribe(messages=nil)
       messages ||= @messages.keys
       Array(messages).each do |message|
