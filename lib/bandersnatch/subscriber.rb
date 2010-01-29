@@ -21,6 +21,13 @@ module Bandersnatch
       end
     end
 
+    def register_handler(messages, opts, &block)
+      Array(messages).each do |message|
+        (@handlers[message] ||= []) << [opts.symbolize_keys, block]
+      end
+    end
+
+    private
     def subscribe(messages=nil)
       messages ||= @messages.keys
       Array(messages).each do |message|
@@ -31,13 +38,6 @@ module Bandersnatch
       end
     end
 
-    def register_handler(messages, opts, &block)
-      Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, block]
-      end
-    end
-
-    private
     def queues_with_handlers(messages)
       messages.map do |name|
         @handlers[name].map {|opts, _| opts[:queue] || name }
