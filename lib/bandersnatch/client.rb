@@ -3,7 +3,7 @@ module Bandersnatch
     attr_reader :amqp_config, :servers, :messages
 
     def initialize
-      @servers = {}
+      @servers = []
       @messages = {}
       @amqp_config = {}
       load_config(nil) # JA MANN später!
