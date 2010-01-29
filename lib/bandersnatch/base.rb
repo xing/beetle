@@ -1,6 +1,6 @@
 module Bandersnatch
-  class Error < StandardError; end
-  #
+  Error = Class.new(StandardError)
+
   # TODO TODO TODO FIXME
   # Refactorings incomming.
   # * extract to publisher and subscriber base classes
