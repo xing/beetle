@@ -5,7 +5,6 @@ module Bandersnatch
     def initialize(options = {})
       @servers = []
       @messages = {}
-      @amqp_config = {}
       @options = options
       load_config(options[:config_file])
     end
@@ -52,13 +51,29 @@ module Bandersnatch
       subscriber.listen
     end
 
+    def autoload(glob)
+      Dir[glob].each do |f|
+        eval(File.read f)
+      end
+    end
+
+    def logger
+      @logger ||= Bandersnatch.config.logger
+    end
+
     private
 
     def load_config(file_name)
-      file_name ||= Bandersnatch.config.config_file
-      @amqp_config = YAML::load(ERB.new(IO.read(file_name)).result)
+      @amqp_config = Hash.new {|hash, key| hash[key] = {}}
+      glob = file_name || Bandersnatch.config.config_file
+      Dir[glob].each do |file|
+        hash = YAML::load(ERB.new(IO.read(file)).result)
+        hash.each do |key, value|
+          @amqp_config[key].merge! value
+        end
+      end
+      @messages = @amqp_config["messages"]
       @servers = @amqp_config[Bandersnatch.config.environment]['hostname'].split(/ *, */)
-      @messages = @amqp_config['messages']
     end
 
     def publisher
