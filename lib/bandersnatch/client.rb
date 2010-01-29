@@ -23,7 +23,7 @@ module Bandersnatch
     end
 
     def stop_listening
-      Em.stop_event_loop
+      EM.stop_event_loop
     end
 
     def register_handler(messages, opts, &block)
