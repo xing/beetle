@@ -147,12 +147,12 @@ module Bandersnatch
     end
 
     test "initially there should be no queues for the current server" do
-      assert_equal({}, @pub.queues)
-      assert !@pub.queues["some_queue"]
+      assert_equal({}, @pub.send(:queues))
+      assert !@pub.send(:queues)["some_queue"]
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @pub.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
+      @pub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
       @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -160,8 +160,8 @@ module Bandersnatch
       m.expects(:queue).with("some_queue", :durable => true).returns(q)
       @pub.expects(:bunny).returns(m)
 
-      @pub.bind_queue("some_queue")
-      assert_equal q, @pub.queues["some_queue"]
+      @pub.send(:bind_queue, "some_queue")
+      assert_equal q, @pub.send(:queues)["some_queue"]
     end
   end
 
@@ -172,18 +172,18 @@ module Bandersnatch
     end
 
     test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @pub.exchanges_for_current_server)
-      assert !@pub.exchange_exists?("some_message")
+      assert_equal({}, @pub.send(:exchanges_for_current_server))
+      assert !@pub.send(:exchange_exists?, "some_message")
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @pub.register_exchange("some_exchange", "type" => "topic", "durable" => true)
       m = mock("Bunny")
       m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true).returns(42)
+      @pub.instance_variable_get("@amqp_config")["exchanges"].merge!({"some_exchange" => {:type => :topic, :durable => true}})
       @pub.expects(:bunny).returns(m)
-      ex = @pub.exchange("some_exchange")
-      assert @pub.exchange_exists?("some_exchange")
-      ex2 = @pub.exchange("some_exchange")
+      ex  = @pub.send(:exchange, "some_exchange")
+      assert @pub.send(:exchange_exists?, "some_exchange")
+      ex2 = @pub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
   end
@@ -215,7 +215,7 @@ module Bandersnatch
       @pub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
       @pub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
       @pub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
-      @pub.create_exchanges(messages)
+      @pub.send(:create_exchanges, messages)
     end
 
     test "recycle_dead_servers should move servers from the dead server hash to the servers list only if the have been markd dead for longer than 10 seconds" do

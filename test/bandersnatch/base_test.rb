@@ -14,15 +14,9 @@ module Bandersnatch
       @bs = Base.new(Client.new)
     end
 
-    test "registering an exchange should store it in the configuration with symbolized option keys" do
-      opts = {"durable" => true}
-      @bs.register_exchange "some_exchange", opts
-      assert_equal({:durable => true}, @bs.amqp_config["exchanges"]["some_exchange"])
-    end
-
     test "registering a queue should store it in the configuration with symbolized option keys" do
       opts = {"durable" => true}
-      @bs.register_queue "some_queue", opts
+      @bs.send(:register_queue, "some_queue", opts)
       assert_equal({:durable => true}, @bs.amqp_config["queues"]["some_queue"])
     end
   end
