@@ -29,16 +29,6 @@ module Bandersnatch
       end
     end
 
-    def bunny
-      @bunnies[@server] ||= new_bunny
-    end
-
-    def new_bunny
-      b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging])
-      b.start
-      b
-    end
-
     def publish_with_failover(exchange_name, message_name, data, opts)
       tries = @servers.size
       logger.debug "sending #{message_name}"
@@ -91,6 +81,16 @@ module Bandersnatch
     end
 
     private
+    def bunny
+      @bunnies[@server] ||= new_bunny
+    end
+
+    def new_bunny
+      b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging])
+      b.start
+      b
+    end
+
     def recycle_dead_servers
       recycle = []
       @dead_servers.each do |s, dead_since|

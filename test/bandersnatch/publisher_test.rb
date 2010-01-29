@@ -10,7 +10,7 @@ module Bandersnatch
 
     test "acccessing a bunny for a server which doesn't have one should create it and associate it with the server" do
       @pub.expects(:new_bunny).returns(42)
-      assert_equal 42, @pub.bunny
+      assert_equal 42, @pub.send(:bunny)
       bunnies = @pub.instance_variable_get("@bunnies")
       assert_equal(42, bunnies[@pub.server])
     end
@@ -19,7 +19,7 @@ module Bandersnatch
       m = mock("dummy")
       Bunny.expects(:new).with(:host => @pub.send(:current_host), :port => @pub.send(:current_port), :logging => false).returns(m)
       m.expects(:start)
-      assert_equal m, @pub.new_bunny
+      assert_equal m, @pub.send(:new_bunny)
     end
 
     test "initially there should be no bunnies" do
