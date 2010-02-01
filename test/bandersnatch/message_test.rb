@@ -42,25 +42,165 @@ module Bandersnatch
     end
   end
 
-  class IdInsertionTest < Test::Unit::TestCase
+  class UUIdInsertionTest < Test::Unit::TestCase
     def setup
-      Message.redis.flushdb
+      @r = Message.redis
+      @r.flushdb
     end
 
-    test "the database should not be checked if the message has no uuid" do
+    test "no key should be inserted into the database if the message has no uuid" do
       body = Message.encode('my message', :with_uuid => false)
-      message = Message.new("somequeue", {}, body)
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
 
-      message.expects(:new_in_queue?).never
-      message.insert_id
+      assert !message.expired?
+      assert !message.redundant?
+
+      message.process(lambda {|*args|})
+
+      assert_nil @r.get(message.status_key)
+      assert_nil @r.get(message.timeout_key)
+      assert_nil @r.get(message.ack_count_key)
     end
 
-    test "inserting a messages uuid for the same queu into the database should fail the second time" do
+    test "processing a redundant message should insert the status key into the database" do
       body = Message.encode('my message', :with_uuid => true)
-      message = Message.new('some_queue', {}, body)
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
 
-      assert message.insert_id
-      assert !message.insert_id
+      assert !message.expired?
+      assert message.redundant?
+
+      message.process(lambda {|*args|})
+
+      assert @r.get(message.status_key)
+      assert @r.get(message.ack_count_key)
     end
   end
+
+
+  class AckingTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "an expired message should be acked without processing" do
+      body = Message.encode('my message', :ttl => -1)
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
+      assert message.expired?
+
+      processed = :njet
+      message.process(lambda {|*args| processed = true})
+      assert_equal :njet, processed
+    end
+
+    test "a redundant message should be acked after successful processing" do
+      body = Message.encode('my message', :with_uuid => true)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+
+      message.expects(:ack!)
+      assert message.redundant?
+      message.process(lambda {|*args|})
+    end
+
+    test "acking a redundant message should increment the ack_count key" do
+      body = Message.encode('my message', :with_uuid => true)
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
+
+      assert_equal nil, @r.get(message.ack_count_key)
+      message.process(lambda {|*args|})
+      assert message.redundant?
+      assert_equal 1, @r.get(message.ack_count_key).to_i
+    end
+
+    test "acking a redundant message twice should remove the ack_count key" do
+      body = Message.encode('my message', :with_uuid => true)
+      header = mock("header")
+      header.expects(:ack).twice
+      message = Message.new("somequeue", header, body)
+
+      message.process(lambda {|*args|})
+      message.process(lambda {|*args|})
+      assert message.redundant?
+      assert !@r.exists(message.ack_count_key)
+    end
+
+  end
+
+  class HandlerAckSequenceTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "a retriable, non redundant message should first run the handler and then be acked" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.retriable = true
+      assert message.retriable?
+      assert !message.redundant?
+
+      proc = mock("proc")
+      s = sequence("s")
+      proc.expects(:call).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      message.process(proc)
+    end
+
+    test "a non retriable, non redundant message should run the handler after being acked" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.retriable?
+      assert !message.redundant?
+
+      proc = mock("proc")
+      s = sequence("s")
+      header.expects(:ack).in_sequence(s)
+      proc.expects(:call).in_sequence(s)
+      message.process(proc)
+    end
+
+    test "a non retriable, redundant fresh message should run the handler after being acked" do
+      body = Message.encode('my message', :with_uuid => true)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.retriable?
+      assert message.redundant?
+
+      proc = mock("proc")
+      s = sequence("s")
+      header.expects(:ack).in_sequence(s)
+      proc.expects(:call).in_sequence(s)
+      message.process(proc)
+    end
+
+    test "a non retriable, redundant, existing message should not run the handler after being acked" do
+      body = Message.encode('my message', :with_uuid => true)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.retriable?
+      assert message.redundant?
+
+      # insert the key into the database
+      assert !message.key_exists?
+      assert message.key_exists?
+
+      proc = mock("proc")
+      header.expects(:ack)
+      proc.expects(:call).never
+      message.send(:process_internal, proc)
+    end
+
+  end
+
 end

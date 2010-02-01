@@ -6,6 +6,7 @@ module Bandersnatch
     EXPIRE_AFTER = 1.day
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
+    attr_accessor :retriable, :timeout
 
     def initialize(queue, header, body)
       @queue = queue
@@ -47,13 +48,42 @@ module Bandersnatch
     def has_uuid?
       !!@uuid
     end
+    alias_method :redundant?, :has_uuid?
 
-    def insert_id
-      return uuid.blank? || new_in_queue?
+    def retriable?
+      !!retriable
+    end
+
+    def set_timeout!
+      redis.set(timeout_key, Time.now.to_i + timeout)
+    end
+
+    def timed_out?
+      redis.get(timeout_key) < Time.now.to_i
+    end
+
+    def timeout!
+      redis.set(timeout_key, Time.now)
+    end
+
+    def completed?
+      redis.get(status_key) == "completed"
+    end
+
+    def completed!
+      redis.set(status_key, "completed")
+    end
+
+    def key_exists?
+      new_message = redis.setnx(status_key, "incomplete")
+      unless new_message
+        logger.debug "received duplicate message: #{status_key} on queue: #{@queue}"
+      end
+      !new_message
     end
 
     def self.redis
-      @redis ||= Redis.new(:host => "rofl")
+      @redis ||= Redis.new
     end
 
     def self.redis=redis
@@ -61,33 +91,96 @@ module Bandersnatch
     end
 
     def process(block)
-      if expired?
-        logger.warn "Message expired: #{uuid}"
-      elsif insert_id
-        begin
-          block.call(self)
-        rescue Exception => e
-          logger.warn "Exception '#{e}' during invocation of message handler for #{self}"
-          logger.warn "Backtrace: #{e.backtrace.join("\n")}"
-        end
+      begin
+        process_internal(block)
+      rescue Exception => e
+        logger.warn "Exception '#{e}' during invocation of message handler for #{self}"
+        logger.warn "Backtrace: #{e.backtrace.join("\n")}"
       end
+    end
 
-      ack!
+    def status_key
+      "msgid:#{queue}:#{uuid}:status"
+    end
+
+    def ack_count_key
+      "msgid:#{queue}:#{uuid}:ack_count"
+    end
+
+    def timeout_key
+      "msgid:#{queue}:#{uuid}:timeout"
     end
 
     private
 
-    def redis
-      self.class.redis
+    def process_internal(block)
+      if expired?
+        logger.warn "Ignored expired message!"
+        ack!
+        return
+      end
+
+      if redundant?
+        process_redundant_message(block)
+      else
+        process_non_redundant_message(block)
+      end
     end
 
-    def new_in_queue?
-      message_id = "msgid:#{queue}:#{uuid}"
-      new_message = redis.setnx(message_id, Time.now.to_s(:db))
-      unless new_message
-        logger.debug "received duplicate message: #{message_id} on queue: #{queue} (identifier: #{message_id})"
+    def run_handler_safely!
+      begin
+        block.call(self)
+      rescue Exception => e
+        timeout!
+        raise Fucked
       end
-      new_message
+      complete!
+      ack!
+    end
+
+    def process_non_redundant_message(block)
+      if retriable?
+        block.call(self)
+        ack!
+      else
+        ack!
+        block.call(self)
+      end
+    end
+
+    def process_redundant_message(block)
+      if retriable?
+        process_retriable_redundant_message(block)
+      else
+        process_non_retriable_redundant_message(block)
+      end
+    end
+
+    def process_non_retriable_redundant_message(block)
+      if key_exists?
+        ack!
+      else
+        ack!
+        block.call(self)
+      end
+    end
+
+    def process_retriable_redundant_message(block)
+      if !key_exists?
+        set_started_at!
+        run_handler_safely!
+      elsif completed?
+        ack!
+      elsif !timed_out?
+        raise Timeout
+      else
+        set_timeout!
+        run_handler_safely!
+      end
+    end
+
+    def redis
+      self.class.redis
     end
 
     def logger
@@ -100,6 +193,9 @@ module Bandersnatch
 
     def ack!
       header.ack
+      if redundant? && redis.incr(ack_count_key) == 2
+        redis.del(ack_count_key)
+      end
     end
   end
 end
