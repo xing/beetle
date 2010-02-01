@@ -5,10 +5,10 @@ module Bandersnatch
     DEFAULT_TTL = 1.days
     EXPIRE_AFTER = 1.day
 
-    attr_reader :server, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
+    attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
 
-    def initialize(server, header, body)
-      @server = server
+    def initialize(queue, header, body)
+      @queue = queue
       @header = header
       @body   = body
       decode
@@ -60,6 +60,21 @@ module Bandersnatch
       @redis = redis
     end
 
+    def process(block)
+      if expired?
+        logger.warn "Message expired: #{uuid}"
+      elsif insert_id(queue)
+        begin
+          block.call(self)
+        rescue Exception => e
+          logger.warn "Exception '#{e}' during invocation of message handler for #{self}"
+          logger.warn "Backtrace: #{e.backtrace.join("\n")}"
+        end
+      end
+
+      ack!
+    end
+
     private
 
     def redis
@@ -81,6 +96,10 @@ module Bandersnatch
 
     def self.logger
       Bandersnatch.config.logger
+    end
+
+    def ack!
+      header.ack
     end
   end
 end

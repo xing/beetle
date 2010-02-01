@@ -69,22 +69,9 @@ module Bandersnatch
     def create_subscription_callback(server, queue, block)
       lambda do |header,data|
         begin
-          message = Message.new(server, header, data)
-
-          if message.expired?
-            logger.warn "Message expired: #{message.uuid}"
-          elsif message.insert_id(queue)
-            begin
-              block.call(message)
-            rescue Exception => e
-              logger.warn "Exception '#{e}' during invocation of message handler for #{message}"
-              logger.warn "Backtrace: #{e.backtrace.join("\n")}"
-            end
-          end
-
-          header.ack
+          m = Message.new(server, header, data).process(block)
         rescue Exception
-          logger.error "Error during message processing. Message will get redelivered. #{message}\n #{$!}"
+          logger.error "Error during message processing. Message will get redelivered. #{m}\n #{$!}"
           @timer.cancel if @timer
           @timer = EM::Timer.new(RECOVER_AFTER) do
             logger.info "Redelivering unacked messages that could not be verified because of unavailable Redis"
