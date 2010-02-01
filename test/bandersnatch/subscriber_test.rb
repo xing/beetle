@@ -105,9 +105,8 @@ module Bandersnatch
       body = Message.encode('my message', :with_uuid => true)
       header = mock("header")
       header.expects(:ack)
-      message = Message.new("server", header, body)
 
-      Message.any_instance.expects(:insert_id).with(@queue).returns(true)
+      Message.any_instance.expects(:insert_id).returns(true)
       @handler.expects(:call)
       @callback.call(header, body)
     end
@@ -115,18 +114,17 @@ module Bandersnatch
     test "a message handler should not call the callback if the message id is already in the database" do
       body = Message.encode("my message", :with_uuid => true)
       header = mock("header")
-      message = Message.new("server", header, body)
       header.expects(:ack)
 
       @handler.expects(:call).never
-      Message.any_instance.expects(:insert_id).with(@queue).returns(false)
+      Message.any_instance.expects(:insert_id).returns(false)
       @callback.call(header, body)
     end
 
     test "the message callback should not get called and the message should not be ack'ed if the db check fails" do
       body = Message.encode("my message", :with_uuid => true)
       header = mock("header")
-      message = Message.new("server", header, body)
+      message = Message.new(@queue, header, body)
 
       header.expects(:ack).never
       Message.any_instance.expects(:insert_id).raises(Exception)
@@ -137,7 +135,7 @@ module Bandersnatch
     test "the internal timer should get refreshed for every failing db check" do
       body = Message.encode("my message", :with_uuid => true)
       header = mock("header")
-      message = Message.new("server", header, body)
+      message = Message.new(@queue, header, body)
       Message.any_instance.expects(:insert_id).raises(Exception)
       timer = mock("timer")
 
