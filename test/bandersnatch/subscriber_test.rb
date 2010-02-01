@@ -92,7 +92,7 @@ module Bandersnatch
     end
   end
 
-  class DeDuplificationTest < Test::Unit::TestCase
+  class TimerTest < Test::Unit::TestCase
     def setup
       client = Client.new
       @sub = Subscriber.new(client)
@@ -101,58 +101,16 @@ module Bandersnatch
       @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler)
     end
 
-    test 'a message handler should call the callback if the message id is not already in the database' do
-      body = Message.encode('my message', :with_uuid => true)
-      header = mock("header")
-      header.expects(:ack)
-
-      Message.any_instance.expects(:insert_id).returns(true)
-      @handler.expects(:call)
-      @callback.call(header, body)
-    end
-
-    test "a message handler should not call the callback if the message id is already in the database" do
-      body = Message.encode("my message", :with_uuid => true)
-      header = mock("header")
-      header.expects(:ack)
-
-      @handler.expects(:call).never
-      Message.any_instance.expects(:insert_id).returns(false)
-      @callback.call(header, body)
-    end
-
-    test "the message callback should not get called and the message should not be ack'ed if the db check fails" do
-      body = Message.encode("my message", :with_uuid => true)
+    test "the internal timer should get refreshed for every failed message processing" do
+      body = Message.encode("my message")
       header = mock("header")
       message = Message.new(@queue, header, body)
-
-      header.expects(:ack).never
-      Message.any_instance.expects(:insert_id).raises(Exception)
-      EM.expects(:add_timer).once
-      @callback.call(header, body)
-    end
-
-    test "the internal timer should get refreshed for every failing db check" do
-      body = Message.encode("my message", :with_uuid => true)
-      header = mock("header")
-      message = Message.new(@queue, header, body)
-      Message.any_instance.expects(:insert_id).raises(Exception)
+      Message.any_instance.expects(:process).raises(Exception)
       timer = mock("timer")
 
       timer.expects(:cancel).once
       EM::Timer.expects(:new).twice.returns(timer)
       @callback.call(header, body)
-      @callback.call(header, body)
-    end
-
-    test "expired messages should be silently dropped without inserting a uuid into the database" do
-      body = Message.encode("my message", :ttl => -1)
-      header = mock("header")
-      header.expects(:ack)
-      message = Message.new("server", header, body)
-
-      @handler.expects(:call).never
-      Message.any_instance.expects(:insert_id).never
       @callback.call(header, body)
     end
   end
