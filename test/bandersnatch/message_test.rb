@@ -49,18 +49,18 @@ module Bandersnatch
 
     test "the database should not be checked if the message has no uuid" do
       body = Message.encode('my message', :with_uuid => false)
-      message = Message.new("server", {}, body)
+      message = Message.new("somequeue", {}, body)
 
       message.expects(:new_in_queue?).never
-      message.insert_id('somequeue')
+      message.insert_id
     end
 
     test "inserting a messages uuid for the same queu into the database should fail the second time" do
       body = Message.encode('my message', :with_uuid => true)
-      message = Message.new('server', {}, body)
+      message = Message.new('some_queue', {}, body)
 
-      assert message.insert_id('somequeue')
-      assert !message.insert_id('somequeue')
+      assert message.insert_id
+      assert !message.insert_id
     end
   end
 end
