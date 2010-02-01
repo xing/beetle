@@ -48,8 +48,8 @@ module Bandersnatch
       !!@uuid
     end
 
-    def insert_id(queue)
-      return uuid.blank? || new_in_queue?(queue)
+    def insert_id
+      return uuid.blank? || new_in_queue?
     end
 
     def self.redis
@@ -63,7 +63,7 @@ module Bandersnatch
     def process(block)
       if expired?
         logger.warn "Message expired: #{uuid}"
-      elsif insert_id(queue)
+      elsif insert_id
         begin
           block.call(self)
         rescue Exception => e
@@ -81,7 +81,7 @@ module Bandersnatch
       self.class.redis
     end
 
-    def new_in_queue?(queue)
+    def new_in_queue?
       message_id = "msgid:#{queue}:#{uuid}"
       new_message = redis.setnx(message_id, Time.now.to_s(:db))
       unless new_message
