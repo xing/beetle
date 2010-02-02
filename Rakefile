@@ -17,8 +17,10 @@ namespace :test do
     t.test_files = FileList["test/**/*_test.rb"]
     t.output_dir = "test/coverage"
     t.verbose = true
-    #t.rcov_opts << '--aggregate coverage.data'
   end
+  task :coverage do
+    system 'open test/coverage/index.html'
+  end if RUBY_PLATFORM =~ /darwin/
 end
 
 
