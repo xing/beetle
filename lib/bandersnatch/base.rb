@@ -1,5 +1,7 @@
 module Bandersnatch
-  Error = Class.new(StandardError)
+  class Error < StandardError; end
+  class HandlerCrash < Error; end
+  class HandlerTimeout < Error; end
 
   # TODO TODO TODO FIXME
   # Refactorings incomming.

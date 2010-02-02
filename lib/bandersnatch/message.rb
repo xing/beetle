@@ -6,7 +6,7 @@ module Bandersnatch
     EXPIRE_AFTER = 1.day
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_accessor :retriable, :timeout
+    attr_accessor :retriable, :timeout, :server
 
     def initialize(queue, header, body)
       @queue = queue
@@ -59,11 +59,11 @@ module Bandersnatch
     end
 
     def timed_out?
-      redis.get(timeout_key) < Time.now.to_i
+      redis.get(timeout_key).to_i < Time.now.to_i
     end
 
-    def timeout!
-      redis.set(timeout_key, Time.now)
+    def timed_out!
+      redis.set(timeout_key, 0)
     end
 
     def completed?
@@ -72,6 +72,7 @@ module Bandersnatch
 
     def completed!
       redis.set(status_key, "completed")
+      timed_out!
     end
 
     def key_exists?
@@ -96,6 +97,7 @@ module Bandersnatch
       rescue Exception => e
         logger.warn "Exception '#{e}' during invocation of message handler for #{self}"
         logger.warn "Backtrace: #{e.backtrace.join("\n")}"
+        raise
       end
     end
 
@@ -131,14 +133,15 @@ module Bandersnatch
       end
     end
 
-    def run_handler_safely!
+    def run_handler_safely!(block)
+      set_timeout!
       begin
         block.call(self)
       rescue Exception => e
-        timeout!
-        raise Fucked
+        timed_out!
+        raise HandlerCrash.new(e)
       end
-      complete!
+      completed!
       ack!
     end
 
@@ -171,15 +174,13 @@ module Bandersnatch
 
     def process_retriable_redundant_message(block)
       if !key_exists?
-        set_started_at!
-        run_handler_safely!
+        run_handler_safely!(block)
       elsif completed?
         ack!
       elsif !timed_out?
-        raise Timeout
+        raise HandlerTimeout
       else
-        set_timeout!
-        run_handler_safely!
+        run_handler_safely!(block)
       end
     end
 

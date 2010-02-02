@@ -69,7 +69,8 @@ module Bandersnatch
     def create_subscription_callback(server, queue, block)
       lambda do |header,data|
         begin
-          m = Message.new(server, header, data)
+          m = Message.new(queue, header, data)
+          m.server = server
           m.process(block)
         rescue Exception
           logger.error "Error during message processing. Message will get redelivered. #{m}\n #{$!}"
