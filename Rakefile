@@ -1,6 +1,26 @@
 require 'rake'
 require 'rake/testtask'
 require 'lib/bandersnatch'
+require 'rcov/rcovtask'
+
+namespace :test do
+  namespace :coverage do
+    desc "Delete aggregate coverage data."
+    task(:clean) { rm_f "coverage.data" }
+  end
+
+  desc 'Aggregate code coverage'
+  task :coverage => "test:coverage:clean"
+
+  Rcov::RcovTask.new(:coverage) do |t|
+    t.libs << "test"
+    t.test_files = FileList["test/**/*_test.rb"]
+    t.output_dir = "test/coverage"
+    t.verbose = true
+    #t.rcov_opts << '--aggregate coverage.data'
+  end
+end
+
 
 namespace :bandersnatch do
   Bandersnatch.configuration do |config|
@@ -43,6 +63,7 @@ begin
     gemspec.add_dependency('activesupport', '>=2.3.4')
 
     gemspec.add_development_dependency('mocha')
+    gemspec.add_development_dependency('rcov')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
