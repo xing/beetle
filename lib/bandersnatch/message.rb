@@ -100,15 +100,19 @@ module Bandersnatch
     end
 
     def status_key
-      "msgid:#{queue}:#{uuid}:status"
+      keys[:status] ||= "msgid:#{queue}:#{uuid}:status"
     end
 
     def ack_count_key
-      "msgid:#{queue}:#{uuid}:ack_count"
+      keys[:ack_count] ||= "msgid:#{queue}:#{uuid}:ack_count"
     end
 
     def timeout_key
-      "msgid:#{queue}:#{uuid}:timeout"
+      keys[:timeout] ||= "msgid:#{queue}:#{uuid}:timeout"
+    end
+
+    def keys
+      @keys ||= {}
     end
 
     private
@@ -194,7 +198,7 @@ module Bandersnatch
     def ack!
       header.ack
       if redundant? && redis.incr(ack_count_key) == 2
-        redis.del(ack_count_key)
+        redis.del(*keys.values)
       end
     end
   end
