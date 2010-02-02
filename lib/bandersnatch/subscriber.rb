@@ -74,12 +74,16 @@ module Bandersnatch
           m.process(block)
         rescue Exception
           logger.error "Error during message processing. Message will get redelivered. #{m}\n #{$!}"
-          @timer.cancel if @timer
-          @timer = EM::Timer.new(RECOVER_AFTER) do
-            logger.info "Redelivering unacked messages that could not be verified because of unavailable Redis"
-            @mqs[server].recover(true)
-          end
+          install_recovery_timer(server)
         end
+      end
+    end
+
+    def install_recovery_timer(server)
+      @timer.cancel if @timer
+      @timer = EM::Timer.new(RECOVER_AFTER) do
+        logger.info "Redelivering unacked messages that could not be verified because of unavailable Redis"
+        @mqs[server].recover(true)
       end
     end
 
