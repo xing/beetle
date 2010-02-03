@@ -54,8 +54,8 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'bandersnatch'
-    gemspec.version = '0.0.2'
-    gemspec.summary = "Messages :P"
+    gemspec.version = '0.0.3'
+    gemspec.summary = "Reliable Messaging with AMQP"
     gemspec.description = "A high available/reliabile messaging infrastructure"
     gemspec.email = "developers@xing.com"
     gemspec.authors = ["Stefan Kaes", "Pascal Friederich"]

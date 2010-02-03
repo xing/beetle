@@ -22,6 +22,7 @@ module Bandersnatch
       @amqp_config = @client.amqp_config
       @server = @servers[rand @servers.size]
       @exchanges = {}
+      @queue_names_for_exchange = {}
       @queues = {}
       @trace = false
     end
@@ -53,15 +54,20 @@ module Bandersnatch
     def exchanges_for_current_server
       @exchanges[@server] ||= {}
     end
-    
+
+    def queue_names_for_exchange_name(exchange_name)
+      @queue_names_for_exchange[exchange_name] ||=
+        amqp_config["queues"].select{|queue, config| config["exchange"] == exchange_name || (config["exchange"].blank? && queue == exchange_name)}.map(&:first)
+    end
+
     def queue_name_for_message_name(message_name)
       ((m = @amqp_config["messages"][message_name]) && m["queue"]) || message_name
     end
-    
+
     def exchange_name_for_queue_name(queue_name)
       ((q = @amqp_config["queues"][queue_name]) && q["exchange"]) || queue_name
     end
-    
+
     def exchange_name_for_message_name(message_name)
       exchange_name_for_queue_name(queue_name_for_message_name(message_name))
     end
@@ -94,21 +100,28 @@ module Bandersnatch
       @queues[@server] ||= {}
     end
 
+    def queue_bound?(queue_name)
+      !!queues[queue_name]
+    end
+
     def bind_queue(name, trace = false)
-      logger.debug("Binding #{name}")
-      queue_opts = @amqp_config["queues"][name]
-      error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
-      opts = queue_opts.dup
-      opts.symbolize_keys!
-      exchange_name = opts.delete(:exchange) || name
-      queue_name = name
-      if @trace
-        opts.merge!(:durable => true, :auto_delete => true)
-        queue_name = "trace-#{name}-#{`hostname`.chomp}"
-      end
-      binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
-      creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
-      queues[name] = bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
+      queues[name] ||=
+        begin
+          logger.debug("Binding #{name}")
+          queue_opts = @amqp_config["queues"][name]
+          error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
+          opts = queue_opts.dup
+          opts.symbolize_keys!
+          exchange_name = opts.delete(:exchange) || name
+          queue_name = name
+          if @trace
+            opts.merge!(:durable => true, :auto_delete => true)
+            queue_name = "trace-#{name}-#{`hostname`.chomp}"
+          end
+          binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
+          creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
+          bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
+        end
     end
 
     def current_host

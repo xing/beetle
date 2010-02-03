@@ -27,6 +27,7 @@ module Bandersnatch
       published = 0
       begin
         select_next_server
+        bind_queues_for_exchange(exchange_name)
         logger.debug "trying to send #{message_name} to #{@server}"
         exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
         logger.debug "message sent!"
@@ -53,6 +54,7 @@ module Bandersnatch
         break if published == 2 || @servers.size < 2
         begin
           select_next_server
+          bind_queues_for_exchange(exchange_name)
           logger.debug "trying to send #{message_name} to #{@server}"
           exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
           published += 1
@@ -108,6 +110,10 @@ module Bandersnatch
       bunny.exchange(name, opts)
     end
 
+    def bind_queues_for_exchange(exchange_name)
+      queue_names_for_exchange_name(exchange_name).each {|q| bind_queue(q) } if queues.empty?
+    end
+
     # TODO: Refactor, fethch the keys and stuff itself
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = bunny.queue(queue_name, creation_keys)
@@ -122,6 +128,7 @@ module Bandersnatch
       end
       @bunnies[@server] = nil
       @exchanges[@server] = {}
+      @queues[@server] = {}
     end
   end
 end
