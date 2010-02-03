@@ -165,6 +165,33 @@ module Bandersnatch
       @pub.send(:bind_queue, "some_queue")
       assert_equal q, @pub.send(:queues)["some_queue"]
     end
+
+    test "should bind the defined queues for the used exchanges when publishing" do
+      @pub.amqp_config['exchanges'] = {'test_exchange' => {}}
+      @pub.amqp_config['queues'] = {'test_queue_1' => {'exchange' => 'test_exchange'}, 'test_queue_2' => {'exchange' => 'test_exchange'}}
+      @pub.expects(:bind_queue).with('test_queue_1')
+      @pub.expects(:bind_queue).with('test_queue_2')
+      @pub.send(:bind_queues_for_exchange, 'test_exchange')
+    end
+
+    test "should not rebind the defined queues for the used exchanges if they already have been bound" do
+      @pub.amqp_config['exchanges'] = {'test_exchange' => {}}
+      @pub.amqp_config['queues'] = {'test_queue_1' => {'exchange' => 'test_exchange'}, 'test_queue_2' => {'exchange' => 'test_exchange'}}
+      @pub.expects(:bind_queue!).twice
+      @pub.send(:bind_queues_for_exchange, 'test_exchange')
+      @pub.send(:bind_queues_for_exchange, 'test_exchange')
+    end
+
+    test "call the queue binding method when publishing" do
+      data = "XXX"
+      opts = {}
+      @pub.expects(:exchange_name_for_message_name).with('mama').returns('mama-exchange')
+      @pub.messages["mama"] = {:ttl => 1.hour}
+      e = stub('exchange', 'publish')
+      @pub.expects(:exchange).with('mama-exchange').returns(e)
+      @pub.expects(:bind_queues_for_exchange).with('mama-exchange').returns(true)
+      @pub.publish('mama', data)
+    end
   end
 
   class PublisherExchangeManagementTest < Test::Unit::TestCase
@@ -211,7 +238,7 @@ module Bandersnatch
       messages = %w(a b)
       @pub.amqp_config['messages'] = {'a' => {'queue' => 'donald'}, 'b' => {'queue' => 'mickey'}}
       @pub.amqp_config['queues'] = {'donald' => {'exchange' => 'margot'}, 'mickey' => {}}
-      
+
       exchange_creation = sequence("exchange creation")
       @pub.messages = []
       @pub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
