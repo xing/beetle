@@ -54,7 +54,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'bandersnatch'
-    gemspec.version = '0.0.1'
+    gemspec.version = '0.0.2'
     gemspec.summary = "Messages :P"
     gemspec.description = "A high available/reliabile messaging infrastructure"
     gemspec.email = "developers@xing.com"
