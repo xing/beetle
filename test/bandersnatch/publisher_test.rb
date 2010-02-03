@@ -40,8 +40,9 @@ module Bandersnatch
     test "publishing should try to recycle dead servers before trying to publish the message" do
       publishing = sequence('publishing')
       data = "XXX"
+      @pub.expects(:exchange_name_for_message_name).with('mama').returns('mama-exchange')
       @pub.expects(:recycle_dead_servers).in_sequence(publishing)
-      @pub.expects(:publish_with_failover).with("mama", "mama", data, {}).in_sequence(publishing)
+      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", data, {}).in_sequence(publishing)
       @pub.publish("mama", data)
     end
 
@@ -134,8 +135,9 @@ module Bandersnatch
     test "publishing should use the message ttl from the message configuration if no ttl is passed in via the options hash" do
       data = "XXX"
       opts = {}
+      @pub.expects(:exchange_name_for_message_name).with('mama').returns('mama-exchange')
       @pub.messages["mama"] = {:ttl => 1.hour}
-      @pub.expects(:publish_with_failover).with("mama", "mama", data, :ttl => 1.hour).returns(1)
+      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", data, :ttl => 1.hour).returns(1)
       assert_equal 1, @pub.publish("mama", data)
     end
   end
@@ -207,14 +209,17 @@ module Bandersnatch
     test "should create exchanges for all registered messages and servers" do
       @pub.servers = %w(x y)
       messages = %w(a b)
+      @pub.amqp_config['messages'] = {'a' => {'queue' => 'donald'}, 'b' => {'queue' => 'mickey'}}
+      @pub.amqp_config['queues'] = {'donald' => {'exchange' => 'margot'}, 'mickey' => {}}
+      
       exchange_creation = sequence("exchange creation")
       @pub.messages = []
       @pub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
       @pub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("a").in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("b").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
+      @pub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
       @pub.send(:create_exchanges, messages)
     end
 
