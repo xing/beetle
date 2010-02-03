@@ -53,6 +53,18 @@ module Bandersnatch
     def exchanges_for_current_server
       @exchanges[@server] ||= {}
     end
+    
+    def queue_name_for_message_name(message_name)
+      ((m = @amqp_config["messages"][message_name]) && m["queue"]) || message_name
+    end
+    
+    def exchange_name_for_queue_name(queue_name)
+      ((q = @amqp_config["queues"][queue_name]) && q["exchange"]) || queue_name
+    end
+    
+    def exchange_name_for_message_name(message_name)
+      exchange_name_for_queue_name(queue_name_for_message_name(message_name))
+    end
 
     def exchange(name)
       create_exchange(name) unless exchange_exists?(name)
@@ -66,8 +78,8 @@ module Bandersnatch
     def create_exchanges(messages)
       @servers.each do |s|
         set_current_server s
-        messages.each do |name|
-          create_exchange(name)
+        messages.each do |message|
+          create_exchange(exchange_name_for_message_name(message))
         end
       end
     end

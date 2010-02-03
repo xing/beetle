@@ -11,7 +11,7 @@ module Bandersnatch
 
     def publish(message_name, data, opts={})
       opts = (@messages[message_name]||{}).symbolize_keys.merge(opts.symbolize_keys)
-      exchange_name = opts.delete(:exchange) || message_name
+      exchange_name = opts.delete(:exchange) || exchange_name_for_message_name(message_name)
       recycle_dead_servers
       if opts[:redundant]
         publish_with_redundancy(exchange_name, message_name, data, opts)
