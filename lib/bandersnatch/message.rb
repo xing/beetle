@@ -1,7 +1,7 @@
 module Bandersnatch
   class Message
     FORMAT_VERSION = 1
-    FLAG_UUID = 1
+    FLAG_REDUNDANT = 2
     DEFAULT_TTL = 1.days
     EXPIRE_AFTER = 1.day
 
@@ -16,25 +16,18 @@ module Bandersnatch
     end
 
     def decode
-      @format_version, @flags, @expires_at, @data = @body.unpack("nnNA*")
-      if (@flags & FLAG_UUID == FLAG_UUID)
-        @uuid, @data = @data.unpack("A36A*")
-      else
-        @uuid = nil
-      end
-    end
-
-    def expired?(expiration_time = Time.now.to_i)
-      @expires_at < expiration_time
+      @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
     end
 
     def self.encode(data, opts = {})
       expires_at = ttl_to_expiration_time(opts[:ttl] || DEFAULT_TTL)
-      if opts[:with_uuid]
-        [FORMAT_VERSION, FLAG_UUID, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
-      else
-        [FORMAT_VERSION, 0, expires_at, data.to_s].pack("nnNA*")
-      end
+      flags = 0
+      flags |= FLAG_REDUNDANT if opts[:redundant]
+      [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
+    end
+
+    def expired?(expiration_time = Time.now.to_i)
+      @expires_at < expiration_time
     end
 
     def self.ttl_to_expiration_time(ttl)
@@ -45,10 +38,9 @@ module Bandersnatch
       UUID4R::uuid(1)
     end
 
-    def has_uuid?
-      !!@uuid
+    def redundant?
+      @flags & FLAG_REDUNDANT == FLAG_REDUNDANT
     end
-    alias_method :redundant?, :has_uuid?
 
     def retriable?
       !!retriable
