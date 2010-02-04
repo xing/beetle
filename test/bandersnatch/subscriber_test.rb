@@ -140,7 +140,6 @@ module Bandersnatch
         assert_equal header, m.header
         assert_equal "data", m.data
         assert_equal server, m.server
-        assert_nil m.uuid
       end
       @sub.register_handler("some_message", opts, &proc)
       q = mock("QUEUE")

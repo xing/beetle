@@ -49,7 +49,7 @@ module Bandersnatch
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = 0
-      data = Message.encode(data, :with_uuid => true, :ttl => opts[:ttl])
+      data = Message.encode(data, :redundant => true, :ttl => opts[:ttl])
       loop do
         break if published == 2 || @servers.size < 2
         begin

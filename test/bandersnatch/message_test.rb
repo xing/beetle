@@ -5,39 +5,31 @@ module Bandersnatch
     test "a message should encode/decode the message format version correctly" do
       body = Message.encode("12345")
       header = mock("header")
-      m = Message.new("server", header, body)
+      m = Message.new("queue", header, body)
       assert_equal Message::FORMAT_VERSION, m.format_version
     end
 
-    test "a message with uuid should have a uuid and the uuid flag set" do
-      body = Message.encode("12345", :with_uuid => true)
+    test "a redundantly encoded message should have the redundant flag set on delivery" do
+      body = Message.encode("12345", :redundant => true)
       header = mock("header")
-      m = Message.new("server", header, body)
-      assert m.has_uuid?
-      assert_equal(Message::FLAG_UUID, m.flags & Message::FLAG_UUID)
-    end
-
-    test "a message without uuid should have a nil uuid and the uuid flag not set" do
-      body = Message.encode("12345")
-      header = mock("header")
-      m = Message.new("server", header, body)
-      assert !m.has_uuid?
-      assert_equal(0, m.flags & Message::FLAG_UUID)
+      m = Message.new("queue", header, body)
+      assert m.redundant?
+      assert_equal(Message::FLAG_REDUNDANT, m.flags & Message::FLAG_REDUNDANT)
     end
 
     test "encoding a message should set an expiration date" do
       Message.expects(:ttl_to_expiration_time).with(17).returns(42)
       body = Message.encode("12345", :ttl => 17)
       header = mock("header")
-      m = Message.new("server", header, body)
+      m = Message.new("queue", header, body)
       assert_equal 42, m.expires_at
     end
 
-    test "encoding a message should set the default expiration date if noe is provided in the call to encode" do
+    test "encoding a message should set the default expiration date if none is provided in the call to encode" do
       Message.expects(:ttl_to_expiration_time).with(Message::DEFAULT_TTL).returns(42)
       body = Message.encode("12345")
       header = mock("header")
-      m = Message.new("server", header, body)
+      m = Message.new("queue", header, body)
       assert_equal 42, m.expires_at
     end
   end
@@ -49,7 +41,7 @@ module Bandersnatch
     end
 
     test "no key should be inserted into the database if the message has no uuid" do
-      body = Message.encode('my message', :with_uuid => false)
+      body = Message.encode('my message', :redundant => false)
       header = mock("header")
       header.expects(:ack)
       message = Message.new("somequeue", header, body)
@@ -65,7 +57,7 @@ module Bandersnatch
     end
 
     test "processing a redundant message should insert the status key into the database" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack)
       message = Message.new("somequeue", header, body)
@@ -100,7 +92,7 @@ module Bandersnatch
     end
 
     test "a redundant message should be acked after successful processing" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
 
@@ -110,7 +102,7 @@ module Bandersnatch
     end
 
     test "acking a redundant message should increment the ack_count key" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack)
       message = Message.new("somequeue", header, body)
@@ -122,7 +114,7 @@ module Bandersnatch
     end
 
     test "acking a redundant message twice should remove the ack_count key" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack).twice
       message = Message.new("somequeue", header, body)
@@ -171,7 +163,7 @@ module Bandersnatch
     end
 
     test "a non retriable, redundant fresh message should run the handler after being acked" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       assert !message.retriable?
@@ -185,7 +177,7 @@ module Bandersnatch
     end
 
     test "a non retriable, redundant, existing message should not run the handler after being acked" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       assert !message.retriable?
@@ -202,7 +194,7 @@ module Bandersnatch
     end
 
     test "a retriable, redundant, fresh message should be acked after running the handler, and the ack count should be 1, and the status should be completed" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.retriable = true
@@ -220,7 +212,7 @@ module Bandersnatch
     end
 
     test "a retriable, redundant, fresh message should not be acked if running the handler crashes, the status should be incomplete and the timeout should be 0" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.retriable = true
@@ -238,7 +230,7 @@ module Bandersnatch
     end
 
     test "a retriable, redundant, existing message should be just acked if the status is complete" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.retriable = true
@@ -256,7 +248,7 @@ module Bandersnatch
     end
 
     test "a retriable, redundant, existing, incomplete, timed out message should be processed again" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.retriable = true
@@ -277,7 +269,7 @@ module Bandersnatch
     end
 
     test "a retriable, redundant, existing, incomplete, not yet timed out message should be processed later" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.retriable = true
@@ -302,7 +294,7 @@ module Bandersnatch
   class ProcessingTest < Test::Unit::TestCase
 
     test "processing a message catches exceptions risen by process_internal and reraises them" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       e = Exception.new
@@ -323,7 +315,7 @@ module Bandersnatch
     end
 
     test "completed! should store the status 'complete' in the database" do
-      body = Message.encode('my message', :with_uuid => true)
+      body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       assert !message.completed?
