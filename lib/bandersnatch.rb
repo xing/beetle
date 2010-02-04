@@ -8,6 +8,12 @@ require 'active_support'
 require 'redis'
 
 module Bandersnatch
+
+  class Error < StandardError; end
+  class HandlerCrash < Error; end
+  class HandlerTimeout < Error; end
+  class AttemptsLimitReached < Error; end
+
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/bandersnatch/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|
     autoload File.basename(libfile)[/(.*)\.rb/, 1].capitalize, libfile

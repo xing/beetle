@@ -4,14 +4,20 @@ module Bandersnatch
     FLAG_REDUNDANT = 2
     DEFAULT_TTL = 1.days
     EXPIRE_AFTER = 1.day
+    DEFAULT_HANDLER_TIMEOUT = 300.seconds
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 60.seconds
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_accessor :retriable, :timeout, :server
+    attr_accessor :timeout, :delay, :server, :attempts_limit
 
     def initialize(queue, header, body)
       @queue = queue
       @header = header
       @body   = body
+      @timeout = DEFAULT_HANDLER_TIMEOUT
+      @attempts_limit = DEFAULT_HANDLER_EXECUTION_ATTEMPTS
+      @delay = DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
       decode
     end
 
@@ -43,7 +49,7 @@ module Bandersnatch
     end
 
     def retriable?
-      !!retriable
+      attempts_limit > 1
     end
 
     def set_timeout!
@@ -65,6 +71,22 @@ module Bandersnatch
     def completed!
       redis.set(status_key, "completed")
       timed_out!
+    end
+
+    def delayed?
+      (t = redis.get(delay_key)) && t.to_i > Time.now.to_i
+    end
+
+    def set_delay!
+      redis.set(delay_key, Time.now.to_i + delay)
+    end
+
+    def increment_execution_attempts!
+      redis.incr(execution_attempts_key)
+    end
+
+    def attempts_limit_reached?
+      (limit = redis.get(execution_attempts_key)) && limit.to_i >= attempts_limit
     end
 
     def key_exists?
@@ -105,6 +127,18 @@ module Bandersnatch
       keys[:timeout] ||= "msgid:#{queue}:#{uuid}:timeout"
     end
 
+    def delay_key
+      keys[:delay] ||= "msgid:#{queue}:#{uuid}:delay"
+    end
+
+    def execution_attempts_key
+      keys[:attempts] ||= "msgid:#{queue}:#{uuid}:attempts"
+    end
+
+    def all_keys
+      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key]
+    end
+
     def keys
       @keys ||= {}
     end
@@ -118,62 +152,37 @@ module Bandersnatch
         return
       end
 
-      if redundant?
-        process_redundant_message(block)
-      else
-        process_non_redundant_message(block)
+      if delayed?
+        logger.warn "Ignored delayed message!"
+        return
       end
-    end
 
-    def run_handler_safely!(block)
-      set_timeout!
-      begin
-        block.call(self)
-      rescue Exception => e
-        timed_out!
-        raise HandlerCrash.new(e)
-      end
-      completed!
-      ack!
-    end
-
-    def process_non_redundant_message(block)
-      if retriable?
-        block.call(self)
-        ack!
-      else
-        ack!
-        block.call(self)
-      end
-    end
-
-    def process_redundant_message(block)
-      if retriable?
-        process_retriable_redundant_message(block)
-      else
-        process_non_retriable_redundant_message(block)
-      end
-    end
-
-    def process_non_retriable_redundant_message(block)
-      if key_exists?
-        ack!
-      else
-        ack!
-        block.call(self)
-      end
-    end
-
-    def process_retriable_redundant_message(block)
       if !key_exists?
-        run_handler_safely!(block)
+        run_handler!(block)
       elsif completed?
         ack!
       elsif !timed_out?
         raise HandlerTimeout
+      elsif attempts_limit_reached?
+        ack!
+        raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
       else
-        run_handler_safely!(block)
+        run_handler!(block)
       end
+    end
+
+    def run_handler!(block)
+      set_timeout!
+      increment_execution_attempts!
+      begin
+        block.call(self)
+      rescue Exception => e
+        timed_out!
+        set_delay!
+        raise HandlerCrash.new(e)
+      end
+      completed!
+      ack!
     end
 
     def redis
@@ -190,8 +199,8 @@ module Bandersnatch
 
     def ack!
       header.ack
-      if redundant? && redis.incr(ack_count_key) == 2
-        redis.del(*keys.values)
+      if !redundant? || redis.incr(ack_count_key) == 2
+        redis.del(all_keys)
       end
     end
   end

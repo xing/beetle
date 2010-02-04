@@ -34,13 +34,13 @@ module Bandersnatch
     end
   end
 
-  class UUIdInsertionTest < Test::Unit::TestCase
+  class KeyManagementTest < Test::Unit::TestCase
     def setup
       @r = Message.redis
       @r.flushdb
     end
 
-    test "no key should be inserted into the database if the message has no uuid" do
+    test "pocessing a non redundant message should delete all keys from the database" do
       body = Message.encode('my message', :redundant => false)
       header = mock("header")
       header.expects(:ack)
@@ -51,12 +51,12 @@ module Bandersnatch
 
       message.process(lambda {|*args|})
 
-      assert_nil @r.get(message.status_key)
-      assert_nil @r.get(message.timeout_key)
-      assert_nil @r.get(message.ack_count_key)
+      message.all_keys.each do |key|
+        assert !@r.exists(key)
+      end
     end
 
-    test "processing a redundant message should insert the status key into the database" do
+    test "processing a redundant message once should insert the status key into the database" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack)
@@ -67,8 +67,26 @@ module Bandersnatch
 
       message.process(lambda {|*args|})
 
-      assert @r.get(message.status_key)
-      assert @r.get(message.ack_count_key)
+      assert @r.exists(message.status_key)
+      assert @r.exists(message.execution_attempts_key)
+      assert @r.exists(message.timeout_key)
+    end
+
+    test "processing a redundant message twice should not leave any key in the database" do
+      body = Message.encode('my message', :redundant => true)
+      header = mock("header")
+      header.expects(:ack).twice
+      message = Message.new("somequeue", header, body)
+
+      assert !message.expired?
+      assert message.redundant?
+
+      message.process(lambda {|*args|})
+      message.process(lambda {|*args|})
+
+      message.all_keys.each do |key|
+        assert !@r.exists(key)
+      end
     end
   end
 
@@ -137,8 +155,8 @@ module Bandersnatch
       body = Message.encode('my message')
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
-      assert message.retriable?
+      message.attempts_limit = 2
+      assert !message.attempts_limit_reached?
       assert !message.redundant?
 
       proc = mock("proc")
@@ -148,31 +166,17 @@ module Bandersnatch
       message.process(proc)
     end
 
-    test "a non retriable, non redundant message should run the handler after being acked" do
-      body = Message.encode('my message')
-      header = mock("header")
-      message = Message.new("somequeue", header, body)
-      assert !message.retriable?
-      assert !message.redundant?
-
-      proc = mock("proc")
-      s = sequence("s")
-      header.expects(:ack).in_sequence(s)
-      proc.expects(:call).in_sequence(s)
-      message.process(proc)
-    end
-
-    test "a non retriable, redundant fresh message should run the handler after being acked" do
+    test "a non retriable, redundant fresh message should ack after running the handler" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      assert !message.retriable?
+      assert !message.attempts_limit_reached?
       assert message.redundant?
 
       proc = mock("proc")
       s = sequence("s")
-      header.expects(:ack).in_sequence(s)
       proc.expects(:call).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
       message.process(proc)
     end
 
@@ -180,8 +184,11 @@ module Bandersnatch
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      assert !message.retriable?
+      message.increment_execution_attempts!
+      assert message.attempts_limit_reached?
       assert message.redundant?
+      assert !message.completed?
+      assert message.timed_out?
 
       # insert the key into the database
       assert !message.key_exists?
@@ -190,16 +197,15 @@ module Bandersnatch
       proc = mock("proc")
       header.expects(:ack)
       proc.expects(:call).never
-      message.send(:process_internal, proc)
+      assert_raises(AttemptsLimitReached) { message.send(:process_internal, proc) }
     end
 
     test "a retriable, redundant, fresh message should be acked after running the handler, and the ack count should be 1, and the status should be completed" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
       message.timeout = 10.seconds
-      assert message.retriable?
+      assert !message.attempts_limit_reached?
       assert message.redundant?
 
       proc = mock("proc")
@@ -215,9 +221,8 @@ module Bandersnatch
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
       message.timeout = 10.seconds
-      assert message.retriable?
+      assert !message.attempts_limit_reached?
       assert message.redundant?
 
       proc = lambda {|*args| raise "crash"}
@@ -233,9 +238,7 @@ module Bandersnatch
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
       message.timeout = 10.seconds
-      assert message.retriable?
       assert message.redundant?
       message.completed!
 
@@ -247,16 +250,15 @@ module Bandersnatch
       assert message.timed_out?
     end
 
-    test "a retriable, redundant, existing, incomplete, timed out message should be processed again" do
+    test "a  message which has not reached its execution attempt limit, redundant, existing, incomplete, timed out should be processed again" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
       message.timeout = 0
       assert !message.key_exists?
       assert message.key_exists?
       assert message.timed_out?
-      assert message.retriable?
+      assert !message.attempts_limit_reached?
       assert message.redundant?
       assert !message.completed?
 
@@ -268,17 +270,16 @@ module Bandersnatch
       assert message.completed?
     end
 
-    test "a retriable, redundant, existing, incomplete, not yet timed out message should be processed later" do
+    test "a message which has not reached its execution attempt limit, redundant, existing, incomplete, not yet timed out should be processed later" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.retriable = true
       message.timeout = Time.now.to_i + 10.seconds
       message.set_timeout!
       assert !message.key_exists?
       assert message.key_exists?
       assert !message.timed_out?
-      assert message.retriable?
+      assert !message.attempts_limit_reached?
       assert message.redundant?
       assert !message.completed?
 
