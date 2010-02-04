@@ -105,7 +105,10 @@ module Bandersnatch
     end
 
     def new_amqp_connection
-      AMQP.connect(:host => current_host, :port => current_port)
+      # FIXME: wtf, how to test that reconnection feature....
+      con = AMQP.connect(:host => current_host, :port => current_port)
+      con.instance_variable_set("@on_disconnect", proc{ con.__send__(:reconnect) })
+      con
     end
 
     def amqp_connection
