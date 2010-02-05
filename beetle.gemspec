@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.4"
+  s.version = "0.0.5"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich"]
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files = [
     ".gitignore",
      "Rakefile",
-     "bandersnatch.gemspec",
+     "beetle.gemspec",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
      "lib/beetle/client.rb",
