@@ -21,9 +21,9 @@ module Beetle
       end
     end
 
-    def register_handler(messages, opts, &block)
+    def register_handler(messages, opts, handler=nil, &block)
       Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, Handler.create(block, opts)]
+        (@handlers[message] ||= []) << [opts.symbolize_keys, Handler.create(handler || block, opts)]
       end
     end
 
@@ -52,11 +52,11 @@ module Beetle
     def subscribe_message(message)
       handlers = Array(@handlers[message])
       error("no handler for message #{message}") if handlers.empty?
-      handlers.each do |opts, block|
+      handlers.each do |opts, handler|
         opts = opts.dup
         key = opts.delete(:key) || message
         queue = opts.delete(:queue) || message
-        callback = create_subscription_callback(@server, queue, block)
+        callback = create_subscription_callback(@server, queue, handler)
         logger.debug "subscribing to queue #{queue} with key #{key} for message #{message}"
         begin
           queues[queue].subscribe(opts.merge(:key => "#{key}.#"), &callback)
@@ -66,14 +66,14 @@ module Beetle
       end
     end
 
-    def create_subscription_callback(server, queue, block)
+    def create_subscription_callback(server, queue, handler)
       lambda do |header,data|
         begin
           m = Message.new(queue, header, data)
           m.server = server
-          m.process(block)
+          m.process(handler)
         rescue Exception => e
-          block.process_exception e
+          handler.process_exception e
           logger.error "Error during message processing. Message will get redelivered. #{m}\n #{e}"
           install_recovery_timer(server)
         end

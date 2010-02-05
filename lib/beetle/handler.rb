@@ -16,7 +16,6 @@ module Beetle
       @processor = processor
       @error_callback = error_callback
     end
-    private :initialize
 
     def call(message)
       @message = message

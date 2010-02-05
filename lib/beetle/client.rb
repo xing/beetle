@@ -26,8 +26,8 @@ module Beetle
       subscriber.stop
     end
 
-    def register_handler(messages, opts, &block)
-      subscriber.register_handler(messages, opts, &block)
+    def register_handler(*args, &block)
+      subscriber.register_handler(*args, &block)
     end
 
     def test
