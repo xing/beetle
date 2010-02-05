@@ -26,8 +26,8 @@ module Beetle
       end
     end
 
-    def process
-      logger.info "received message #{m.inspect}"
+    def process(message)
+      logger.info "received message #{message.inspect}"
     end
 
     def process_exception(exception)
@@ -46,7 +46,7 @@ module Beetle
     end
 
     def logger
-      self.class.logger
+      Beetle.config.logger
     end
 
     def self.logger
