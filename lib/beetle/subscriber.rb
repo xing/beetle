@@ -23,7 +23,7 @@ module Beetle
 
     def register_handler(messages, opts, &block)
       Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, block]
+        (@handlers[message] ||= []) << [opts.symbolize_keys, Handler.create(block, opts)]
       end
     end
 
@@ -72,8 +72,9 @@ module Beetle
           m = Message.new(queue, header, data)
           m.server = server
           m.process(block)
-        rescue Exception
-          logger.error "Error during message processing. Message will get redelivered. #{m}\n #{$!}"
+        rescue Exception => e
+          block.process_exception e
+          logger.error "Error during message processing. Message will get redelivered. #{m}\n #{e}"
           install_recovery_timer(server)
         end
       end
