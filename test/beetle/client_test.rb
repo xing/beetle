@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
-module Bandersnatch
+module Beetle
   class AMQPConfigTest < Test::Unit::TestCase
     def setup
       @client = Client.new

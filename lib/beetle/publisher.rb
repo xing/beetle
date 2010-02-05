@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   class Publisher < Base
 
     PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]

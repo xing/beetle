@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   # TODO TODO TODO FIXME
   # Refactorings incomming.
   # * extract to publisher and subscriber base classes
@@ -137,7 +137,7 @@ module Bandersnatch
     end
 
     def self.logger
-      Bandersnatch.config.logger
+      Beetle.config.logger
     end
   end
 end

@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
-module Bandersnatch
+module Beetle
   class BaseTest < Test::Unit::TestCase
     test "initially we should have no exchanges" do
       @bs = Base.new(Client.new)
@@ -9,7 +9,7 @@ module Bandersnatch
     end
   end
 
-  class BandersnatchHandlerRegistrationTest < Test::Unit::TestCase
+  class HandlerRegistrationTest < Test::Unit::TestCase
     def setup
       @bs = Base.new(Client.new)
     end

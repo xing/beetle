@@ -1,6 +1,6 @@
 require 'rake'
 require 'rake/testtask'
-require 'lib/bandersnatch'
+require 'lib/beetle'
 require 'rcov/rcovtask'
 
 namespace :test do
@@ -17,7 +17,7 @@ namespace :test do
     t.test_files = FileList["test/**/*_test.rb"]
     t.output_dir = "test/coverage"
     t.verbose = true
-    t.rcov_opts << "--exclude '.*' --include-file 'lib/bandersnatch/'"
+    t.rcov_opts << "--exclude '.*' --include-file 'lib/beetle/'"
   end
   task :coverage do
     system 'open test/coverage/index.html'
@@ -25,18 +25,18 @@ namespace :test do
 end
 
 
-namespace :bandersnatch do
-  Bandersnatch.configuration do |config|
-    config.config_file = File.dirname(__FILE__) + '/test/bandersnatch.yml'
+namespace :beetle do
+  Beetle.configuration do |config|
+    config.config_file = File.dirname(__FILE__) + '/test/beetle.yml'
   end
 
   task :test do
-    Bandersnatch::Client.new.test
+    Beetle::Client.new.test
   end
 
   task :trace do
     trap('INT'){ EM.stop_event_loop }
-    Bandersnatch::Client.new.trace
+    Beetle::Client.new.trace
   end
 end
 
@@ -53,7 +53,7 @@ end
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
-    gemspec.name    = 'bandersnatch'
+    gemspec.name    = 'beetle'
     gemspec.version = '0.0.3'
     gemspec.summary = "Reliable Messaging with AMQP"
     gemspec.description = "A high available/reliabile messaging infrastructure"

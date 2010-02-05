@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   class Client
     attr_reader :amqp_config, :servers, :messages
 
@@ -7,7 +7,7 @@ module Bandersnatch
       @messages = {}
       @options = options
       load_config(options[:config_file])
-      Message.redis = Redis.new(@amqp_config[Bandersnatch.config.environment]["msg_id_store"].symbolize_keys)
+      Message.redis = Redis.new(@amqp_config[Beetle.config.environment]["msg_id_store"].symbolize_keys)
     end
 
     def current_server
@@ -31,7 +31,7 @@ module Bandersnatch
     end
 
     def test
-      error "testing only allowed in development environment" unless Bandersnatch.config.environment == "development"
+      error "testing only allowed in development environment" unless Beetle.config.environment == "development"
       trap("INT") { exit(1) }
       while true
         publisher.publish "redundant", "hello, I'm redundant!"
@@ -60,14 +60,14 @@ module Bandersnatch
     end
 
     def logger
-      @logger ||= Bandersnatch.config.logger
+      @logger ||= Beetle.config.logger
     end
 
     private
 
     def load_config(file_name)
       @amqp_config = Hash.new {|hash, key| hash[key] = {}}
-      glob = file_name || Bandersnatch.config.config_file
+      glob = file_name || Beetle.config.config_file
       Dir[glob].each do |file|
         hash = YAML::load(ERB.new(IO.read(file)).result)
         hash.each do |key, value|
@@ -75,7 +75,7 @@ module Bandersnatch
         end
       end
       @messages = @amqp_config["messages"]
-      @servers = @amqp_config[Bandersnatch.config.environment]['hostname'].split(/ *, */)
+      @servers = @amqp_config[Beetle.config.environment]['hostname'].split(/ *, */)
     end
 
     def publisher

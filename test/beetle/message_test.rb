@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-module Bandersnatch
+module Beetle
   class EncodingTest < Test::Unit::TestCase
     test "a message should encode/decode the message format version correctly" do
       body = Message.encode("12345")
