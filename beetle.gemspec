@@ -4,36 +4,35 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{bandersnatch}
-  s.version = "0.0.3"
+  s.name = %q{beetle}
+  s.version = "0.0.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich"]
-  s.date = %q{2010-02-03}
-  s.default_executable = %q{start_rabbits}
+  s.date = %q{2010-02-05}
   s.description = %q{A high available/reliabile messaging infrastructure}
   s.email = %q{developers@xing.com}
-  s.executables = ["start_rabbits"]
   s.files = [
     ".gitignore",
      "Rakefile",
      "bandersnatch.gemspec",
-     "bin/start_rabbits",
-     "lib/bandersnatch.rb",
-     "lib/bandersnatch/base.rb",
-     "lib/bandersnatch/client.rb",
-     "lib/bandersnatch/configuration.rb",
-     "lib/bandersnatch/message.rb",
-     "lib/bandersnatch/publisher.rb",
-     "lib/bandersnatch/subscriber.rb",
-     "test/bandersnatch.yml",
-     "test/bandersnatch/base_test.rb",
-     "test/bandersnatch/client_test.rb",
-     "test/bandersnatch/configuration_test.rb",
-     "test/bandersnatch/message_test.rb",
-     "test/bandersnatch/publisher_test.rb",
-     "test/bandersnatch/subscriber_test.rb",
-     "test/bandersnatch_test.rb",
+     "lib/beetle.rb",
+     "lib/beetle/base.rb",
+     "lib/beetle/client.rb",
+     "lib/beetle/configuration.rb",
+     "lib/beetle/handler.rb",
+     "lib/beetle/message.rb",
+     "lib/beetle/publisher.rb",
+     "lib/beetle/subscriber.rb",
+     "script/start_rabbits",
+     "test/beetle.yml",
+     "test/beetle/base_test.rb",
+     "test/beetle/client_test.rb",
+     "test/beetle/configuration_test.rb",
+     "test/beetle/message_test.rb",
+     "test/beetle/publisher_test.rb",
+     "test/beetle/subscriber_test.rb",
+     "test/beetle_test.rb",
      "test/test_helper.rb"
   ]
   s.rdoc_options = ["--charset=UTF-8"]
@@ -41,13 +40,13 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.3.5}
   s.summary = %q{Reliable Messaging with AMQP}
   s.test_files = [
-    "test/bandersnatch/base_test.rb",
-     "test/bandersnatch/client_test.rb",
-     "test/bandersnatch/configuration_test.rb",
-     "test/bandersnatch/message_test.rb",
-     "test/bandersnatch/publisher_test.rb",
-     "test/bandersnatch/subscriber_test.rb",
-     "test/bandersnatch_test.rb",
+    "test/beetle/base_test.rb",
+     "test/beetle/client_test.rb",
+     "test/beetle/configuration_test.rb",
+     "test/beetle/message_test.rb",
+     "test/beetle/publisher_test.rb",
+     "test/beetle/subscriber_test.rb",
+     "test/beetle_test.rb",
      "test/test_helper.rb"
   ]
 
