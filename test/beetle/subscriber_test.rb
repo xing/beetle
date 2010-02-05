@@ -96,7 +96,7 @@ module Beetle
     def setup
       client = Client.new
       @sub = Subscriber.new(client)
-      @handler = mock("handler")
+      @handler = Handler.create(lambda{|*args|})
       @queue = 'somequeue'
       @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler)
     end
@@ -105,7 +105,9 @@ module Beetle
       body = Message.encode("my message")
       header = mock("header")
       message = Message.new(@queue, header, body)
-      Message.any_instance.expects(:process).raises(Exception)
+      exception = Exception.new "murks"
+      Message.any_instance.expects(:process).raises(exception).twice
+      @handler.expects(:process_exception).with(exception).twice
       timer = mock("timer")
 
       timer.expects(:cancel).once
@@ -177,7 +179,7 @@ module Beetle
       @sub.register_handler("some_message", opts){ |*args| 42 }
       opts, block = @sub.instance_variable_get("@handlers")["some_message"].first
       assert_equal({:ack => true}, opts)
-      assert_equal 42, block.call
+      assert_equal 42, block.call(1)
     end
 
     test "should allow registration of multiple handlers for a message" do
@@ -188,9 +190,9 @@ module Beetle
       handler1, handler2 = handlers
       assert_equal 2, handlers.size
       assert_equal "queue_1", handler1[0][:queue]
-      assert_equal "handler 1", handler1[1].call
+      assert_equal "handler 1", handler1[1].call(1)
       assert_equal "queue_2", handler2[0][:queue]
-      assert_equal "handler 2", handler2[1].call
+      assert_equal "handler 2", handler2[1].call(1)
     end
   end
 end
