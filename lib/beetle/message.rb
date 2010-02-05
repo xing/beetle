@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   class Message
     FORMAT_VERSION = 1
     FLAG_REDUNDANT = 2
@@ -194,7 +194,7 @@ module Bandersnatch
     end
 
     def self.logger
-      Bandersnatch.config.logger
+      Beetle.config.logger
     end
 
     def ack!

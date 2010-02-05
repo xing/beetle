@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   class Configuration
     attr_accessor :logger, :config_file, :environment
     def initialize

@@ -1,4 +1,4 @@
-module Bandersnatch
+module Beetle
   class Subscriber < Base
 
     attr_accessor :handlers
