@@ -45,8 +45,8 @@ module Beetle
       end.flatten
     end
 
-    def mq
-      @mqs[@server] ||= MQ.new(amqp_connection)
+    def mq(server=@server)
+      @mqs[server] ||= MQ.new(amqp_connection)
     end
 
     def subscribe_message(message)
@@ -84,7 +84,7 @@ module Beetle
       @timer.cancel if @timer
       @timer = EM::Timer.new(RECOVER_AFTER) do
         logger.info "Redelivering unacked messages that could not be verified because of unavailable Redis"
-        @mqs[server].recover(true)
+        mq(server).recover(true)
       end
     end
 

@@ -109,9 +109,12 @@ module Beetle
       Message.any_instance.expects(:process).raises(exception).twice
       @handler.expects(:process_exception).with(exception).twice
       timer = mock("timer")
+      mq = mock("mq")
+      mq.expects(:recover).with(true).twice
+      @sub.expects(:mq).with('servername').twice.returns(mq)
 
       timer.expects(:cancel).once
-      EM::Timer.expects(:new).twice.returns(timer)
+      EM::Timer.expects(:new).with(Subscriber::RECOVER_AFTER).twice.returns(timer).yields
       @callback.call(header, body)
       @callback.call(header, body)
     end
