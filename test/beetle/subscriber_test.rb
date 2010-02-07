@@ -42,6 +42,12 @@ module Beetle
       mqs = @sub.instance_variable_get("@mqs")
       assert_equal 42, mqs[@sub.server]
     end
+
+    test "stop! should stop the event loop" do
+      EM.expects(:stop_event_loop)
+      @sub.send(:stop!)
+    end
+
   end
 
   class SubscriberQueueManagementTest < Test::Unit::TestCase
