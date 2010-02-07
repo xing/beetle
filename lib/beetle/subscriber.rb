@@ -99,9 +99,6 @@ module Beetle
     end
 
     def stop!
-      @amqp_connections.each_value{|c| c.close}
-      @amqp_connections = {}
-      @mqs = {}
       EM.stop_event_loop
     end
 
