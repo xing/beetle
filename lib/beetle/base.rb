@@ -96,10 +96,6 @@ module Beetle
       @queues[@server] ||= {}
     end
 
-    def queue_bound?(queue_name)
-      !!queues[queue_name]
-    end
-
     def bind_queue(name, trace = false)
       queues[name] ||=
         begin
