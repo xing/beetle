@@ -73,6 +73,38 @@ module Beetle
       @sub.send(:bind_queue, "some_queue")
       assert_equal q, @sub.send(:queues)["some_queue"]
     end
+
+    test "in trace mode, queues are bound with a 'trace' prefix" do
+      @sub.trace = true
+      expected_queue_name = "trace-some_queue-#{`hostname`.chomp}"
+      @sub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      q = mock("queue")
+      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      m = mock("MQ")
+      m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true).returns(q)
+      @sub.expects(:mq).returns(m)
+
+      @sub.send(:bind_queue, "some_queue")
+      assert_equal q, @sub.send(:queues)["some_queue"]
+    end
+
+    test "binding queues should iterate over all servers" do
+      s = sequence("binding")
+      @sub.servers = %w(a b)
+      @sub.expects(:set_current_server).with("a").in_sequence(s)
+      @sub.expects(:queues_with_handlers).with(["test"]).returns(["testa"]).in_sequence(s)
+      @sub.expects(:bind_queue).with("testa").in_sequence(s)
+      @sub.expects(:set_current_server).with("b").in_sequence(s)
+      @sub.expects(:queues_with_handlers).with(["test"]).returns(["testb"]).in_sequence(s)
+      @sub.expects(:bind_queue).with("testb").in_sequence(s)
+      @sub.send(:bind_queues, ["test"])
+    end
+
+    test "queues with handlers should return all queues to which handlers have been bound" do
+      @sub.instance_variable_set(:@handlers, {"test" => [ [{:queue => "qa"}, 0], [{}, 1] ]})
+      assert_equal ["qa", "test" ], @sub.send(:queues_with_handlers, ["test"]).sort
+    end
   end
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase

@@ -40,9 +40,7 @@ module Beetle
     end
 
     def queues_with_handlers(messages)
-      messages.map do |name|
-        @handlers[name].map {|opts, _| opts[:queue] || name }
-      end.flatten
+      messages.map { |name| @handlers[name].map {|opts, _| opts[:queue] || name } }.flatten
     end
 
     def mq(server=@server)
