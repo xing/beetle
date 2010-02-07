@@ -32,6 +32,10 @@ module Beetle
       [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
+    def now
+      Time.now.to_i
+    end
+
     def expired?(expiration_time = Time.now.to_i)
       @expires_at < expiration_time
     end
@@ -48,16 +52,12 @@ module Beetle
       @flags & FLAG_REDUNDANT == FLAG_REDUNDANT
     end
 
-    def retriable?
-      attempts_limit > 1
-    end
-
     def set_timeout!
-      redis.set(timeout_key, Time.now.to_i + timeout)
+      redis.set(timeout_key, now + timeout)
     end
 
     def timed_out?
-      redis.get(timeout_key).to_i < Time.now.to_i
+      redis.get(timeout_key).to_i < now
     end
 
     def timed_out!
@@ -74,11 +74,11 @@ module Beetle
     end
 
     def delayed?
-      (t = redis.get(delay_key)) && t.to_i > Time.now.to_i
+      (t = redis.get(delay_key)) && t.to_i > now
     end
 
     def set_delay!
-      redis.set(delay_key, Time.now.to_i + delay)
+      redis.set(delay_key, now + delay)
     end
 
     def increment_execution_attempts!

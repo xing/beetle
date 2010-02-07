@@ -17,7 +17,7 @@ module Beetle
       assert_equal(Message::FLAG_REDUNDANT, m.flags & Message::FLAG_REDUNDANT)
     end
 
-    test "encoding a message should set an expiration date" do
+    test "encoding a message with a specfied time to live should set an expiration time" do
       Message.expects(:ttl_to_expiration_time).with(17).returns(42)
       body = Message.encode("12345", :ttl => 17)
       header = mock("header")
@@ -40,7 +40,7 @@ module Beetle
       @r.flushdb
     end
 
-    test "pocessing a non redundant message should delete all keys from the database" do
+    test "successful processing of a non redundant message should delete all keys from the database" do
       body = Message.encode('my message', :redundant => false)
       header = mock("header")
       header.expects(:ack)
@@ -56,23 +56,7 @@ module Beetle
       end
     end
 
-    test "processing a redundant message once should insert the status key into the database" do
-      body = Message.encode('my message', :redundant => true)
-      header = mock("header")
-      header.expects(:ack)
-      message = Message.new("somequeue", header, body)
-
-      assert !message.expired?
-      assert message.redundant?
-
-      message.process(lambda {|*args|})
-
-      assert @r.exists(message.status_key)
-      assert @r.exists(message.execution_attempts_key)
-      assert @r.exists(message.timeout_key)
-    end
-
-    test "processing a redundant message twice should not leave any key in the database" do
+    test "succesful processing of a redundant message twice should delete all keys from the database" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack).twice
@@ -88,8 +72,25 @@ module Beetle
         assert !@r.exists(key)
       end
     end
-  end
 
+    test "successful processing of a redundant message once should insert all but the delay key into the datbase" do
+      body = Message.encode('my message', :redundant => true)
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
+
+      assert !message.expired?
+      assert message.redundant?
+
+      message.process(lambda {|*args|})
+
+      assert @r.exists(message.status_key)
+      assert @r.exists(message.execution_attempts_key)
+      assert @r.exists(message.timeout_key)
+      assert @r.exists(message.ack_count_key)
+      assert !@r.exists(message.delay_key)
+    end
+  end
 
   class AckingTest < Test::Unit::TestCase
     def setup
@@ -97,7 +98,7 @@ module Beetle
       @r.flushdb
     end
 
-    test "an expired message should be acked without processing" do
+    test "an expired message should be acked without calling the handler" do
       body = Message.encode('my message', :ttl => -1)
       header = mock("header")
       header.expects(:ack)
@@ -109,7 +110,18 @@ module Beetle
       assert_equal :njet, processed
     end
 
-    test "a redundant message should be acked after successful processing" do
+    test "acking a non redundant message should remove the ack_count key" do
+      body = Message.encode('my message')
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body)
+
+      message.process(lambda {|*args|})
+      assert !message.redundant?
+      assert !@r.exists(message.ack_count_key)
+    end
+
+    test "a redundant message should be acked after calling the handler" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
@@ -250,7 +262,7 @@ module Beetle
       assert message.timed_out?
     end
 
-    test "a  message which has not reached its execution attempt limit, redundant, existing, incomplete, timed out should be processed again" do
+    test "a message which has not reached its execution attempt limit, redundant, existing, incomplete, timed out should be processed again" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
@@ -309,14 +321,14 @@ module Beetle
     end
   end
 
-  class SettingCompletionStatusTest < Test::Unit::TestCase
+  class SettingsTest < Test::Unit::TestCase
     def setup
       @r = Message.redis
       @r.flushdb
     end
 
     test "completed! should store the status 'complete' in the database" do
-      body = Message.encode('my message', :redundant => true)
+      body = Message.encode('my message')
       header = mock("header")
       message = Message.new("somequeue", header, body)
       assert !message.completed?
@@ -324,6 +336,84 @@ module Beetle
       assert message.completed?
       assert_equal "completed", @r.get(message.status_key)
     end
+
+    test "set_delay! should store the current time plus the number of delayed seconds in the database" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.delay = 1
+      message.expects(:now).returns(1)
+      message.set_delay!
+      assert_equal "2", @r.get(message.delay_key)
+      message.expects(:now).returns(2)
+      assert !message.delayed?
+      message.expects(:now).returns(0)
+      assert message.delayed?
+    end
+
+    test "set_delay! should use the default delay if the delay hasn't been set on the message instance" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.expects(:now).returns(0)
+      message.set_delay!
+      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @r.get(message.delay_key)
+      message.expects(:now).returns(message.delay)
+      assert !message.delayed?
+      message.expects(:now).returns(0)
+      assert message.delayed?
+    end
+
+    test "set_timeout! should store the current time plus the number of timeout seconds in the database" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.timeout = 1
+      message.expects(:now).returns(1)
+      message.set_timeout!
+      assert_equal "2", @r.get(message.timeout_key)
+      message.expects(:now).returns(2)
+      assert !message.timed_out?
+      message.expects(:now).returns(3)
+      assert message.timed_out?
+    end
+
+    test "set_timeout! should use the default timeout if the timeout hasn't been set on the message instance" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.expects(:now).returns(0)
+      message.set_timeout!
+      assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @r.get(message.timeout_key)
+      message.expects(:now).returns(message.timeout)
+      assert !message.timed_out?
+      message.expects(:now).returns(Message::DEFAULT_HANDLER_TIMEOUT+1)
+      assert message.timed_out?
+    end
+
+    test "incrementing execution attempts should increment by 1" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert_equal 1, message.increment_execution_attempts!
+      assert_equal 2, message.increment_execution_attempts!
+      assert_equal 3, message.increment_execution_attempts!
+    end
+
+    test "attempts limit should be reached after incrementing the attempt limit counter 'attempts limit' times" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.attempts_limit = 2
+      assert !message.attempts_limit_reached?
+      message.increment_execution_attempts!
+      assert !message.attempts_limit_reached?
+      message.increment_execution_attempts!
+      assert message.attempts_limit_reached?
+      message.increment_execution_attempts!
+      assert message.attempts_limit_reached?
+    end
+
   end
 end
 
