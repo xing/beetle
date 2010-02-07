@@ -105,9 +105,22 @@ module Beetle
       message = Message.new("somequeue", header, body)
       assert message.expired?
 
-      processed = :njet
+      processed = :no
       message.process(lambda {|*args| processed = true})
-      assert_equal :njet, processed
+      assert_equal :no, processed
+    end
+
+    test "a delayed message should not be acked and the handler should not be called" do
+      body = Message.encode('my message')
+      header = mock("header")
+      header.expects(:ack).never
+      message = Message.new("somequeue", header, body)
+      message.set_delay!
+      assert message.delayed?
+
+      processed = :no
+      message.process(lambda {|*args| processed = true})
+      assert_equal :no, processed
     end
 
     test "acking a non redundant message should remove the ack_count key" do

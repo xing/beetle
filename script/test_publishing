@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+require "#{root}/lib/beetle.rb"
+
+c = Beetle::Client.new(:config_file => "#{root}/test/beetle.yml")
+
+trap("INT") { exit(1) }
+
+loop do
+  c.publish "test", "hello, I'm a test message"
+  sleep 1
+end
+

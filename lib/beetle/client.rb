@@ -10,10 +10,6 @@ module Beetle
       Message.redis = Redis.new(@amqp_config[Beetle.config.environment]["msg_id_store"].symbolize_keys)
     end
 
-    def current_server
-      @server
-    end
-
     def publish(message_name, data, opts={})
       publisher.publish(message_name, data, opts)
     end
@@ -30,18 +26,8 @@ module Beetle
       subscriber.register_handler(*args, &block)
     end
 
-    def test
-      error "testing only allowed in development environment" unless Beetle.config.environment == "development"
-      trap("INT") { exit(1) }
-      while true
-        publisher.publish "redundant", "hello, I'm redundant!"
-        sleep 1
-      end
-    end
-
     def trace
       subscriber.trace = true
-      register_handler("redundant", :queue => "additional_queue", :ack => true, :key => '#') {|msg| puts "------===== Additional Handler =====-----" }
       register_handler(@messages.keys, :ack => true, :key => '#') do |msg|
         puts "-----===== new message =====-----"
         puts "SERVER: #{msg.server}"
