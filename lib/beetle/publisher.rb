@@ -48,29 +48,30 @@ module Beetle
         logger.error "at least two active servers are required for redundant publishing"
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
-      published = 0
+      published = []
       data = Message.encode(data, :redundant => true, :ttl => opts[:ttl])
       loop do
-        break if published == 2 || @servers.size < 2
+        break if published.size == 2 || @servers.empty? || published == @servers
         begin
           select_next_server
+          next if published.include? @server
           bind_queues_for_exchange(exchange_name)
           logger.debug "trying to send #{message_name} to #{@server}"
           exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
-          published += 1
+          published << @server
           logger.debug "message sent (#{published})!"
         rescue Bunny::ServerDownError, Bunny::ConnectionError
           stop!
           mark_server_dead
         end
       end
-      case published
+      case published.size
       when 0
         error("message could not be delivered: #{message_name}")
       when 1
         logger.warn "failed to send message redundantly"
       end
-      published
+      published.size
     end
 
     private
