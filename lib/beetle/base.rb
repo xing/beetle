@@ -96,7 +96,7 @@ module Beetle
       @queues[@server] ||= {}
     end
 
-    def bind_queue(name, trace = false)
+    def bind_queue(name)
       queues[name] ||=
         begin
           logger.debug("Binding #{name}")
