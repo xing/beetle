@@ -17,7 +17,7 @@ module Beetle
       EM.run do
         create_exchanges(messages)
         bind_queues(messages)
-        subscribe
+        subscribe(messages)
       end
     end
 
