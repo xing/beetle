@@ -29,6 +29,18 @@ module Beetle
     test "initially there should be no dead servers" do
       assert_equal({}, @pub.instance_variable_get("@dead_servers"))
     end
+
+    test "stop! should try to shut down bunny and clean internal data structures" do
+      # assert_equal "", @pub.send(:server)
+      b = mock("bunny")
+      b.expects(:stop).raises("murks")
+      @pub.expects(:bunny).returns(b)
+      @pub.send(:stop!)
+      assert_equal({}, @pub.send(:exchanges_for_current_server))
+      assert_equal({}, @pub.send(:queues))
+      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+    end
+
   end
 
   class PublisherPublishingTest < Test::Unit::TestCase

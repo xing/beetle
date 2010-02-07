@@ -125,10 +125,11 @@ module Beetle
       begin
         bunny.stop
       rescue Exception
+      ensure
+        @bunnies[@server] = nil
+        @exchanges[@server] = {}
+        @queues[@server] = {}
       end
-      @bunnies[@server] = nil
-      @exchanges[@server] = {}
-      @queues[@server] = {}
     end
   end
 end
