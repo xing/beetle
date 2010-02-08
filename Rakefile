@@ -54,11 +54,11 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'beetle'
-    gemspec.version = '0.0.5'
+    gemspec.version = '0.0.6'
     gemspec.summary = "Reliable Messaging with AMQP"
     gemspec.description = "A high available/reliabile messaging infrastructure"
     gemspec.email = "developers@xing.com"
-    gemspec.authors = ["Stefan Kaes", "Pascal Friederich"]
+    gemspec.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
     gemspec.add_dependency('uuid4r', '>=0.1.1')
     gemspec.add_dependency('bunny', '>=0.6.0')
     gemspec.add_dependency('redis', '>=0.1.2')
