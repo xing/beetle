@@ -162,7 +162,7 @@ module Beetle
       elsif completed?
         ack!
       elsif !timed_out?
-        raise HandlerTimeout
+        raise HandlerNotYetTimedOut
       elsif attempts_limit_reached?
         ack!
         raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
