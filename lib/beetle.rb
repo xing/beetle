@@ -11,7 +11,7 @@ module Beetle
 
   class Error < StandardError; end
   class HandlerCrash < Error; end
-  class HandlerTimeout < Error; end
+  class HandlerNotYetTimedOut < Error; end
   class AttemptsLimitReached < Error; end
 
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')

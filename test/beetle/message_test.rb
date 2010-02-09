@@ -311,7 +311,7 @@ module Beetle
       proc = mock("proc")
       proc.expects(:call).never
       header.expects(:ack).never
-      assert_raises(HandlerTimeout){ message.__send__(:process_internal, proc) }
+      assert_raises(HandlerNotYetTimedOut){ message.__send__(:process_internal, proc) }
       assert !message.completed?
     end
 
