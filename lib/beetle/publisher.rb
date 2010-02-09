@@ -104,7 +104,8 @@ module Beetle
     end
 
     def select_next_server
-      set_current_server(@servers[(@servers.index(@server)+1) % @servers.size])
+      return error("no server available") if @servers.empty?
+      set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
     end
 
     def create_exchange!(name, opts)
