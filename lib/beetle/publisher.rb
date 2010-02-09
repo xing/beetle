@@ -104,7 +104,7 @@ module Beetle
     end
 
     def select_next_server
-      return error("no server available") if @servers.empty?
+      return error("message could not be delivered: #{message_name} - no server available") if @servers.empty?
       set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
     end
 
