@@ -5,11 +5,12 @@ module Beetle
     DEFAULT_TTL = 1.days
     EXPIRE_AFTER = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
-    DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 5
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 60.seconds
+    DEFAULT_EXCEPTION_LIMIT = 1
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_accessor :timeout, :delay, :server, :attempts_limit
+    attr_accessor :timeout, :delay, :server, :attempts_limit, :exception_limit
 
     def initialize(queue, header, body)
       @queue = queue
@@ -18,6 +19,7 @@ module Beetle
       @timeout = DEFAULT_HANDLER_TIMEOUT
       @attempts_limit = DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @delay = DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
+      @exceptions_limit = DEFAULT_EXCEPTION_LIMIT
       decode
     end
 
@@ -89,12 +91,29 @@ module Beetle
       (limit = redis.get(execution_attempts_key)) && limit.to_i >= attempts_limit
     end
 
+    def increment_execption_count!
+      redis.incr(exceptions_key)
+    end
+
+    def exceptions_limit_reached?
+      (limit = redis.get(exceptions_key)) && limit.to_i >= exceptions_limit
+    end
+
     def key_exists?
       new_message = redis.setnx(status_key, "incomplete")
       unless new_message
         logger.debug "received duplicate message: #{status_key} on queue: #{@queue}"
       end
       !new_message
+    end
+
+    def aquire_mutex!
+      if mutex = redis.setnx(mutex_key, now)
+        logger.debug "aquired mutex: #{mutex_key}"
+      else
+        logger.debug "deleted mutex: #{mutex_key}"
+      end
+      mutex
     end
 
     def self.redis
@@ -135,8 +154,16 @@ module Beetle
       keys[:attempts] ||= "msgid:#{queue}:#{uuid}:attempts"
     end
 
+    def mutex_key
+      keys[:mutex] ||= "msgid:#{queue}:#{uuid}:mutex"
+    end
+
+    def exceptions_key
+      keys[:exceptions] ||= "msgid:#{queue}:#{uuid}:exceptions"
+    end
+
     def all_keys
-      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key]
+      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key, exceptions_key, mutex_key]
     end
 
     def keys
@@ -152,34 +179,43 @@ module Beetle
         return
       end
 
-      if delayed?
-        logger.warn "Ignored delayed message!"
-        return
-      end
-
       if !key_exists?
+        set_timeout!
         run_handler!(block)
       elsif completed?
         ack!
+      elsif delayed?
+        logger.warn "Ignored delayed message!"
       elsif !timed_out?
         raise HandlerNotYetTimedOut
       elsif attempts_limit_reached?
         ack!
         raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
+      elsif exceptions_limit_reached?
+        ack!
+        raise ExceptionsLimitReached, "reached the handler exceptions limit: #{exceptions_limit}"
       else
-        run_handler!(block)
+        set_timeout!
+        run_handler!(block) if aquire_mutex!
       end
     end
 
     def run_handler!(block)
-      set_timeout!
       increment_execution_attempts!
       begin
         block.call(self)
       rescue Exception => e
-        timed_out!
-        set_delay!
-        raise HandlerCrash.new(e)
+        if attempts_limit_reached?
+          ack!
+          raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
+        elsif exceptions_limit_reached?
+          ack!
+          raise ExceptionsLimitReached, "reached the handler exceptions limit: #{exceptions_limit}"
+        else
+          timed_out!
+          set_delay!
+          raise HandlerCrash.new(e)
+        end
       end
       completed!
       ack!

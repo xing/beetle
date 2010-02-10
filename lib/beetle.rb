@@ -13,6 +13,7 @@ module Beetle
   class HandlerCrash < Error; end
   class HandlerNotYetTimedOut < Error; end
   class AttemptsLimitReached < Error; end
+  class ExceptionsLimitReached < Error; end
 
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|

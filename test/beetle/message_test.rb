@@ -116,6 +116,7 @@ module Beetle
       header.expects(:ack).never
       message = Message.new("somequeue", header, body)
       message.set_delay!
+      assert !message.key_exists?
       assert message.delayed?
 
       processed = :no
@@ -209,7 +210,8 @@ module Beetle
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.increment_execution_attempts!
+      assert !message.attempts_limit_reached?
+      Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS.times {message.increment_execution_attempts!}
       assert message.attempts_limit_reached?
       assert message.redundant?
       assert !message.completed?
