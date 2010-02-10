@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.5"
+  s.version = "0.0.8"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Stefan Kaes", "Pascal Friederich"]
-  s.date = %q{2010-02-05}
+  s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
+  s.date = %q{2010-02-10}
   s.description = %q{A high available/reliabile messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.files = [
@@ -25,10 +25,12 @@ Gem::Specification.new do |s|
      "lib/beetle/publisher.rb",
      "lib/beetle/subscriber.rb",
      "script/start_rabbits",
+     "script/test_publishing",
      "test/beetle.yml",
      "test/beetle/base_test.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
+     "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/subscriber_test.rb",
@@ -43,6 +45,7 @@ Gem::Specification.new do |s|
     "test/beetle/base_test.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
+     "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/subscriber_test.rb",

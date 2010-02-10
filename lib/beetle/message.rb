@@ -6,7 +6,7 @@ module Beetle
     EXPIRE_AFTER = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 5
-    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 60.seconds
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     DEFAULT_EXCEPTION_LIMIT = 1
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
@@ -125,6 +125,7 @@ module Beetle
     end
 
     def process(block)
+      logger.debug "Processing message #{uuid} received from queue #{@queue}"
       begin
         process_internal(block)
       rescue Exception => e
@@ -234,6 +235,7 @@ module Beetle
     end
 
     def ack!
+      logger.debug "ack! for message #{uuid} on queue #{@queue}"
       header.ack
       if !redundant? || redis.incr(ack_count_key) == 2
         redis.del(all_keys)
