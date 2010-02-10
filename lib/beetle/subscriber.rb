@@ -57,7 +57,7 @@ module Beetle
         callback = create_subscription_callback(@server, queue, handler)
         logger.debug "subscribing to queue #{queue} with key #{key} for message #{message}"
         begin
-          queues[queue].subscribe(opts.merge(:key => "#{key}.#"), &callback)
+          queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
         rescue MQ::Error
           error("Binding multiple handlers for the same queue isn't possible. You might want to use the :queue option")
         end
@@ -81,7 +81,7 @@ module Beetle
     def install_recovery_timer(server)
       @timer.cancel if @timer
       @timer = EM::Timer.new(RECOVER_AFTER) do
-        logger.info "Redelivering unacked messages that could not be verified because of unavailable Redis"
+        logger.info "Redelivering unacked messages"
         mq(server).recover(true)
       end
     end
