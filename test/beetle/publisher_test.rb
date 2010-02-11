@@ -76,7 +76,6 @@ module Beetle
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
       @pub.expects(:stop!).in_sequence(failover)
       @pub.expects(:mark_server_dead).in_sequence(failover)
-      @pub.expects(:error).in_sequence(failover)
       @pub.publish_with_failover("mama", "mama", data, opts)
     end
 
@@ -124,7 +123,6 @@ module Beetle
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
       @pub.expects(:exchange).with("mama").returns(e).in_sequence(redundant)
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:error).in_sequence(redundant)
 
       assert_equal 0, @pub.publish_with_redundancy("mama", "mama", data, opts)
     end
@@ -321,6 +319,15 @@ module Beetle
       assert_equal "b:2", @pub.server
       @pub.send(:select_next_server)
       assert_equal "a:1", @pub.server
+    end
+    
+    test "select_next_server should return o if there are no servers to publish to" do
+      @pub.servers = []
+      logger = mock('logger')
+      logger.expects(:error).returns(true)
+      @pub.expects(:logger).returns(logger)
+      @pub.expects(:message_name).returns('foo')
+      assert_equal 0, @pub.send(:select_next_server)
     end
   end
 end
