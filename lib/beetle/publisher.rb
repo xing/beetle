@@ -37,8 +37,7 @@ module Beetle
         mark_server_dead
         tries -= 1
         retry if tries > 0
-        logger.error "failed to send message!"
-        error("message could not be delivered: #{message_name}")
+        logger.error "message could not be delivered: #{message_name}"
       end
       published
     end
@@ -67,7 +66,7 @@ module Beetle
       end
       case published.size
       when 0
-        error("message could not be delivered: #{message_name}")
+        logger.error "message could not be delivered: #{message_name}"
       when 1
         logger.warn "failed to send message redundantly"
       end
@@ -104,7 +103,7 @@ module Beetle
     end
 
     def select_next_server
-      return error("message could not be delivered: #{message_name} - no server available") if @servers.empty?
+      return logger.error("message could not be delivered: #{message_name} - no server available") && 0 if @servers.empty?
       set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
     end
 
