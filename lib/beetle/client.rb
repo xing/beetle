@@ -1,9 +1,12 @@
 module Beetle
   class Client
-    attr_reader :servers
+    attr_reader :servers, :exchanges, :queues, :messages
 
     def initialize(options = {})
       @servers = ['localhost:5672']
+      @exchanges = {}
+      @queues = {}
+      @messages = {}
       @options = options
       load_config(options[:config_file])
     end
@@ -13,10 +16,6 @@ module Beetle
       exchanges[name] = opts.symbolize_keys
     end
 
-    def exchanges
-      @amqp_config["exchanges"]
-    end
-
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name}.merge!(opts.symbolize_keys)
@@ -24,19 +23,11 @@ module Beetle
       (exchanges[opts[:exchange]][:queues] ||= []) << name
     end
 
-    def queues
-      @amqp_config["queues"]
-    end
-
     def register_message(name, opts={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
       opts = {:queue => name}.merge!(opts.symbolize_keys)
       opts[:exchange] = queues[opts[:queue]][:exchange]
       messages[name] = opts
-    end
-
-    def messages
-      @amqp_config["messages"]
     end
 
     def register_handler(*args, &block)
@@ -81,25 +72,28 @@ module Beetle
     private
 
     def load_config(file_name)
-      @amqp_config = Hash.new {|hash, key| hash[key] = {}}
+      config = Hash.new {|hash, key| hash[key] = {}}
       if glob = (file_name || Beetle.config.config_file)
         Dir[glob].each do |file|
           hash = YAML::load(ERB.new(IO.read(file)).result)
           hash.each do |key, value|
-            @amqp_config[key].merge! value
+            config[key].merge! value
           end
         end
       end
-      @amqp_config["exchanges"] ||= {}
-      @amqp_config["messages"] ||= {}
-      @amqp_config["queues"] ||= {}
-      env = Beetle.config.environment
-      @amqp_config[env] ||= {}
-      @amqp_config[env]["hostname"] ||= "localhost:5672"
-      @amqp_config[env]["msg_id_store"] ||= {:host => "localhost", :db => 4}
 
-      @servers = @amqp_config[env]["hostname"].split(/ *, */)
-      Message.redis = Redis.new(@amqp_config[env]["msg_id_store"].symbolize_keys)
+      env = Beetle.config.environment
+
+      config[env] ||= {}
+      config[env]["hostname"] ||= "localhost:5672"
+      config[env]["msg_id_store"] ||= {:host => "localhost", :db => 4}
+
+      (config["exchanges"] || {}).each {|name, opts| register_exchange(name, opts)  }
+      (config["queues"]    || {}).each {|name, opts| register_queue(name, opts)     }
+      (config["messages"]  || {}).each {|name, opts| register_message(name, opts)   }
+
+      @servers = config[env]["hostname"].split(/ *, */)
+      Message.redis = Redis.new(config[env]["msg_id_store"].symbolize_keys)
     end
 
     def publisher
