@@ -466,5 +466,17 @@ module Beetle
       assert !@r.exists(message.mutex_key)
     end
   end
+
+  class RedisAssumptionsTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "trying to delete a non existent key doesn't throw an error" do
+      assert !@r.del("hahahaha")
+      assert !@r.exists("hahahaha")
+    end
+  end
 end
 
