@@ -1,8 +1,4 @@
 module Beetle
-  # TODO TODO TODO FIXME
-  # Refactorings incomming.
-  # * extract to publisher and subscriber base classes
-  # * only keep the neccassary code in Base
   class Base
 
     attr_accessor :options, :trace, :servers, :server

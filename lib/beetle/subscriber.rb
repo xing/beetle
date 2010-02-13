@@ -77,8 +77,7 @@ module Beetle
       lambda do |header, data|
         begin
           handler_instance = Handler.create(handler, opts)
-          m = Message.new(queue, header, data, opts)
-          m.server = server
+          m = Message.new(queue, header, data, opts.merge(:server => server))
           m.process(handler_instance)
         rescue Exception => e
           handler_instance.process_exception e
