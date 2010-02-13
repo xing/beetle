@@ -192,7 +192,7 @@ module Beetle
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("Bunny")
-      m.expects(:queue).with("some_queue", :durable => true).returns(q)
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @pub.expects(:bunny).returns(m)
 
       @pub.send(:bind_queue, "some_queue")

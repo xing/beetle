@@ -43,22 +43,34 @@ module Beetle
       @client = Client.new
     end
 
-    test "registering an exchange should store it in the configuration with symbolized option keys" do
-      opts = {"durable" => true}
+    test "registering an exchange should store it in the configuration with symbolized option keys and force a topic queue and durability" do
+      opts = {"durable" => false, "type" => "fanout"}
       @client.register_exchange("some_exchange", opts)
-      assert_equal({:durable => true}, @client.exchanges["some_exchange"])
+      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
     end
 
     test "registering an exchange should raise a configuration error if it is already configured" do
-      opts = {"durable" => true}
-      @client.register_exchange("some_exchange", opts)
-      assert_raises(ConfigurationError){ @client.register_exchange("some_exchange", opts) }
+      @client.register_exchange("some_exchange")
+      assert_raises(ConfigurationError){ @client.register_exchange("some_exchange") }
     end
 
-    test "registering a queue should store it in the configuration with symbolized option keys" do
+    test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false" do
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
+      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange"}, @client.queues["some_queue"])
+    end
+
+    test "registering a queue should add the queue to the list of queues of the queue's exchange" do
       @client.register_exchange("some_exchange")
       @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :exchange => "some_exchange"}, @client.queues["some_queue"])
+      assert_equal ["some_queue"], @client.exchanges["some_exchange"][:queues]
+    end
+
+    test "registering two queues should add both queues to the list of queues of the queue's exchange" do
+      @client.register_exchange("some_exchange")
+      @client.register_queue("queue1", :exchange => "some_exchange")
+      @client.register_queue("queue2", :exchange => "some_exchange")
+      assert_equal ["queue1","queue2"], @client.exchanges["some_exchange"][:queues]
     end
 
     test "registering a queue should raise a configuration error if it is already configured" do

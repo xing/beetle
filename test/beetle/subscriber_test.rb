@@ -68,7 +68,7 @@ module Beetle
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("MQ")
-      m.expects(:queue).with("some_queue", :durable => true).returns(q)
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
 
       @sub.send(:bind_queue, "some_queue")
@@ -84,7 +84,7 @@ module Beetle
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("MQ")
-      m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true).returns(q)
+      m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
 
       @sub.send(:bind_queue, "some_queue")
