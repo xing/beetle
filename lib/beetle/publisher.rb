@@ -1,8 +1,6 @@
 module Beetle
   class Publisher < Base
 
-    PUBLISHING_KEYS = [:key, :mandatory, :immediate, :persistent]
-
     def initialize(client, options = {})
       super
       @dead_servers = {}
