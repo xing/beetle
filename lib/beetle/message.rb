@@ -8,8 +8,8 @@ module Beetle
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     DEFAULT_EXCEPTION_LIMIT = 1
 
-    attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_accessor :timeout, :delay, :server, :attempts_limit, :exceptions_limit
+    attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
+    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit
 
     def initialize(queue, header, body, opts = {})
       @queue  = queue
@@ -20,6 +20,7 @@ module Beetle
     end
 
     def setup(opts)
+      @server = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
