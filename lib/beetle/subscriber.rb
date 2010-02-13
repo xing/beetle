@@ -1,9 +1,7 @@
 module Beetle
   class Subscriber < Base
 
-    attr_accessor :handlers
-
-    RECOVER_AFTER           = 10.seconds
+    RECOVER_AFTER = 10.seconds
 
     def initialize(client, options = {})
       super
