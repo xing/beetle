@@ -201,7 +201,7 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @pub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @pub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
       @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -255,7 +255,7 @@ module Beetle
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
       m = mock("Bunny")
       m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true).returns(42)
-      @pub.instance_variable_get("@amqp_config")["exchanges"].merge!({"some_exchange" => {:type => :topic, :durable => true}})
+      @pub.amqp_config["exchanges"].merge!({"some_exchange" => {:type => :topic, :durable => true}})
       @pub.expects(:bunny).returns(m)
       ex  = @pub.send(:exchange, "some_exchange")
       assert @pub.send(:exchange_exists?, "some_exchange")
