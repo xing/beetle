@@ -62,7 +62,7 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @client.register_exchange("exchange" => "some_exchange")
+      @client.register_exchange("some_exchange")
       @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
@@ -169,8 +169,10 @@ module Beetle
     test "subscribe should create subscriptions for all servers" do
       @sub.servers << "localhost:7777"
       @client.messages.clear
+      @client.register_exchange("a")
+      @client.register_queue("a")
       @client.register_message("a")
-      @client.register_message("b")
+      @client.register_message("b", :queue => "a")
       @sub.expects(:subscribe_message).with("a").times(2)
       @sub.expects(:subscribe_message).with("b").times(2)
       @sub.send(:subscribe)
