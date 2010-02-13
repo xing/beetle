@@ -12,6 +12,5 @@ end
 
 Beetle.configuration do |config|
   config.environment = "test"
-  config.config_file = File.expand_path(File.dirname(__FILE__) + '/beetle.yml')
   config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end
