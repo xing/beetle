@@ -2,20 +2,37 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
-  class AMQPConfigTest < Test::Unit::TestCase
+  class ClientDefaultsTest < Test::Unit::TestCase
     def setup
       @client = Client.new
     end
 
-    test "should load default config file" do
-      assert_not_nil @client.amqp_config
-    end
-
-    test "loading default config file should specify server localhost::5672" do
+    test "should have a default server even without a config file" do
       assert_equal ["localhost:5672"], @client.servers
     end
 
-    test "default config should specify test and deadletter messages" do
+    test "should have no exchanges" do
+      assert @client.exchanges.empty?
+    end
+
+    test "should have no queues" do
+      assert @client.queues.empty?
+    end
+    test "should have no messages" do
+      assert @client.messages.empty?
+    end
+  end
+
+  class ClientConfigFileLoadingTest < Test::Unit::TestCase
+    def setup
+      @client = Client.new(:config_file =>  File.expand_path(File.dirname(__FILE__) + '/../beetle.yml'))
+    end
+
+    test "loading test config file should specify server localhost::5672" do
+      assert_equal ["localhost:5672"], @client.servers
+    end
+
+    test "loading test config should specify test and deadletter messages" do
       assert @client.messages.include? "deadletter"
       assert @client.messages.include? "test"
     end
@@ -29,7 +46,7 @@ module Beetle
     test "registering an exchange should store it in the configuration with symbolized option keys" do
       opts = {"durable" => true}
       @client.register_exchange("some_exchange", opts)
-      assert_equal({:durable => true}, @client.amqp_config["exchanges"]["some_exchange"])
+      assert_equal({:durable => true}, @client.exchanges["some_exchange"])
     end
 
     test "registering an exchange should raise a configuration error if it is already configured" do
@@ -41,7 +58,7 @@ module Beetle
     test "registering a queue should store it in the configuration with symbolized option keys" do
       opts = {"durable" => true}
       @client.register_queue("some_queue", opts)
-      assert_equal({:durable => true}, @client.amqp_config["queues"]["some_queue"])
+      assert_equal({:durable => true}, @client.queues["some_queue"])
     end
 
     test "registering a queue should raise a configuration error if it is already configured" do
@@ -53,7 +70,7 @@ module Beetle
     test "registering a message should store it in the configuration with symbolized option keys" do
       opts = {"persistent" => true}
       @client.register_message("some_message", opts)
-      assert_equal({:persistent => true}, @client.amqp_config["messages"]["some_message"])
+      assert_equal({:persistent => true}, @client.messages["some_message"])
     end
 
     test "registering a message should raise a configuration error if it is already configured" do
