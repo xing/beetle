@@ -5,9 +5,6 @@ module Beetle
   # * only keep the neccassary code in Base
   class Base
 
-    QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
-    QUEUE_BINDING_KEYS  = [:key, :no_wait]
-
     attr_accessor :options, :trace, :servers, :server
 
     def initialize(client, options = {})
