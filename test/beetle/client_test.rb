@@ -56,25 +56,29 @@ module Beetle
     end
 
     test "registering a queue should store it in the configuration with symbolized option keys" do
-      opts = {"durable" => true}
-      @client.register_queue("some_queue", opts)
-      assert_equal({:durable => true}, @client.queues["some_queue"])
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange")
+      assert_equal({:durable => true, :exchange => "some_exchange"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should raise a configuration error if it is already configured" do
-      opts = {"durable" => true}
-      @client.register_queue("some_queue", opts)
-      assert_raises(ConfigurationError){ @client.register_queue("some_queue", opts) }
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange")
+      assert_raises(ConfigurationError){ @client.register_queue("some_queue") }
     end
 
     test "registering a message should store it in the configuration with symbolized option keys" do
-      opts = {"persistent" => true}
+      opts = {"persistent" => true, "queue" => "some_queue"}
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "exchange" => "some_exchange")
       @client.register_message("some_message", opts)
-      assert_equal({:persistent => true}, @client.messages["some_message"])
+      assert_equal({:persistent => true, :queue => "some_queue", :exchange => "some_exchange"}, @client.messages["some_message"])
     end
 
     test "registering a message should raise a configuration error if it is already configured" do
-      opts = {"persistent" => true}
+      opts = {"persistent" => true, "queue" => "some_queue"}
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "exchange" => "some_exchange")
       @client.register_message("some_message", opts)
       assert_raises(ConfigurationError){ @client.register_message("some_message", opts) }
     end

@@ -11,7 +11,8 @@ module Beetle
 
     def publish(message_name, data, opts={})
       opts = (messages[message_name]||{}).symbolize_keys.merge(opts.symbolize_keys)
-      exchange_name = opts.delete(:exchange) || exchange_name_for_message_name(message_name)
+      exchange_name = opts.delete(:exchange)
+      opts.delete(:queue)
       recycle_dead_servers
       if opts[:redundant]
         publish_with_redundancy(exchange_name, message_name, data, opts)
@@ -112,7 +113,7 @@ module Beetle
     end
 
     def bind_queues_for_exchange(exchange_name)
-      @client.queues_for_exchange(exchange_name).each {|q| bind_queue(q) } if queues.empty?
+      @client.exchanges[exchange_name][:queues].each {|q| bind_queue(q) } if queues.empty?
     end
 
     # TODO: Refactor, fethch the keys and stuff itself

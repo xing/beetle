@@ -63,7 +63,7 @@ module Beetle
       @servers.each do |s|
         set_current_server s
         messages.each do |message|
-          create_exchange(@client.exchange_for_message(message))
+          create_exchange(@client.messages[message][:exchange])
         end
       end
     end

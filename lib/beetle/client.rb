@@ -5,7 +5,6 @@ module Beetle
     def initialize(options = {})
       @servers = ['localhost:5672']
       @options = options
-      @queue_names_for_exchange = {}
       load_config(options[:config_file])
     end
 
@@ -20,7 +19,9 @@ module Beetle
 
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      queues[name] = opts.symbolize_keys
+      opts = {:exchange => name}.merge!(opts.symbolize_keys)
+      queues[name] = opts
+      (exchanges[opts[:exchange]][:queues] ||= []) << name
     end
 
     def queues
@@ -29,28 +30,13 @@ module Beetle
 
     def register_message(name, opts={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
-      messages[name] = opts.symbolize_keys
+      opts = {:queue => name}.merge!(opts.symbolize_keys)
+      opts[:exchange] = queues[opts[:queue]][:exchange]
+      messages[name] = opts
     end
 
     def messages
       @amqp_config["messages"]
-    end
-
-    def queues_for_exchange(exchange_name)
-      @queue_names_for_exchange[exchange_name] ||=
-        queues.select { |queue, config| config[:exchange] == exchange_name || (config[:exchange].blank? && queue == exchange_name) }.map(&:first)
-    end
-
-    def queue_for_message(message_name)
-      ((m = messages[message_name]) && m[:queue]) || message_name
-    end
-
-    def exchange_for_queue(queue_name)
-      ((q = queues[queue_name]) && q[:exchange]) || queue_name
-    end
-
-    def exchange_for_message(message_name)
-      exchange_for_queue(queue_for_message(message_name))
     end
 
     def register_handler(*args, &block)
