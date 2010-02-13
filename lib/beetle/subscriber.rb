@@ -26,31 +26,25 @@ module Beetle
 
     private
 
+    def each_server
+      @servers.each { |s| set_current_server(s); yield }
+    end
+
     def create_exchanges(messages)
-      @servers.each do |s|
-        set_current_server s
-        messages.each do |message|
-          exchange(@client.messages[message][:exchange])
-        end
+      each_server do
+        messages.each { |message| exchange(@client.messages[message][:exchange]) }
       end
     end
 
     def bind_queues(messages)
-      @servers.each do |s|
-        set_current_server s
-        queues_with_handlers(messages).each do |name|
-          queue(name)
-        end
+      each_server do
+        queues_with_handlers(messages).each { |name| queue(name) }
       end
     end
 
-    def subscribe(messages=nil)
-      messages ||= @client.messages.keys
-      Array(messages).each do |message|
-        @servers.each do |s|
-          set_current_server s
-          subscribe_message(message)
-        end
+    def subscribe(messages)
+      each_server do
+        Array(messages).each { |message| subscribe_message(message) }
       end
     end
 
@@ -80,7 +74,7 @@ module Beetle
     end
 
     def create_subscription_callback(server, queue, handler)
-      lambda do |header,data|
+      lambda do |header, data|
         begin
           m = Message.new(queue, header, data)
           m.server = server
