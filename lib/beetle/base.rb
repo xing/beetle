@@ -28,15 +28,6 @@ module Beetle
       raise Error.new(text)
     end
 
-    def bind_queues(messages)
-      @servers.each do |s|
-        set_current_server s
-        queues_with_handlers(messages).each do |name|
-          bind_queue(name)
-        end
-      end
-    end
-
     def exchanges
       @exchanges[@server] ||= {}
     end
