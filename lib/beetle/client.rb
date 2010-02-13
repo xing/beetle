@@ -3,7 +3,7 @@ module Beetle
     attr_reader :servers, :exchanges, :queues, :messages
 
     def initialize(options = {})
-      @servers = ['localhost:5672']
+      @servers = ["localhost:5672"]
       @exchanges = {}
       @queues = {}
       @messages = {}
@@ -11,17 +11,52 @@ module Beetle
       load_config(options[:config_file])
     end
 
+    # type: "topic"
+    # durable: true
+
     def register_exchange(name, opts={})
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
-      exchanges[name] = opts.symbolize_keys
+      exchanges[name] = opts.symbolize_keys.merge(:type => :topic, :durable => true)
     end
+
+    # passive: false       # amqp default is false
+    # durable: true        # amqp default is false
+    # exclusive: false     # amqp default is false
+    # auto_delete: false   # amqp default is false
+    # nowait: true         # amqp default is true
+    # key: "#"             # listen to every message
 
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name}.merge!(opts.symbolize_keys)
+      opts.merge! :durable => true, :passive => false
       queues[name] = opts
       (exchanges[opts[:exchange]][:queues] ||= []) << name
     end
+
+    # queue: "test"
+    ### Spefify the queue for listeners (default is message name)
+    # key: "test"
+    ### Specifies the routing key pattern for message subscription.
+    # ttl: <%= 1.hour %>
+    ### Specifies the time interval after which messages are silently dropped (seconds)
+    # mandatory: true
+    ### default is false
+    ### Tells the server how to react if the message
+    ### cannot be routed to a queue. If set to _true_, the server will return an unroutable message
+    ### with a Return method. If this flag is zero, the server silently drops the message.
+    # immediate: false
+    ### default is false
+    ### Tells the server how to react if the message
+    ### cannot be routed to a queue consumer immediately. If set to _true_, the server will return an
+    ### undeliverable message with a Return method. If set to _false_, the server will queue the message,
+    ### but with no guarantee that it will ever be consumed.
+    # persistent: true
+    ### default is false
+    ### Tells the server whether to persist the message
+    ### If set to _true_, the message will be persisted to disk and not lost if the server restarts.
+    ### If set to _false_, the message will not be persisted across server restart. Setting to _true_
+    ### incurs a performance penalty as there is an extra cost associated with disk access.
 
     def register_message(name, opts={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
