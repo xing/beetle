@@ -24,12 +24,6 @@ module Beetle
       stop!
     end
 
-    protected
-
-    def messages
-      @client.messages
-    end
-
     private
 
     def error(text)
@@ -69,9 +63,7 @@ module Beetle
     end
 
     def create_exchange(name)
-      opts = @client.exchanges[name].symbolize_keys
-      opts[:type] = opts[:type].to_sym
-      exchanges_for_current_server[name] = create_exchange!(name, opts)
+      exchanges_for_current_server[name] = create_exchange!(name, @client.exchanges[name])
     end
 
     def queues
