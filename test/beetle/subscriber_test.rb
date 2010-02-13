@@ -157,7 +157,7 @@ module Beetle
       @sub = Subscriber.new(client)
       @handler = Handler.create(lambda{|*args|})
       @queue = 'somequeue'
-      @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler)
+      @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler, {})
     end
 
     test "the internal timer should get refreshed for every failed message processing" do

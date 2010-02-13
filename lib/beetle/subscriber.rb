@@ -63,7 +63,7 @@ module Beetle
         opts = opts.dup
         key = opts.delete(:key) || message
         queue = opts.delete(:queue) || message
-        callback = create_subscription_callback(@server, queue, handler)
+        callback = create_subscription_callback(@server, queue, handler, opts)
         logger.debug "subscribing to queue #{queue} with key #{key} for message #{message}"
         begin
           queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
@@ -73,11 +73,11 @@ module Beetle
       end
     end
 
-    def create_subscription_callback(server, queue, handler)
+    def create_subscription_callback(server, queue, handler, opts)
       lambda do |header, data|
         begin
-          handler_instance = Handler.create(handler)
-          m = Message.new(queue, header, data)
+          handler_instance = Handler.create(handler, opts)
+          m = Message.new(queue, header, data, opts)
           m.server = server
           m.process(handler_instance)
         rescue Exception => e

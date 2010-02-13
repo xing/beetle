@@ -3,7 +3,6 @@ module Beetle
     FORMAT_VERSION = 1
     FLAG_REDUNDANT = 2
     DEFAULT_TTL = 1.day
-    EXPIRE_AFTER = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 5
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
@@ -12,15 +11,19 @@ module Beetle
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
     attr_accessor :timeout, :delay, :server, :attempts_limit, :exceptions_limit
 
-    def initialize(queue, header, body)
-      @queue = queue
+    def initialize(queue, header, body, opts = {})
+      @queue  = queue
       @header = header
       @body   = body
-      @timeout = DEFAULT_HANDLER_TIMEOUT
-      @attempts_limit = DEFAULT_HANDLER_EXECUTION_ATTEMPTS
-      @delay = DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
-      @exceptions_limit = DEFAULT_EXCEPTION_LIMIT
+      setup(opts)
       decode
+    end
+
+    def setup(opts)
+      @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
+      @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
+      @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
+      @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
     end
 
     def decode
