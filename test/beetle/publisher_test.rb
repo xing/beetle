@@ -233,7 +233,6 @@ module Beetle
 
     test "initially there should be no exchanges for the current server" do
       assert_equal({}, @pub.send(:exchanges))
-      assert !@pub.send(:exchange_exists?, "some_message")
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
@@ -242,7 +241,7 @@ module Beetle
       @client.register_exchange("some_exchange", :type => :topic, :durable => true)
       @pub.expects(:bunny).returns(m)
       ex  = @pub.send(:exchange, "some_exchange")
-      assert @pub.send(:exchange_exists?, "some_exchange")
+      assert @pub.send(:exchanges).include?("some_exchange")
       ex2 = @pub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
