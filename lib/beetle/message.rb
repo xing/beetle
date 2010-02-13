@@ -2,7 +2,7 @@ module Beetle
   class Message
     FORMAT_VERSION = 1
     FLAG_REDUNDANT = 2
-    DEFAULT_TTL = 1.days
+    DEFAULT_TTL = 1.day
     EXPIRE_AFTER = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 5
@@ -10,7 +10,7 @@ module Beetle
     DEFAULT_EXCEPTION_LIMIT = 1
 
     attr_reader :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_accessor :timeout, :delay, :server, :attempts_limit, :exception_limit
+    attr_accessor :timeout, :delay, :server, :attempts_limit, :exceptions_limit
 
     def initialize(queue, header, body)
       @queue = queue
@@ -59,7 +59,7 @@ module Beetle
     end
 
     def timed_out?
-      redis.get(timeout_key).to_i < now
+      (t = redis.get(timeout_key)) && t.to_i < now
     end
 
     def timed_out!
@@ -91,7 +91,7 @@ module Beetle
       (limit = redis.get(execution_attempts_key)) && limit.to_i >= attempts_limit
     end
 
-    def increment_execption_count!
+    def increment_exception_count!
       redis.incr(exceptions_key)
     end
 
@@ -111,6 +111,7 @@ module Beetle
       if mutex = redis.setnx(mutex_key, now)
         logger.debug "aquired mutex: #{mutex_key}"
       else
+        redis.del(mutex_key)
         logger.debug "deleted mutex: #{mutex_key}"
       end
       mutex
@@ -202,10 +203,11 @@ module Beetle
     end
 
     def run_handler!(block)
-      increment_execution_attempts!
       begin
+        increment_execution_attempts!
         block.call(self)
       rescue Exception => e
+        increment_exception_count!
         if attempts_limit_reached?
           ack!
           raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
