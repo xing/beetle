@@ -52,8 +52,8 @@ module Beetle
 
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @sub = Subscriber.new(client)
+      @client = Client.new
+      @sub = Subscriber.new(@client)
     end
 
     test "initially there should be no queues for the current server" do
@@ -62,7 +62,8 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @sub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @client.register_exchange("exchange" => "some_exchange")
+      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -77,7 +78,8 @@ module Beetle
     test "in trace mode, queues are bound with a 'trace' prefix" do
       @sub.trace = true
       expected_queue_name = "trace-some_queue-#{`hostname`.chomp}"
-      @sub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @client.register_exchange("some_exchange")
+      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -109,8 +111,8 @@ module Beetle
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @sub = Subscriber.new(client)
+      @client = Client.new
+      @sub = Subscriber.new(@client)
     end
 
     test "initially there should be no exchanges for the current server" do
@@ -119,7 +121,7 @@ module Beetle
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @sub.amqp_config["exchanges"].merge!({ "some_exchange" => { "type" => "topic", "durable" => true } })
+      @client.register_exchange("some_exchange", "type" => "topic", "durable" => true)
       m = mock("AMQP")
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
       @sub.expects(:mq).returns(m)
@@ -160,13 +162,15 @@ module Beetle
 
   class SubscriptionTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @sub = Subscriber.new(client)
+      @client = Client.new
+      @sub = Subscriber.new(@client)
     end
 
     test "subscribe should create subscriptions for all servers" do
       @sub.servers << "localhost:7777"
-      @sub.messages = {"a" => 1, "b" => 2}
+      @client.messages.clear
+      @client.register_message("a")
+      @client.register_message("b")
       @sub.expects(:subscribe_message).with("a").times(2)
       @sub.expects(:subscribe_message).with("b").times(2)
       @sub.send(:subscribe)
