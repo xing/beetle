@@ -1,13 +1,61 @@
 module Beetle
   class Client
-    attr_reader :amqp_config, :servers, :messages
+    attr_reader :amqp_config, :servers
 
     def initialize(options = {})
       @servers = []
-      @messages = {}
       @options = options
+      @queue_names_for_exchange = {}
       load_config(options[:config_file])
       Message.redis = Redis.new(@amqp_config[Beetle.config.environment]["msg_id_store"].symbolize_keys)
+    end
+
+    def register_exchange(name, opts={})
+      raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
+      exchanges[name] = opts.symbolize_keys
+    end
+
+    def exchanges
+      @amqp_config["exchanges"]
+    end
+
+    def register_queue(name, opts={})
+      raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
+      queues[name] = opts.symbolize_keys
+    end
+
+    def queues
+      @amqp_config["queues"]
+    end
+
+    def register_message(name, opts={})
+      raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
+      messages[name] = opts.symbolize_keys
+    end
+
+    def messages
+      @amqp_config["messages"]
+    end
+
+    def queues_for_exchange(exchange_name)
+      @queue_names_for_exchange[exchange_name] ||=
+        queues.select { |queue, config| config[:exchange] == exchange_name || (config[:exchange].blank? && queue == exchange_name) }.map(&:first)
+    end
+
+    def queue_for_message(message_name)
+      ((m = messages[message_name]) && m[:queue]) || message_name
+    end
+
+    def exchange_for_queue(queue_name)
+      ((q = queues[queue_name]) && q[:exchange]) || queue_name
+    end
+
+    def exchange_for_message(message_name)
+      exchange_for_queue(queue_for_message(message_name))
+    end
+
+    def register_handler(*args, &block)
+      subscriber.register_handler(*args, &block)
     end
 
     def publish(message_name, data, opts={})
@@ -22,13 +70,9 @@ module Beetle
       subscriber.stop
     end
 
-    def register_handler(*args, &block)
-      subscriber.register_handler(*args, &block)
-    end
-
     def trace
       subscriber.trace = true
-      register_handler(@messages.keys, :ack => true, :key => '#') do |msg|
+      register_handler(messages.keys, :ack => true, :key => '#') do |msg|
         puts "-----===== new message =====-----"
         puts "SERVER: #{msg.server}"
         puts "HEADER: #{msg.header.inspect}"
@@ -60,7 +104,6 @@ module Beetle
           @amqp_config[key].merge! value
         end
       end
-      @messages = @amqp_config["messages"]
       @servers = @amqp_config[Beetle.config.environment]['hostname'].split(/ *, */)
     end
 

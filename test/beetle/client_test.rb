@@ -21,6 +21,49 @@ module Beetle
     end
   end
 
+  class RegistrationTest < Test::Unit::TestCase
+    def setup
+      @client = Client.new
+    end
+
+    test "registering an exchange should store it in the configuration with symbolized option keys" do
+      opts = {"durable" => true}
+      @client.register_exchange("some_exchange", opts)
+      assert_equal({:durable => true}, @client.amqp_config["exchanges"]["some_exchange"])
+    end
+
+    test "registering an exchange should raise a configuration error if it is already configured" do
+      opts = {"durable" => true}
+      @client.register_exchange("some_exchange", opts)
+      assert_raises(ConfigurationError){ @client.register_exchange("some_exchange", opts) }
+    end
+
+    test "registering a queue should store it in the configuration with symbolized option keys" do
+      opts = {"durable" => true}
+      @client.register_queue("some_queue", opts)
+      assert_equal({:durable => true}, @client.amqp_config["queues"]["some_queue"])
+    end
+
+    test "registering a queue should raise a configuration error if it is already configured" do
+      opts = {"durable" => true}
+      @client.register_queue("some_queue", opts)
+      assert_raises(ConfigurationError){ @client.register_queue("some_queue", opts) }
+    end
+
+    test "registering a message should store it in the configuration with symbolized option keys" do
+      opts = {"persistent" => true}
+      @client.register_message("some_message", opts)
+      assert_equal({:persistent => true}, @client.amqp_config["messages"]["some_message"])
+    end
+
+    test "registering a message should raise a configuration error if it is already configured" do
+      opts = {"persistent" => true}
+      @client.register_message("some_message", opts)
+      assert_raises(ConfigurationError){ @client.register_message("some_message", opts) }
+    end
+
+  end
+
   class ClientTest < Test::Unit::TestCase
     test "instanciating a client should not instanciate the subscriber/publisher" do
       Publisher.expects(:new).never

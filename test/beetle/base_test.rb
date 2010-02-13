@@ -9,18 +9,6 @@ module Beetle
     end
   end
 
-  class HandlerRegistrationTest < Test::Unit::TestCase
-    def setup
-      @bs = Base.new(Client.new)
-    end
-
-    test "registering a queue should store it in the configuration with symbolized option keys" do
-      opts = {"durable" => true}
-      @bs.send(:register_queue, "some_queue", opts)
-      assert_equal({:durable => true}, @bs.amqp_config["queues"]["some_queue"])
-    end
-  end
-
   class BaseServerManagementTest < Test::Unit::TestCase
     def setup
       @client = Client.new

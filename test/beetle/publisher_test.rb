@@ -44,8 +44,8 @@ module Beetle
 
   class PublisherPublishingTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @pub = Publisher.new(client)
+      @client = Client.new
+      @pub = Publisher.new(@client)
     end
 
     test "failover publishing should try to recycle dead servers before trying to publish the message" do
@@ -183,7 +183,7 @@ module Beetle
       data = "XXX"
       opts = {}
       @pub.expects(:exchange_name_for_message_name).with('mama').returns('mama-exchange')
-      @pub.messages["mama"] = {:ttl => 1.hour}
+      @client.register_message("mama", :ttl => 1.hour)
       @pub.expects(:publish_with_failover).with("mama-exchange", "mama", data, :ttl => 1.hour).returns(1)
       assert_equal 1, @pub.publish("mama", data)
     end
@@ -191,8 +191,8 @@ module Beetle
 
   class PublisherQueueManagementTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @pub = Publisher.new(client)
+      @client = Client.new
+      @pub = Publisher.new(@client)
     end
 
     test "initially there should be no queues for the current server" do
@@ -201,7 +201,7 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @pub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @client.register_queue("some_queue", :durable => true, :exchange => "some_exchange", :key => "haha.#")
       @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -214,16 +214,18 @@ module Beetle
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do
-      @pub.amqp_config['exchanges'] = {'test_exchange' => {}}
-      @pub.amqp_config['queues'] = {'test_queue_1' => {'exchange' => 'test_exchange'}, 'test_queue_2' => {'exchange' => 'test_exchange'}}
+      @client.register_exchange("test_exchange")
+      @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
+      @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
       @pub.expects(:bind_queue).with('test_queue_1')
       @pub.expects(:bind_queue).with('test_queue_2')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
 
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do
-      @pub.amqp_config['exchanges'] = {'test_exchange' => {}}
-      @pub.amqp_config['queues'] = {'test_queue_1' => {'exchange' => 'test_exchange'}, 'test_queue_2' => {'exchange' => 'test_exchange'}}
+      @client.register_exchange("test_exchange")
+      @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
+      @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
       @pub.expects(:bind_queue!).twice
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
@@ -233,7 +235,7 @@ module Beetle
       data = "XXX"
       opts = {}
       @pub.expects(:exchange_name_for_message_name).with('mama').returns('mama-exchange')
-      @pub.messages["mama"] = {:ttl => 1.hour}
+      @client.register_message("mama", :ttl => 1.hour)
       e = stub('exchange', 'publish')
       @pub.expects(:exchange).with('mama-exchange').returns(e)
       @pub.expects(:bind_queues_for_exchange).with('mama-exchange').returns(true)
@@ -243,8 +245,8 @@ module Beetle
 
   class PublisherExchangeManagementTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @pub = Publisher.new(client)
+      @client = Client.new
+      @pub = Publisher.new(@client)
     end
 
     test "initially there should be no exchanges for the current server" do
@@ -255,7 +257,7 @@ module Beetle
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
       m = mock("Bunny")
       m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true).returns(42)
-      @pub.amqp_config["exchanges"].merge!({"some_exchange" => {:type => :topic, :durable => true}})
+      @client.register_exchange("some_exchange", :type => :topic, :durable => true)
       @pub.expects(:bunny).returns(m)
       ex  = @pub.send(:exchange, "some_exchange")
       assert @pub.send(:exchange_exists?, "some_exchange")
@@ -266,8 +268,8 @@ module Beetle
 
   class PublisherServerManagementTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @pub = Publisher.new(client)
+      @client = Client.new
+      @pub = Publisher.new(@client)
     end
 
     test "marking the current server as dead should add it to the dead servers hash and remove it from the active servers list" do
@@ -283,11 +285,13 @@ module Beetle
     test "should create exchanges for all registered messages and servers" do
       @pub.servers = %w(x y)
       messages = %w(a b)
-      @pub.amqp_config['messages'] = {'a' => {'queue' => 'donald'}, 'b' => {'queue' => 'mickey'}}
-      @pub.amqp_config['queues'] = {'donald' => {'exchange' => 'margot'}, 'mickey' => {}}
+      @client.register_exchange('margot')
+      @client.register_queue('donald', 'exchange' => 'margot')
+      @client.register_queue('mickey')
+      @client.register_message('a', 'queue' => 'donald')
+      @client.register_message('b', 'queue' => 'mickey')
 
       exchange_creation = sequence("exchange creation")
-      @pub.messages = []
       @pub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
       @pub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
       @pub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)

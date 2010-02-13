@@ -13,7 +13,7 @@ module Beetle
       @mqs = {}
     end
 
-    def listen(messages=@messages.keys)
+    def listen(messages=self.messages.keys)
       EM.run do
         create_exchanges(messages)
         bind_queues(messages)
@@ -30,7 +30,7 @@ module Beetle
     private
 
     def subscribe(messages=nil)
-      messages ||= @messages.keys
+      messages ||= self.messages.keys
       Array(messages).each do |message|
         @servers.each do |s|
           set_current_server s
