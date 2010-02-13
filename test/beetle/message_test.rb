@@ -73,7 +73,7 @@ module Beetle
       end
     end
 
-    test "successful processing of a redundant message once should insert all but the delay key into the datbase" do
+    test "successful processing of a redundant message once should insert all but the delay key and the exception count key into the database" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       header.expects(:ack)
@@ -89,6 +89,7 @@ module Beetle
       assert @r.exists(message.timeout_key)
       assert @r.exists(message.ack_count_key)
       assert !@r.exists(message.delay_key)
+      assert !@r.exists(message.exceptions_key)
     end
   end
 
@@ -206,10 +207,11 @@ module Beetle
       message.process(proc)
     end
 
-    test "a non retriable, redundant, existing message should not run the handler after being acked" do
+    test "a non retriable, redundant, existing message which has reached the handler executions attepts limit should not run the handler after being acked" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
+      message.timed_out!
       assert !message.attempts_limit_reached?
       Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS.times {message.increment_execution_attempts!}
       assert message.attempts_limit_reached?
@@ -244,12 +246,15 @@ module Beetle
       assert_equal "1", @r.get(message.ack_count_key)
     end
 
-    test "a retriable, redundant, fresh message should not be acked if running the handler crashes, the status should be incomplete and the timeout should be 0" do
+    test "a retriable, redundant, fresh message should not be acked if running the handler crashes and the exception limit has not been reached, the status should be incomplete and the timeout should be 0" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
       message.timeout = 10.seconds
+      message.exceptions_limit = 2
       assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !message.timed_out?
       assert message.redundant?
 
       proc = lambda {|*args| raise "crash"}
@@ -281,7 +286,7 @@ module Beetle
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body)
-      message.timeout = 0
+      message.timed_out!
       assert !message.key_exists?
       assert message.key_exists?
       assert message.timed_out?
@@ -429,6 +434,37 @@ module Beetle
       assert message.attempts_limit_reached?
     end
 
+    test "incrementing exception counts should increment by 1" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert_equal 1, message.increment_exception_count!
+      assert_equal 2, message.increment_exception_count!
+      assert_equal 3, message.increment_exception_count!
+    end
+
+    test "exceptions limit should be reached after incrementing the attempt limit counter 'exceptions limit' times" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.exceptions_limit = 2
+      assert !message.exceptions_limit_reached?
+      message.increment_exception_count!
+      assert !message.exceptions_limit_reached?
+      message.increment_exception_count!
+      assert message.exceptions_limit_reached?
+      message.increment_exception_count!
+      assert message.exceptions_limit_reached?
+    end
+
+    test "failure to aquire a mutex should delete it from the database" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert message.aquire_mutex!
+      assert !message.aquire_mutex!
+      assert !@r.exists(message.mutex_key)
+    end
   end
 end
 
