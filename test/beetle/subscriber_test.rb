@@ -114,7 +114,7 @@ module Beetle
     end
 
     test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @sub.send(:exchanges_for_current_server))
+      assert_equal({}, @sub.send(:exchanges))
       assert !@sub.send(:exchange_exists?, "some_message")
     end
 

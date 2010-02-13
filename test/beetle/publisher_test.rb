@@ -35,7 +35,7 @@ module Beetle
       b.expects(:stop).raises(Exception.new)
       @pub.expects(:bunny).returns(b)
       @pub.send(:stop!)
-      assert_equal({}, @pub.send(:exchanges_for_current_server))
+      assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
     end
@@ -232,7 +232,7 @@ module Beetle
     end
 
     test "initially there should be no exchanges for the current server" do
-      assert_equal({}, @pub.send(:exchanges_for_current_server))
+      assert_equal({}, @pub.send(:exchanges))
       assert !@pub.send(:exchange_exists?, "some_message")
     end
 
