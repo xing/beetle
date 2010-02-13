@@ -33,16 +33,7 @@ module Beetle
     end
 
     def exchange(name)
-      create_exchange(name) unless exchange_exists?(name)
-      exchanges[name]
-    end
-
-    def exchange_exists?(name)
-      exchanges.include?(name)
-    end
-
-    def create_exchange(name)
-      exchanges[name] = create_exchange!(name, @client.exchanges[name])
+      exchanges[name] ||= create_exchange!(name, @client.exchanges[name])
     end
 
     def queues

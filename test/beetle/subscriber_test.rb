@@ -115,7 +115,6 @@ module Beetle
 
     test "initially there should be no exchanges for the current server" do
       assert_equal({}, @sub.send(:exchanges))
-      assert !@sub.send(:exchange_exists?, "some_message")
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
@@ -124,7 +123,7 @@ module Beetle
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
       @sub.expects(:mq).returns(m)
       ex = @sub.send(:exchange, "some_exchange")
-      assert @sub.send(:exchange_exists?, "some_exchange")
+      assert @sub.send(:exchanges).include?("some_exchange")
       ex2 = @sub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
@@ -142,12 +141,12 @@ module Beetle
 
       exchange_creation = sequence("exchange creation")
       @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
-      @sub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
-      @sub.expects(:create_exchange).with("unused").never
+      @sub.expects(:create_exchange!).with("margot", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
+      @sub.expects(:set_current_server).with('y', anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("margot", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("unused").never
       @sub.send(:create_exchanges, messages)
     end
   end
