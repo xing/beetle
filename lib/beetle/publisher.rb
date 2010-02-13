@@ -111,7 +111,7 @@ module Beetle
     end
 
     def bind_queues_for_exchange(exchange_name)
-      @client.exchanges[exchange_name][:queues].each {|q| bind_queue(q) } if queues.empty?
+      @client.exchanges[exchange_name][:queues].each {|q| queue(q) } if queues.empty?
     end
 
     # TODO: Refactor, fethch the keys and stuff itself

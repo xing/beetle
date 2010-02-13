@@ -23,9 +23,29 @@ module Beetle
 
     private
 
+    def logger
+      self.class.logger
+    end
+
+    def self.logger
+      Beetle.config.logger
+    end
+
     def error(text)
       logger.error text
       raise Error.new(text)
+    end
+
+    def current_host
+      @server.split(':').first
+    end
+
+    def current_port
+      @server =~ /:(\d+)$/ ? $1.to_i : 5672
+    end
+
+    def set_current_server(s)
+      @server = s
     end
 
     def exchanges
@@ -40,7 +60,7 @@ module Beetle
       @queues[@server] ||= {}
     end
 
-    def bind_queue(name)
+    def queue(name)
       queues[name] ||=
         begin
           logger.debug("Binding #{name}")
@@ -60,24 +80,5 @@ module Beetle
         end
     end
 
-    def current_host
-      @server.split(':').first
-    end
-
-    def current_port
-      @server =~ /:(\d+)$/ ? $1.to_i : 5672
-    end
-
-    def set_current_server(s)
-      @server = s
-    end
-
-    def logger
-      self.class.logger
-    end
-
-    def self.logger
-      Beetle.config.logger
-    end
   end
 end
