@@ -193,15 +193,15 @@ module Beetle
       m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @pub.expects(:bunny).returns(m)
 
-      @pub.send(:bind_queue, "some_queue")
+      @pub.send(:queue, "some_queue")
       assert_equal q, @pub.send(:queues)["some_queue"]
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do
       @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
       @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
-      @pub.expects(:bind_queue).with('test_queue_1')
-      @pub.expects(:bind_queue).with('test_queue_2')
+      @pub.expects(:queue).with('test_queue_1')
+      @pub.expects(:queue).with('test_queue_2')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
 

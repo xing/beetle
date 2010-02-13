@@ -70,7 +70,7 @@ module Beetle
       m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
 
-      @sub.send(:bind_queue, "some_queue")
+      @sub.send(:queue, "some_queue")
       assert_equal q, @sub.send(:queues)["some_queue"]
     end
 
@@ -85,7 +85,7 @@ module Beetle
       m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
 
-      @sub.send(:bind_queue, "some_queue")
+      @sub.send(:queue, "some_queue")
       assert_equal q, @sub.send(:queues)["some_queue"]
     end
 
@@ -94,10 +94,10 @@ module Beetle
       @sub.servers = %w(a b)
       @sub.expects(:set_current_server).with("a").in_sequence(s)
       @sub.expects(:queues_with_handlers).with(["test"]).returns(["testa"]).in_sequence(s)
-      @sub.expects(:bind_queue).with("testa").in_sequence(s)
+      @sub.expects(:queue).with("testa").in_sequence(s)
       @sub.expects(:set_current_server).with("b").in_sequence(s)
       @sub.expects(:queues_with_handlers).with(["test"]).returns(["testb"]).in_sequence(s)
-      @sub.expects(:bind_queue).with("testb").in_sequence(s)
+      @sub.expects(:queue).with("testb").in_sequence(s)
       @sub.send(:bind_queues, ["test"])
     end
 
