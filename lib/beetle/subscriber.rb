@@ -20,7 +20,7 @@ module Beetle
 
     def register_handler(messages, opts, handler=nil, &block)
       Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, Handler.create(handler || block, opts)]
+        (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
       end
     end
 
@@ -76,11 +76,12 @@ module Beetle
     def create_subscription_callback(server, queue, handler)
       lambda do |header, data|
         begin
+          handler_instance = Handler.create(handler)
           m = Message.new(queue, header, data)
           m.server = server
-          m.process(handler)
+          m.process(handler_instance)
         rescue Exception => e
-          handler.process_exception e
+          handler_instance.process_exception e
           logger.error "Error during message processing. Message will get redelivered. #{m}\n #{e}"
           install_recovery_timer(server)
         end
@@ -109,6 +110,10 @@ module Beetle
       EM.stop_event_loop
     end
 
+    def amqp_connection
+      @amqp_connections[@server] ||= new_amqp_connection
+    end
+
     def new_amqp_connection
       # FIXME: wtf, how to test that reconnection feature....
       con = AMQP.connect(:host => current_host, :port => current_port)
@@ -116,8 +121,5 @@ module Beetle
       con
     end
 
-    def amqp_connection
-      @amqp_connections[@server] ||= new_amqp_connection
-    end
   end
 end
