@@ -193,7 +193,7 @@ module Beetle
       @client.register_message("b", :queue => "a")
       @sub.expects(:subscribe_message).with("a").times(2)
       @sub.expects(:subscribe_message).with("b").times(2)
-      @sub.send(:subscribe)
+      @sub.send(:subscribe, %W(a b))
     end
 
     test "subscribe_message should subscribe with a subscription callback created from the registered block" do
