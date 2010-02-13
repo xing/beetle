@@ -62,7 +62,6 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @client.register_exchange("some_exchange")
       @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
@@ -78,7 +77,6 @@ module Beetle
     test "in trace mode, queues are bound with a 'trace' prefix" do
       @sub.trace = true
       expected_queue_name = "trace-some_queue-#{`hostname`.chomp}"
-      @client.register_exchange("some_exchange")
       @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
@@ -169,7 +167,6 @@ module Beetle
     test "subscribe should create subscriptions for all servers" do
       @sub.servers << "localhost:7777"
       @client.messages.clear
-      @client.register_exchange("a")
       @client.register_queue("a")
       @client.register_message("a")
       @client.register_message("b", :queue => "a")
