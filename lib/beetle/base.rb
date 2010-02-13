@@ -8,19 +8,23 @@ module Beetle
     QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
     QUEUE_BINDING_KEYS  = [:key, :no_wait]
 
-    attr_accessor :options, :exchanges, :queues, :trace, :servers, :server, :messages, :amqp_config
+    attr_accessor :options, :exchanges, :queues, :trace, :servers, :server, :messages
 
     def initialize(client, options = {})
       @options = options
       @client = client
       @servers = @client.servers
       @messages = @client.messages
-      @amqp_config = @client.amqp_config
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queue_names_for_exchange = {}
       @queues = {}
       @trace = false
+    end
+
+    # forward access to the AMQP configuration to the client
+    def amqp_config
+      @client.amqp_config
     end
 
     def stop
@@ -44,7 +48,7 @@ module Beetle
     end
 
     def register_queue(name, opts)
-      @amqp_config["queues"][name] = opts.symbolize_keys
+      amqp_config["queues"][name] = opts.symbolize_keys
     end
 
     def exchanges_for_current_server
@@ -57,11 +61,11 @@ module Beetle
     end
 
     def queue_name_for_message_name(message_name)
-      ((m = @amqp_config["messages"][message_name]) && m["queue"]) || message_name
+      ((m = amqp_config["messages"][message_name]) && m["queue"]) || message_name
     end
 
     def exchange_name_for_queue_name(queue_name)
-      ((q = @amqp_config["queues"][queue_name]) && q["exchange"]) || queue_name
+      ((q = amqp_config["queues"][queue_name]) && q["exchange"]) || queue_name
     end
 
     def exchange_name_for_message_name(message_name)
@@ -87,7 +91,7 @@ module Beetle
     end
 
     def create_exchange(name)
-      opts = @amqp_config["exchanges"][name].symbolize_keys
+      opts = amqp_config["exchanges"][name].symbolize_keys
       opts[:type] = opts[:type].to_sym
       exchanges_for_current_server[name] = create_exchange!(name, opts)
     end
@@ -100,7 +104,7 @@ module Beetle
       queues[name] ||=
         begin
           logger.debug("Binding #{name}")
-          queue_opts = @amqp_config["queues"][name]
+          queue_opts = amqp_config["queues"][name]
           error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
           opts = queue_opts.dup
           opts.symbolize_keys!

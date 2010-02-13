@@ -62,7 +62,7 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @sub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @sub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -77,7 +77,7 @@ module Beetle
     test "in trace mode, queues are bound with a 'trace' prefix" do
       @sub.trace = true
       expected_queue_name = "trace-some_queue-#{`hostname`.chomp}"
-      @sub.instance_variable_get("@amqp_config")["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
+      @sub.amqp_config["queues"].merge!({"some_queue" => {"durable" => true, "exchange" => "some_exchange", "key" => "haha.#"}})
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
@@ -119,7 +119,7 @@ module Beetle
     end
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
-      @sub.instance_variable_get("@amqp_config")["exchanges"].merge!({ "some_exchange" => { "type" => "topic", "durable" => true } })
+      @sub.amqp_config["exchanges"].merge!({ "some_exchange" => { "type" => "topic", "durable" => true } })
       m = mock("AMQP")
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
       @sub.expects(:mq).returns(m)
