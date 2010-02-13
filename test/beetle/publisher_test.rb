@@ -47,7 +47,6 @@ module Beetle
       @client = Client.new
       @pub = Publisher.new(@client)
       @pub.stubs(:bind_queues_for_exchange)
-      @client.register_exchange("mama-exchange")
       @client.register_queue("mama", :exchange => "mama-exchange")
       @client.register_message("mama", :ttl => 1.hour)
       @opts = { :ttl => 1.hour }
@@ -186,7 +185,6 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @client.register_exchange("some_exchange")
       @client.register_queue("some_queue", :durable => true, :exchange => "some_exchange", :key => "haha.#")
       @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
@@ -200,7 +198,6 @@ module Beetle
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do
-      @client.register_exchange("test_exchange")
       @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
       @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
       @pub.expects(:bind_queue).with('test_queue_1')
@@ -209,7 +206,6 @@ module Beetle
     end
 
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do
-      @client.register_exchange("test_exchange")
       @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
       @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
       @pub.expects(:bind_queue!).twice
@@ -220,7 +216,6 @@ module Beetle
     test "call the queue binding method when publishing" do
       data = "XXX"
       opts = {}
-      @client.register_exchange("mama-exchange")
       @client.register_queue("mama", :exchange => "mama-exchange")
       @client.register_message("mama", :ttl => 1.hour)
       e = stub('exchange', 'publish')
@@ -272,8 +267,6 @@ module Beetle
     test "should create exchanges for all registered messages and servers" do
       @pub.servers = %w(x y)
       messages = %w(a b)
-      @client.register_exchange('margot')
-      @client.register_exchange('mickey')
       @client.register_queue('donald', 'exchange' => 'margot')
       @client.register_queue('mickey')
       @client.register_message('a', 'queue' => 'donald')

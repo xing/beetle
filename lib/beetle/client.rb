@@ -31,6 +31,8 @@ module Beetle
       opts = {:exchange => name}.merge!(opts.symbolize_keys)
       opts.merge! :durable => true, :passive => false
       queues[name] = opts
+      exchange = opts[:exchange]
+      register_exchange(exchange) unless exchanges.include?(exchange)
       (exchanges[opts[:exchange]][:queues] ||= []) << name
     end
 
