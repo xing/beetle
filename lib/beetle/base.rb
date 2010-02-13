@@ -8,7 +8,7 @@ module Beetle
     QUEUE_CREATION_KEYS = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
     QUEUE_BINDING_KEYS  = [:key, :no_wait]
 
-    attr_accessor :options, :exchanges, :queues, :trace, :servers, :server
+    attr_accessor :options, :trace, :servers, :server
 
     def initialize(client, options = {})
       @options = options
@@ -40,21 +40,21 @@ module Beetle
       end
     end
 
-    def exchanges_for_current_server
+    def exchanges
       @exchanges[@server] ||= {}
     end
 
     def exchange(name)
       create_exchange(name) unless exchange_exists?(name)
-      exchanges_for_current_server[name]
+      exchanges[name]
     end
 
     def exchange_exists?(name)
-      exchanges_for_current_server.include?(name)
+      exchanges.include?(name)
     end
 
     def create_exchange(name)
-      exchanges_for_current_server[name] = create_exchange!(name, @client.exchanges[name])
+      exchanges[name] = create_exchange!(name, @client.exchanges[name])
     end
 
     def queues
