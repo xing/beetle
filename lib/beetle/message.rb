@@ -37,6 +37,10 @@ module Beetle
       [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
+    def msg_id
+      @msg_id ||= "msgid:#{queue}:#{uuid}"
+    end
+
     def now
       Time.now.to_i
     end
@@ -112,10 +116,10 @@ module Beetle
 
     def aquire_mutex!
       if mutex = redis.setnx(mutex_key, now)
-        logger.debug "aquired mutex: #{mutex_key}"
+        logger.debug "aquired mutex: #{msg_id}"
       else
         redis.del(mutex_key)
-        logger.debug "deleted mutex: #{mutex_key}"
+        logger.debug "deleted mutex: #{msg_id}"
       end
       mutex
     end
@@ -129,42 +133,42 @@ module Beetle
     end
 
     def process(block)
-      logger.debug "Processing message #{uuid} received from queue #{@queue}"
+      logger.debug "Processing message #{msg_id}"
       begin
         process_internal(block)
       rescue Exception => e
-        logger.warn "Exception '#{e}' during invocation of message handler for #{self}"
+        logger.warn "Exception '#{e}' during invocation of message handler for #{msg_id}"
         logger.warn "Backtrace: #{e.backtrace.join("\n")}"
         raise
       end
     end
 
     def status_key
-      keys[:status] ||= "msgid:#{queue}:#{uuid}:status"
+      keys[:status] ||= "#{msg_id}:status"
     end
 
     def ack_count_key
-      keys[:ack_count] ||= "msgid:#{queue}:#{uuid}:ack_count"
+      keys[:ack_count] ||= "#{msg_id}:ack_count"
     end
 
     def timeout_key
-      keys[:timeout] ||= "msgid:#{queue}:#{uuid}:timeout"
+      keys[:timeout] ||= "#{msg_id}:timeout"
     end
 
     def delay_key
-      keys[:delay] ||= "msgid:#{queue}:#{uuid}:delay"
+      keys[:delay] ||= "#{msg_id}:delay"
     end
 
     def execution_attempts_key
-      keys[:attempts] ||= "msgid:#{queue}:#{uuid}:attempts"
+      keys[:attempts] ||= "#{msg_id}:attempts"
     end
 
     def mutex_key
-      keys[:mutex] ||= "msgid:#{queue}:#{uuid}:mutex"
+      keys[:mutex] ||= "#{msg_id}:mutex"
     end
 
     def exceptions_key
-      keys[:exceptions] ||= "msgid:#{queue}:#{uuid}:exceptions"
+      keys[:exceptions] ||= "#{msg_id}:exceptions"
     end
 
     def all_keys
@@ -179,7 +183,7 @@ module Beetle
 
     def process_internal(block)
       if expired?
-        logger.warn "Ignored expired message!"
+        logger.warn "Ignored expired message (#{msg_id})!"
         ack!
         return
       end
@@ -190,15 +194,15 @@ module Beetle
       elsif completed?
         ack!
       elsif delayed?
-        logger.warn "Ignored delayed message!"
+        logger.warn "Ignored delayed message (#{msg_id})!"
       elsif !timed_out?
         raise HandlerNotYetTimedOut
       elsif attempts_limit_reached?
         ack!
-        raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
+        raise AttemptsLimitReached, "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
       elsif exceptions_limit_reached?
         ack!
-        raise ExceptionsLimitReached, "reached the handler exceptions limit: #{exceptions_limit}"
+        raise ExceptionsLimitReached, "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
       else
         set_timeout!
         run_handler!(block) if aquire_mutex!
@@ -213,10 +217,10 @@ module Beetle
         increment_exception_count!
         if attempts_limit_reached?
           ack!
-          raise AttemptsLimitReached, "reached the handler execution attempts limit: #{attempts_limit}"
+          raise AttemptsLimitReached, "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
         elsif exceptions_limit_reached?
           ack!
-          raise ExceptionsLimitReached, "reached the handler exceptions limit: #{exceptions_limit}"
+          raise ExceptionsLimitReached, "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
         else
           timed_out!
           set_delay!
@@ -240,7 +244,7 @@ module Beetle
     end
 
     def ack!
-      logger.debug "ack! for message #{uuid} on queue #{@queue}"
+      logger.debug "ack! for message #{msg_id}"
       header.ack
       if !redundant? || redis.incr(ack_count_key) == 2
         redis.del(all_keys)
