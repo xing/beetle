@@ -29,6 +29,15 @@ module Beetle
 
     private
 
+    def create_exchanges(messages)
+      @servers.each do |s|
+        set_current_server s
+        messages.each do |message|
+          create_exchange(@client.messages[message][:exchange])
+        end
+      end
+    end
+
     def subscribe(messages=nil)
       messages ||= @client.messages.keys
       Array(messages).each do |message|

@@ -53,15 +53,6 @@ module Beetle
       exchanges_for_current_server.include?(name)
     end
 
-    def create_exchanges(messages)
-      @servers.each do |s|
-        set_current_server s
-        messages.each do |message|
-          create_exchange(@client.messages[message][:exchange])
-        end
-      end
-    end
-
     def create_exchange(name)
       exchanges_for_current_server[name] = create_exchange!(name, @client.exchanges[name])
     end
