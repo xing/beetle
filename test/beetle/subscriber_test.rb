@@ -128,6 +128,28 @@ module Beetle
       ex2 = @sub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
+
+    test "should create exchanges for all messages passed to create_exchanges, for all servers" do
+      @sub.servers = %w(x y)
+      messages = %w(a b)
+      @client.register_exchange("unused")
+      @client.register_queue('donald', 'exchange' => 'margot')
+      @client.register_queue('mickey')
+      @client.register_queue('mouse', :exchange => 'mickey')
+      @client.register_message('a', 'queue' => 'donald')
+      @client.register_message('b', 'queue' => 'mickey')
+      @client.register_message('c', 'queue' => 'mouse')
+
+      exchange_creation = sequence("exchange creation")
+      @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
+      @sub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
+      @sub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
+      @sub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
+      @sub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
+      @sub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
+      @sub.expects(:create_exchange).with("unused").never
+      @sub.send(:create_exchanges, messages)
+    end
   end
 
   class TimerTest < Test::Unit::TestCase

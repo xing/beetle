@@ -264,24 +264,6 @@ module Beetle
       assert_kind_of Time, dead["localhost:2222"]
     end
 
-    test "should create exchanges for all registered messages and servers" do
-      @pub.servers = %w(x y)
-      messages = %w(a b)
-      @client.register_queue('donald', 'exchange' => 'margot')
-      @client.register_queue('mickey')
-      @client.register_message('a', 'queue' => 'donald')
-      @client.register_message('b', 'queue' => 'mickey')
-
-      exchange_creation = sequence("exchange creation")
-      @pub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
-      @pub.expects(:set_current_server).with('y').in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("margot").in_sequence(exchange_creation)
-      @pub.expects(:create_exchange).with("mickey").in_sequence(exchange_creation)
-      @pub.send(:create_exchanges, messages)
-    end
-
     test "recycle_dead_servers should move servers from the dead server hash to the servers list only if the have been markd dead for longer than 10 seconds" do
       @pub.servers = ["a:1", "b:2"]
       @pub.send(:set_current_server, "a:1")
