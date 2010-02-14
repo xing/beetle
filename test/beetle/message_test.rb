@@ -172,18 +172,17 @@ module Beetle
 
   end
 
-  class HandlerAckSequenceTest < Test::Unit::TestCase
+  class FreshMessageTest < Test::Unit::TestCase
     def setup
       @r = Message.redis
       @r.flushdb
     end
 
-    test "a retriable, non redundant message should first run the handler and then be acked" do
+    test "processing a fresh message sucessfully should first run the handler and then ack it" do
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :attempts => 2)
+      message = Message.new("somequeue", header, body)
       assert !message.attempts_limit_reached?
-      assert !message.redundant?
 
       proc = mock("proc")
       s = sequence("s")
@@ -192,43 +191,7 @@ module Beetle
       message.process(proc)
     end
 
-    test "a non retriable, redundant fresh message should ack after running the handler" do
-      body = Message.encode('my message', :redundant => true)
-      header = mock("header")
-      message = Message.new("somequeue", header, body)
-      assert !message.attempts_limit_reached?
-      assert message.redundant?
-
-      proc = mock("proc")
-      s = sequence("s")
-      proc.expects(:call).in_sequence(s)
-      header.expects(:ack).in_sequence(s)
-      message.process(proc)
-    end
-
-    test "a non retriable, redundant, existing message which has reached the handler executions attepts limit should not run the handler after being acked" do
-      body = Message.encode('my message', :redundant => true)
-      header = mock("header")
-      message = Message.new("somequeue", header, body)
-      message.timed_out!
-      assert !message.attempts_limit_reached?
-      Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS.times {message.increment_execution_attempts!}
-      assert message.attempts_limit_reached?
-      assert message.redundant?
-      assert !message.completed?
-      assert message.timed_out?
-
-      # insert the key into the database
-      assert !message.key_exists?
-      assert message.key_exists?
-
-      proc = mock("proc")
-      header.expects(:ack)
-      proc.expects(:call).never
-      assert_raises(AttemptsLimitReached) { message.send(:process_internal, proc) }
-    end
-
-    test "a retriable, redundant, fresh message should be acked after running the handler, and the ack count should be 1, and the status should be completed" do
+    test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
       message = Message.new("somequeue", header, body, :timeout => 10.seconds)
@@ -244,82 +207,209 @@ module Beetle
       assert_equal "1", @r.get(message.ack_count_key)
     end
 
-    test "a retriable, redundant, fresh message should not be acked if running the handler crashes and the exception limit has not been reached, the status should be incomplete and the timeout should be 0" do
-      body = Message.encode('my message', :redundant => true)
+  end
+
+  class HandlerCrashTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "a message should not be acked if the handler crashes and the exception limit has not been reached" do
+      body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :exceptions => 2)
+      message = Message.new("somequeue", header, body, :delay => 42, :timeout => 10.seconds, :attempts => 2, :exceptions => 2)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
-      assert message.redundant?
+
+      proc = lambda {|*args| raise "crash"}
+      message.stubs(:now).returns(10)
+      message.expects(:completed!).never
+      header.expects(:ack).never
+      assert_raises(HandlerCrash) { message.__send__(:process_internal, proc) }
+      assert !message.completed?
+      assert_equal "1", @r.get(message.exceptions_key)
+      assert_equal "0", @r.get(message.timeout_key)
+      assert_equal "52", @r.get(message.delay_key)
+    end
+
+    test "a message should be acked if the handler crashes and the exception limit has been reached" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 2, :exceptions => 0)
+      assert !message.attempts_limit_reached?
+      assert message.exceptions_limit_reached?
+      assert !message.timed_out?
 
       proc = lambda {|*args| raise "crash"}
       s = sequence("s")
       message.expects(:completed!).never
-      header.expects(:ack).never
-      assert_raises(HandlerCrash) { message.__send__(:process_internal, proc) }
-      assert message.timed_out?
-      assert !message.completed?
+      header.expects(:ack)
+      assert_raises(ExceptionsLimitReached) { message.__send__(:process_internal, proc) }
     end
 
-    test "a retriable, redundant, existing message should be just acked if the status is complete" do
-      body = Message.encode('my message', :redundant => true)
+    test "a message should be acked if the handler crashes and the attempts limit has been reached" do
+      body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :timeout => 10.seconds)
-      assert message.redundant?
+      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 1, :exceptions => 1)
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !message.timed_out?
+
+      proc = lambda {|*args| raise "crash"}
+      s = sequence("s")
+      message.expects(:completed!).never
+      header.expects(:ack)
+      assert_raises(AttemptsLimitReached) { message.__send__(:process_internal, proc) }
+    end
+
+  end
+
+  class SeenMessageTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "a completed existing message should be just acked and not run the handler" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
       message.completed!
+      assert message.completed?
 
       proc = mock("proc")
       s = sequence("s")
       header.expects(:ack)
       proc.expects(:call).never
       message.__send__(:process_internal, proc)
-      assert message.timed_out?
     end
 
-    test "a message which has not reached its execution attempt limit, redundant, existing, incomplete, timed out should be processed again" do
-      body = Message.encode('my message', :redundant => true)
+    test "an incomplete, delayed existing message should be processed later" do
+      body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body)
-      message.timed_out!
+      message = Message.new("somequeue", header, body, :delay => 10.seconds)
       assert !message.key_exists?
-      assert message.key_exists?
-      assert message.timed_out?
-      assert !message.attempts_limit_reached?
-      assert message.redundant?
       assert !message.completed?
+      message.set_delay!
+      assert message.delayed?
 
       proc = mock("proc")
       s = sequence("s")
+      header.expects(:ack).never
+      proc.expects(:call).never
+      message.__send__(:process_internal, proc)
+      assert message.delayed?
+      assert !message.completed?
+    end
+
+    test "an incomplete, undelayed, not yet timed out, existing message should be processed later" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body, :timeout => 10.seconds)
+      assert !message.key_exists?
+      assert !message.completed?
+      assert !message.delayed?
+      message.set_timeout!
+      assert !message.timed_out?
+
+      proc = mock("proc")
+      s = sequence("s")
+      header.expects(:ack).never
+      proc.expects(:call).never
+      assert_raises(HandlerNotYetTimedOut){ message.__send__(:process_internal, proc) }
+      assert !message.delayed?
+      assert !message.completed?
+      assert !message.timed_out?
+    end
+
+    test "an incomplete, undelayed, not yet timed out, existing message which has reached the handler execution attempts limit should be acked and not run the handler" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
+      assert !message.completed?
+      assert !message.delayed?
+      message.timed_out!
+      assert message.timed_out?
+
+      assert !message.attempts_limit_reached?
+      message.attempts_limit.times {message.increment_execution_attempts!}
+      assert message.attempts_limit_reached?
+
+      proc = mock("proc")
+      header.expects(:ack)
+      proc.expects(:call).never
+      assert_raises(AttemptsLimitReached) { message.send(:process_internal, proc) }
+    end
+
+    test "an incomplete, undelayed, timed out, existing message which has reached the exceptions limit should be acked and not run the handler" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
+      assert !message.completed?
+      assert !message.delayed?
+      message.timed_out!
+      assert message.timed_out?
+      assert !message.attempts_limit_reached?
+      message.increment_exception_count!
+      assert message.exceptions_limit_reached?
+
+      proc = mock("proc")
+      header.expects(:ack)
+      proc.expects(:call).never
+      assert_raises(ExceptionsLimitReached) { message.send(:process_internal, proc) }
+    end
+
+    test "an incomplete, undelayed, timed out, existing message should be processed again if the mutex can be aquired" do
+      body = Message.encode('my message', :redundant => true)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
+      assert !message.completed?
+      assert !message.delayed?
+      message.timed_out!
+      assert message.timed_out?
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+
+      proc = mock("proc")
+      s = sequence("s")
+      message.expects(:set_timeout!).in_sequence(s)
       proc.expects(:call).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       message.__send__(:process_internal, proc)
       assert message.completed?
     end
 
-    test "a message which has not reached its execution attempt limit, redundant, existing, incomplete, not yet timed out should be processed later" do
+    test "an incomplete, undelayed, timed out, existing message should not be processed again if the mutex cannot be aquired" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
-      message = Message.new("somequeue", header, body, :timeout => Time.now.to_i + 10.seconds)
-      message.set_timeout!
+      message = Message.new("somequeue", header, body)
       assert !message.key_exists?
-      assert message.key_exists?
-      assert !message.timed_out?
-      assert !message.attempts_limit_reached?
-      assert message.redundant?
       assert !message.completed?
+      assert !message.delayed?
+      message.timed_out!
+      assert message.timed_out?
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      message.aquire_mutex!
+      assert @r.exists(message.mutex_key)
 
       proc = mock("proc")
       proc.expects(:call).never
       header.expects(:ack).never
-      assert_raises(HandlerNotYetTimedOut){ message.__send__(:process_internal, proc) }
+      message.__send__(:process_internal, proc)
       assert !message.completed?
+      assert !@r.exists(message.mutex_key)
     end
 
   end
 
   class ProcessingTest < Test::Unit::TestCase
-
     test "processing a message catches exceptions risen by process_internal and reraises them" do
       body = Message.encode('my message', :redundant => true)
       header = mock("header")
