@@ -151,22 +151,18 @@ module Beetle
     end
   end
 
-  class TimerTest < Test::Unit::TestCase
+  class CallBackExecutionTest < Test::Unit::TestCase
     def setup
       client = Client.new
       @sub = Subscriber.new(client)
-      @handler = Handler.create(lambda{|*args|})
+      @exception = Exception.new "murks"
+      @handler = Handler.create(lambda{|*args| raise @exception})
       @queue = 'somequeue'
-      @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler, {})
+      @callback = @sub.send(:create_subscription_callback, 'servername', @queue, @handler, {:exceptions => 2, :attempts => 2})
     end
 
     test "the internal timer should get refreshed for every failed message processing" do
-      body = Message.encode("my message")
-      header = mock("header")
-      message = Message.new(@queue, header, body)
-      exception = Exception.new "murks"
-      Message.any_instance.expects(:process).raises(exception).twice
-      @handler.expects(:process_exception).with(exception).twice
+      @handler.expects(:process_exception).with(@exception).twice
       timer = mock("timer")
       mq = mock("mq")
       mq.expects(:recover).with(true).twice
@@ -174,8 +170,19 @@ module Beetle
 
       timer.expects(:cancel).once
       EM::Timer.expects(:new).with(Subscriber::RECOVER_AFTER).twice.returns(timer).yields
-      @callback.call(header, body)
-      @callback.call(header, body)
+
+      header = mock("header")
+      body1 = Message.encode("my message")
+      body2 = Message.encode("my message")
+      @callback.call(header, body1)
+      @callback.call(header, body2)
+    end
+
+    test "exceptions raised from message processing should be ignored" do
+      header = mock("header")
+      body = Message.encode("my message")
+      Message.any_instance.expects(:process).raises(Exception.new)
+      assert_nothing_raised { @callback.call(header, body) }
     end
   end
 
@@ -249,8 +256,8 @@ module Beetle
 
     test "should allow registration of multiple handlers for a message" do
       opts = {}
-      @sub.register_handler("a message", { :queue => "queue_1" } ) { |*args| "handler 1" }
-      @sub.register_handler("a message", { :queue => "queue_2" }) { |*args| "handler 2" }
+      @sub.register_handler("a message", :queue => "queue_1") { |*args| "handler 1" }
+      @sub.register_handler("a message", :queue => "queue_2") { |*args| "handler 2" }
       handlers = @sub.instance_variable_get("@handlers")["a message"]
       handler1, handler2 = handlers
       assert_equal 2, handlers.size
