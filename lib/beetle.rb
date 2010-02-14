@@ -10,10 +10,6 @@ require 'redis'
 module Beetle
 
   class Error < StandardError; end
-  class HandlerCrash < Error; end
-  class HandlerNotYetTimedOut < Error; end
-  class AttemptsLimitReached < Error; end
-  class ExceptionsLimitReached < Error; end
   class ConfigurationError < Error; end
 
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]

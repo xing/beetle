@@ -8,8 +8,34 @@ module Beetle
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     DEFAULT_EXCEPTION_LIMIT = 1
 
+    # message processing result
+    class RC
+      def initialize(*args)
+        @recover = args.include? :recover
+        @failure = args.include? :failure
+      end
+
+      def recover?
+        @recover
+      end
+
+      def failure?
+        @failure
+      end
+
+      OK                     = RC.new
+      Ancient                = RC.new(:failure)
+      AttemptsLimitReached   = RC.new(:failure)
+      ExceptionsLimitReached = RC.new(:failure)
+      Delayed                = RC.new(:recover)
+      HandlerCrash           = RC.new(:recover)
+      HandlerNotYetTimedOut  = RC.new(:recover)
+      MutexLocked            = RC.new(:recover)
+      InternalError          = RC.new(:recover)
+    end
+
     attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit
+    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
 
     def initialize(queue, header, body, opts = {})
       @queue  = queue
@@ -133,17 +159,6 @@ module Beetle
       @redis = redis
     end
 
-    def process(block)
-      logger.debug "Processing message #{msg_id}"
-      begin
-        process_internal(block)
-      rescue Exception => e
-        logger.warn "Exception '#{e}' during invocation of message handler for #{msg_id}"
-        logger.warn "Backtrace: #{e.backtrace.join("\n")}"
-        raise
-      end
-    end
-
     def status_key
       keys[:status] ||= "#{msg_id}:status"
     end
@@ -180,56 +195,81 @@ module Beetle
       @keys ||= {}
     end
 
+    def process(handler)
+      logger.debug "Processing message #{msg_id}"
+      result = nil
+      begin
+        result = process_internal(handler)
+        handler.process_exception(@exception) if @exception
+        handler.process_failure(result) if result.failure?
+      rescue Exception => e
+        logger.warn "Exception '#{e}' during processing of message #{msg_id}"
+        logger.warn "Backtrace: #{e.backtrace.join("\n")}"
+        result = RC::InternalError
+      end
+      result
+    end
+
     private
 
-    def process_internal(block)
+    def process_internal(handler)
       if expired?
         logger.warn "Ignored expired message (#{msg_id})!"
         ack!
-        return
-      end
-
-      if !key_exists?
+        RC::Ancient
+      elsif !key_exists?
         set_timeout!
-        run_handler!(block)
+        run_handler!(handler)
       elsif completed?
         ack!
+        RC::OK
       elsif delayed?
         logger.warn "Ignored delayed message (#{msg_id})!"
+        RC::Delayed
       elsif !timed_out?
-        raise HandlerNotYetTimedOut
+        RC::HandlerNotYetTimedOut
       elsif attempts_limit_reached?
         ack!
-        raise AttemptsLimitReached, "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        logger.warn "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        RC::AttemptsLimitReached
       elsif exceptions_limit_reached?
         ack!
-        raise ExceptionsLimitReached, "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        logger.warn "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        RC::ExceptionsLimitReached
       else
         set_timeout!
-        run_handler!(block) if aquire_mutex!
+        if aquire_mutex!
+          run_handler!(handler)
+        else
+          RC::MutexLocked
+        end
       end
     end
 
-    def run_handler!(block)
+    def run_handler!(handler)
+      increment_execution_attempts!
       begin
-        increment_execution_attempts!
-        block.call(self)
-      rescue Exception => e
+        handler.call(self)
+      rescue Exception => @exception
         increment_exception_count!
         if attempts_limit_reached?
           ack!
-          raise AttemptsLimitReached, "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+          logger.warn "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+          return RC::AttemptsLimitReached
         elsif exceptions_limit_reached?
           ack!
-          raise ExceptionsLimitReached, "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+          logger.warn "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+          return RC::ExceptionsLimitReached
         else
           timed_out!
           set_delay!
-          raise HandlerCrash.new(e)
+          logger.warn "Message handler crashed on #{msg_id}"
+          return RC::HandlerCrash
         end
       end
       completed!
       ack!
+      RC::OK
     end
 
     def redis

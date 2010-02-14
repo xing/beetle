@@ -8,13 +8,14 @@ module Beetle
       elsif block_or_handler.is_a?(Class) && block_or_handler.ancestors.include?(Handler)
         block_or_handler.new
       else
-        new(opts[:errback], block_or_handler)
+        new(block_or_handler, opts)
       end
     end
 
-    def initialize(error_callback=nil, processor=nil)
+    def initialize(processor=nil, opts={})
       @processor = processor
-      @error_callback = error_callback
+      @error_callback = opts[:errback]
+      @failure_callback = opts[:failback]
     end
 
     def call(message)
@@ -41,8 +42,23 @@ module Beetle
       end
     end
 
+    def process_failure(result)
+      begin
+        if @failure_callback
+          @failure_callback.call(message, result)
+        else
+          failure(result)
+        end
+      rescue Exception
+      end
+    end
+
     def error(exception)
       logger.error "Handler execution raised an exeption: #{exception}"
+    end
+
+    def failure(result)
+      logger.error "Handler has finally failed"
     end
 
     def logger

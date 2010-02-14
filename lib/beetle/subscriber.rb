@@ -76,13 +76,13 @@ module Beetle
     def create_subscription_callback(server, queue, handler, opts)
       lambda do |header, data|
         begin
-          handler_instance = Handler.create(handler, opts)
+          processor = Handler.create(handler, opts)
           m = Message.new(queue, header, data, opts.merge(:server => server))
-          m.process(handler_instance)
-        rescue Exception => e
-          handler_instance.process_exception e
-          logger.error "Error during processing of message #{m.msg_id}"
-          install_recovery_timer(server)
+          result = m.process(processor)
+          install_recovery_timer(server) if result.recover?
+        rescue Exception
+          # swallow all exceptions
+          logger.error "Internal error during message processing"
         end
       end
     end
