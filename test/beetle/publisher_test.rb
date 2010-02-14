@@ -54,6 +54,8 @@ module Beetle
     end
 
     test "failover publishing should try to recycle dead servers before trying to publish the message" do
+      @pub.servers << "localhost:3333"
+      @pub.send(:mark_server_dead)
       publishing = sequence('publishing')
       @pub.expects(:recycle_dead_servers).in_sequence(publishing)
       @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).in_sequence(publishing)
@@ -61,6 +63,8 @@ module Beetle
     end
 
     test "redundant publishing should try to recycle dead servers before trying to publish the message" do
+      @pub.servers << "localhost:3333"
+      @pub.send(:mark_server_dead)
       publishing = sequence('publishing')
       @pub.expects(:recycle_dead_servers).in_sequence(publishing)
       @pub.expects(:publish_with_redundancy).with("mama-exchange", "mama", @data, @opts.merge(:redundant => true)).in_sequence(publishing)
