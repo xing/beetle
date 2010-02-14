@@ -81,7 +81,7 @@ module Beetle
           m.process(handler_instance)
         rescue Exception => e
           handler_instance.process_exception e
-          logger.error "Error during message processing. Message will get redelivered. #{m}\n #{e}"
+          logger.error "Error during processing of message #{m.msg_id}"
           install_recovery_timer(server)
         end
       end
