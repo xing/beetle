@@ -104,7 +104,7 @@ module Beetle
     end
 
     def exceptions_limit_reached?
-      (limit = redis.get(exceptions_key)) && limit.to_i >= exceptions_limit
+      redis.get(exceptions_key).to_i >= exceptions_limit
     end
 
     def key_exists?
