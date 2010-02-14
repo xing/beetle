@@ -1,7 +1,7 @@
 module Beetle
   class Message
     FORMAT_VERSION = 1
-    FLAG_REDUNDANT = 2
+    FLAG_REDUNDANT = 1
     DEFAULT_TTL = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 5
