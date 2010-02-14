@@ -7,6 +7,16 @@ module Beetle
       @bs = Base.new(Client.new)
       assert_equal({}, @bs.instance_variable_get("@exchanges"))
     end
+
+    test "initially we should have no queues" do
+      @bs = Base.new(Client.new)
+      assert_equal({}, @bs.instance_variable_get("@queues"))
+    end
+
+    test "the error method should raise a beetle error" do
+      @bs = Base.new(Client.new)
+      assert_raises(Error){ @bs.send(:error, "ha") }
+    end
   end
 
   class BaseServerManagementTest < Test::Unit::TestCase

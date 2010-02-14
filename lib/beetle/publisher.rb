@@ -11,7 +11,7 @@ module Beetle
       opts = @client.messages[message_name].merge(opts.symbolize_keys)
       exchange_name = opts.delete(:exchange)
       opts.delete(:queue)
-      recycle_dead_servers
+      recycle_dead_servers unless @dead_servers.empty?
       if opts[:redundant]
         publish_with_redundancy(exchange_name, message_name, data, opts)
       else
