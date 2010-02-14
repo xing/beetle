@@ -161,7 +161,6 @@ module Beetle
     end
 
     test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
-      @data = "XXX"
       opts = {:ttl => 1.day}
       Message.expects(:encode).with(@data, :ttl => 1.day)
       @pub.expects(:select_next_server)
@@ -202,16 +201,16 @@ module Beetle
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do
-      @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
-      @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
+      @client.register_queue('test_queue_1', :exchange => 'test_exchange')
+      @client.register_queue('test_queue_2', :exchange => 'test_exchange')
       @pub.expects(:queue).with('test_queue_1')
       @pub.expects(:queue).with('test_queue_2')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
 
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do
-      @client.register_queue('test_queue_1', 'exchange' => 'test_exchange')
-      @client.register_queue('test_queue_2', 'exchange' => 'test_exchange')
+      @client.register_queue('test_queue_1', :exchange => 'test_exchange')
+      @client.register_queue('test_queue_2', :exchange => 'test_exchange')
       @pub.expects(:bind_queue!).twice
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
@@ -291,7 +290,7 @@ module Beetle
       assert_equal "a:1", @pub.server
     end
 
-    test "select_next_server should return o if there are no servers to publish to" do
+    test "select_next_server should return 0 if there are no servers to publish to" do
       @pub.servers = []
       logger = mock('logger')
       logger.expects(:error).returns(true)
