@@ -1,6 +1,12 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
+  class ReturnCodesTest < Test::Unit::TestCase
+    test "inspecting a return code should display the name of the returncode" do
+      assert_equal "Beetle::Message::RC::OK", Beetle::Message::RC::OK.inspect
+    end
+  end
+
   class EncodingTest < Test::Unit::TestCase
     test "a message should encode/decode the message format version correctly" do
       body = Message.encode("12345")

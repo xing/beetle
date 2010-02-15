@@ -11,8 +11,13 @@ module Beetle
     # message processing result
     class RC
       def initialize(*args)
-        @recover = args.include? :recover
-        @failure = args.include? :failure
+        @recover = args.delete :recover
+        @failure = args.delete :failure
+        @name = args.first
+      end
+
+      def inspect
+        @name.blank? ? super : "#{self.class.name}::#{@name}"
       end
 
       def recover?
@@ -23,15 +28,19 @@ module Beetle
         @failure
       end
 
-      OK                     = RC.new
-      Ancient                = RC.new(:failure)
-      AttemptsLimitReached   = RC.new(:failure)
-      ExceptionsLimitReached = RC.new(:failure)
-      Delayed                = RC.new(:recover)
-      HandlerCrash           = RC.new(:recover)
-      HandlerNotYetTimedOut  = RC.new(:recover)
-      MutexLocked            = RC.new(:recover)
-      InternalError          = RC.new(:recover)
+      def self.rc(name, *args)
+        const_set name, new(name, *args)
+      end
+
+      rc :OK
+      rc :Ancient, :failure
+      rc :AttemptsLimitReached, :failure
+      rc :ExceptionsLimitReached, :failure
+      rc :Delayed, :recover
+      rc :HandlerCrash, :recover
+      rc :HandlerNotYetTimedOut, :recover
+      rc :MutexLocked, :recover
+      rc :InternalError, :recover
     end
 
     attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
