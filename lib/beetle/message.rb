@@ -1,3 +1,5 @@
+require "timeout"
+
 module Beetle
   class Message
     FORMAT_VERSION = 1
@@ -258,7 +260,7 @@ module Beetle
     def run_handler!(handler)
       increment_execution_attempts!
       begin
-        handler.call(self)
+        Timeout::timeout(@timeout) { handler.call(self) }
       rescue Exception => @exception
         increment_exception_count!
         if attempts_limit_reached?
