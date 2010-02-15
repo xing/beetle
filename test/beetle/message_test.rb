@@ -481,6 +481,19 @@ module Beetle
 
   end
 
+  class HandlerTimeoutTest < Test::Unit::TestCase
+    test "a handler running longer than the specified timeout should be aborted" do
+      body = Message.encode('my message')
+      header = mock("header")
+      header.expects(:ack)
+      message = Message.new("somequeue", header, body, :timeout => 0.1)
+      action = lambda{|*args| while true; end}
+      handler = Handler.create(action)
+      result = message.process(handler)
+      assert_equal Message::RC::AttemptsLimitReached, result
+    end
+  end
+
   class SettingsTest < Test::Unit::TestCase
     def setup
       @r = Message.redis
