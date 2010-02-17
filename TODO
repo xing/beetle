@@ -2,4 +2,4 @@
 - example scripts
 - prefetch 1
 - garbage collector for Redis (or fix Redis expiry)
-- kill handler on timeout
+- improve error messages on configuration errors
