@@ -277,6 +277,8 @@ module Beetle
           logger.warn "Message handler crashed on #{msg_id}"
           return RC::HandlerCrash
         end
+      ensure
+        ActiveRecord::Base.clear_active_connections! if defined?(ActiveRecord)
       end
       completed!
       ack!
