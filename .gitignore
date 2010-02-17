@@ -1,4 +1,5 @@
 *.log
 doc
 pkg
+rdoc
 test/coverage
