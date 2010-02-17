@@ -53,7 +53,7 @@ module Beetle
     end
 
     def mq(server=@server)
-      @mqs[server] ||= MQ.new(amqp_connection)
+      @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
     end
 
     def subscribe_message(message)
@@ -92,6 +92,9 @@ module Beetle
       @timer = EM::Timer.new(RECOVER_AFTER) do
         logger.info "Redelivering unacked messages"
         mq(server).recover(true)
+        # this resets the exchanges and queues for this server
+        # it ensures that the subscriber rehandles the message even when prefetch(1) is set
+        mq(server).reset
       end
     end
 

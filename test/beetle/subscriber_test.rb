@@ -37,7 +37,9 @@ module Beetle
 
     test "mq instances should be created for the current server if accessed" do
       @sub.expects(:amqp_connection).returns(11)
-      MQ.expects(:new).with(11).returns(42)
+      mq_mock = mock('mq')
+      mq_mock.expects(:prefetch).with(1).returns(42)
+      MQ.expects(:new).with(11).returns(mq_mock)
       assert_equal 42, @sub.send(:mq)
       mqs = @sub.instance_variable_get("@mqs")
       assert_equal 42, mqs[@sub.server]
@@ -166,7 +168,8 @@ module Beetle
       timer = mock("timer")
       mq = mock("mq")
       mq.expects(:recover).with(true).twice
-      @sub.expects(:mq).with('servername').twice.returns(mq)
+      mq.expects(:reset).twice
+      @sub.expects(:mq).with('servername').times(4).returns(mq)
 
       timer.expects(:cancel).once
       EM::Timer.expects(:new).with(Subscriber::RECOVER_AFTER).twice.returns(timer).yields
