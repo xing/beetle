@@ -50,6 +50,16 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
+require 'rake/rdoctask'
+
+Rake::RDocTask.new do |rdoc|
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title    = 'Beetle'
+  rdoc.options << '--line-numbers' << '--inline-source' << '--quiet'
+  rdoc.rdoc_files.include('README.rdoc')
+  rdoc.rdoc_files.include('lib/**/*.rb')
+end
+
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
