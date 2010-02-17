@@ -1,0 +1,58 @@
+= Beetle
+
+High Availability Messaging with Redundant Queues
+
+== About
+
+Beetle grew out of a project to improve an existing ActiveMQ based messaging
+infrastructure.
+
+== Usage
+
+=== Publishing
+    b = Beetle::Client.new
+    b.register_queue("test")
+    b.register_message("test")
+    b.publish("test", "I'm a test message")
+
+=== Subscribing
+    b.register_handler("test") { |message| puts message.data }
+    b.listen
+
+== Prerequisites
+
+To set up a redundant messaging system you will need
+* at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
+* at least one Redis server
+
+== Gem Dependencies
+
+At runtime, Beetle will use
+* {uuid4r}[http://github.com/skaes/uuid4r]
+  (which needs ossp-uuid)
+* {bunny}[http://github.com/celldee/bunny]
+* {redis-rb}[http://github.com/ezmobius/redis-rb]
+  (which needs {redis}[http://github.com/antirez/redis])
+* {amqp}[http://github.com/tmm1/amqp]
+  (which is based on {eventmachine}[http://github.com/eventmachine/eventmachine])
+* activesupport
+
+For development, you'll need
+* mocha
+* rcov
+
+== Authors
+
+{Stefan Kaes}[http://github.com/skaes],
+{Pascal Friederich}[http://github.com/paukul] and
+Ali Jelveh
+
+You cand find out more about our work on our {dev blog}[http://devblog.xing.com].
+
+Copyright (c) 2010 {XING AG}[http://www.xing.com/]
+
+Released under the MIT license. For full details see MIT-LICENSE included in this
+distribution.
+
+
+
