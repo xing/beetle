@@ -63,8 +63,8 @@ module Beetle
         opts = opts.dup
         key = opts.delete(:key) || message
         queue = opts.delete(:queue) || message
-        callback = create_subscription_callback(@server, queue, handler, opts)
-        logger.debug "subscribing to queue #{queue} with key #{key} for message #{message}"
+        callback = create_subscription_callback(@server, queue_name_for_trace(queue), handler, opts)
+        logger.debug "subscribing to queue #{queue_name_for_trace(queue)} with key #{key} for message #{message}"
         begin
           queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
         rescue MQ::Error
