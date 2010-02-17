@@ -5,16 +5,20 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.8"
+  s.version = "0.0.9"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-02-10}
+  s.date = %q{2010-02-16}
   s.description = %q{A high available/reliabile messaging infrastructure}
   s.email = %q{developers@xing.com}
+  s.extra_rdoc_files = [
+    "TODO"
+  ]
   s.files = [
     ".gitignore",
      "Rakefile",
+     "TODO",
      "beetle.gemspec",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
