@@ -45,7 +45,7 @@ For development, you'll need
 
 {Stefan Kaes}[http://github.com/skaes],
 {Pascal Friederich}[http://github.com/paukul] and
-Ali Jelveh
+{Ali Jelveh}[http://github.com/dudemeister].
 
 You cand find out more about our work on our {dev blog}[http://devblog.xing.com].
 
