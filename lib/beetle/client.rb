@@ -75,8 +75,8 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
-    def listen
-      subscriber.listen
+    def listen(*args, &block)
+      subscriber.listen(*args, &block)
     end
 
     def stop_listening
