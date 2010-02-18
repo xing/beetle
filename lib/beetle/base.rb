@@ -65,15 +65,16 @@ module Beetle
           opts = queue_opts.dup
           opts.symbolize_keys!
           exchange_name = opts.delete(:exchange) || name
-          queue_name = name
-          if @trace
-            opts.merge!(:durable => true, :auto_delete => true)
-            queue_name = "trace-#{name}-#{`hostname`.chomp}"
-          end
+          opts[:auto_delete] = true if @trace
+          queue_name = queue_name_for_trace(name)
           binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
           creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
           bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
         end
+    end
+    
+    def queue_name_for_trace(queue)
+      @trace ? "trace-#{queue}-#{`hostname`.chomp}" : queue
     end
 
   end
