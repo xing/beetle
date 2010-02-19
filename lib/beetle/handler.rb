@@ -32,25 +32,21 @@ module Beetle
     end
 
     def process_exception(exception)
-      begin
-        if @error_callback
-          @error_callback.call(message, exception)
-        else
-          error(exception)
-        end
-      rescue Exception
+      if @error_callback
+        @error_callback.call(message, exception)
+      else
+        error(exception)
       end
+    rescue Exception
     end
 
     def process_failure(result)
-      begin
-        if @failure_callback
-          @failure_callback.call(message, result)
-        else
-          failure(result)
-        end
-      rescue Exception
+      if @failure_callback
+        @failure_callback.call(message, result)
+      else
+        failure(result)
       end
+    rescue Exception
     end
 
     def error(exception)
