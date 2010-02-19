@@ -35,7 +35,7 @@ module Beetle
     end
 
     def self.encode(data, opts = {})
-      expires_at = ttl_to_expiration_time(opts[:ttl] || DEFAULT_TTL)
+      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
       [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
@@ -53,12 +53,8 @@ module Beetle
       Time.now.to_i
     end
 
-    def expired?(expiration_time = Time.now.to_i)
-      @expires_at < expiration_time
-    end
-
-    def self.ttl_to_expiration_time(ttl)
-      now + ttl.to_i
+    def expired?
+      @expires_at < now
     end
 
     def self.generate_uuid
