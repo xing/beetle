@@ -19,7 +19,7 @@ module Beetle
 
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|
-    autoload File.basename(libfile)[/(.*)\.rb/, 1].capitalize, libfile
+    autoload File.basename(libfile)[/(.*)\.rb/, 1].classify, libfile
   end
 
   def self.configuration
