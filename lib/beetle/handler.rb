@@ -38,6 +38,7 @@ module Beetle
         error(exception)
       end
     rescue Exception
+      Beetle::reraise_expectation_errors!
     end
 
     def process_failure(result)
@@ -47,6 +48,7 @@ module Beetle
         failure(result)
       end
     rescue Exception
+      Beetle::reraise_expectation_errors!
     end
 
     def error(exception)

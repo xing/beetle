@@ -124,6 +124,7 @@ module Beetle
       begin
         bunny.stop
       rescue Exception
+        Beetle::reraise_expectation_errors!
       ensure
         @bunnies[@server] = nil
         @exchanges[@server] = {}

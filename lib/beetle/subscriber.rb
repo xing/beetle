@@ -8,6 +8,8 @@ module Beetle
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}
+      @timer_rewinds = Hash.new(0)
+      @timers = {}
     end
 
     def listen(messages=@client.messages.keys)
@@ -81,16 +83,25 @@ module Beetle
           result = m.process(processor)
           install_recovery_timer(server) if result.recover?
         rescue Exception
+          Beetle::reraise_expectation_errors!
           # swallow all exceptions
-          logger.error "Beetle: internal error during message processing"
+          logger.error "Beetle: internal error during message processing: #{$!}"
         end
       end
     end
 
+    # rewind the message recovery timer for a given server with increasing time intervals, but at most 3 times
     def install_recovery_timer(server)
-      @timer.cancel if @timer
-      @timer = EM::Timer.new(RECOVER_AFTER) do
-        logger.info "Beetle: redelivering unacked messages"
+      return if (@timer_rewinds[server] += 1) > 3
+      @timers[server].cancel if @timers[server]
+      @timers[server] = new_recovery_timer(server, @timer_rewinds[server] * RECOVER_AFTER)
+    end
+
+    def new_recovery_timer(server, seconds)
+      EM::Timer.new(seconds) do
+        @timers[server] = nil
+        @timer_rewinds[server] = 0
+        logger.info "Beetle: recovering unacked messages"
         mq(server).recover(true)
         # this resets the exchanges and queues for this server
         # it ensures that the subscriber rehandles the message even when prefetch(1) is set
