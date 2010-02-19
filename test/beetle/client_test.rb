@@ -129,11 +129,11 @@ module Beetle
       client.logger
     end
 
-    test "autoload should expand the glob argument and evaluate each file in the client instance" do
+    test "load should expand the glob argument and evaluate each file in the client instance" do
       client = Client.new
       File.expects(:read).returns("1+1")
       client.expects(:eval).with("1+1",anything,anything)
-      client.autoload("#{File.dirname(__FILE__)}/../../**/client_test.rb")
+      client.load("#{File.dirname(__FILE__)}/../../**/client_test.rb")
     end
 
     test "tracing should put the the subscriber into trace mode and register a handler to each message" do
