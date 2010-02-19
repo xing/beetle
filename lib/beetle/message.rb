@@ -136,39 +136,35 @@ module Beetle
     end
 
     def status_key
-      keys[:status] ||= "#{msg_id}:status"
+      @status_key ||= "#{msg_id}:status"
     end
 
     def ack_count_key
-      keys[:ack_count] ||= "#{msg_id}:ack_count"
+      @ack_count_key ||= "#{msg_id}:ack_count"
     end
 
     def timeout_key
-      keys[:timeout] ||= "#{msg_id}:timeout"
+      @timeout_key ||= "#{msg_id}:timeout"
     end
 
     def delay_key
-      keys[:delay] ||= "#{msg_id}:delay"
+      @delay_key ||= "#{msg_id}:delay"
     end
 
     def execution_attempts_key
-      keys[:attempts] ||= "#{msg_id}:attempts"
+      @attempts_key ||= "#{msg_id}:attempts"
     end
 
     def mutex_key
-      keys[:mutex] ||= "#{msg_id}:mutex"
+      @mutex_key ||= "#{msg_id}:mutex"
     end
 
     def exceptions_key
-      keys[:exceptions] ||= "#{msg_id}:exceptions"
-    end
-
-    def all_keys
-      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key, exceptions_key, mutex_key]
+      @exceptions_key ||= "#{msg_id}:exceptions"
     end
 
     def keys
-      @keys ||= {}
+      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key, exceptions_key, mutex_key]
     end
 
     def process(handler)
@@ -251,11 +247,11 @@ module Beetle
     end
 
     def redis
-      self.class.redis
+      @redis ||= self.class.redis
     end
 
     def logger
-      self.class.logger
+      @logger ||= self.class.logger
     end
 
     def self.logger
@@ -266,7 +262,7 @@ module Beetle
       logger.debug "ack! for message #{msg_id}"
       header.ack
       if !redundant? || redis.incr(ack_count_key) == 2
-        redis.del(all_keys)
+        redis.del(keys)
       end
     end
   end

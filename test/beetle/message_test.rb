@@ -52,7 +52,7 @@ module Beetle
 
       message.process(lambda {|*args|})
 
-      message.all_keys.each do |key|
+      message.keys.each do |key|
         assert !@r.exists(key)
       end
     end
@@ -69,7 +69,7 @@ module Beetle
       message.process(lambda {|*args|})
       message.process(lambda {|*args|})
 
-      message.all_keys.each do |key|
+      message.keys.each do |key|
         assert !@r.exists(key)
       end
     end
