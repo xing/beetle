@@ -14,6 +14,7 @@ module Beetle
     attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
 
     def initialize(queue, header, body, opts = {})
+      @keys   = {}
       @queue  = queue
       @header = header
       @body   = body
@@ -22,7 +23,7 @@ module Beetle
     end
 
     def setup(opts)
-      @server = opts[:server]
+      @server           = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
@@ -48,12 +49,16 @@ module Beetle
       Time.now.to_i
     end
 
+    def self.now
+      Time.now.to_i
+    end
+
     def expired?(expiration_time = Time.now.to_i)
       @expires_at < expiration_time
     end
 
     def self.ttl_to_expiration_time(ttl)
-      Time.now.to_i + ttl.to_i
+      now + ttl.to_i
     end
 
     def self.generate_uuid
@@ -65,63 +70,63 @@ module Beetle
     end
 
     def set_timeout!
-      redis.set(timeout_key, now + timeout)
+      redis.set(key(:timeout), now + timeout)
     end
 
     def timed_out?
-      (t = redis.get(timeout_key)) && t.to_i < now
+      (t = redis.get(key(:timeout))) && t.to_i < now
     end
 
     def timed_out!
-      redis.set(timeout_key, 0)
+      redis.set(key(:timeout), 0)
     end
 
     def completed?
-      redis.get(status_key) == "completed"
+      redis.get(key(:status)) == "completed"
     end
 
     def completed!
-      redis.set(status_key, "completed")
+      redis.set(key(:status), "completed")
       timed_out!
     end
 
     def delayed?
-      (t = redis.get(delay_key)) && t.to_i > now
+      (t = redis.get(key(:delay))) && t.to_i > now
     end
 
     def set_delay!
-      redis.set(delay_key, now + delay)
+      redis.set(key(:delay), now + delay)
     end
 
     def increment_execution_attempts!
-      redis.incr(execution_attempts_key)
+      redis.incr(key(:attempts))
     end
 
     def attempts_limit_reached?
-      (limit = redis.get(execution_attempts_key)) && limit.to_i >= attempts_limit
+      (limit = redis.get(key(:attempts))) && limit.to_i >= attempts_limit
     end
 
     def increment_exception_count!
-      redis.incr(exceptions_key)
+      redis.incr(key(:exceptions))
     end
 
     def exceptions_limit_reached?
-      redis.get(exceptions_key).to_i >= exceptions_limit
+      redis.get(key(:exceptions)).to_i >= exceptions_limit
     end
 
     def key_exists?
-      new_message = redis.setnx(status_key, "incomplete")
-      unless new_message
-        logger.debug "received duplicate message: #{status_key} on queue: #{@queue}"
+      old_message = 0 == redis.msetnx(key(:status) =>"incomplete", key(:expires) => @expires_at)
+      if old_message
+        logger.debug "received duplicate message: #{key(:status)} on queue: #{@queue}"
       end
-      !new_message
+      old_message
     end
 
     def aquire_mutex!
-      if mutex = redis.setnx(mutex_key, now)
+      if mutex = redis.setnx(key(:mutex), now)
         logger.debug "aquired mutex: #{msg_id}"
       else
-        redis.del(mutex_key)
+        redis.del(key(:mutex))
         logger.debug "deleted mutex: #{msg_id}"
       end
       mutex
@@ -131,40 +136,42 @@ module Beetle
       @redis ||= Redis.new
     end
 
-    def self.redis=redis
+    def self.redis=(redis)
       @redis = redis
     end
 
-    def status_key
-      @status_key ||= "#{msg_id}:status"
-    end
+    KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]
 
-    def ack_count_key
-      @ack_count_key ||= "#{msg_id}:ack_count"
-    end
-
-    def timeout_key
-      @timeout_key ||= "#{msg_id}:timeout"
-    end
-
-    def delay_key
-      @delay_key ||= "#{msg_id}:delay"
-    end
-
-    def execution_attempts_key
-      @attempts_key ||= "#{msg_id}:attempts"
-    end
-
-    def mutex_key
-      @mutex_key ||= "#{msg_id}:mutex"
-    end
-
-    def exceptions_key
-      @exceptions_key ||= "#{msg_id}:exceptions"
+    def key(suffix)
+      @keys[suffix] ||= self.class.key(msg_id, suffix)
     end
 
     def keys
-      [status_key, ack_count_key, timeout_key, delay_key, execution_attempts_key, exceptions_key, mutex_key]
+      self.class.keys(msg_id)
+    end
+
+    def self.key(msg_id, suffix)
+      "#{msg_id}:#{suffix}"
+    end
+
+    def self.keys(msg_id)
+      KEY_SUFFIXES.map{|suffix| key(msg_id, suffix)}
+    end
+
+    def self.msg_id(key)
+      key =~ /^(msgid:[^:]*:[-0-9a-f]*):.*$/ && $1
+    end
+
+    def self.garbage_collect_keys
+      keys = redis.keys("msgid:*:expires")
+      now = now()
+      keys.each do |key|
+        expires_at = redis.get key
+        if expires_at && expires_at.to_i < now
+          msg_id = msg_id(key)
+          redis.del(keys(msg_id))
+        end
+      end
     end
 
     def process(handler)
@@ -189,7 +196,7 @@ module Beetle
         logger.warn "Ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
-      elsif !key_exists?
+      elsif !key_exists?()
         set_timeout!
         run_handler!(handler)
       elsif completed?
@@ -261,7 +268,7 @@ module Beetle
     def ack!
       logger.debug "ack! for message #{msg_id}"
       header.ack
-      if !redundant? || redis.incr(ack_count_key) == 2
+      if !redundant? || redis.incr(key(:ack_count)) == 2
         redis.del(keys)
       end
     end
