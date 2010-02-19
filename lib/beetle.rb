@@ -30,4 +30,14 @@ module Beetle
     @config ||= Configuration.new
   end
 
+  # FIXME: there should be a better way to test
+  if defined?(Mocha)
+    def self.reraise_expectation_errors!
+      raise if $!.is_a?(Mocha::ExpectationError)
+    end
+  else
+    def self.reraise_expectation_errors!
+    end
+  end
+
 end

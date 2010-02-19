@@ -193,6 +193,7 @@ module Beetle
         handler.process_exception(@exception) if @exception
         handler.process_failure(result) if result.failure?
       rescue Exception => e
+        Beetle::reraise_expectation_errors!
         logger.warn "Beetle: exception '#{e}' during processing of message #{msg_id}"
         logger.warn "Beetle: backtrace: #{e.backtrace.join("\n")}"
         result = RC::InternalError
@@ -244,6 +245,7 @@ module Beetle
       begin
         Timeout::timeout(@timeout) { handler.call(self) }
       rescue Exception => @exception
+        Beetle::reraise_expectation_errors!
         increment_exception_count!
         if attempts_limit_reached?
           ack!
