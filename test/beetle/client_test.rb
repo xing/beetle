@@ -7,7 +7,7 @@ module Beetle
       @client = Client.new
     end
 
-    test "should have a default server even without a config file" do
+    test "should have a default server" do
       assert_equal ["localhost:5672"], @client.servers
     end
 
@@ -20,21 +20,6 @@ module Beetle
     end
     test "should have no messages" do
       assert @client.messages.empty?
-    end
-  end
-
-  class ClientConfigFileLoadingTest < Test::Unit::TestCase
-    def setup
-      @client = Client.new(:config_file =>  File.expand_path(File.dirname(__FILE__) + '/../beetle.yml'))
-    end
-
-    test "loading test config file should specify server localhost::5672" do
-      assert_equal ["localhost:5672"], @client.servers
-    end
-
-    test "loading test config should specify test and deadletter messages" do
-      assert @client.messages.include? "deadletter"
-      assert @client.messages.include? "test"
     end
   end
 

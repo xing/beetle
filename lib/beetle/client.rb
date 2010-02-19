@@ -3,12 +3,11 @@ module Beetle
     attr_reader :servers, :exchanges, :queues, :messages
 
     def initialize(options = {})
-      @servers = ["localhost:5672"]
+      @servers = (options[:servers] || Beetle.config.servers).split(/ *, */)
       @exchanges = {}
       @queues = {}
       @messages = {}
       @options = options
-      load_config(options[:config_file])
     end
 
     # type: "topic"
@@ -107,31 +106,6 @@ module Beetle
     end
 
     private
-
-    def load_config(file_name)
-      config = Hash.new {|hash, key| hash[key] = {}}
-      if glob = (file_name || Beetle.config.config_file)
-        Dir[glob].each do |file|
-          hash = YAML::load(ERB.new(IO.read(file)).result)
-          hash.each do |key, value|
-            config[key].merge! value
-          end
-        end
-      end
-
-      env = Beetle.config.environment
-
-      config[env] ||= {}
-      config[env]["hostname"] ||= "localhost:5672"
-      config[env]["msg_id_store"] ||= {:host => "localhost", :db => 4}
-
-      (config["exchanges"] || {}).each {|name, opts| register_exchange(name, opts)  }
-      (config["queues"]    || {}).each {|name, opts| register_queue(name, opts)     }
-      (config["messages"]  || {}).each {|name, opts| register_message(name, opts)   }
-
-      @servers = config[env]["hostname"].split(/ *, */)
-      Message.redis = Redis.new(config[env]["msg_id_store"].symbolize_keys)
-    end
 
     def publisher
       @publisher ||= Publisher.new(self)

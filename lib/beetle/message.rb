@@ -148,11 +148,7 @@ module Beetle
     end
 
     def self.redis
-      @redis ||= Redis.new
-    end
-
-    def self.redis=(redis)
-      @redis = redis
+      @redis ||= Redis.new(:host => Beetle.config.redis_host, :db => Beetle.config.redis_db)
     end
 
     KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]

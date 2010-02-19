@@ -1,5 +1,3 @@
-require 'yaml'
-require 'erb'
 require 'amqp'
 require 'mq'
 require 'bunny'

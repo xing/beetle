@@ -11,6 +11,5 @@ class Test::Unit::TestCase
 end
 
 Beetle.configuration do |config|
-  config.environment = "test"
   config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end

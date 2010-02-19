@@ -26,10 +26,6 @@ end
 
 
 namespace :beetle do
-  Beetle.configuration do |config|
-    config.config_file = File.dirname(__FILE__) + '/test/beetle.yml'
-  end
-
   task :test do
     Beetle::Client.new.test
   end
