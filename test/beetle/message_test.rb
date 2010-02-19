@@ -19,7 +19,7 @@ module Beetle
     end
 
     test "encoding a message with a specfied time to live should set an expiration time" do
-      Message.expects(:ttl_to_expiration_time).with(17).returns(42)
+      Message.expects(:now).returns(25)
       body = Message.encode("12345", :ttl => 17)
       header = mock("header")
       m = Message.new("queue", header, body)
@@ -27,11 +27,11 @@ module Beetle
     end
 
     test "encoding a message should set the default expiration date if none is provided in the call to encode" do
-      Message.expects(:ttl_to_expiration_time).with(Message::DEFAULT_TTL).returns(42)
+      Message.expects(:now).returns(1)
       body = Message.encode("12345")
       header = mock("header")
       m = Message.new("queue", header, body)
-      assert_equal 42, m.expires_at
+      assert_equal 1+Message::DEFAULT_TTL, m.expires_at
     end
   end
 
