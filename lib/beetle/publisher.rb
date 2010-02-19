@@ -21,29 +21,29 @@ module Beetle
 
     def publish_with_failover(exchange_name, message_name, data, opts)
       tries = @servers.size
-      logger.debug "sending #{message_name}"
+      logger.debug "Beetle: sending #{message_name}"
       data = Message.encode(data, :ttl => opts[:ttl])
       published = 0
       begin
         select_next_server
         bind_queues_for_exchange(exchange_name)
-        logger.debug "trying to send #{message_name} to #{@server}"
+        logger.debug "Beetle: trying to send #{message_name} to #{@server}"
         exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
-        logger.debug "message sent!"
+        logger.debug "Beetle: message sent!"
         published = 1
       rescue Bunny::ServerDownError, Bunny::ConnectionError
         stop!
         mark_server_dead
         tries -= 1
         retry if tries > 0
-        logger.error "message could not be delivered: #{message_name}"
+        logger.error "Beetle: message could not be delivered: #{message_name}"
       end
       published
     end
 
     def publish_with_redundancy(exchange_name, message_name, data, opts)
       if @servers.size < 2
-        logger.error "at least two active servers are required for redundant publishing"
+        logger.error "Beetle: at least two active servers are required for redundant publishing"
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []
@@ -54,10 +54,10 @@ module Beetle
           select_next_server
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
-          logger.debug "trying to send #{message_name} to #{@server}"
+          logger.debug "Beetle: trying to send #{message_name} to #{@server}"
           exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
           published << @server
-          logger.debug "message sent (#{published})!"
+          logger.debug "Beetle: message sent (#{published})!"
         rescue Bunny::ServerDownError, Bunny::ConnectionError
           stop!
           mark_server_dead
@@ -65,9 +65,9 @@ module Beetle
       end
       case published.size
       when 0
-        logger.error "message could not be delivered: #{message_name}"
+        logger.error "Beetle: message could not be delivered: #{message_name}"
       when 1
-        logger.warn "failed to send message redundantly"
+        logger.warn "Beetle: failed to send message redundantly"
       end
       published.size
     end
@@ -90,19 +90,18 @@ module Beetle
         recycle << s if dead_since < 10.seconds.ago
       end
       @servers.concat recycle
-      logger.debug "servers #{@servers.inspect}"
       recycle.each {|s| @dead_servers.delete(s)}
     end
 
     def mark_server_dead
-      logger.info "server #{@server} down: #{$!}"
+      logger.info "Beetle: server #{@server} down: #{$!}"
       @dead_servers[@server] = Time.now
       @servers.delete @server
       @server = @servers[rand @servers.size]
     end
 
     def select_next_server
-      return logger.error("message could not be delivered: #{message_name} - no server available") && 0 if @servers.empty?
+      return logger.error("Beetle: message could not be delivered: #{message_name} - no server available") && 0 if @servers.empty?
       set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
     end
 

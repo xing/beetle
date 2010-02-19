@@ -28,7 +28,7 @@ module Beetle
     end
 
     def process(message)
-      logger.info "received message #{message.inspect}"
+      logger.info "Beetle: received message #{message.inspect}"
     end
 
     def process_exception(exception)
@@ -54,11 +54,11 @@ module Beetle
     end
 
     def error(exception)
-      logger.error "Handler execution raised an exeption: #{exception}"
+      logger.error "Beetle: handler execution raised an exeption: #{exception}"
     end
 
     def failure(result)
-      logger.error "Handler has finally failed"
+      logger.error "Beetle: handler has finally failed"
     end
 
     def logger

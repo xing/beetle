@@ -64,11 +64,11 @@ module Beetle
         key = opts.delete(:key) || message
         queue = opts.delete(:queue) || message
         callback = create_subscription_callback(@server, queue_name_for_trace(queue), handler, opts)
-        logger.debug "subscribing to queue #{queue_name_for_trace(queue)} with key #{key} for message #{message}"
+        logger.debug "Beetle: subscribing to queue #{queue_name_for_trace(queue)} with key #{key} for message #{message}"
         begin
           queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
         rescue MQ::Error
-          error("Binding multiple handlers for the same queue isn't possible. You might want to use the :queue option")
+          error("Beetle: binding multiple handlers for the same queue isn't possible. You might want to use the :queue option")
         end
       end
     end
@@ -82,7 +82,7 @@ module Beetle
           install_recovery_timer(server) if result.recover?
         rescue Exception
           # swallow all exceptions
-          logger.error "Internal error during message processing"
+          logger.error "Beetle: internal error during message processing"
         end
       end
     end
@@ -90,7 +90,7 @@ module Beetle
     def install_recovery_timer(server)
       @timer.cancel if @timer
       @timer = EM::Timer.new(RECOVER_AFTER) do
-        logger.info "Redelivering unacked messages"
+        logger.info "Beetle: redelivering unacked messages"
         mq(server).recover(true)
         # this resets the exchanges and queues for this server
         # it ensures that the subscriber rehandles the message even when prefetch(1) is set

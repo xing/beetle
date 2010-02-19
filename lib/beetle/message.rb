@@ -132,17 +132,17 @@ module Beetle
     def key_exists?
       old_message = 0 == redis.msetnx(key(:status) =>"incomplete", key(:expires) => @expires_at)
       if old_message
-        logger.debug "received duplicate message: #{key(:status)} on queue: #{@queue}"
+        logger.debug "Beetle: received duplicate message: #{key(:status)} on queue: #{@queue}"
       end
       old_message
     end
 
     def aquire_mutex!
       if mutex = redis.setnx(key(:mutex), now)
-        logger.debug "aquired mutex: #{msg_id}"
+        logger.debug "Beetle: aquired mutex: #{msg_id}"
       else
         redis.del(key(:mutex))
-        logger.debug "deleted mutex: #{msg_id}"
+        logger.debug "Beetle: deleted mutex: #{msg_id}"
       end
       mutex
     end
@@ -190,15 +190,15 @@ module Beetle
     end
 
     def process(handler)
-      logger.debug "Processing message #{msg_id}"
+      logger.debug "Beetle: processing message #{msg_id}"
       result = nil
       begin
         result = process_internal(handler)
         handler.process_exception(@exception) if @exception
         handler.process_failure(result) if result.failure?
       rescue Exception => e
-        logger.warn "Exception '#{e}' during processing of message #{msg_id}"
-        logger.warn "Backtrace: #{e.backtrace.join("\n")}"
+        logger.warn "Beetle: exception '#{e}' during processing of message #{msg_id}"
+        logger.warn "Beetle: backtrace: #{e.backtrace.join("\n")}"
         result = RC::InternalError
       end
       result
@@ -208,11 +208,11 @@ module Beetle
 
     def process_internal(handler)
       if expired?
-        logger.warn "Ignored expired message (#{msg_id})!"
+        logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
       elsif !started?
-        logger.warn "Message handler should not be started yet!"
+        logger.warn "Beetle: message handler should not be started yet!"
         RC::Delayed
       elsif !key_exists?
         set_timeout!
@@ -221,17 +221,17 @@ module Beetle
         ack!
         RC::OK
       elsif delayed?
-        logger.warn "Ignored delayed message (#{msg_id})!"
+        logger.warn "Beetle: ignored delayed message (#{msg_id})!"
         RC::Delayed
       elsif !timed_out?
         RC::HandlerNotYetTimedOut
       elsif attempts_limit_reached?
         ack!
-        logger.warn "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
         RC::AttemptsLimitReached
       elsif exceptions_limit_reached?
         ack!
-        logger.warn "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
         RC::ExceptionsLimitReached
       else
         set_timeout!
@@ -251,16 +251,16 @@ module Beetle
         increment_exception_count!
         if attempts_limit_reached?
           ack!
-          logger.warn "Reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+          logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
           return RC::AttemptsLimitReached
         elsif exceptions_limit_reached?
           ack!
-          logger.warn "Reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+          logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
           return RC::ExceptionsLimitReached
         else
           timed_out!
           set_delay!
-          logger.warn "Message handler crashed on #{msg_id}"
+          logger.warn "Beetle: message handler crashed on #{msg_id}"
           return RC::HandlerCrash
         end
       ensure
@@ -284,7 +284,7 @@ module Beetle
     end
 
     def ack!
-      logger.debug "ack! for message #{msg_id}"
+      logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       if !redundant? || redis.incr(key(:ack_count)) == 2
         redis.del(keys)

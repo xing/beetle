@@ -59,7 +59,7 @@ module Beetle
     def queue(name)
       queues[name] ||=
         begin
-          logger.debug("Binding #{name}")
+          logger.debug("Beetle: binding #{name}")
           queue_opts = @client.queues[name]
           error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
           opts = queue_opts.dup
