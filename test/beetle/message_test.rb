@@ -98,6 +98,7 @@ module Beetle
     end
 
     test "should be able to garbage collect expired keys" do
+      Beetle.config.expects(:gc_threshold).returns(0)
       body = Message.encode('my message', :ttl => 0)
       header = mock("header")
       message = Message.new("somequeue", header, body)
@@ -109,6 +110,7 @@ module Beetle
     end
 
     test "should not garbage collect not yet expired keys" do
+      Beetle.config.expects(:gc_threshold).returns(0)
       body = Message.encode('my message', :ttl => 0)
       header = mock("header")
       message = Message.new("somequeue", header, body)

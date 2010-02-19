@@ -179,10 +179,10 @@ module Beetle
 
     def self.garbage_collect_keys
       keys = redis.keys("msgid:*:expires")
-      now = now()
+      threshold = now + Beetle.config.gc_threshold
       keys.each do |key|
         expires_at = redis.get key
-        if expires_at && expires_at.to_i < now
+        if expires_at && expires_at.to_i < threshold
           msg_id = msg_id(key)
           redis.del(keys(msg_id))
         end
