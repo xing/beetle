@@ -41,8 +41,39 @@ module Beetle
       @r.flushdb
     end
 
+    test "should be able to extract msg_id from any key" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      message.keys.each do |key|
+        assert_equal message.msg_id, Message.msg_id(key)
+      end
+    end
+
+    test "should be able to garbage collect expired keys" do
+      body = Message.encode('my message', :ttl => 0)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
+      assert message.key_exists?
+      Message.stubs(:now).returns(Time.now.to_i+1)
+      @r.expects(:del).with(message.keys)
+      Message.garbage_collect_keys
+    end
+
+    test "should not garbage collect not yet expired keys" do
+      body = Message.encode('my message', :ttl => 0)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.key_exists?
+      assert message.key_exists?
+      Message.stubs(:now).returns(Time.now.to_i-1)
+      @r.expects(:del).never
+      Message.garbage_collect_keys
+    end
+
     test "successful processing of a non redundant message should delete all keys from the database" do
-      body = Message.encode('my message', :redundant => false)
+      body = Message.encode('my message')
       header = mock("header")
       header.expects(:ack)
       message = Message.new("somequeue", header, body)
@@ -85,12 +116,13 @@ module Beetle
 
       message.process(lambda {|*args|})
 
-      assert @r.exists(message.status_key)
-      assert @r.exists(message.execution_attempts_key)
-      assert @r.exists(message.timeout_key)
-      assert @r.exists(message.ack_count_key)
-      assert !@r.exists(message.delay_key)
-      assert !@r.exists(message.exceptions_key)
+      assert @r.exists(message.key :status)
+      assert @r.exists(message.key :expires)
+      assert @r.exists(message.key :attempts)
+      assert @r.exists(message.key :timeout)
+      assert @r.exists(message.key :ack_count)
+      assert !@r.exists(message.key :delay)
+      assert !@r.exists(message.key :exceptions)
     end
   end
 
@@ -134,7 +166,7 @@ module Beetle
 
       message.process(lambda {|*args|})
       assert !message.redundant?
-      assert !@r.exists(message.ack_count_key)
+      assert !@r.exists(message.key :ack_count)
     end
 
     test "a redundant message should be acked after calling the handler" do
@@ -153,10 +185,10 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, body)
 
-      assert_equal nil, @r.get(message.ack_count_key)
+      assert_equal nil, @r.get(message.key :ack_count)
       message.process(lambda {|*args|})
       assert message.redundant?
-      assert_equal "1", @r.get(message.ack_count_key)
+      assert_equal "1", @r.get(message.key :ack_count)
     end
 
     test "acking a redundant message twice should remove the ack_count key" do
@@ -168,7 +200,7 @@ module Beetle
       message.process(lambda {|*args|})
       message.process(lambda {|*args|})
       assert message.redundant?
-      assert !@r.exists(message.ack_count_key)
+      assert !@r.exists(message.key :ack_count)
     end
 
   end
@@ -205,7 +237,7 @@ module Beetle
       message.expects(:completed!).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.__send__(:process_internal, proc)
-      assert_equal "1", @r.get(message.ack_count_key)
+      assert_equal "1", @r.get(message.key :ack_count)
     end
 
   end
@@ -230,9 +262,9 @@ module Beetle
       header.expects(:ack).never
       assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert_equal "1", @r.get(message.exceptions_key)
-      assert_equal "0", @r.get(message.timeout_key)
-      assert_equal "52", @r.get(message.delay_key)
+      assert_equal "1", @r.get(message.key :exceptions)
+      assert_equal "0", @r.get(message.key :timeout)
+      assert_equal "52", @r.get(message.key :delay)
     end
 
     test "a message should be acked if the handler crashes and the exception limit has been reached" do
@@ -398,14 +430,14 @@ module Beetle
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       message.aquire_mutex!
-      assert @r.exists(message.mutex_key)
+      assert @r.exists(message.key :mutex)
 
       proc = mock("proc")
       proc.expects(:call).never
       header.expects(:ack).never
       assert_equal RC::MutexLocked, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert !@r.exists(message.mutex_key)
+      assert !@r.exists(message.key :mutex)
     end
 
   end
@@ -502,7 +534,7 @@ module Beetle
       assert !message.completed?
       message.completed!
       assert message.completed?
-      assert_equal "completed", @r.get(message.status_key)
+      assert_equal "completed", @r.get(message.key :status)
     end
 
     test "set_delay! should store the current time plus the number of delayed seconds in the database" do
@@ -511,7 +543,7 @@ module Beetle
       message = Message.new("somequeue", header, body, :delay => 1)
       message.expects(:now).returns(1)
       message.set_delay!
-      assert_equal "2", @r.get(message.delay_key)
+      assert_equal "2", @r.get(message.key :delay)
       message.expects(:now).returns(2)
       assert !message.delayed?
       message.expects(:now).returns(0)
@@ -524,7 +556,7 @@ module Beetle
       message = Message.new("somequeue", header, body)
       message.expects(:now).returns(0)
       message.set_delay!
-      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @r.get(message.delay_key)
+      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @r.get(message.key :delay)
       message.expects(:now).returns(message.delay)
       assert !message.delayed?
       message.expects(:now).returns(0)
@@ -537,7 +569,7 @@ module Beetle
       message = Message.new("somequeue", header, body, :timeout => 1)
       message.expects(:now).returns(1)
       message.set_timeout!
-      assert_equal "2", @r.get(message.timeout_key)
+      assert_equal "2", @r.get(message.key :timeout)
       message.expects(:now).returns(2)
       assert !message.timed_out?
       message.expects(:now).returns(3)
@@ -550,7 +582,7 @@ module Beetle
       message = Message.new("somequeue", header, body)
       message.expects(:now).returns(0)
       message.set_timeout!
-      assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @r.get(message.timeout_key)
+      assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @r.get(message.key :timeout)
       message.expects(:now).returns(message.timeout)
       assert !message.timed_out?
       message.expects(:now).returns(Message::DEFAULT_HANDLER_TIMEOUT+1)
@@ -607,7 +639,7 @@ module Beetle
       message = Message.new("somequeue", header, body)
       assert message.aquire_mutex!
       assert !message.aquire_mutex!
-      assert !@r.exists(message.mutex_key)
+      assert !@r.exists(message.key :mutex)
     end
   end
 
@@ -620,6 +652,15 @@ module Beetle
     test "trying to delete a non existent key doesn't throw an error" do
       assert !@r.del("hahahaha")
       assert !@r.exists("hahahaha")
+    end
+
+    test "msetnx returns an 0 or 1" do
+      assert_equal 1, @r.msetnx("a" => 1, "b" => 2)
+      assert_equal "1", @r.get("a")
+      assert_equal "2", @r.get("b")
+      assert_equal 0, @r.msetnx("a" => 3, "b" => 4)
+      assert_equal "1", @r.get("a")
+      assert_equal "2", @r.get("b")
     end
   end
 end
