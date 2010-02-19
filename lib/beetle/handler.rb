@@ -27,7 +27,7 @@ module Beetle
       end
     end
 
-    def process(message)
+    def process
       logger.info "Beetle: received message #{message.inspect}"
     end
 
