@@ -10,8 +10,23 @@ module Beetle
       assert_equal Message::FORMAT_VERSION, m.format_version
     end
 
+    test "a message should encode/decode the version 1 message format correctly" do
+      body = Message.encode1("12345")
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert_equal 1, m.format_version
+    end
+
     test "a redundantly encoded message should have the redundant flag set on delivery" do
       body = Message.encode("12345", :redundant => true)
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert m.redundant?
+      assert_equal(Message::FLAG_REDUNDANT, m.flags & Message::FLAG_REDUNDANT)
+    end
+
+    test "a version format 1 redundantly encoded message should have the redundant flag set on delivery" do
+      body = Message.encode1("12345", :redundant => true)
       header = mock("header")
       m = Message.new("queue", header, body)
       assert m.redundant?
@@ -26,12 +41,44 @@ module Beetle
       assert_equal 42, m.expires_at
     end
 
+    test "encoding a format 1 message with a specfied time to live should set an expiration time" do
+      Message.expects(:now).returns(25)
+      body = Message.encode1("12345", :ttl => 17)
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert_equal 42, m.expires_at
+    end
+
     test "encoding a message should set the default expiration date if none is provided in the call to encode" do
       Message.expects(:now).returns(1)
       body = Message.encode("12345")
       header = mock("header")
       m = Message.new("queue", header, body)
       assert_equal 1+Message::DEFAULT_TTL, m.expires_at
+    end
+
+    test "encoding a format 1 message should set the default expiration date if none is provided in the call to encode" do
+      Message.expects(:now).returns(1)
+      body = Message.encode1("12345")
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert_equal 1+Message::DEFAULT_TTL, m.expires_at
+    end
+
+    test "encoding a message with a specfied start time should set the start time attribute" do
+      Message.expects(:now).returns(25)
+      body = Message.encode("12345", :delay => 17)
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert_equal 42, m.starts_at
+    end
+
+    test "encoding a message without a specfied start time should set the start time attribute to the encoding time" do
+      Message.expects(:now).returns(25)
+      body = Message.encode("12345")
+      header = mock("header")
+      m = Message.new("queue", header, body)
+      assert_equal 25, m.starts_at
     end
   end
 
@@ -202,7 +249,28 @@ module Beetle
       assert message.redundant?
       assert !@r.exists(message.key :ack_count)
     end
+  end
 
+  class NotYetStartedMessageTest < Test::Unit::TestCase
+    def setup
+      @r = Message.redis
+      @r.flushdb
+    end
+
+    test "processing a message which a starts_at date in the future should not run the handler, it should not be acked and should not insert any keys into the database" do
+      body = Message.encode('my message', :delay => 2)
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert !message.started?
+
+      proc = mock("proc")
+      proc.expects(:call).never
+      header.expects(:ack).never
+      assert_equal RC::Delayed, message.process(proc)
+      message.keys.each do |key|
+        assert !@r.exists(key)
+      end
+    end
   end
 
   class FreshMessageTest < Test::Unit::TestCase
@@ -239,7 +307,6 @@ module Beetle
       assert_equal RC::OK, message.__send__(:process_internal, proc)
       assert_equal "1", @r.get(message.key :ack_count)
     end
-
   end
 
   class HandlerCrashTest < Test::Unit::TestCase
@@ -249,12 +316,14 @@ module Beetle
     end
 
     test "a message should not be acked if the handler crashes and the exception limit has not been reached" do
+      Message.stubs(:now).returns(9)
       body = Message.encode('my message')
       header = mock("header")
       message = Message.new("somequeue", header, body, :delay => 42, :timeout => 10.seconds, :attempts => 2, :exceptions => 2)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
+      assert message.started?
 
       proc = lambda {|*args| raise "crash"}
       message.stubs(:now).returns(10)
@@ -296,7 +365,6 @@ module Beetle
       header.expects(:ack)
       assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
     end
-
   end
 
   class SeenMessageTest < Test::Unit::TestCase
@@ -439,7 +507,6 @@ module Beetle
       assert !message.completed?
       assert !@r.exists(message.key :mutex)
     end
-
   end
 
   class ProcessingTest < Test::Unit::TestCase
@@ -505,7 +572,6 @@ module Beetle
       assert !result.recover?
       assert result.failure?
     end
-
   end
 
   class HandlerTimeoutTest < Test::Unit::TestCase
