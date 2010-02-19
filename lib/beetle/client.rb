@@ -94,7 +94,7 @@ module Beetle
       subscriber.listen
     end
 
-    def autoload(glob)
+    def load(glob)
       b = binding
       Dir[glob].each do |f|
         eval(File.read(f), b, f)
