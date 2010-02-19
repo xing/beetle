@@ -1,11 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class ReturnCodesTest < Test::Unit::TestCase
-    test "inspecting a return code should display the name of the returncode" do
-      assert_equal "Beetle::Message::RC::OK", Beetle::Message::RC::OK.inspect
-    end
-  end
 
   class EncodingTest < Test::Unit::TestCase
     test "a message should encode/decode the message format version correctly" do
@@ -194,7 +189,7 @@ module Beetle
       s = sequence("s")
       proc.expects(:call).in_sequence(s)
       header.expects(:ack).in_sequence(s)
-      assert_equal Message::RC::OK, message.process(proc)
+      assert_equal RC::OK, message.process(proc)
     end
 
     test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
@@ -209,7 +204,7 @@ module Beetle
       proc.expects(:call).in_sequence(s)
       message.expects(:completed!).in_sequence(s)
       header.expects(:ack).in_sequence(s)
-      assert_equal Message::RC::OK, message.__send__(:process_internal, proc)
+      assert_equal RC::OK, message.__send__(:process_internal, proc)
       assert_equal "1", @r.get(message.ack_count_key)
     end
 
@@ -233,7 +228,7 @@ module Beetle
       message.stubs(:now).returns(10)
       message.expects(:completed!).never
       header.expects(:ack).never
-      assert_equal Message::RC::HandlerCrash, message.__send__(:process_internal, proc)
+      assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
       assert !message.completed?
       assert_equal "1", @r.get(message.exceptions_key)
       assert_equal "0", @r.get(message.timeout_key)
@@ -252,7 +247,7 @@ module Beetle
       s = sequence("s")
       message.expects(:completed!).never
       header.expects(:ack)
-      assert_equal Message::RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
+      assert_equal RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
     end
 
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
@@ -267,7 +262,7 @@ module Beetle
       s = sequence("s")
       message.expects(:completed!).never
       header.expects(:ack)
-      assert_equal Message::RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
+      assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
     end
 
   end
@@ -290,7 +285,7 @@ module Beetle
       s = sequence("s")
       header.expects(:ack)
       proc.expects(:call).never
-      assert_equal Message::RC::OK, message.__send__(:process_internal, proc)
+      assert_equal RC::OK, message.__send__(:process_internal, proc)
     end
 
     test "an incomplete, delayed existing message should be processed later" do
@@ -306,7 +301,7 @@ module Beetle
       s = sequence("s")
       header.expects(:ack).never
       proc.expects(:call).never
-      assert_equal Message::RC::Delayed, message.__send__(:process_internal, proc)
+      assert_equal RC::Delayed, message.__send__(:process_internal, proc)
       assert message.delayed?
       assert !message.completed?
     end
@@ -325,7 +320,7 @@ module Beetle
       s = sequence("s")
       header.expects(:ack).never
       proc.expects(:call).never
-      assert_equal Message::RC::HandlerNotYetTimedOut, message.__send__(:process_internal, proc)
+      assert_equal RC::HandlerNotYetTimedOut, message.__send__(:process_internal, proc)
       assert !message.delayed?
       assert !message.completed?
       assert !message.timed_out?
@@ -348,7 +343,7 @@ module Beetle
       proc = mock("proc")
       header.expects(:ack)
       proc.expects(:call).never
-      assert_equal Message::RC::AttemptsLimitReached, message.send(:process_internal, proc)
+      assert_equal RC::AttemptsLimitReached, message.send(:process_internal, proc)
     end
 
     test "an incomplete, undelayed, timed out, existing message which has reached the exceptions limit should be acked and not run the handler" do
@@ -367,7 +362,7 @@ module Beetle
       proc = mock("proc")
       header.expects(:ack)
       proc.expects(:call).never
-      assert_equal Message::RC::ExceptionsLimitReached, message.send(:process_internal, proc)
+      assert_equal RC::ExceptionsLimitReached, message.send(:process_internal, proc)
     end
 
     test "an incomplete, undelayed, timed out, existing message should be processed again if the mutex can be aquired" do
@@ -387,7 +382,7 @@ module Beetle
       message.expects(:set_timeout!).in_sequence(s)
       proc.expects(:call).in_sequence(s)
       header.expects(:ack).in_sequence(s)
-      assert_equal Message::RC::OK, message.__send__(:process_internal, proc)
+      assert_equal RC::OK, message.__send__(:process_internal, proc)
       assert message.completed?
     end
 
@@ -408,7 +403,7 @@ module Beetle
       proc = mock("proc")
       proc.expects(:call).never
       header.expects(:ack).never
-      assert_equal Message::RC::MutexLocked, message.__send__(:process_internal, proc)
+      assert_equal RC::MutexLocked, message.__send__(:process_internal, proc)
       assert !message.completed?
       assert !@r.exists(message.mutex_key)
     end
@@ -424,7 +419,7 @@ module Beetle
       handler = Handler.new
       handler.expects(:process_exception).never
       handler.expects(:process_failure).never
-      assert_equal Message::RC::InternalError, message.process(1)
+      assert_equal RC::InternalError, message.process(1)
     end
 
     test "processing a message with a crashing processor calls the processors exception handler and returns an internal error" do
@@ -438,7 +433,7 @@ module Beetle
       handler.expects(:process_exception).with(exception).once
       handler.expects(:process_failure).never
       result = message.process(handler)
-      assert_equal Message::RC::HandlerCrash, result
+      assert_equal RC::HandlerCrash, result
       assert result.recover?
       assert !result.failure?
     end
@@ -456,7 +451,7 @@ module Beetle
       errback.expects(:call).once
       failback.expects(:call).once
       result = message.process(handler)
-      assert_equal Message::RC::AttemptsLimitReached, result
+      assert_equal RC::AttemptsLimitReached, result
       assert !result.recover?
       assert result.failure?
     end
@@ -474,7 +469,7 @@ module Beetle
       errback.expects(:call).once
       failback.expects(:call).once
       result = message.process(handler)
-      assert_equal Message::RC::ExceptionsLimitReached, result
+      assert_equal RC::ExceptionsLimitReached, result
       assert !result.recover?
       assert result.failure?
     end
@@ -490,7 +485,7 @@ module Beetle
       action = lambda{|*args| while true; end}
       handler = Handler.create(action)
       result = message.process(handler)
-      assert_equal Message::RC::AttemptsLimitReached, result
+      assert_equal RC::AttemptsLimitReached, result
     end
   end
 

@@ -10,41 +10,6 @@ module Beetle
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     DEFAULT_EXCEPTION_LIMIT = 1
 
-    # message processing result
-    class RC
-      def initialize(*args)
-        @recover = args.delete :recover
-        @failure = args.delete :failure
-        @name = args.first
-      end
-
-      def inspect
-        @name.blank? ? super : "#{self.class.name}::#{@name}"
-      end
-
-      def recover?
-        @recover
-      end
-
-      def failure?
-        @failure
-      end
-
-      def self.rc(name, *args)
-        const_set name, new(name, *args)
-      end
-
-      rc :OK
-      rc :Ancient, :failure
-      rc :AttemptsLimitReached, :failure
-      rc :ExceptionsLimitReached, :failure
-      rc :Delayed, :recover
-      rc :HandlerCrash, :recover
-      rc :HandlerNotYetTimedOut, :recover
-      rc :MutexLocked, :recover
-      rc :InternalError, :recover
-    end
-
     attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
     attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
 
