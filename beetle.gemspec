@@ -5,18 +5,21 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.9"
+  s.version = "0.0.10"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-02-16}
-  s.description = %q{A high available/reliabile messaging infrastructure}
+  s.date = %q{2010-02-18}
+  s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
-    "TODO"
+    "README.rdoc",
+     "TODO"
   ]
   s.files = [
     ".gitignore",
+     "MIT-LICENSE",
+     "README.rdoc",
      "Rakefile",
      "TODO",
      "beetle.gemspec",
@@ -44,7 +47,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.5}
-  s.summary = %q{Reliable Messaging with AMQP}
+  s.summary = %q{High Availability AMQP Messaging with Redundant Queues}
   s.test_files = [
     "test/beetle/base_test.rb",
      "test/beetle/client_test.rb",
