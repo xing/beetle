@@ -17,6 +17,7 @@ module Beetle
         create_exchanges(messages)
         bind_queues(messages)
         subscribe(messages)
+        yield if block_given?
       end
     end
 

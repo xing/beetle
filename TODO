@@ -1,7 +1,3 @@
 - docs
 - example scripts
-- prefetch 1
-- garbage collector for Redis (or fix Redis expiry)
 - improve error messages on configuration errors
-- add Beetle: prefix to all log messages
-- get rid of the yml file
