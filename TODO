@@ -1,3 +1,5 @@
 - docs
 - example scripts
 - improve error messages on configuration errors
+- let handlers decide dynamically how long to wait for a retry
+- allow symbols for exchange, queue, and message names
