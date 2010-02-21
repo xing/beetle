@@ -28,7 +28,7 @@ module Beetle
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
-      @attempts_limit   = @exceptions_limit + 1 if @attempts_limit < @exceptions_limit
+      @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
     end
 
     def decode
