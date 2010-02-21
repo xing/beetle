@@ -62,7 +62,7 @@ module Beetle
         opts = opts.dup
         key = opts.delete(:key) || message
         queue = opts.delete(:queue) || message
-        callback = create_subscription_callback(@server, queue_name_for_trace(queue), handler, opts)
+        callback = create_subscription_callback(message, queue_name_for_trace(queue), handler, opts)
         logger.debug "Beetle: subscribing to queue #{queue_name_for_trace(queue)} with key #{key} for message #{message}"
         begin
           queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
@@ -72,35 +72,23 @@ module Beetle
       end
     end
 
-    def create_subscription_callback(server, queue, handler, opts)
+    def create_subscription_callback(message, queue, handler, opts)
+      server = @server
       lambda do |header, data|
         begin
           processor = Handler.create(handler, opts)
           m = Message.new(queue, header, data, opts.merge(:server => server))
           result = m.process(processor)
-          install_recovery_timer(server) if result.recover?
+          if result.recover?
+            sleep 0.1
+            @client.send(:publisher).re_publish(server, message, data, :key => "delayed.#{queue}.#{opts[:key]}")
+            header.ack
+          end
         rescue Exception
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
           logger.error "Beetle: internal error during message processing: #{$!}"
         end
-      end
-    end
-
-    # rewind the message recovery timer for a given server, but at most 3 times
-    def install_recovery_timer(server)
-      return if (@timer_rewinds[server] += 1) > 3
-      @timers[server].cancel if @timers[server]
-      @timers[server] = new_recovery_timer(server, RECOVER_AFTER)
-    end
-
-    def new_recovery_timer(server, seconds)
-      EM::Timer.new(seconds) do
-        @timers[server] = nil
-        @timer_rewinds[server] = 0
-        logger.debug "Beetle: recovering unacked messages"
-        # recovering and prefetch(1) only works without requeueing
-        mq(server).recover(false)
       end
     end
 
@@ -110,7 +98,9 @@ module Beetle
 
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = mq.queue(queue_name, creation_keys)
-      queue.bind(exchange(exchange_name), binding_keys)
+      exchange = exchange(exchange_name)
+      queue.bind(exchange, binding_keys)
+      queue.bind(exchange, binding_keys.merge(:key => "delayed.#{queue_name}.#")) if binding_keys[:key] != "#"
       queue
     end
 
