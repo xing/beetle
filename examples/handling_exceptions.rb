@@ -23,11 +23,11 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", {:attempts => 2, :exceptions => 2, :delay => 0}, Handler)
+client.register_handler("test", {:exceptions => 1, :delay => 0}, Handler)
 
 # publish some test messages
 n = 0
-100.times { |i| n += client.publish("test", i+1) }
+10.times { |i| n += client.publish("test", i+1) }
 puts "published #{n} test messages"
 
 client.listen do

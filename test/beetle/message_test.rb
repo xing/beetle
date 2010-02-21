@@ -321,7 +321,7 @@ module Beetle
       Message.stubs(:now).returns(9)
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :delay => 42, :timeout => 10.seconds, :attempts => 2, :exceptions => 2)
+      message = Message.new("somequeue", header, body, :delay => 42, :timeout => 10.seconds, :exceptions => 1)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -341,7 +341,7 @@ module Beetle
     test "a message should be acked if the handler crashes and the exception limit has been reached" do
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 2, :exceptions => 0)
+      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 2)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -356,7 +356,7 @@ module Beetle
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 1, :exceptions => 1)
+      message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 1)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -526,7 +526,7 @@ module Beetle
     test "processing a message with a crashing processor calls the processors exception handler and returns an internal error" do
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :attempts => 2, :exceptions => 2)
+      message = Message.new("somequeue", header, body, :exceptions => 1)
       errback = lambda{|*args|}
       exception = Exception.new
       action = lambda{|*args| raise exception}
@@ -687,9 +687,12 @@ module Beetle
     end
 
 
-    test "attempts limit should be set exception limit + 1 iff the configured attempts limit is smaller than the exceptions limit" do
+    test "attempts limit should be set exception limit + 1 iff the configured attempts limit is equal to or smaller than the exceptions limit" do
       body = Message.encode('my message')
       header = mock("header")
+      message = Message.new("somequeue", header, body, :exceptions => 1)
+      assert_equal 2, message.attempts_limit
+      assert_equal 1, message.exceptions_limit
       message = Message.new("somequeue", header, body, :exceptions => 2)
       assert_equal 3, message.attempts_limit
       assert_equal 2, message.exceptions_limit
