@@ -253,16 +253,16 @@ module Beetle
         increment_exception_count!
         if attempts_limit_reached?
           ack!
-          logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+          logger.debug "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
           return RC::AttemptsLimitReached
         elsif exceptions_limit_reached?
           ack!
-          logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+          logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
           return RC::ExceptionsLimitReached
         else
           timed_out!
           set_delay!
-          logger.warn "Beetle: message handler crashed on #{msg_id}"
+          logger.debug "Beetle: message handler crashed on #{msg_id}"
           return RC::HandlerCrash
         end
       ensure
