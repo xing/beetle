@@ -113,6 +113,10 @@ module Beetle
       redis.set(key(:delay), now + delay)
     end
 
+    def attempts
+      redis.get(key(:attempts)).to_i
+    end
+
     def increment_execution_attempts!
       redis.incr(key(:attempts))
     end
