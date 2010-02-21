@@ -68,6 +68,7 @@ module Beetle
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      q.expects(:bind).with(:the_exchange, {:key => "delayed.some_queue.#"})
       m = mock("MQ")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
@@ -83,6 +84,7 @@ module Beetle
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      q.expects(:bind).with(:the_exchange, {:key => "delayed.#{expected_queue_name}.#"})
       m = mock("MQ")
       m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
@@ -161,36 +163,6 @@ module Beetle
       @handler = Handler.create(lambda{|*args| raise @exception})
       @queue = "somequeue"
       @callback = @sub.send(:create_subscription_callback, "servername", @queue, @handler, {:exceptions => 4, :attempts => 4})
-    end
-
-    test "the internal recovery timer for a given server should be refreshed at most three times" do
-      @handler.stubs(:process_exception).with(@exception)
-      timer1 = mock("timer1")
-      timer2 = mock("timer2")
-      timer3 = mock("timer3")
-
-      s = sequence("timers")
-      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer1).in_sequence(s)
-      timer1.expects(:cancel).once
-      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer2).in_sequence(s)
-      timer2.expects(:cancel).once
-      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer3).in_sequence(s)
-      timer3.expects(:cancel).never
-
-      header = mock("header")
-      @callback.call(header, Message.encode("my message"))
-      @callback.call(header, Message.encode("my message"))
-      @callback.call(header, Message.encode("my message"))
-      @callback.call(header, Message.encode("my message"))
-    end
-
-    test "if a recovery timer fires, it should call recover and reset on the server it was installed for" do
-      timer = mock("timer")
-      mq = mock("mq")
-      mq.expects(:recover).with(false).once
-      @sub.expects(:mq).with("servername").returns(mq)
-      EM::Timer.expects(:new).with(1).yields
-      @sub.send(:new_recovery_timer, "servername", 1)
     end
 
     test "exceptions raised from message processing should be ignored" do

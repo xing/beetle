@@ -72,6 +72,15 @@ module Beetle
       published.size
     end
 
+    def re_publish(server, message_name, data, opts = {})
+      opts = @client.messages[message_name].merge(opts.symbolize_keys)
+      exchange_name = opts[:exchange]
+      recycle_dead_servers unless @dead_servers.empty?
+      set_current_server server
+      bind_queues_for_exchange(exchange_name)
+      exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
+    end
+
     def purge(queue_name)
       each_server do
         queue(queue_name).purge
