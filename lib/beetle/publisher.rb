@@ -72,6 +72,12 @@ module Beetle
       published.size
     end
 
+    def purge(queue_name)
+      each_server do
+        queue(queue_name).purge
+      end
+    end
+
     private
 
     def bunny

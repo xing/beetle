@@ -226,6 +226,19 @@ module Beetle
       @pub.expects(:bind_queues_for_exchange).with('mama-exchange').returns(true)
       @pub.publish('mama', data)
     end
+
+    test "purging a queue should purge the queues on all servers" do
+      @pub.servers = %w(a b)
+      queue = mock("queue")
+      s = sequence("purging")
+      @pub.expects(:set_current_server).with("a").in_sequence(s)
+      @pub.expects(:queue).with("queue").returns(queue).in_sequence(s)
+      queue.expects(:purge).in_sequence(s)
+      @pub.expects(:set_current_server).with("b").in_sequence(s)
+      @pub.expects(:queue).with("queue").returns(queue).in_sequence(s)
+      queue.expects(:purge).in_sequence(s)
+      @pub.purge("queue")
+    end
   end
 
   class PublisherExchangeManagementTest < Test::Unit::TestCase
