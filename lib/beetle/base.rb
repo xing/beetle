@@ -13,10 +13,6 @@ module Beetle
       @trace = false
     end
 
-    def stop
-      stop!
-    end
-
     private
 
     def logger

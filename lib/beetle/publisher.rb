@@ -78,6 +78,10 @@ module Beetle
       end
     end
 
+    def stop
+      each_server { stop! }
+    end
+
     private
 
     def bunny

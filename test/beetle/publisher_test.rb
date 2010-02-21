@@ -311,5 +311,18 @@ module Beetle
       @pub.expects(:message_name).returns('foo')
       assert_equal 0, @pub.send(:select_next_server)
     end
+
+    test "stop should shut down all bunnies" do
+      @pub.servers = ["localhost:1111", "localhost:2222"]
+      s = sequence("shutdown")
+      bunny = mock("bunny")
+      @pub.expects(:set_current_server).with("localhost:1111").in_sequence(s)
+      @pub.expects(:bunny).returns(bunny).in_sequence(s)
+      bunny.expects(:stop).in_sequence(s)
+      @pub.expects(:set_current_server).with("localhost:2222").in_sequence(s)
+      @pub.expects(:bunny).returns(bunny).in_sequence(s)
+      bunny.expects(:stop).in_sequence(s)
+      @pub.stop
+    end
   end
 end

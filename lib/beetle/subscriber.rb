@@ -29,10 +29,6 @@ module Beetle
 
     private
 
-    def each_server
-      @servers.each { |s| set_current_server(s); yield }
-    end
-
     def create_exchanges(messages)
       each_server do
         messages.each { |message| exchange(@client.messages[message][:exchange]) }
