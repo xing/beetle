@@ -666,6 +666,26 @@ module Beetle
       assert_equal 3, message.increment_execution_attempts!
     end
 
+    test "accessing execution attempts should return the number of execution attempts made so far" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert_equal 0, message.attempts
+      message.increment_execution_attempts!
+      assert_equal 1, message.attempts
+      message.increment_execution_attempts!
+      assert_equal 2, message.attempts
+      message.increment_execution_attempts!
+      assert_equal 3, message.attempts
+    end
+
+    test "accessing execution attempts should return 0 if none were made" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body)
+      assert_equal 0, message.attempts
+    end
+
     test "attempts limit should be reached after incrementing the attempt limit counter 'attempts limit' times" do
       body = Message.encode('my message')
       header = mock("header")
