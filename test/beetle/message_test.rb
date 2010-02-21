@@ -686,6 +686,18 @@ module Beetle
       assert_equal 0, message.attempts
     end
 
+
+    test "attempts limit should be set exception limit + 1 iff the configured attempts limit is smaller than the exceptions limit" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body, :exceptions => 2)
+      assert_equal 3, message.attempts_limit
+      assert_equal 2, message.exceptions_limit
+      message = Message.new("somequeue", header, body, :attempts => 5, :exceptions => 2)
+      assert_equal 5, message.attempts_limit
+      assert_equal 2, message.exceptions_limit
+    end
+
     test "attempts limit should be reached after incrementing the attempt limit counter 'attempts limit' times" do
       body = Message.encode('my message')
       header = mock("header")
