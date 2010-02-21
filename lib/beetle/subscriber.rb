@@ -87,11 +87,11 @@ module Beetle
       end
     end
 
-    # rewind the message recovery timer for a given server with increasing time intervals, but at most 3 times
+    # rewind the message recovery timer for a given server, but at most 3 times
     def install_recovery_timer(server)
       return if (@timer_rewinds[server] += 1) > 3
       @timers[server].cancel if @timers[server]
-      @timers[server] = new_recovery_timer(server, @timer_rewinds[server] * RECOVER_AFTER)
+      @timers[server] = new_recovery_timer(server, RECOVER_AFTER)
     end
 
     def new_recovery_timer(server, seconds)

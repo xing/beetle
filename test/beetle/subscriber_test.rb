@@ -169,11 +169,12 @@ module Beetle
       timer2 = mock("timer2")
       timer3 = mock("timer3")
 
-      @sub.expects(:new_recovery_timer).with("servername", 1*Subscriber::RECOVER_AFTER).returns(timer1)
+      s = sequence("timers")
+      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer1).in_sequence(s)
       timer1.expects(:cancel).once
-      @sub.expects(:new_recovery_timer).with("servername", 2*Subscriber::RECOVER_AFTER).returns(timer2)
+      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer2).in_sequence(s)
       timer2.expects(:cancel).once
-      @sub.expects(:new_recovery_timer).with("servername", 3*Subscriber::RECOVER_AFTER).returns(timer3)
+      @sub.expects(:new_recovery_timer).with("servername", Subscriber::RECOVER_AFTER).returns(timer3).in_sequence(s)
       timer3.expects(:cancel).never
 
       header = mock("header")
