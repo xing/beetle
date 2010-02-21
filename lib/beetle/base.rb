@@ -44,6 +44,10 @@ module Beetle
       @server = s
     end
 
+    def each_server
+      @servers.each { |s| set_current_server(s); yield }
+    end
+
     def exchanges
       @exchanges[@server] ||= {}
     end
