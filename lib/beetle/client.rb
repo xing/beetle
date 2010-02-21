@@ -83,7 +83,11 @@ module Beetle
     end
 
     def stop_listening
-      subscriber.stop
+      subscriber.stop!
+    end
+
+    def stop_publishing
+      publisher.stop
     end
 
     def trace

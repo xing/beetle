@@ -105,6 +105,12 @@ module Beetle
       client.publish(*args)
     end
 
+    test "should delegate stop_publishing to the publisher instance" do
+      client = Client.new
+      client.send(:publisher).expects(:stop)
+      client.stop_publishing
+    end
+
     test "should delegate queue purging to the publisher instance" do
       client = Client.new
       client.send(:publisher).expects(:purge).with("queue")
@@ -113,8 +119,10 @@ module Beetle
 
     test "should delegate listening to the subscriber instance" do
       client = Client.new
-      client.send(:subscriber).expects(:listen)
-      client.listen
+      client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
+      x = 0
+      client.listen(["a", "b"]) { x = 5 }
+      assert_equal 5, x
     end
 
     test "should delegate stop_listening to the subscriber instance" do
