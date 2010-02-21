@@ -8,7 +8,7 @@ module Beetle
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
-    DEFAULT_EXCEPTION_LIMIT = 1
+    DEFAULT_EXCEPTION_LIMIT = 0
 
     attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at, :starts_at
     attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
@@ -130,7 +130,7 @@ module Beetle
     end
 
     def exceptions_limit_reached?
-      redis.get(key(:exceptions)).to_i >= exceptions_limit
+      redis.get(key(:exceptions)).to_i > exceptions_limit
     end
 
     def key_exists?

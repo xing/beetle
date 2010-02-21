@@ -343,7 +343,7 @@ module Beetle
       header = mock("header")
       message = Message.new("somequeue", header, body, :timeout => 10.seconds, :attempts => 2, :exceptions => 0)
       assert !message.attempts_limit_reached?
-      assert message.exceptions_limit_reached?
+      assert !message.exceptions_limit_reached?
       assert !message.timed_out?
 
       proc = lambda {|*args| raise "crash"}
@@ -708,10 +708,19 @@ module Beetle
       assert_equal 3, message.increment_exception_count!
     end
 
-    test "exceptions limit should be reached after incrementing the attempt limit counter 'exceptions limit' times" do
+    test "default exceptions limit should be reached after incrementing the attempt limit counter 1 time" do
       body = Message.encode('my message')
       header = mock("header")
-      message = Message.new("somequeue", header, body, :exceptions => 2)
+      message = Message.new("somequeue", header, body)
+      assert !message.exceptions_limit_reached?
+      message.increment_exception_count!
+      assert message.exceptions_limit_reached?
+    end
+
+    test "exceptions limit should be reached after incrementing the attempt limit counter 'exceptions limit + 1' times" do
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body, :exceptions => 1)
       assert !message.exceptions_limit_reached?
       message.increment_exception_count!
       assert !message.exceptions_limit_reached?

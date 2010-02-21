@@ -5,4 +5,5 @@
 - allow symbols for exchange, queue, and message names
 - :attempts should automatically be at least :exceptions + 1
 - review log levels in all logger statements
-- figure out how to avoid busy loops for delayed messages (probably just store them in redis)
+- figure out how to avoid busy loops for delayed messages
+  (probably just store them in redis)
