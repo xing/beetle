@@ -74,6 +74,10 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
+    def purge(queue_name)
+      publisher.purge(queue_name)
+    end
+
     def listen(*args, &block)
       subscriber.listen(*args, &block)
     end

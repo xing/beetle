@@ -105,6 +105,12 @@ module Beetle
       client.publish(*args)
     end
 
+    test "should delegate queue purging to the publisher instance" do
+      client = Client.new
+      client.send(:publisher).expects(:purge).with("queue")
+      client.purge("queue")
+    end
+
     test "should delegate listening to the subscriber instance" do
       client = Client.new
       client.send(:subscriber).expects(:listen)
