@@ -1,7 +1,7 @@
 module Beetle
   class Subscriber < Base
 
-    RECOVER_AFTER = 10.seconds
+    RECOVER_AFTER = 1.seconds
 
     def initialize(client, options = {})
       super
@@ -98,11 +98,9 @@ module Beetle
       EM::Timer.new(seconds) do
         @timers[server] = nil
         @timer_rewinds[server] = 0
-        logger.info "Beetle: recovering unacked messages"
-        mq(server).recover(true)
-        # this resets the exchanges and queues for this server
-        # it ensures that the subscriber rehandles the message even when prefetch(1) is set
-        mq(server).reset
+        logger.debug "Beetle: recovering unacked messages"
+        # recovering and prefetch(1) only works without requeueing
+        mq(server).recover(false)
       end
     end
 

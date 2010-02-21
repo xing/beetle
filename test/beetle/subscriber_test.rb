@@ -186,9 +186,8 @@ module Beetle
     test "if a recovery timer fires, it should call recover and reset on the server it was installed for" do
       timer = mock("timer")
       mq = mock("mq")
-      mq.expects(:recover).with(true).once
-      mq.expects(:reset).once
-      @sub.expects(:mq).with("servername").twice.returns(mq)
+      mq.expects(:recover).with(false).once
+      @sub.expects(:mq).with("servername").returns(mq)
       EM::Timer.expects(:new).with(1).yields
       @sub.send(:new_recovery_timer, "servername", 1)
     end
