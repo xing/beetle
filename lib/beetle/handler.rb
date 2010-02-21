@@ -52,7 +52,7 @@ module Beetle
     end
 
     def error(exception)
-      logger.error "Beetle: handler execution raised an exeption: #{exception}"
+      logger.error "Beetle: handler execution raised an exception: #{exception}"
     end
 
     def failure(result)
