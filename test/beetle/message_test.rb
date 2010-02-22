@@ -278,7 +278,6 @@ module Beetle
       assert !message.exceptions_limit_reached?
       assert !@r.get(message.key(:mutex))
       assert !message.timed_out?
-      assert message.started?
 
       proc = lambda {|*args| raise "crash"}
       message.expects(:delete_mutex!)
