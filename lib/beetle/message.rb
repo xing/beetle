@@ -2,7 +2,7 @@ require "timeout"
 
 module Beetle
   class Message
-    FORMAT_VERSION = 2
+    FORMAT_VERSION = 1
     FLAG_REDUNDANT = 1
     DEFAULT_TTL = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
@@ -10,7 +10,7 @@ module Beetle
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     DEFAULT_EXCEPTION_LIMIT = 0
 
-    attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at, :starts_at
+    attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
     attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
 
     def initialize(queue, header, body, opts = {})
@@ -32,29 +32,14 @@ module Beetle
     end
 
     def decode
-      case @body.unpack("n").first
-      when 1
-        @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
-      when 2
-        @format_version, @flags, @starts_at, @expires_at, @uuid, @data = @body.unpack("nnNNA36A*")
-      end
+      @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
     end
 
     def self.encode(data, opts = {})
-      now = now()
-      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
-      starts_at = now + (opts[:delay] || 0).to_i
-      flags = 0
-      flags |= FLAG_REDUNDANT if opts[:redundant]
-      [FORMAT_VERSION, flags, starts_at, expires_at, generate_uuid.to_s, data.to_s].pack("nnNNA36A*")
-    end
-
-    # encode format version 1
-    def self.encode1(data, opts = {})
       expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
-      [1, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
+      [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
     def msg_id
@@ -71,10 +56,6 @@ module Beetle
 
     def expired?
       @expires_at < now
-    end
-
-    def started?
-      @starts_at <= now
     end
 
     def self.generate_uuid
@@ -213,9 +194,6 @@ module Beetle
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
-      elsif !started?
-        logger.warn "Beetle: message handler should not be started yet!"
-        RC::Delayed
       elsif !key_exists?
         set_timeout!
         run_handler!(handler)
