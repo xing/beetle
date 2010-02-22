@@ -127,10 +127,14 @@ module Beetle
       if mutex = redis.setnx(key(:mutex), now)
         logger.debug "Beetle: aquired mutex: #{msg_id}"
       else
-        redis.del(key(:mutex))
-        logger.debug "Beetle: deleted mutex: #{msg_id}"
+        delete_mutex!
       end
       mutex
+    end
+
+    def delete_mutex!
+      redis.del(key(:mutex))
+      logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
     def self.redis
@@ -239,6 +243,7 @@ module Beetle
           logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
           return RC::ExceptionsLimitReached
         else
+          delete_mutex!
           timed_out!
           set_delay!
           logger.debug "Beetle: message handler crashed on #{msg_id}"

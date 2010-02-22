@@ -1,6 +1,6 @@
 # Using Beetle::Handler classes
 require "rubygems"
-require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
 # setup
 Beetle.config.logger.level = Logger::INFO
@@ -12,7 +12,7 @@ client.register_message("test")
 STORE = Redis.new(:db => 5)
 KEY = UUID4R::uuid(1)
 
-# declare a handler class fro message processing
+# declare a handler class for message processing
 class Handler < Beetle::Handler
   def process
     i = message.data.to_i
