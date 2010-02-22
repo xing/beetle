@@ -21,6 +21,10 @@ module Beetle
       end
     end
 
+    def stop!
+      EM.stop_event_loop
+    end
+
     def register_handler(messages, opts, handler=nil, &block)
       Array(messages).each do |message|
         (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
@@ -102,10 +106,6 @@ module Beetle
       queue.bind(exchange, binding_keys)
       queue.bind(exchange, binding_keys.merge(:key => "delayed.#{queue_name}.#")) if binding_keys[:key] != "#"
       queue
-    end
-
-    def stop!
-      EM.stop_event_loop
     end
 
     def amqp_connection
