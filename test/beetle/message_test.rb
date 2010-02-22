@@ -269,6 +269,25 @@ module Beetle
       assert_equal "52", @r.get(message.key :delay)
     end
 
+    test "a message should delete the mutex before resetting the timer if attempts and exception limits havn't been reached" do
+      Message.stubs(:now).returns(9)
+      body = Message.encode('my message')
+      header = mock("header")
+      message = Message.new("somequeue", header, body, :delay => 42, :timeout => 10.seconds, :exceptions => 1)
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !@r.get(message.key(:mutex))
+      assert !message.timed_out?
+      assert message.started?
+
+      proc = lambda {|*args| raise "crash"}
+      message.expects(:delete_mutex!)
+      message.stubs(:now).returns(10)
+      message.expects(:completed!).never
+      header.expects(:ack).never
+      assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
+    end
+
     test "a message should be acked if the handler crashes and the exception limit has been reached" do
       body = Message.encode('my message')
       header = mock("header")
