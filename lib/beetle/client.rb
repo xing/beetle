@@ -28,7 +28,7 @@ module Beetle
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name}.merge!(opts.symbolize_keys)
-      opts.merge! :durable => true, :passive => false
+      opts.merge! :durable => true, :passive => false, :amqp_name => name
       queues[name] = opts
       exchange = opts[:exchange]
       register_exchange(exchange) unless exchanges.include?(exchange)
@@ -90,16 +90,18 @@ module Beetle
       publisher.stop
     end
 
-    def trace
-      subscriber.trace = true
-      register_handler(messages.keys, :ack => true, :key => '#') do |msg|
+    def trace(&block)
+      queues.each do |name, opts|
+        opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(name)
+      end
+      register_handler(messages.keys) do |msg|
         puts "-----===== new message =====-----"
         puts "SERVER: #{msg.server}"
         puts "HEADER: #{msg.header.inspect}"
-        puts "UUID: #{msg.uuid}" if msg.uuid
+        puts "MSGID: #{msg.msg_id}" 
         puts "DATA: #{msg.data}"
       end
-      subscriber.listen
+      subscriber.listen &block
     end
 
     def load(glob)
@@ -121,6 +123,10 @@ module Beetle
 
     def subscriber
       @subscriber ||= Subscriber.new(self)
+    end
+
+    def queue_name_for_tracing(queue)
+      "trace-#{queue}-#{`hostname`.chomp}-#{$$}"
     end
   end
 end

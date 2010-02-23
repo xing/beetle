@@ -16,10 +16,6 @@ module Beetle
       assert_equal({}, @sub.instance_variable_get("@mqs"))
     end
 
-    test "initially we should not be in trace mode" do
-      assert !@sub.trace
-    end
-
     test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
       @sub.expects(:new_amqp_connection).returns(42)
       # TODO: smarter way to test? what triggers the amqp_connection private method call?
@@ -71,22 +67,6 @@ module Beetle
       q.expects(:bind).with(:the_exchange, {:key => "delayed.some_queue.#"})
       m = mock("MQ")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
-      @sub.expects(:mq).returns(m)
-
-      @sub.send(:queue, "some_queue")
-      assert_equal q, @sub.send(:queues)["some_queue"]
-    end
-
-    test "in trace mode, queues are bound with a 'trace' prefix" do
-      @sub.trace = true
-      expected_queue_name = "trace-some_queue-#{`hostname`.chomp}"
-      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
-      @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      q.expects(:bind).with(:the_exchange, {:key => "delayed.#{expected_queue_name}.#"})
-      m = mock("MQ")
-      m.expects(:queue).with(expected_queue_name, :durable => true, :auto_delete => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
 
       @sub.send(:queue, "some_queue")
@@ -191,7 +171,8 @@ module Beetle
     end
 
     test "subscribe_message should subscribe with a subscription callback created from the registered block" do
-      opts = {"ack" => true, "key" =>"some_key"}
+      @client.register_queue("some_queue")
+      @client.register_message("some_message", :queue => "some_queue", :key => "some_key")
       server = @sub.server
       header = mock("header")
       header.expects(:ack)
@@ -202,10 +183,10 @@ module Beetle
         assert_equal "data", m.data
         assert_equal server, m.server
       end
-      @sub.register_handler("some_message", opts, &proc)
+      @sub.register_handler("some_message", {}, &proc)
       q = mock("QUEUE")
-      q.expects(:subscribe).with({:ack => true, :key => "some_key.#"}).yields(header, Message.encode("data"))
-      @sub.expects(:queues).returns({"some_message" => q})
+      q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, Message.encode("data"))
+      @sub.expects(:queues).returns({"some_queue" => q})
       @sub.send(:subscribe_message, "some_message")
       assert block_called
     end

@@ -4,5 +4,3 @@
 - let handlers decide dynamically how long to wait for a retry
 - allow symbols for exchange, queue, and message names
 - review log levels in all logger statements
-- figure out how to avoid busy loops for delayed messages
-  (probably just store them in redis)

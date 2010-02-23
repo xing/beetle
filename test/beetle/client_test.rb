@@ -44,9 +44,9 @@ module Beetle
       assert @client.exchanges.include?("some_exchange")
     end
 
-    test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false" do
+    test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do
@@ -150,14 +150,20 @@ module Beetle
       client.load("#{File.dirname(__FILE__)}/../../**/client_test.rb")
     end
 
-    test "tracing should put the the subscriber into trace mode and register a handler to each message" do
+    test "tracing should modify the amqp options for each queue and register a handler for each message" do
       client = Client.new
+      client.register_queue("test")
+      client.register_message("test")
       sub = client.send(:subscriber)
-      sub.expects(:trace=).with(true)
-      sub.expects(:register_handler).with(client.messages.keys, :ack => true, :key => '#').yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.messages.keys).yields(stub_everything("message"))
       sub.expects(:listen)
       client.stubs(:puts)
       client.trace
+      test_queue_opts = client.queues["test"]
+      expected_name = client.send :queue_name_for_tracing, "test"
+      assert_equal expected_name, test_queue_opts[:amqp_name]
+      assert test_queue_opts[:auto_delete]
+      assert !test_queue_opts[:durable]
     end
 
   end

@@ -1,7 +1,7 @@
 module Beetle
   class Base
 
-    attr_accessor :options, :trace, :servers, :server
+    attr_accessor :options, :servers, :server
 
     def initialize(client, options = {})
       @options = options
@@ -10,7 +10,6 @@ module Beetle
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
-      @trace = false
     end
 
     private
@@ -59,22 +58,15 @@ module Beetle
     def queue(name)
       queues[name] ||=
         begin
-          logger.debug("Beetle: binding #{name}")
-          queue_opts = @client.queues[name]
-          error("You are trying to bind a queue '#{name}' which is not configured!") unless queue_opts
-          opts = queue_opts.dup
-          opts.symbolize_keys!
-          exchange_name = opts.delete(:exchange) || name
-          opts[:auto_delete] = true if @trace
-          queue_name = queue_name_for_trace(name)
+          opts = @client.queues[name]
+          error("You are trying to bind a queue '#{name}' which is not configured!") unless opts
+          logger.debug("Beetle: binding '#{name}' with internal name #{opts[:amqp_name]}")
+          exchange_name = opts[:exchange]
+          queue_name = opts[:amqp_name]
           binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
           creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
           bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
         end
-    end
-    
-    def queue_name_for_trace(queue)
-      @trace ? "trace-#{queue}-#{`hostname`.chomp}" : queue
     end
 
   end
