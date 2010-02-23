@@ -8,8 +8,6 @@ module Beetle
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}
-      @timer_rewinds = Hash.new(0)
-      @timers = {}
     end
 
     def listen(messages=@client.messages.keys)
@@ -81,7 +79,7 @@ module Beetle
       lambda do |header, data|
         begin
           processor = Handler.create(handler, opts)
-          m = Message.new(queue, header, data, opts.merge(:server => server))
+          m = Message.new(amqp_queue_name, header, data, opts.merge(:server => server))
           result = m.process(processor)
           if result.recover?
             sleep 0.1
@@ -91,7 +89,7 @@ module Beetle
         rescue Exception
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
-          logger.error "Beetle: internal error during message processing: #{$!}"
+          logger.error "Beetle: internal error during message processing: #{$!}: #{$!.backtrace.join("\n")}"
         end
       end
     end
