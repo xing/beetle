@@ -82,9 +82,8 @@ module Beetle
           m = Message.new(amqp_queue_name, header, data, opts.merge(:server => server))
           result = m.process(processor)
           if result.recover?
-            sleep 0.1
-            @client.send(:publisher).re_publish(server, message, data, :key => "delayed.#{amqp_queue_name}.#{opts[:key]}")
-            header.ack
+            sleep 1
+            mq(server).recover
           end
         rescue Exception
           Beetle::reraise_expectation_errors!
