@@ -25,7 +25,7 @@ module Beetle
       EM.stop_event_loop
     end
 
-    def register_handler(messages, opts, handler=nil, &block)
+    def register_handler(messages, opts={}, handler=nil, &block)
       Array(messages).each do |message|
         (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
       end
@@ -63,20 +63,20 @@ module Beetle
       handlers = Array(@handlers[message])
       error("no handler for message #{message}") if handlers.empty?
       handlers.each do |opts, handler|
-        opts = opts.dup
-        key = opts.delete(:key) || message
-        queue = opts.delete(:queue) || message
-        callback = create_subscription_callback(message, queue_name_for_trace(queue), handler, opts)
-        logger.debug "Beetle: subscribing to queue #{queue_name_for_trace(queue)} with key #{key} for message #{message}"
+        queue_name = @client.messages[message][:queue]
+        queue_opts = @client.queues[queue_name]
+        amqp_queue_name = queue_opts[:amqp_name]
+        callback = create_subscription_callback(message, amqp_queue_name, handler, opts)
+        logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # for message #{message}"
         begin
-          queues[queue].subscribe(opts.merge(:key => "#{key}.#", :ack => true), &callback)
+          queues[queue_name].subscribe(opts.merge(:key => "#", :ack => true), &callback)
         rescue MQ::Error
           error("Beetle: binding multiple handlers for the same queue isn't possible. You might want to use the :queue option")
         end
       end
     end
 
-    def create_subscription_callback(message, queue, handler, opts)
+    def create_subscription_callback(message, amqp_queue_name, handler, opts)
       server = @server
       lambda do |header, data|
         begin
@@ -85,7 +85,7 @@ module Beetle
           result = m.process(processor)
           if result.recover?
             sleep 0.1
-            @client.send(:publisher).re_publish(server, message, data, :key => "delayed.#{queue}.#{opts[:key]}")
+            @client.send(:publisher).re_publish(server, message, data, :key => "delayed.#{amqp_queue_name}.#{opts[:key]}")
             header.ack
           end
         rescue Exception
