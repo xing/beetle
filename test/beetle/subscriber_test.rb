@@ -138,11 +138,12 @@ module Beetle
   class CallBackExecutionTest < Test::Unit::TestCase
     def setup
       client = Client.new
+      @queue = "somequeue"
+      client.register_queue(@queue)
       @sub = Subscriber.new(client)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
-      @queue = "somequeue"
-      @callback = @sub.send(:create_subscription_callback, "servername", @queue, @handler, {:exceptions => 4, :attempts => 4})
+      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, {:exceptions => 4, :attempts => 4})
     end
 
     test "exceptions raised from message processing should be ignored" do
@@ -150,6 +151,19 @@ module Beetle
       body = Message.encode("my message")
       Message.any_instance.expects(:process).raises(Exception.new)
       assert_nothing_raised { @callback.call(header, body) }
+    end
+
+    test "should call recover on the server when processing the handler returns true on recover?" do
+      header = mock("header")
+      body = Message.encode("my message")
+      result = mock("result")
+      result.expects(:recover?).returns(true)
+      Message.any_instance.expects(:process).returns(result)
+      @sub.expects(:sleep).with(1)
+      mq = mock("MQ")
+      mq.expects(:recover)
+      @sub.expects(:mq).with(@sub.server).returns(mq)
+      @callback.call(header, body) 
     end
   end
 

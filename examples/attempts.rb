@@ -22,6 +22,10 @@ class Handler < Beetle::Handler
   def error(exception)
     logger.info "execution failed: #{exception}"
   end
+  def failure(result)
+    super
+    EM.stop_event_loop
+  end
 end
 
 client.register_handler("test", {:exceptions => max_exceptions, :delay => 0}, Handler)
@@ -29,9 +33,7 @@ client.register_handler("test", {:exceptions => max_exceptions, :delay => 0}, Ha
 # publish a test messages
 client.publish("test", "snafu")
 
-client.listen do
-  EM.add_timer(2) { EM.stop_event_loop }
-end
+client.listen
 
 if $exceptions != max_exceptions + 1
   raise "something is fishy. Failed #{$exceptions} times"

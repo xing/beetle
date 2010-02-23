@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.10"
+  s.version = "0.0.11"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-02-18}
+  s.date = %q{2010-02-23}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -23,6 +23,10 @@ Gem::Specification.new do |s|
      "Rakefile",
      "TODO",
      "beetle.gemspec",
+     "examples/attempts.rb",
+     "examples/handler_class.rb",
+     "examples/handling_exceptions.rb",
+     "examples/simple.rb",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
      "lib/beetle/client.rb",
@@ -30,6 +34,7 @@ Gem::Specification.new do |s|
      "lib/beetle/handler.rb",
      "lib/beetle/message.rb",
      "lib/beetle/publisher.rb",
+     "lib/beetle/r_c.rb",
      "lib/beetle/subscriber.rb",
      "script/start_rabbits",
      "script/test_publishing",
@@ -40,6 +45,7 @@ Gem::Specification.new do |s|
      "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
+     "test/beetle/r_c_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
      "test/test_helper.rb"
@@ -55,9 +61,14 @@ Gem::Specification.new do |s|
      "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
+     "test/beetle/r_c_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
-     "test/test_helper.rb"
+     "test/test_helper.rb",
+     "examples/attempts.rb",
+     "examples/handler_class.rb",
+     "examples/handling_exceptions.rb",
+     "examples/simple.rb"
   ]
 
   if s.respond_to? :specification_version then
