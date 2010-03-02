@@ -22,13 +22,12 @@ module Beetle
     def publish_with_failover(exchange_name, message_name, data, opts)
       tries = @servers.size
       logger.debug "Beetle: sending #{message_name}"
-      data = Message.encode(data, :ttl => opts[:ttl])
       published = 0
       begin
         select_next_server
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send #{message_name} to #{@server}"
-        exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
+        exchange(exchange_name).publish(data, Message.publishing_options(opts))
         logger.debug "Beetle: message sent!"
         published = 1
       rescue Bunny::ServerDownError, Bunny::ConnectionError
@@ -47,7 +46,6 @@ module Beetle
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []
-      data = Message.encode(data, :redundant => true, :ttl => opts[:ttl])
       loop do
         break if published.size == 2 || @servers.empty? || published == @servers
         begin
@@ -55,7 +53,7 @@ module Beetle
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name} to #{@server}"
-          exchange(exchange_name).publish(data, opts.slice(*PUBLISHING_KEYS))
+          exchange(exchange_name).publish(data, Message.publishing_options(opts.merge(:redundant => true)))
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue Bunny::ServerDownError, Bunny::ConnectionError

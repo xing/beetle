@@ -2,7 +2,7 @@ require "timeout"
 
 module Beetle
   class Message
-    FORMAT_VERSION = 1
+    FORMAT_VERSION = 2
     FLAG_REDUNDANT = 1
     DEFAULT_TTL = 1.day
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
@@ -32,10 +32,31 @@ module Beetle
     end
 
     def decode
-      @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
+      amqp_headers = header.properties
+      h = amqp_headers[:headers]
+      if h
+        @format_version, @flags, @expires_at = h.values_at(:format_version, :flags, :expires_at)
+        @uuid = amqp_headers[:message_id]
+        @data = @body
+      else
+        @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
+      end
     end
 
-    def self.encode(data, opts = {})
+    def self.publishing_options(opts = {})
+      flags = 0
+      flags |= FLAG_REDUNDANT if opts.delete(:redundant)
+      expires_at = now + (opts.delete(:ttl) || DEFAULT_TTL).to_i
+      opts = opts.slice(*PUBLISHING_KEYS)
+      opts[:headers] = {
+        :format_version => FORMAT_VERSION,
+        :flags => flags,
+        :expires_at => expires_at
+      }
+      opts
+    end
+
+    def self.encode_v1(data, opts = {})
       expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
@@ -112,7 +133,7 @@ module Beetle
     end
 
     def exceptions_limit_reached?
-      redis.get(key(:exceptions)).to_i > exceptions_limit
+     redis.get(key(:exceptions)).to_i > exceptions_limit
     end
 
     def key_exists?

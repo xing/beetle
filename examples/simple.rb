@@ -28,6 +28,7 @@ client.register_handler("test", {}) do |m|
   k += 1
   puts "Received test message from server #{m.server}"
   puts m.msg_id
+  p m.header
   puts "Message content: #{m.data}"
   puts
 end
