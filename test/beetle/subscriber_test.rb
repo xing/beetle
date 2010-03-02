@@ -147,15 +147,13 @@ module Beetle
     end
 
     test "exceptions raised from message processing should be ignored" do
-      header = mock("header")
-      body = Message.encode("my message")
+      header = header_with_params({})
       Message.any_instance.expects(:process).raises(Exception.new)
-      assert_nothing_raised { @callback.call(header, body) }
+      assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
     test "should call recover on the server when processing the handler returns true on recover?" do
-      header = mock("header")
-      body = Message.encode("my message")
+      header = header_with_params({})
       result = mock("result")
       result.expects(:recover?).returns(true)
       Message.any_instance.expects(:process).returns(result)
@@ -163,7 +161,7 @@ module Beetle
       mq = mock("MQ")
       mq.expects(:recover)
       @sub.expects(:mq).with(@sub.server).returns(mq)
-      @callback.call(header, body) 
+      @callback.call(header, 'foo')
     end
   end
 
@@ -188,7 +186,7 @@ module Beetle
       @client.register_queue("some_queue")
       @client.register_message("some_message", :queue => "some_queue", :key => "some_key")
       server = @sub.server
-      header = mock("header")
+      header = header_with_params({})
       header.expects(:ack)
       block_called = false
       proc = lambda do |m|
@@ -199,7 +197,7 @@ module Beetle
       end
       @sub.register_handler("some_message", {}, &proc)
       q = mock("QUEUE")
-      q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, Message.encode("data"))
+      q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, 'foo')
       @sub.expects(:queues).returns({"some_queue" => q})
       @sub.send(:subscribe_message, "some_message")
       assert block_called

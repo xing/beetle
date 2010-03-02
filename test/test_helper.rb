@@ -13,3 +13,10 @@ end
 Beetle.configuration do |config|
   config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 end
+
+def header_with_params(opts = {})
+  beetle_headers = Beetle::Message.publishing_options(opts)
+  header = mock("header")
+  header.stubs(:properties).returns(beetle_headers)
+  header
+end
