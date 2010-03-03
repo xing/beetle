@@ -50,6 +50,13 @@ module Beetle
       assert_nil options[:bogus]
     end
 
+    test "the publishing options for a redundant message should include the uuid" do
+      uuid = 'wadduyouwantfromme'
+      Message.expects(:generate_uuid).returns(uuid)
+      options = Message.publishing_options(:redundant => true)
+      assert_equal uuid, options[:message_id]
+    end
+
   end
 
   class KeyManagementTest < Test::Unit::TestCase
