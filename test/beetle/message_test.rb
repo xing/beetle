@@ -32,6 +32,17 @@ module Beetle
       assert_equal 1 + Message::DEFAULT_TTL, m.expires_at
     end
 
+    test "decoding a message should be able to decode messages which were encoded with the old encoding mechanism" do
+      header = stub("header")
+      header.stubs(:properties).returns({})
+      payload = 'foobar'
+      v1_message_body = Message.encode_v1(payload)
+      v1_message = Message.new(:fooqueue, header, v1_message_body, {})
+
+      assert_equal payload, v1_message.data
+      assert_equal 1, v1_message.format_version
+    end
+
     test "the publishing options should include both the beetle headers and the amqp params" do
       key = 'fookey'
       options = Message.publishing_options(:redundant => true, :key => key, :mandatory => true, :immediate => true, :persistent => true)
