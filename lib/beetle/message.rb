@@ -61,7 +61,7 @@ module Beetle
       expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
-      [FORMAT_VERSION, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
+      [1, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
     def msg_id
