@@ -84,6 +84,10 @@ module Beetle
           if result.recover?
             sleep 1
             mq(server).recover
+          elsif reply_to = header.properties[:reply_to]
+            status = result == Beetle::RC::OK ? "OK" : "FAILED"
+            exchange = MQ::Exchange.new(mq(server), :direct, "", :key => reply_to)
+            exchange.publish(m.handler_result.to_s, :headers => {:status => status})
           end
         rescue Exception
           Beetle::reraise_expectation_errors!
@@ -104,8 +108,8 @@ module Beetle
       queue
     end
 
-    def amqp_connection
-      @amqp_connections[@server] ||= new_amqp_connection
+    def amqp_connection(server=@server)
+      @amqp_connections[server] ||= new_amqp_connection
     end
 
     def new_amqp_connection
