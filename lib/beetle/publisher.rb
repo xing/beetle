@@ -72,6 +72,42 @@ module Beetle
       published.size
     end
 
+    RPC_DEFAULT_TIMEOUT = 10
+
+    def rpc(message_name, data, opts={})
+      opts = @client.messages[message_name].merge(opts.symbolize_keys)
+      exchange_name = opts.delete(:exchange)
+      opts.delete(:queue)
+      recycle_dead_servers unless @dead_servers.empty?
+      tries = @servers.size
+      logger.debug "Beetle: rpc #{message_name}"
+      result = nil
+      status = "TIMEOUT"
+      begin
+        select_next_server
+        bind_queues_for_exchange(exchange_name)
+        # create non durable, autodeleted temporary queue with a server assigned name
+        queue = bunny.queue
+        opts = Message.publishing_options(opts.merge :reply_to => queue.name)
+        logger.debug "Beetle: trying to send #{message_name} to #{@server}"
+        exchange(exchange_name).publish(data, opts)
+        logger.debug "Beetle: message sent!"
+        queue.subscribe(:message_max => 1, :timeout => opts[:timeout] || RPC_DEFAULT_TIMEOUT) do |msg|
+          logger.debug "Beetle: received reply!"
+          result = msg[:payload]
+          status = msg[:header].properties[:headers][:status]
+        end
+        logger.debug "Beetle: rpc complete!"
+      rescue Bunny::ServerDownError, Bunny::ConnectionError
+        stop!
+        mark_server_dead
+        tries -= 1
+        retry if tries > 0
+        logger.error "Beetle: message could not be delivered: #{message_name}"
+      end
+      [status, result]
+    end
+
     def purge(queue_name)
       each_server do
         queue(queue_name).purge

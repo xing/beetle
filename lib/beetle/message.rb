@@ -11,7 +11,7 @@ module Beetle
     DEFAULT_EXCEPTION_LIMIT = 0
 
     attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception
+    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception, :handler_result
 
     def initialize(queue, header, body, opts = {})
       @keys   = {}
@@ -251,7 +251,7 @@ module Beetle
     def run_handler!(handler)
       increment_execution_attempts!
       begin
-        Timeout::timeout(@timeout) { handler.call(self) }
+        Timeout::timeout(@timeout) { @handler_result = handler.call(self) }
       rescue Exception => @exception
         Beetle::reraise_expectation_errors!
         increment_exception_count!

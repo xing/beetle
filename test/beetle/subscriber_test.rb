@@ -142,7 +142,7 @@ module Beetle
       @sub = Subscriber.new(client)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
-      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, {:exceptions => 4, :attempts => 4})
+      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
     end
 
     test "exceptions raised from message processing should be ignored" do
@@ -162,6 +162,33 @@ module Beetle
       @sub.expects(:mq).with(@sub.server).returns(mq)
       @callback.call(header, 'foo')
     end
+
+    test "should sent a reply with status OK if the message reply_to header is set and processing the handler succeeds" do
+      header = header_with_params(:reply_to => "tmp-queue")
+      result = RC::OK
+      Message.any_instance.expects(:process).returns(result)
+      Message.any_instance.expects(:handler_result).returns("response-data")
+      mq = mock("MQ")
+      @sub.expects(:mq).with(@sub.server).returns(mq)
+      exchange = mock("exchange")
+      exchange.expects(:publish).with("response-data", :headers => {:status => "OK"})
+      MQ::Exchange.expects(:new).with(mq, :direct, "", :key => "tmp-queue").returns(exchange)
+      @callback.call(header, 'foo')
+    end
+
+    test "should sent a reply with status FAILED if the message reply_to header is set and processing the handler fails" do
+      header = header_with_params(:reply_to => "tmp-queue")
+      result = RC::AttemptsLimitReached
+      Message.any_instance.expects(:process).returns(result)
+      Message.any_instance.expects(:handler_result).returns(nil)
+      mq = mock("MQ")
+      @sub.expects(:mq).with(@sub.server).returns(mq)
+      exchange = mock("exchange")
+      exchange.expects(:publish).with("", :headers => {:status => "FAILED"})
+      MQ::Exchange.expects(:new).with(mq, :direct, "", :key => "tmp-queue").returns(exchange)
+      @callback.call(header, 'foo')
+    end
+
   end
 
   class SubscriptionTest < Test::Unit::TestCase
@@ -246,4 +273,5 @@ module Beetle
       assert_equal "handler 2", handler2[1].call(1)
     end
   end
+
 end

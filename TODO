@@ -4,3 +4,5 @@
 - let handlers decide dynamically how long to wait for a retry
 - allow symbols for exchange, queue, and message names
 - review log levels in all logger statements
+- RPC support
+- optimize non redundant messages

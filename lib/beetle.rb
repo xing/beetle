@@ -13,7 +13,7 @@ module Beetle
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]
   QUEUE_CREATION_KEYS     = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
   QUEUE_BINDING_KEYS      = [:key, :no_wait]
-  PUBLISHING_KEYS         = [:key, :mandatory, :immediate, :persistent]
+  PUBLISHING_KEYS         = [:key, :mandatory, :immediate, :persistent, :reply_to]
 
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|

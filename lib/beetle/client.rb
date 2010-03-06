@@ -74,6 +74,10 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
+    def rpc(message_name, data, opts={})
+      publisher.rpc(message_name, data, opts)
+    end
+
     def purge(queue_name)
       publisher.purge(queue_name)
     end
@@ -98,7 +102,7 @@ module Beetle
         puts "-----===== new message =====-----"
         puts "SERVER: #{msg.server}"
         puts "HEADER: #{msg.header.inspect}"
-        puts "MSGID: #{msg.msg_id}" 
+        puts "MSGID: #{msg.msg_id}"
         puts "DATA: #{msg.data}"
       end
       subscriber.listen &block
