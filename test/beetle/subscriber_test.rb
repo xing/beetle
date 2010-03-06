@@ -64,7 +64,6 @@ module Beetle
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      q.expects(:bind).with(:the_exchange, {:key => "delayed.some_queue.#"})
       m = mock("MQ")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false).returns(q)
       @sub.expects(:mq).returns(m)
