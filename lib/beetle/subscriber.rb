@@ -101,7 +101,6 @@ module Beetle
       queue = mq.queue(queue_name, creation_keys)
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
-      queue.bind(exchange, binding_keys.merge(:key => "delayed.#{queue_name}.#")) if binding_keys[:key] != "#"
       queue
     end
 
