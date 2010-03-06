@@ -33,8 +33,7 @@ module Beetle
 
     def decode
       amqp_headers = header.properties
-      h = amqp_headers[:headers]
-      if h
+      if h = amqp_headers[:headers]
         @format_version, @flags, @expires_at = h.values_at(:format_version, :flags, :expires_at)
         @uuid = amqp_headers[:message_id]
         @data = @body
