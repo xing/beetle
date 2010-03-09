@@ -90,7 +90,10 @@ module Beetle
 
     test "should instanciate a subscriber when used for subscribing" do
       Subscriber.expects(:new).returns(stub_everything("subscriber"))
-      Client.new.register_handler(:superman, {}, &lambda{})
+      client = Client.new
+      client.register_queue("superman")
+      client.register_message("superman")
+      client.register_handler("superman", {}, &lambda{})
     end
 
     test "should instanciate a subscriber when used for publishing" do
@@ -126,6 +129,12 @@ module Beetle
 
     test "should delegate listening to the subscriber instance" do
       client = Client.new
+      client.register_exchange("a")
+      client.register_queue("a")
+      client.register_message("a")
+      client.register_exchange("b")
+      client.register_queue("b")
+      client.register_message("b")
       client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
       x = 0
       client.listen(["a", "b"]) { x = 5 }
@@ -140,6 +149,8 @@ module Beetle
 
     test "should delegate handler registration to the subscriber instance" do
       client = Client.new
+      client.register_queue("huhu")
+      client.register_message("huhu")
       client.send(:subscriber).expects(:register_handler)
       client.register_handler("huhu")
     end
@@ -162,7 +173,7 @@ module Beetle
       client.register_queue("test")
       client.register_message("test")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(client.messages.keys).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.messages.keys, nil, {}).yields(stub_everything("message"))
       sub.expects(:listen)
       client.stubs(:puts)
       client.trace
