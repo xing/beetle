@@ -87,7 +87,7 @@ module Beetle
       opts = args.last.is_a?(Hash) ? args.pop : {}
       handler = args.shift
       raise ArgumentError.new("too many arguments for handler registration") unless args.empty?
-      subscriber.register_handler(messages, handler, opts, &block)
+      subscriber.register_handler(messages, opts, handler, &block)
     end
 
     def publish(message_name, data, opts={})

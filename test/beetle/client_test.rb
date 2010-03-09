@@ -173,7 +173,7 @@ module Beetle
       client.register_queue("test")
       client.register_message("test")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(client.messages.keys, nil, {}).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.messages.keys, {}, nil).yields(stub_everything("message"))
       sub.expects(:listen)
       client.stubs(:puts)
       client.trace
