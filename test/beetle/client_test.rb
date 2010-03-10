@@ -46,7 +46,7 @@ module Beetle
 
     test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue", :key => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do
@@ -66,10 +66,10 @@ module Beetle
     end
 
     test "registering a message should store it in the configuration with symbolized option keys" do
-      opts = {"persistent" => true, "queue" => "some_queue"}
+      opts = {"persistent" => true, "queue" => "some_queue", "exchange" => "some_exchange"}
       @client.register_queue("some_queue", "exchange" => "some_exchange")
       @client.register_message("some_message", opts)
-      assert_equal({:persistent => true, :queue => "some_queue", :exchange => "some_exchange"}, @client.messages["some_message"])
+      assert_equal({:persistent => true, :queue => "some_queue", :exchange => "some_exchange", :key => "some_message"}, @client.messages["some_message"])
     end
 
     test "registering a message should raise a configuration error if it is already configured" do
@@ -90,7 +90,10 @@ module Beetle
 
     test "should instanciate a subscriber when used for subscribing" do
       Subscriber.expects(:new).returns(stub_everything("subscriber"))
-      Client.new.register_handler(:superman, {}, &lambda{})
+      client = Client.new
+      client.register_queue("superman")
+      client.register_message("superman")
+      client.register_handler("superman", {}, &lambda{})
     end
 
     test "should instanciate a subscriber when used for publishing" do
@@ -126,6 +129,12 @@ module Beetle
 
     test "should delegate listening to the subscriber instance" do
       client = Client.new
+      client.register_exchange("a")
+      client.register_queue("a")
+      client.register_message("a")
+      client.register_exchange("b")
+      client.register_queue("b")
+      client.register_message("b")
       client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
       x = 0
       client.listen(["a", "b"]) { x = 5 }
@@ -140,6 +149,8 @@ module Beetle
 
     test "should delegate handler registration to the subscriber instance" do
       client = Client.new
+      client.register_queue("huhu")
+      client.register_message("huhu")
       client.send(:subscriber).expects(:register_handler)
       client.register_handler("huhu")
     end
@@ -162,7 +173,7 @@ module Beetle
       client.register_queue("test")
       client.register_message("test")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(client.messages.keys).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.messages.keys, {}, nil).yields(stub_everything("message"))
       sub.expects(:listen)
       client.stubs(:puts)
       client.trace

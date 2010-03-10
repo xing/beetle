@@ -21,7 +21,7 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", {}, Handler)
+client.register_handler("test", Handler)
 
 # publish some test messages
 N = 10

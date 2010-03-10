@@ -33,12 +33,12 @@ module Beetle
 
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name}.merge!(opts.symbolize_keys)
+      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :amqp_name => name
       queues[name] = opts
       exchange = opts[:exchange]
       register_exchange(exchange) unless exchanges.include?(exchange)
-      (exchanges[opts[:exchange]][:queues] ||= []) << name
+      (exchanges[exchange][:queues] ||= []) << name
     end
 
     # queue: "test"
@@ -67,14 +67,32 @@ module Beetle
 
     def register_message(name, opts={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
-      opts = {:queue => name}.merge!(opts.symbolize_keys)
-      opts[:exchange] = queues[opts[:queue]][:exchange]
+      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
       messages[name] = opts
     end
 
-    # forwards the register_handler call to the subscriber
-    def register_handler(*args, &block)
-      subscriber.register_handler(*args, &block)
+    # registers a handler for a list of messages (which must have been registered
+    # previously). The handler will be invoked when any of the given messages arrive on
+    # the scubscriber.
+    #
+    # Examples:
+    #   register_handler(["foo", "bar"], :timeout => 10.seconds) { |message| puts "received #{message}" }
+    #
+    #   on_error   = lambda{ puts "something went wrong with baz" }
+    #   on_failure = lambda{ puts "baz has finally failed" }
+    #
+    #   register_handler("baz", :exceptions => 1, :errback => on_error, :failback => on_failure) { puts "received baz" }
+    #
+    #   register_handler("bar", BarHandler)
+    #
+    # For details on handler classes see class Beetle::Handler
+    #
+    def register_handler(messages, *args, &block)
+      Array(messages).each {|m| raise ConfigurationError.new("unknown message #{m}") unless self.messages.include?(m)}
+      opts = args.last.is_a?(Hash) ? args.pop : {}
+      handler = args.shift
+      raise ArgumentError.new("too many arguments for handler registration") unless args.empty?
+      subscriber.register_handler(messages, opts, handler, &block)
     end
 
     def publish(message_name, data, opts={})
