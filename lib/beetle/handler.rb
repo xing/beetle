@@ -21,7 +21,7 @@ module Beetle
     def call(message)
       @message = message
       if @processor
-        @processor.call(@message)
+        @processor.call(message)
       else
         process
       end
