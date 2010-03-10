@@ -1,7 +1,12 @@
 module Beetle
   class Client
     attr_reader :servers, :exchanges, :queues, :messages
-
+    
+    # Create a new Beetle::Client instance, takes following options:
+    # * servers
+    ### override the default servers configured in Beetle.config.servers
+    #
+    # the given options are stored in the @options instance variable
     def initialize(options = {})
       @servers = (options[:servers] || Beetle.config.servers).split(/ *, */)
       @exchanges = {}
@@ -10,9 +15,10 @@ module Beetle
       @options = options
     end
 
-    # type: "topic"
-    # durable: true
-
+    # register an exchange with the given name and a set of options:
+    # [*type*] the type option will be overwritten and always be :topic, beetle does not allow fanout exchanges
+    # [*durable*] the durable option will be overwritten and always be true, this is done to ensure that exchanges are never deleted
+    # returns the overwritten options
     def register_exchange(name, opts={})
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
       exchanges[name] = opts.symbolize_keys.merge(:type => :topic, :durable => true)
