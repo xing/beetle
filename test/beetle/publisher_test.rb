@@ -48,8 +48,8 @@ module Beetle
       @pub = Publisher.new(@client)
       @pub.stubs(:bind_queues_for_exchange)
       @client.register_queue("mama", :exchange => "mama-exchange")
-      @client.register_message("mama", :ttl => 1.hour)
-      @opts = { :ttl => 1.hour }
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
+      @opts = { :ttl => 1.hour , :key => "mama"}
       @data = 'XXX'
     end
 
@@ -220,7 +220,7 @@ module Beetle
       data = "XXX"
       opts = {}
       @client.register_queue("mama", :exchange => "mama-exchange")
-      @client.register_message("mama", :ttl => 1.hour)
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
       e = stub('exchange', 'publish')
       @pub.expects(:exchange).with('mama-exchange').returns(e)
       @pub.expects(:bind_queues_for_exchange).with('mama-exchange').returns(true)

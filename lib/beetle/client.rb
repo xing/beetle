@@ -33,12 +33,12 @@ module Beetle
 
     def register_queue(name, opts={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name}.merge!(opts.symbolize_keys)
+      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :amqp_name => name
       queues[name] = opts
       exchange = opts[:exchange]
       register_exchange(exchange) unless exchanges.include?(exchange)
-      (exchanges[opts[:exchange]][:queues] ||= []) << name
+      (exchanges[exchange][:queues] ||= []) << name
     end
 
     # queue: "test"
@@ -67,8 +67,7 @@ module Beetle
 
     def register_message(name, opts={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
-      opts = {:queue => name}.merge!(opts.symbolize_keys)
-      opts[:exchange] = queues[opts[:queue]][:exchange]
+      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
       messages[name] = opts
     end
 

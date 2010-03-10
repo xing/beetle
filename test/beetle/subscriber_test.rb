@@ -118,9 +118,9 @@ module Beetle
       @client.register_queue('donald', :exchange => 'margot')
       @client.register_queue('mickey')
       @client.register_queue('mouse', :exchange => 'mickey')
-      @client.register_message('a', :queue => 'donald')
-      @client.register_message('b', :queue => 'mickey')
-      @client.register_message('c', :queue => 'mouse')
+      @client.register_message('a', :exchange => "margot")
+      @client.register_message('b', :exchange => "mickey")
+      @client.register_message('c')
 
       exchange_creation = sequence("exchange creation")
       @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
@@ -209,8 +209,8 @@ module Beetle
     end
 
     test "subscribe_message should subscribe with a subscription callback created from the registered block" do
-      @client.register_queue("some_queue")
-      @client.register_message("some_message", :queue => "some_queue", :key => "some_key")
+      @client.register_queue("some_queue", :exchange => "some_message")
+      @client.register_message("some_message", :key => "some_key")
       server = @sub.server
       header = header_with_params({})
       header.expects(:ack)
@@ -221,7 +221,7 @@ module Beetle
         assert_equal "data", m.data
         assert_equal server, m.server
       end
-      @sub.register_handler("some_message", {}, &proc)
+      @sub.register_handler("some_message", {:queue => "some_queue"}, &proc)
       q = mock("QUEUE")
       q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, 'foo')
       @sub.expects(:queues).returns({"some_queue" => q})

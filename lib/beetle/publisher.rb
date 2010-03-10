@@ -161,7 +161,9 @@ module Beetle
 
     # TODO: Refactor, fethch the keys and stuff itself
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
+      logger.debug("Creating queue with opts: #{creation_keys.inspect}")
       queue = bunny.queue(queue_name, creation_keys)
+      logger.debug("Binding queue #{queue_name} to #{exchange_name} with opts: #{binding_keys.inspect}")
       queue.bind(exchange(exchange_name), binding_keys)
       queue
     end
