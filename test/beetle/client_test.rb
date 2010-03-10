@@ -46,7 +46,7 @@ module Beetle
 
     test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue", :key => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do
@@ -66,10 +66,10 @@ module Beetle
     end
 
     test "registering a message should store it in the configuration with symbolized option keys" do
-      opts = {"persistent" => true, "queue" => "some_queue"}
+      opts = {"persistent" => true, "queue" => "some_queue", "exchange" => "some_exchange"}
       @client.register_queue("some_queue", "exchange" => "some_exchange")
       @client.register_message("some_message", opts)
-      assert_equal({:persistent => true, :queue => "some_queue", :exchange => "some_exchange"}, @client.messages["some_message"])
+      assert_equal({:persistent => true, :queue => "some_queue", :exchange => "some_exchange", :key => "some_message"}, @client.messages["some_message"])
     end
 
     test "registering a message should raise a configuration error if it is already configured" do
