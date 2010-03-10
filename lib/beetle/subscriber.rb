@@ -2,14 +2,20 @@ module Beetle
   class Subscriber < Base
 
     RECOVER_AFTER = 1.seconds
-
+    
+    # create a new subscriber instance
     def initialize(client, options = {})
       super
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}
     end
-
+    
+    # call this on a subscriber to register all handlers for given messages (defaults to all messages defined on the client) on all servers
+    # this method does these things:
+    # * create all exchanges unless they're already defined
+    # * bind queues on all servers
+    # before binding tcreating all exchanges for the given messages it 
     def listen(messages=@client.messages.keys)
       EM.run do
         create_exchanges(messages)
@@ -22,7 +28,8 @@ module Beetle
     def stop!
       EM.stop_event_loop
     end
-
+    
+    # register handler for the given messages
     def register_handler(messages, opts={}, handler=nil, &block)
       Array(messages).each do |message|
         (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
@@ -31,6 +38,7 @@ module Beetle
 
     private
 
+    #
     def create_exchanges(messages)
       each_server do
         messages.each { |message| exchange(@client.messages[message][:exchange]) }
@@ -53,10 +61,14 @@ module Beetle
       messages.map { |name| @handlers[name].map {|opts, _| opts[:queue] || name } }.flatten
     end
 
-    def mq(server=@server)
+    # returns the mq object for the given server or returns a new one created with the prefetch(1) option, this tells it to just send one message to the
+    # receiving buffer (instead of filling it) this is necesssary to ensure that one subscriber always just handles one single message
+    # we cannot ensure reliability if the buffer is filled with messages and crashes 
+    def mq(server=@server) # :doc:
       @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
     end
-
+    
+    # this method is called internally
     def subscribe_message(message)
       handlers = Array(@handlers[message])
       error("no handler for message #{message}") if handlers.empty?
@@ -97,6 +109,7 @@ module Beetle
       end
     end
 
+    # 
     def create_exchange!(name, opts)
       mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
     end
