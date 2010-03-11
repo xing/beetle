@@ -23,7 +23,7 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", {:exceptions => 1, :delay => 0}, Handler)
+client.register_handler("test", Handler, :exceptions => 1, :delay => 0)
 
 # publish some test messages
 n = 0
