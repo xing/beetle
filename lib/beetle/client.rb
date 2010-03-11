@@ -95,11 +95,11 @@ module Beetle
       subscriber.register_handler(messages, opts, handler, &block)
     end
 
-    def publish(message_name, data, opts={})
+    def publish(message_name, data=nil, opts={})
       publisher.publish(message_name, data, opts)
     end
 
-    def rpc(message_name, data, opts={})
+    def rpc(message_name, data=nil, opts={})
       publisher.rpc(message_name, data, opts)
     end
 
