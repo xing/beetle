@@ -15,9 +15,11 @@ module Beetle
       @options = options
     end
 
-    # register an exchange with the given name and a set of options:
-    # [*type*] the type option will be overwritten and always be :topic, beetle does not allow fanout exchanges
-    # [*durable*] the durable option will be overwritten and always be true, this is done to ensure that exchanges are never deleted
+    # register an exchange with the given _name_ and a set of options:
+    # [<tt>:type</tt>]
+    #   the type option will be overwritten and always be <tt>:topic</tt>, beetle does not allow fanout exchanges
+    # [<tt>:durable</tt>]
+    #   the durable option will be overwritten and always be true. this is done to ensure that exchanges are never deleted
     # returns the overwritten options
     def register_exchange(name, opts={})
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
@@ -99,26 +101,32 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
+    # sends the given message to one of the configured servers and returns the reuslt of running the associated handler
     def rpc(message_name, data=nil, opts={})
       publisher.rpc(message_name, data, opts)
     end
 
+    # purges the given queue on all configured servers
     def purge(queue_name)
       publisher.purge(queue_name)
     end
 
+    # start listening. runs the given block before entering the eventmachine loop.
     def listen(*args, &block)
       subscriber.listen(*args, &block)
     end
 
+    # stops the eventmachine loop
     def stop_listening
       subscriber.stop!
     end
 
+    # disconnects the publisher form all servers it's currently connected to
     def stop_publishing
       publisher.stop
     end
 
+    # traces all messages received on all queues. useful for debugging message flow.
     def trace(&block)
       queues.each do |name, opts|
         opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(name)
@@ -133,6 +141,7 @@ module Beetle
       subscriber.listen &block
     end
 
+    # evaluate the ruby files matching the given +glob+ pattern in the context of the client instance.
     def load(glob)
       b = binding
       Dir[glob].each do |f|
@@ -140,6 +149,7 @@ module Beetle
       end
     end
 
+    # returns the configured logger
     def logger
       @logger ||= Beetle.config.logger
     end
