@@ -1,18 +1,16 @@
 module Beetle
   class Client
     attr_reader :servers, :exchanges, :queues, :messages
-    
-    # Create a new Beetle::Client instance, takes following options:
-    # * servers
-    ### override the default servers configured in Beetle.config.servers
-    #
-    # the given options are stored in the @options instance variable
+
+    # create a fresh Beetle::Client instance with the given options.
+    # currently only one option is being honored:
+    #   :servers => "host1:port1, host2:port2"
+    # this overrides the default servers configured in Beetle.config.servers
     def initialize(options = {})
       @servers = (options[:servers] || Beetle.config.servers).split(/ *, */)
       @exchanges = {}
       @queues = {}
       @messages = {}
-      @options = options
     end
 
     # register an exchange with the given _name_ and a set of options:
@@ -21,9 +19,9 @@ module Beetle
     # [<tt>:durable</tt>]
     #   the durable option will be overwritten and always be true. this is done to ensure that exchanges are never deleted
     # returns the overwritten options
-    def register_exchange(name, opts={})
+    def register_exchange(name, options={})
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
-      exchanges[name] = opts.symbolize_keys.merge(:type => :topic, :durable => true)
+      exchanges[name] = options.symbolize_keys.merge(:type => :topic, :durable => true)
     end
 
     # passive: false       # amqp default is false
@@ -33,9 +31,9 @@ module Beetle
     # nowait: true         # amqp default is true
     # key: "#"             # listen to every message
 
-    def register_queue(name, opts={})
+    def register_queue(name, options={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
+      opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :amqp_name => name
       queues[name] = opts
       exchange = opts[:exchange]
@@ -67,9 +65,9 @@ module Beetle
     ### If set to _false_, the message will not be persisted across server restart. Setting to _true_
     ### incurs a performance penalty as there is an extra cost associated with disk access.
 
-    def register_message(name, opts={})
+    def register_message(name, options={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
-      opts = {:exchange => name, :key => name}.merge!(opts.symbolize_keys)
+      opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       messages[name] = opts
     end
 
@@ -101,7 +99,8 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
-    # sends the given message to one of the configured servers and returns the reuslt of running the associated handler
+    # sends the given message to one of the configured servers and returns the result of running the associated handler.
+    # this will lead to unexpected behavior, if the message gets routed to more than one recipient, so be careful.
     def rpc(message_name, data=nil, opts={})
       publisher.rpc(message_name, data, opts)
     end
@@ -149,7 +148,7 @@ module Beetle
       end
     end
 
-    # returns the configured logger
+    # returns the configured Logger instance
     def logger
       @logger ||= Beetle.config.logger
     end
