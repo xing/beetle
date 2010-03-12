@@ -10,9 +10,7 @@ class Test::Unit::TestCase
   extend ActiveSupport::Testing::Declarative
 end
 
-Beetle.configuration do |config|
-  config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
-end
+Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)
