@@ -47,8 +47,8 @@ module Beetle
 
     def self.publishing_options(opts = {})
       flags = 0
-      flags |= FLAG_REDUNDANT if opts.delete(:redundant)
-      expires_at = now + (opts.delete(:ttl) || DEFAULT_TTL).to_i
+      flags |= FLAG_REDUNDANT if opts[:redundant]
+      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s
       opts[:headers] = {
