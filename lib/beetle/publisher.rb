@@ -1,13 +1,14 @@
 module Beetle
+  # Provides the publishing logic implementation.
   class Publisher < Base
 
-    def initialize(client, options = {})
+    def initialize(client, options = {}) #:nodoc:
       super
       @dead_servers = {}
       @bunnies = {}
     end
 
-    def publish(message_name, data, opts={})
+    def publish(message_name, data, opts={}) #:nodoc:
       opts = @client.messages[message_name].merge(opts.symbolize_keys)
       exchange_name = opts.delete(:exchange)
       opts.delete(:queue)
@@ -19,7 +20,7 @@ module Beetle
       end
     end
 
-    def publish_with_failover(exchange_name, message_name, data, opts)
+    def publish_with_failover(exchange_name, message_name, data, opts) #:nodoc:
       tries = @servers.size
       logger.debug "Beetle: sending #{message_name}"
       published = 0
@@ -41,7 +42,7 @@ module Beetle
       published
     end
 
-    def publish_with_redundancy(exchange_name, message_name, data, opts)
+    def publish_with_redundancy(exchange_name, message_name, data, opts) #:nodoc:
       if @servers.size < 2
         logger.error "Beetle: at least two active servers are required for redundant publishing"
         return publish_with_failover(exchange_name, message_name, data, opts)
@@ -72,9 +73,9 @@ module Beetle
       published.size
     end
 
-    RPC_DEFAULT_TIMEOUT = 10
+    RPC_DEFAULT_TIMEOUT = 10 #:nodoc:
 
-    def rpc(message_name, data, opts={})
+    def rpc(message_name, data, opts={}) #:nodoc:
       opts = @client.messages[message_name].merge(opts.symbolize_keys)
       exchange_name = opts.delete(:exchange)
       opts.delete(:queue)
@@ -108,13 +109,13 @@ module Beetle
       [status, result]
     end
 
-    def purge(queue_name)
+    def purge(queue_name) #:nodoc:
       each_server do
         queue(queue_name).purge
       end
     end
 
-    def stop
+    def stop #:nodoc:
       each_server { stop! }
     end
 
