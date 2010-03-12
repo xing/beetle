@@ -76,7 +76,7 @@ module Beetle
 
     # called when message processing has finally failed (i.e., the number of allowed
     # handler execution attempts or the number of allowed exceptions has been reached) and
-    # no failure callback was specified when this hanlder instance was created.
+    # no failure callback was specified when this handler instance was created.
     def failure(result)
       logger.error "Beetle: handler has finally failed"
     end
