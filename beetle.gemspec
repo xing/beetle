@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.11"
+  s.version = "0.0.12"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-02-23}
+  s.date = %q{2010-03-10}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -26,6 +26,8 @@ Gem::Specification.new do |s|
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
+     "examples/multiple_queues.rb",
+     "examples/rpc.rb",
      "examples/simple.rb",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
@@ -38,8 +40,10 @@ Gem::Specification.new do |s|
      "lib/beetle/subscriber.rb",
      "script/start_rabbits",
      "script/test_publishing",
+     "snafu.rb",
      "test/beetle.yml",
      "test/beetle/base_test.rb",
+     "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
      "test/beetle/handler_test.rb",
@@ -56,6 +60,7 @@ Gem::Specification.new do |s|
   s.summary = %q{High Availability AMQP Messaging with Redundant Queues}
   s.test_files = [
     "test/beetle/base_test.rb",
+     "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
      "test/beetle/handler_test.rb",
@@ -68,6 +73,8 @@ Gem::Specification.new do |s|
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
+     "examples/multiple_queues.rb",
+     "examples/rpc.rb",
      "examples/simple.rb"
   ]
 
