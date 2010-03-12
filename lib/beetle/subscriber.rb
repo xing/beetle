@@ -1,24 +1,25 @@
 module Beetle
+  # Manages subscriptions and message processing on the receiver side of things.
   class Subscriber < Base
 
-    RECOVER_AFTER = 1.seconds
-
     # create a new subscriber instance
-    def initialize(client, options = {})
+    def initialize(client, options = {}) #:nodoc:
       super
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}
     end
 
-    # call this on a subscriber to register all handlers for given messages (defaults to
-    # all messages defined on the client) on all servers this method does these things:
+    # the client calls this to subcsribe to all queues on all servers which have handlers
+    # registered fo the given list of messages (defaults to all messages defined on the
+    # client). this method does the follwing things:
     #
-    # * create all exchanges unless they're already defined
-    # * bind queues on all servers
+    # * creates all exchanges which have been registerd for the messages
+    # * creates and binds queues which have been registered for the exchanges
+    # * subscribes the handlers for all these queues
     #
-    # before binding the queues, all exchanges for the given messages are created
-    def listen(messages=@client.messages.keys)
+    # yields before entering the eventmachine loop (if a block was given)
+    def listen(messages=@client.messages.keys) #:nodoc:
       EM.run do
         create_exchanges(messages)
         bind_queues(messages)
@@ -27,12 +28,13 @@ module Beetle
       end
     end
 
-    def stop!
+    # stops the eventmachine loop
+    def stop! #:nodoc:
       EM.stop_event_loop
     end
 
-    # register handler for the given messages
-    def register_handler(messages, opts={}, handler=nil, &block)
+    # register handler for the given messages (see Client#register_handler)
+    def register_handler(messages, opts={}, handler=nil, &block) #:nodoc:
       Array(messages).each do |message|
         (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
       end
@@ -40,7 +42,6 @@ module Beetle
 
     private
 
-    #
     def create_exchanges(messages)
       each_server do
         messages.each { |message| exchange(@client.messages[message][:exchange]) }
@@ -63,14 +64,15 @@ module Beetle
       messages.map { |name| @handlers[name].map {|opts, _| opts[:queue] || name } }.flatten
     end
 
-    # returns the mq object for the given server or returns a new one created with the prefetch(1) option, this tells it to just send one message to the
-    # receiving buffer (instead of filling it) this is necesssary to ensure that one subscriber always just handles one single message
-    # we cannot ensure reliability if the buffer is filled with messages and crashes 
-    def mq(server=@server) # :doc:
+    # returns the mq object for the given server or returns a new one created with the
+    # prefetch(1) option. this tells it to just send one message to the receiving buffer
+    # (instead of filling it). this is necesssary to ensure that one subscriber always just
+    # handles one single message. we cannot ensure reliability if the buffer is filled with
+    # messages and crashes.
+    def mq(server=@server)
       @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
     end
 
-    # this method is called internally
     def subscribe_message(message)
       handlers = Array(@handlers[message])
       error("no handler for message #{message}") if handlers.empty?
@@ -111,7 +113,6 @@ module Beetle
       end
     end
 
-    #
     def create_exchange!(name, opts)
       mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
     end

@@ -1,11 +1,22 @@
 module Beetle
   class Client
-    attr_reader :servers, :exchanges, :queues, :messages
+    # the servers available for publishing
+    attr_reader :servers
 
-    # create a fresh Beetle::Client instance with the given options.
+    # an options hash for the configured exchanges
+    attr_reader :exchanges
+
+    # an options hash for the configured queues
+    attr_reader :queues
+
+    # an options hash for the configured messages
+    attr_reader :messages
+
+    # create a fresh Client instance with the given options.
     # currently only one option is being honored:
     #   :servers => "host1:port1, host2:port2"
     # this overrides the default servers configured in Beetle.config.servers
+
     def initialize(options = {})
       @servers = (options[:servers] || Beetle.config.servers).split(/ *, */)
       @exchanges = {}
@@ -13,61 +24,47 @@ module Beetle
       @messages = {}
     end
 
-    # register an exchange with the given _name_ and a set of options:
+    # register an exchange with the given _name_ and a set of _options_:
     # [<tt>:type</tt>]
     #   the type option will be overwritten and always be <tt>:topic</tt>, beetle does not allow fanout exchanges
     # [<tt>:durable</tt>]
     #   the durable option will be overwritten and always be true. this is done to ensure that exchanges are never deleted
-    # returns the overwritten options
+
     def register_exchange(name, options={})
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
       exchanges[name] = options.symbolize_keys.merge(:type => :topic, :durable => true)
     end
 
-    # passive: false       # amqp default is false
-    # durable: true        # amqp default is false
-    # exclusive: false     # amqp default is false
-    # auto_delete: false   # amqp default is false
-    # nowait: true         # amqp default is true
-    # key: "#"             # listen to every message
+    # register a durable, non passive, non auto_deleted queue with the given _name_ and an _options_ hash:
+    # [<tt>:exchange</tt>]
+    #   the name of the exchange this queue will be bound to (defaults to the name of the queue)
+    # [<tt>:key</tt>]
+    #   the binding key (defaults to the name of the queue)
+    # automatically registers the specified exchange if it hasn't been registered yet
 
     def register_queue(name, options={})
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
-      opts.merge! :durable => true, :passive => false, :amqp_name => name
+      opts.merge! :durable => true, :passive => false, :exclusive => false, :auto_delete => false, :amqp_name => name
       queues[name] = opts
       exchange = opts[:exchange]
       register_exchange(exchange) unless exchanges.include?(exchange)
       (exchanges[exchange][:queues] ||= []) << name
     end
 
-    # queue: "test"
-    ### Spefify the queue for listeners (default is message name)
-    # key: "test"
-    ### Specifies the routing key pattern for message subscription.
-    # ttl: <%= 1.hour %>
-    ### Specifies the time interval after which messages are silently dropped (seconds)
-    # mandatory: true
-    ### default is false
-    ### Tells the server how to react if the message
-    ### cannot be routed to a queue. If set to _true_, the server will return an unroutable message
-    ### with a Return method. If this flag is zero, the server silently drops the message.
-    # immediate: false
-    ### default is false
-    ### Tells the server how to react if the message
-    ### cannot be routed to a queue consumer immediately. If set to _true_, the server will return an
-    ### undeliverable message with a Return method. If set to _false_, the server will queue the message,
-    ### but with no guarantee that it will ever be consumed.
-    # persistent: true
-    ### default is false
-    ### Tells the server whether to persist the message
-    ### If set to _true_, the message will be persisted to disk and not lost if the server restarts.
-    ### If set to _false_, the message will not be persisted across server restart. Setting to _true_
-    ### incurs a performance penalty as there is an extra cost associated with disk access.
+    # register a message with a given name and an _options_ hash:
+    # [<tt>:key</tt>]
+    #   specifies the routing key for message publishing (defaults to the name of the message)
+    # [<tt>:ttl</tt>]
+    #   specifies the time interval after which the message will be silently dropped (seconds).
+    #   defaults to Message::DEFAULT_TTL.
+    # [<tt>:redundant</tt>]
+    #   specifies whether the message should be published redundantly (defaults to false)
 
     def register_message(name, options={})
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
+      opts.merge! :persistent => true
       messages[name] = opts
     end
 
@@ -95,12 +92,14 @@ module Beetle
       subscriber.register_handler(messages, opts, handler, &block)
     end
 
+    # publish a message. the given options hash is merged with options given on message registration.
     def publish(message_name, data=nil, opts={})
       publisher.publish(message_name, data, opts)
     end
 
     # sends the given message to one of the configured servers and returns the result of running the associated handler.
-    # this will lead to unexpected behavior, if the message gets routed to more than one recipient, so be careful.
+    #
+    # unexpected behavior can ensue if the message gets routed to more than one recipient, so be careful.
     def rpc(message_name, data=nil, opts={})
       publisher.rpc(message_name, data, opts)
     end

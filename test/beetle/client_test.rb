@@ -46,7 +46,7 @@ module Beetle
 
     test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :exchange => "some_exchange", :amqp_name => "some_queue", :key => "some_queue"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :auto_delete => false, :exclusive => false, :exchange => "some_exchange", :amqp_name => "some_queue", :key => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do

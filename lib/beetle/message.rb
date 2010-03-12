@@ -1,6 +1,9 @@
 require "timeout"
 
 module Beetle
+  # Instance of class Message are created when a scubscription callback fires. It is
+  # responsible for message deduplification and determining if it should retry executing
+  # the message handler after a handler has crashed. This is where the beef is.
   class Message
     FORMAT_VERSION = 2
     FLAG_REDUNDANT = 1
@@ -44,8 +47,8 @@ module Beetle
 
     def self.publishing_options(opts = {})
       flags = 0
-      flags |= FLAG_REDUNDANT if opts.delete(:redundant)
-      expires_at = now + (opts.delete(:ttl) || DEFAULT_TTL).to_i
+      flags |= FLAG_REDUNDANT if opts[:redundant]
+      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s
       opts[:headers] = {

@@ -17,7 +17,7 @@ max_exceptions = 10
 
 class Handler < Beetle::Handler
   def process
-    raise "failing for the #{$exceptions += 1}. time"
+    raise "failed #{$exceptions += 1} times"
   end
   def error(exception)
     logger.info "execution failed: #{exception}"
@@ -28,7 +28,7 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", {:exceptions => max_exceptions, :delay => 0}, Handler)
+client.register_handler("test", Handler, :exceptions => max_exceptions, :delay => 0)
 
 # publish a test messages
 client.publish("test", "snafu")

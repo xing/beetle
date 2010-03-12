@@ -1,5 +1,5 @@
 module Beetle
-  module RC
+  module RC #:nodoc:all
 
     # message processing result return codes
     class ReturnCode
