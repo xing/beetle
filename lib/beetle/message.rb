@@ -1,6 +1,9 @@
 require "timeout"
 
 module Beetle
+  # Instance of class Message are created when a scubscription callback fires. It is
+  # responsible for message deduplification and determining if it should retry executing
+  # the message handler after a handler has crashed. This is where the beef is.
   class Message
     FORMAT_VERSION = 2
     FLAG_REDUNDANT = 1

@@ -1,9 +1,10 @@
 module Beetle
+  # Abstract base class shared by Publisher and Subscriber
   class Base
 
-    attr_accessor :options, :servers, :server
+    attr_accessor :options, :servers, :server  #:nodoc:
 
-    def initialize(client, options = {})
+    def initialize(client, options = {}) #:nodoc:
       @options = options
       @client = client
       @servers = @client.servers
