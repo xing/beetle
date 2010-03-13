@@ -11,15 +11,14 @@ module Beetle
     end
 
     # the client calls this to subcsribe to all queues on all servers which have handlers
-    # registered fo the given list of messages (defaults to all messages defined on the
-    # client). this method does the follwing things:
+    # registered for the given list of messages. this method does the follwing things:
     #
     # * creates all exchanges which have been registerd for the messages
     # * creates and binds queues which have been registered for the exchanges
     # * subscribes the handlers for all these queues
     #
     # yields before entering the eventmachine loop (if a block was given)
-    def listen(messages=@client.messages.keys) #:nodoc:
+    def listen(messages) #:nodoc:
       EM.run do
         create_exchanges(messages)
         bind_queues(messages)
