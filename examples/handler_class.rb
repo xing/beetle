@@ -5,8 +5,8 @@ require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 # setup
 Beetle.config.logger.level = Logger::INFO
 client = Beetle::Client.new
-client.register_queue("test")
-client.register_message("test")
+client.register_queue(:test)
+client.register_message(:test)
 
 # store message handler results in a redis instance
 STORE = Redis.new(:db => 5)
@@ -21,12 +21,12 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", Handler)
+client.register_handler(:test, Handler)
 
 # publish some test messages
 N = 10
 n = 0
-N.times {|i| n += client.publish("test", i) }
+N.times {|i| n += client.publish(:test, i) }
 puts "published #{n} test messages"
 
 client.listen do

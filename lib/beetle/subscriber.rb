@@ -10,19 +10,22 @@ module Beetle
       @mqs = {}
     end
 
-    # the client calls this to subcsribe to all queues on all servers which have handlers
-    # registered for the given list of messages. this method does the follwing things:
+    # the client calls this method to subcsribe to all queues on all servers which have
+    # handlers registered for the given list of messages. this method does the following
+    # things:
     #
-    # * creates all exchanges which have been registerd for the messages
+    # * creates all exchanges which have been registered for the given messages
     # * creates and binds queues which have been registered for the exchanges
     # * subscribes the handlers for all these queues
     #
     # yields before entering the eventmachine loop (if a block was given)
     def listen(messages) #:nodoc:
       EM.run do
-        create_exchanges(messages)
-        bind_queues(messages)
-        subscribe(messages)
+        exchanges = exchanges_for_messages(messages)
+        create_exchanges(exchanges)
+        queues = queues_for_exchanges(exchanges)
+        bind_queues(queues)
+        subscribe_queues(queues)
         yield if block_given?
       end
     end
@@ -32,35 +35,39 @@ module Beetle
       EM.stop_event_loop
     end
 
-    # register handler for the given messages (see Client#register_handler)
-    def register_handler(messages, opts={}, handler=nil, &block) #:nodoc:
-      Array(messages).each do |message|
-        (@handlers[message] ||= []) << [opts.symbolize_keys, handler || block]
+    # register handler for the given queues (see Client#register_handler)
+    def register_handler(queues, opts={}, handler=nil, &block) #:nodoc:
+      Array(queues).each do |queue|
+        @handlers[queue] = [opts.symbolize_keys, handler || block]
       end
     end
 
     private
 
-    def create_exchanges(messages)
+    def exchanges_for_messages(messages)
+      @client.messages.slice(*messages).map{|_, opts| opts[:exchange]}.uniq
+    end
+
+    def queues_for_exchanges(exchanges)
+      @client.exchanges.slice(*exchanges).map{|_, opts| opts[:queues]}.flatten.uniq
+    end
+
+    def create_exchanges(exchanges)
       each_server do
-        messages.each { |message| exchange(@client.messages[message][:exchange]) }
+        exchanges.each { |name| exchange(name) }
       end
     end
 
-    def bind_queues(messages)
+    def bind_queues(queues)
       each_server do
-        queues_with_handlers(messages).each { |name| queue(name) }
+        queues.each { |name| queue(name) }
       end
     end
 
-    def subscribe(messages)
+    def subscribe_queues(queues)
       each_server do
-        Array(messages).each { |message| subscribe_message(message) }
+        queues.each { |name| subscribe(name) if @handlers.include?(name) }
       end
-    end
-
-    def queues_with_handlers(messages)
-      messages.map { |name| @handlers[name].map {|opts, _| opts[:queue] || name } }.flatten
     end
 
     # returns the mq object for the given server or returns a new one created with the
@@ -72,24 +79,21 @@ module Beetle
       @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
     end
 
-    def subscribe_message(message)
-      handlers = Array(@handlers[message])
-      error("no handler for message #{message}") if handlers.empty?
-      handlers.each do |opts, handler|
-        queue_name = opts[:queue] || message
-        queue_opts = @client.queues[queue_name]
-        amqp_queue_name = queue_opts[:amqp_name]
-        callback = create_subscription_callback(message, amqp_queue_name, handler, opts)
-        logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # for message #{message}"
-        begin
-          queues[queue_name].subscribe(opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true), &callback)
-        rescue MQ::Error
-          error("Beetle: binding multiple handlers for the same queue isn't possible. You might want to use the :queue option")
-        end
+    def subscribe(queue_name)
+      error("no handler for queue #{queue_name}") unless @handlers.include?(queue_name)
+      opts, handler = @handlers[queue_name]
+      queue_opts = @client.queues[queue_name][:amqp_name]
+      amqp_queue_name = queue_opts
+      callback = create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
+      logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key #"
+      begin
+        queues[queue_name].subscribe(opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true), &callback)
+      rescue MQ::Error
+        error("Beetle: binding multiple handlers for the same queue isn't possible.")
       end
     end
 
-    def create_subscription_callback(message, amqp_queue_name, handler, opts)
+    def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       server = @server
       lambda do |header, data|
         begin

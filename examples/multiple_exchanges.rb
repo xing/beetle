@@ -11,17 +11,18 @@ client = Beetle::Client.new
 client.register_exchange(:foo)
 client.register_exchange(:bar)
 
-client.register_queue(:foo)
-client.register_binding(:foo, :exchange => "bar", :key => "bar")
+client.register_queue(:foobar, :exchange => "foo", :key => "foo")
+client.register_binding(:foobar, :exchange => "bar", :key => "bar")
 
 client.register_message(:foo)
+client.register_message(:bar)
 
-client.register_handler(:foo) do |message|
+client.register_handler(:foobar) do |message|
   puts "foobar: #{message.data}"
 end
 
 client.publish(:foo, "from foo")
-client.publish(:foo, "from bar", :exchange => "bar", :key => "bar")
+client.publish(:bar, "from bar")
 
 client.listen do
   EM.add_timer(0.1) { client.stop_listening }

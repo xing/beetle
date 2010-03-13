@@ -10,21 +10,21 @@ client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
-client.register_queue("test")
-client.register_message("test")
+client.register_queue(:test)
+client.register_message(:test)
 
 # publish some test messages
 # at this point, the exchange will be created on the server and the queue will be bound to the exchange
 n = 0
-n += client.publish("test", "Hello1")
-n += client.publish("test", "Hello2")
-n += client.publish("test", "Hello3")
+n += client.publish(:test, "Hello1")
+n += client.publish(:test, "Hello2")
+n += client.publish(:test, "Hello3")
 puts "published #{n} test messages"
 puts
 
 # register a handler for the test message, listing on queue "test" with routing key "test"
 k = 0
-client.register_handler("test", {}) do |m|
+client.register_handler(:test) do |m|
   k += 1
   puts "Received test message from server #{m.server}"
   puts m.msg_id

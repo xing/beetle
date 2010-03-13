@@ -5,9 +5,9 @@ require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 # setup
 Beetle.config.logger.level = Logger::INFO
 client = Beetle::Client.new
-client.register_queue("test")
-client.register_message("test")
-client.purge("test")
+client.register_queue(:test)
+client.register_message(:test)
+client.purge(:test)
 Beetle::Message.redis.flush_db
 
 # declare a handler class for message processing
@@ -23,11 +23,11 @@ class Handler < Beetle::Handler
   end
 end
 
-client.register_handler("test", Handler, :exceptions => 1, :delay => 0)
+client.register_handler(:test, Handler, :exceptions => 1, :delay => 0)
 
 # publish some test messages
 n = 0
-10.times { |i| n += client.publish("test", i+1) }
+10.times { |i| n += client.publish(:test, i+1) }
 puts "published #{n} test messages"
 
 client.listen do
