@@ -62,11 +62,15 @@ module Beetle
           opts = @client.queues[name]
           error("You are trying to bind a queue '#{name}' which is not configured!") unless opts
           logger.debug("Beetle: binding '#{name}' with internal name #{opts[:amqp_name]}")
-          exchange_name = opts[:exchange]
           queue_name = opts[:amqp_name]
-          binding_keys = opts.slice(*QUEUE_BINDING_KEYS)
-          creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
-          bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
+          creation_options = opts.slice(*QUEUE_CREATION_KEYS)
+          the_queue = nil
+          @client.bindings[name].each do |binding_options|
+            exchange_name = binding_options[:exchange]
+            binding_options = binding_options.slice(*QUEUE_BINDING_KEYS)
+            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options)
+          end
+          the_queue
         end
     end
 

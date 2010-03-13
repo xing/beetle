@@ -9,6 +9,9 @@ module Beetle
     # an options hash for the configured queues
     attr_reader :queues
 
+    # an options hash for the configured queue bindings
+    attr_reader :bindings
+
     # an options hash for the configured messages
     attr_reader :messages
 
@@ -22,6 +25,7 @@ module Beetle
       @exchanges = {}
       @queues = {}
       @messages = {}
+      @bindings = {}
     end
 
     # register an exchange with the given _name_ and a set of _options_:
@@ -48,11 +52,28 @@ module Beetle
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false, :auto_delete => false, :amqp_name => name
-      opts[:exchange] = opts[:exchange].to_s
+      exchange = opts.delete(:exchange).to_s
+      key = opts.delete(:key)
       queues[name] = opts
-      exchange = opts[:exchange]
+      register_binding(name, :exchange => exchange, :key => key)
+    end
+
+    # register an additional binding for an already configured queue _name_ and an _options_ hash:
+    # [<tt>:exchange</tt>]
+    #   the name of the exchange this queue will be bound to (defaults to the name of the queue)
+    # [<tt>:key</tt>]
+    #   the binding key (defaults to the name of the queue)
+    # automatically registers the specified exchange if it hasn't been registered yet
+
+    def register_binding(name, options={})
+      name = name.to_s
+      opts = options.symbolize_keys
+      exchange = (opts[:exchange] || name).to_s
+      key = (opts[:key] || name).to_s
+      (bindings[name] ||= []) << {:exchange => exchange, :key => key}
       register_exchange(exchange) unless exchanges.include?(exchange)
-      (exchanges[exchange][:queues] ||= []) << name
+      queues = (exchanges[exchange][:queues] ||= [])
+      queues << name unless queues.include?(name)
     end
 
     # register a persistent message with a given _name_ and an _options_ hash:

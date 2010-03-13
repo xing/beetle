@@ -18,8 +18,13 @@ module Beetle
     test "should have no queues" do
       assert @client.queues.empty?
     end
+
     test "should have no messages" do
       assert @client.messages.empty?
+    end
+
+    test "should have no bindings" do
+      assert @client.bindings.empty?
     end
   end
 
@@ -49,9 +54,22 @@ module Beetle
       assert @client.exchanges.include?("some_exchange")
     end
 
+    test "registering a queue should store key and exchange in the bindings list" do
+      @client.register_queue(:some_queue, :key => "some_key", :exchange => "some_exchange")
+      assert_equal([{:key => "some_key", :exchange => "some_exchange"}], @client.bindings["some_queue"])
+    end
+
+    test "registering an additional binding for a queue should store key and exchange in the bindings list" do
+      @client.register_queue(:some_queue, :key => "some_key", :exchange => "some_exchange")
+      @client.register_binding(:some_queue, :key => "other_key", :exchange => "other_exchange")
+      bindings = @client.bindings["some_queue"]
+      expected_bindings = [{:key => "some_key", :exchange => "some_exchange"}, {:key => "other_key", :exchange => "other_exchange"}]
+      assert_equal expected_bindings, bindings
+    end
+
     test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :auto_delete => false, :exclusive => false, :exchange => "some_exchange", :amqp_name => "some_queue", :key => "some_queue"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :auto_delete => false, :exclusive => false, :amqp_name => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do
@@ -77,7 +95,7 @@ module Beetle
 
     test "should convert exchange name to a string when registering a queue" do
       @client.register_queue(:some_queue, :exchange => :murks)
-      assert_equal("murks", @client.queues["some_queue"][:exchange])
+      assert_equal("murks", @client.bindings["some_queue"].first[:exchange])
     end
 
     test "registering a message should store it in the configuration with symbolized option keys" do
