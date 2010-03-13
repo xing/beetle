@@ -31,6 +31,7 @@ module Beetle
     #   the durable option will be overwritten and always be true. this is done to ensure that exchanges are never deleted
 
     def register_exchange(name, options={})
+      name = name.to_s
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
       exchanges[name] = options.symbolize_keys.merge(:type => :topic, :durable => true)
     end
@@ -43,9 +44,11 @@ module Beetle
     # automatically registers the specified exchange if it hasn't been registered yet
 
     def register_queue(name, options={})
+      name = name.to_s
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false, :auto_delete => false, :amqp_name => name
+      opts[:exchange] = opts[:exchange].to_s
       queues[name] = opts
       exchange = opts[:exchange]
       register_exchange(exchange) unless exchanges.include?(exchange)
@@ -62,9 +65,11 @@ module Beetle
     #   specifies whether the message should be published redundantly (defaults to false)
 
     def register_message(name, options={})
+      name = name.to_s
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :persistent => true
+      opts[:exchange] = opts[:exchange].to_s
       messages[name] = opts
     end
 
@@ -85,7 +90,8 @@ module Beetle
     # For details on handler classes see class Beetle::Handler
     #
     def register_handler(messages, *args, &block)
-      Array(messages).each {|m| raise ConfigurationError.new("unknown message #{m}") unless self.messages.include?(m)}
+      messages = Array(messages).map(&:to_s)
+      messages.each {|m| raise ConfigurationError.new("unknown message #{m}") unless self.messages.include?(m)}
       opts = args.last.is_a?(Hash) ? args.pop : {}
       handler = args.shift
       raise ArgumentError.new("too many arguments for handler registration") unless args.empty?
@@ -94,6 +100,7 @@ module Beetle
 
     # publish a message. the given options hash is merged with options given on message registration.
     def publish(message_name, data=nil, opts={})
+      message_name = message_name.to_s
       raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
       publisher.publish(message_name, data, opts)
     end
@@ -102,18 +109,20 @@ module Beetle
     #
     # unexpected behavior can ensue if the message gets routed to more than one recipient, so be careful.
     def rpc(message_name, data=nil, opts={})
+      message_name = message_name.to_s
       raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
       publisher.rpc(message_name, data, opts)
     end
 
     # purges the given queue on all configured servers
     def purge(queue_name)
-      publisher.purge(queue_name)
+      publisher.purge(queue_name.to_s)
     end
 
-    # start listening. runs the given block before entering the eventmachine loop.
-    def listen(*args, &block)
-      subscriber.listen(*args, &block)
+    # start listening to a list of messages (default to all regsitered messages).
+    # runs the given block before entering the eventmachine loop.
+    def listen(messages=self.messages.keys, &block)
+      subscriber.listen(messages.map(&:to_s), &block)
     end
 
     # stops the eventmachine loop

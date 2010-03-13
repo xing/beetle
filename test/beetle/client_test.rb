@@ -34,6 +34,11 @@ module Beetle
       assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
     end
 
+    test "should convert exchange name to a string when registering an exchange" do
+      @client.register_exchange(:some_exchange)
+      assert(@client.exchanges.include?("some_exchange"))
+    end
+
     test "registering an exchange should raise a configuration error if it is already configured" do
       @client.register_exchange("some_exchange")
       assert_raises(ConfigurationError){ @client.register_exchange("some_exchange") }
@@ -65,6 +70,16 @@ module Beetle
       assert_raises(ConfigurationError){ @client.register_queue("some_queue") }
     end
 
+    test "should convert queue name to a string when registering a queue" do
+      @client.register_queue(:some_queue)
+      assert(@client.queues.include?("some_queue"))
+    end
+
+    test "should convert exchange name to a string when registering a queue" do
+      @client.register_queue(:some_queue, :exchange => :murks)
+      assert_equal("murks", @client.queues["some_queue"][:exchange])
+    end
+
     test "registering a message should store it in the configuration with symbolized option keys" do
       opts = {"persistent" => true, "queue" => "some_queue", "exchange" => "some_exchange"}
       @client.register_queue("some_queue", "exchange" => "some_exchange")
@@ -79,10 +94,20 @@ module Beetle
       assert_raises(ConfigurationError){ @client.register_message("some_message", opts) }
     end
 
+    test "should convert message name to a string when registering a message" do
+      @client.register_message(:some_message)
+      assert(@client.messages.include?("some_message"))
+    end
+
+    test "should convert exchange name to a string when registering a message" do
+      @client.register_message(:some_message, :exchange => :murks)
+      assert_equal("murks", @client.messages["some_message"][:exchange])
+    end
+
   end
 
   class ClientTest < Test::Unit::TestCase
-    test "instantiating a client should not instanciate the subscriber/publisher" do
+    test "instantiating a client should not instantiate the subscriber/publisher" do
       Publisher.expects(:new).never
       Subscriber.expects(:new).never
       Client.new
@@ -111,6 +136,22 @@ module Beetle
       assert_equal 1, client.publish(*args)
     end
 
+    test "should convert message name to a string when publishing" do
+      client = Client.new
+      client.register_message("deadletter")
+      args = [:deadletter, "x", {:a => 1}]
+      client.send(:publisher).expects(:publish).with("deadletter", "x", :a => 1).returns(1)
+      assert_equal 1, client.publish(*args)
+    end
+
+    test "should convert message name to a string on rpc" do
+      client = Client.new
+      client.register_message("deadletter")
+      args = [:deadletter, "x", {:a => 1}]
+      client.send(:publisher).expects(:rpc).with("deadletter", "x", :a => 1).returns(1)
+      assert_equal 1, client.rpc(*args)
+    end
+
     test "trying to publish an unknown message should raise an exception" do
       assert_raises(UnknownMessage) { Client.new.publish("foobar") }
     end
@@ -131,6 +172,12 @@ module Beetle
       assert_equal "ha!", client.purge("queue")
     end
 
+    test "purging a queue should convert the queue name to a string" do
+      client = Client.new
+      client.send(:publisher).expects(:purge).with("queue").returns("ha!")
+      assert_equal "ha!", client.purge(:queue)
+    end
+
     test "should delegate rpc calls to the publisher instance" do
       client = Client.new
       client.register_message("deadletter")
@@ -149,7 +196,7 @@ module Beetle
       client.register_message("b")
       client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
       x = 0
-      client.listen(["a", "b"]) { x = 5 }
+      client.listen([:a, "b"]) { x = 5 }
       assert_equal 5, x
     end
 
@@ -165,6 +212,15 @@ module Beetle
       client.register_message("huhu")
       client.send(:subscriber).expects(:register_handler)
       client.register_handler("huhu")
+    end
+
+    test "should convert message names to strings when registering a handler" do
+      client = Client.new
+      client.register_queue(:huhu)
+      client.register_message(:huhu)
+      client.register_message(:haha)
+      client.send(:subscriber).expects(:register_handler).with(["huhu", "haha"], {}, nil)
+      client.register_handler([:huhu, :haha])
     end
 
     test "should use the configured logger" do
