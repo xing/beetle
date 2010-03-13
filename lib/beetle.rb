@@ -11,6 +11,8 @@ module Beetle
   class Error < StandardError; end
   # raised when Beetle detects configuration errors
   class ConfigurationError < Error; end
+  # raised when trying to publish an unknown message
+  class UnknownMessage < Error; end
 
   # AMQP options for exchange creation
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]

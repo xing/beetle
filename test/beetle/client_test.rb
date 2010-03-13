@@ -82,13 +82,13 @@ module Beetle
   end
 
   class ClientTest < Test::Unit::TestCase
-    test "instanciating a client should not instanciate the subscriber/publisher" do
+    test "instantiating a client should not instanciate the subscriber/publisher" do
       Publisher.expects(:new).never
       Subscriber.expects(:new).never
       Client.new
     end
 
-    test "should instanciate a subscriber when used for subscribing" do
+    test "should instantiate a subscriber when used for subscribing" do
       Subscriber.expects(:new).returns(stub_everything("subscriber"))
       client = Client.new
       client.register_queue("superman")
@@ -96,16 +96,27 @@ module Beetle
       client.register_handler("superman", {}, &lambda{})
     end
 
-    test "should instanciate a subscriber when used for publishing" do
+    test "should instantiate a subscriber when used for publishing" do
+      client = Client.new
+      client.register_message("foobar")
       Publisher.expects(:new).returns(stub_everything("subscriber"))
-      Client.new.publish(:foo_bar, "payload")
+      client.publish("foobar", "payload")
     end
 
     test "should delegate publishing to the publisher instance" do
       client = Client.new
+      client.register_message("deadletter")
       args = ["deadletter", "x", {:a => 1}]
       client.send(:publisher).expects(:publish).with(*args).returns(1)
       assert_equal 1, client.publish(*args)
+    end
+
+    test "trying to publish an unknown message should raise an exception" do
+      assert_raises(UnknownMessage) { Client.new.publish("foobar") }
+    end
+
+    test "trying to RPC an unknown message should raise an exception" do
+      assert_raises(UnknownMessage) { Client.new.rpc("foobar") }
     end
 
     test "should delegate stop_publishing to the publisher instance" do
@@ -122,6 +133,7 @@ module Beetle
 
     test "should delegate rpc calls to the publisher instance" do
       client = Client.new
+      client.register_message("deadletter")
       args = ["deadletter", "x", {:a => 1}]
       client.send(:publisher).expects(:rpc).with(*args).returns("ha!")
       assert_equal "ha!", client.rpc(*args)
