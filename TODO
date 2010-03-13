@@ -5,4 +5,6 @@
 - allow symbols for exchange, queue, and message names
 - review log levels in all logger statements
 - RPC support
-- optimize non redundant messages
+- optimize redis accesses:
+    - for non redundant messages with attempts => 1 we never need to store anything in redis
+    - combine multiple redis accesses into one

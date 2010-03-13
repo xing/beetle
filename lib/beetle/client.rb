@@ -52,7 +52,7 @@ module Beetle
       (exchanges[exchange][:queues] ||= []) << name
     end
 
-    # register a message with a given name and an _options_ hash:
+    # register a persistent message with a given _name_ and an _options_ hash:
     # [<tt>:key</tt>]
     #   specifies the routing key for message publishing (defaults to the name of the message)
     # [<tt>:ttl</tt>]
@@ -94,6 +94,7 @@ module Beetle
 
     # publish a message. the given options hash is merged with options given on message registration.
     def publish(message_name, data=nil, opts={})
+      raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
       publisher.publish(message_name, data, opts)
     end
 
@@ -101,6 +102,7 @@ module Beetle
     #
     # unexpected behavior can ensue if the message gets routed to more than one recipient, so be careful.
     def rpc(message_name, data=nil, opts={})
+      raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
       publisher.rpc(message_name, data, opts)
     end
 
@@ -119,7 +121,7 @@ module Beetle
       subscriber.stop!
     end
 
-    # disconnects the publisher form all servers it's currently connected to
+    # disconnects the publisher from all servers it's currently connected to
     def stop_publishing
       publisher.stop
     end
