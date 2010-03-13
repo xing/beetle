@@ -235,16 +235,14 @@ module Beetle
     test "should delegate handler registration to the subscriber instance" do
       client = Client.new
       client.register_queue("huhu")
-      client.register_message("huhu")
       client.send(:subscriber).expects(:register_handler)
       client.register_handler("huhu")
     end
 
-    test "should convert message names to strings when registering a handler" do
+    test "should convert queue names to strings when registering a handler" do
       client = Client.new
+      client.register_queue(:haha)
       client.register_queue(:huhu)
-      client.register_message(:huhu)
-      client.register_message(:haha)
       client.send(:subscriber).expects(:register_handler).with(["huhu", "haha"], {}, nil)
       client.register_handler([:huhu, :haha])
     end
@@ -262,12 +260,11 @@ module Beetle
       client.load("#{File.dirname(__FILE__)}/../../**/client_test.rb")
     end
 
-    test "tracing should modify the amqp options for each queue and register a handler for each message" do
+    test "tracing should modify the amqp options for each queue and register a handler for each queue" do
       client = Client.new
       client.register_queue("test")
-      client.register_message("test")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(client.messages.keys, {}, nil).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.queues.keys, {}, nil).yields(stub_everything("message"))
       sub.expects(:listen)
       client.stubs(:puts)
       client.trace

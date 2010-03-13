@@ -1,11 +1,10 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-
 module Beetle
   class SubscriberTest < Test::Unit::TestCase
     def setup
       client = Client.new
-      @sub = Subscriber.new(client)
+      @sub = client.send(:subscriber)
     end
 
     test "initially there should be no amqp connections" do
@@ -51,7 +50,7 @@ module Beetle
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
       @client = Client.new
-      @sub = Subscriber.new(@client)
+      @sub = @client.send(:subscriber)
     end
 
     test "initially there should be no queues for the current server" do
@@ -74,26 +73,25 @@ module Beetle
 
     test "binding queues should iterate over all servers" do
       s = sequence("binding")
+      @client.register_queue(:x)
+      @client.register_queue(:y)
+      @client.register_handler(%w(x y)){}
       @sub.servers = %w(a b)
       @sub.expects(:set_current_server).with("a").in_sequence(s)
-      @sub.expects(:queues_with_handlers).with(["test"]).returns(["testa"]).in_sequence(s)
-      @sub.expects(:queue).with("testa").in_sequence(s)
+      @sub.expects(:queue).with("x").in_sequence(s)
+      @sub.expects(:queue).with("y").in_sequence(s)
       @sub.expects(:set_current_server).with("b").in_sequence(s)
-      @sub.expects(:queues_with_handlers).with(["test"]).returns(["testb"]).in_sequence(s)
-      @sub.expects(:queue).with("testb").in_sequence(s)
-      @sub.send(:bind_queues, ["test"])
+      @sub.expects(:queue).with("x").in_sequence(s)
+      @sub.expects(:queue).with("y").in_sequence(s)
+      @sub.send(:bind_queues, %W(x y))
     end
 
-    test "queues with handlers should return all queues to which handlers have been bound" do
-      @sub.instance_variable_set(:@handlers, {"test" => [ [{:queue => "qa"}, 0], [{}, 1] ]})
-      assert_equal ["qa", "test" ], @sub.send(:queues_with_handlers, ["test"]).sort
-    end
   end
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase
     def setup
       @client = Client.new
-      @sub = Subscriber.new(@client)
+      @sub = @client.send(:subscriber)
     end
 
     test "initially there should be no exchanges for the current server" do
@@ -111,26 +109,20 @@ module Beetle
       assert_equal ex2, ex
     end
 
-    test "should create exchanges for all messages passed to create_exchanges, for all servers" do
+    test "should create exchanges for all exchanges passed to create_exchanges, for all servers" do
       @sub.servers = %w(x y)
-      messages = %w(a b)
-      @client.register_exchange("unused")
-      @client.register_queue('donald', :exchange => 'margot')
-      @client.register_queue('mickey')
-      @client.register_queue('mouse', :exchange => 'mickey')
-      @client.register_message('a', :exchange => "margot")
-      @client.register_message('b', :exchange => "mickey")
-      @client.register_message('c')
+      @client.register_queue(:donald, :exchange => 'duck')
+      @client.register_queue(:mickey)
+      @client.register_queue(:mouse, :exchange => 'mickey')
 
       exchange_creation = sequence("exchange creation")
       @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("margot", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("duck", anything).in_sequence(exchange_creation)
       @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
       @sub.expects(:set_current_server).with('y', anything).in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("margot", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("duck", anything).in_sequence(exchange_creation)
       @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("unused").never
-      @sub.send(:create_exchanges, messages)
+      @sub.send(:create_exchanges, %w(duck mickey))
     end
   end
 
@@ -139,7 +131,7 @@ module Beetle
       client = Client.new
       @queue = "somequeue"
       client.register_queue(@queue)
-      @sub = Subscriber.new(client)
+      @sub = client.send(:subscriber)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
       @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
@@ -194,23 +186,23 @@ module Beetle
   class SubscriptionTest < Test::Unit::TestCase
     def setup
       @client = Client.new
-      @sub = Subscriber.new(@client)
+      @sub = @client.send(:subscriber)
     end
 
-    test "subscribe should create subscriptions for all servers" do
+    test "subscribe should create subscriptions on all queues for all servers" do
       @sub.servers << "localhost:7777"
-      @client.messages.clear
-      @client.register_queue("a")
-      @client.register_message("a")
-      @client.register_message("b", :queue => "a")
-      @sub.expects(:subscribe_message).with("a").times(2)
-      @sub.expects(:subscribe_message).with("b").times(2)
-      @sub.send(:subscribe, %W(a b))
+      @client.register_message(:a)
+      @client.register_message(:b)
+      @client.register_queue(:a)
+      @client.register_queue(:b)
+      @client.register_handler(%W(a b)){}
+      @sub.expects(:subscribe).with("a").times(2)
+      @sub.expects(:subscribe).with("b").times(2)
+      @sub.send(:subscribe_queues, %W(a b))
     end
 
-    test "subscribe_message should subscribe with a subscription callback created from the registered block" do
-      @client.register_queue("some_queue", :exchange => "some_message")
-      @client.register_message("some_message", :key => "some_key")
+    test "subscribe should subscribe with a subscription callback created from the registered block" do
+      @client.register_queue(:some_queue, :exchange => "some_exchange", :key => "some_key")
       server = @sub.server
       header = header_with_params({})
       header.expects(:ack)
@@ -221,57 +213,47 @@ module Beetle
         assert_equal "data", m.data
         assert_equal server, m.server
       end
-      @sub.register_handler("some_message", {:queue => "some_queue"}, &proc)
+      @sub.register_handler("some_queue", &proc)
       q = mock("QUEUE")
       q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, 'foo')
       @sub.expects(:queues).returns({"some_queue" => q})
-      @sub.send(:subscribe_message, "some_message")
+      @sub.send(:subscribe, "some_queue")
       assert block_called
     end
 
     test "subscribe should fail if no handler exists for given message" do
-      assert_raises(Error){ @sub.send(:subscribe_message, "some_message") }
+      assert_raises(Error){ @sub.send(:subscribe, "some_queue") }
     end
 
-    test "listening should use eventmachine. create exchanges. bind queues. install subscribers." do
+    test "listening should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
+      @client.register_queue(:a)
+      @client.register_message(:a)
       EM.expects(:run).yields
       @sub.expects(:create_exchanges).with(["a"])
       @sub.expects(:bind_queues).with(["a"])
-      @sub.expects(:subscribe)
+      @sub.expects(:subscribe_queues).with(["a"])
       @sub.listen(["a"]) {}
     end
   end
 
   class HandlersTest < Test::Unit::TestCase
     def setup
-      client = Client.new
-      @sub = Subscriber.new(client)
+      @client = Client.new
+      @sub = @client.send(:subscriber)
     end
 
     test "initially we should have no handlers" do
       assert_equal({}, @sub.instance_variable_get("@handlers"))
     end
 
-    test "registering a handler for a message should store it in the configuration with symbolized option keys" do
+    test "registering a handler for a queue should store it in the configuration with symbolized option keys" do
       opts = {"ack" => true}
-      @sub.register_handler("some_message", opts){ |*args| 42 }
-      opts, block = @sub.instance_variable_get("@handlers")["some_message"].first
+      @sub.register_handler("some_queue", opts){ |*args| 42 }
+      opts, block = @sub.instance_variable_get("@handlers")["some_queue"]
       assert_equal({:ack => true}, opts)
       assert_equal 42, block.call(1)
     end
 
-    test "should allow registration of multiple handlers for a message" do
-      opts = {}
-      @sub.register_handler("a message", :queue => "queue_1") { |*args| "handler 1" }
-      @sub.register_handler("a message", :queue => "queue_2") { |*args| "handler 2" }
-      handlers = @sub.instance_variable_get("@handlers")["a message"]
-      handler1, handler2 = handlers
-      assert_equal 2, handlers.size
-      assert_equal "queue_1", handler1[0][:queue]
-      assert_equal "handler 1", handler1[1].call(1)
-      assert_equal "queue_2", handler2[0][:queue]
-      assert_equal "handler 2", handler2[1].call(1)
-    end
   end
 
 end

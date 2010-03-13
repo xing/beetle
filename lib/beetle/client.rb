@@ -94,9 +94,8 @@ module Beetle
       messages[name] = opts
     end
 
-    # registers a handler for a list of messages (which must have been registered
-    # previously). The handler will be invoked when any of the given messages arrive on
-    # the scubscriber.
+    # registers a handler for a list of queues (which must have been registered
+    # previously). The handler will be invoked when any messages arrive on the queue.
     #
     # Examples:
     #   register_handler(["foo", "bar"], :timeout => 10.seconds) { |message| puts "received #{message}" }
@@ -110,13 +109,13 @@ module Beetle
     #
     # For details on handler classes see class Beetle::Handler
     #
-    def register_handler(messages, *args, &block)
-      messages = Array(messages).map(&:to_s)
-      messages.each {|m| raise ConfigurationError.new("unknown message #{m}") unless self.messages.include?(m)}
+    def register_handler(queues, *args, &block)
+      queues = Array(queues).map(&:to_s)
+      queues.each {|q| raise UnknownQueue.new(q) unless self.queues.include?(q)}
       opts = args.last.is_a?(Hash) ? args.pop : {}
       handler = args.shift
       raise ArgumentError.new("too many arguments for handler registration") unless args.empty?
-      subscriber.register_handler(messages, opts, handler, &block)
+      subscriber.register_handler(queues, opts, handler, &block)
     end
 
     # publish a message. the given options hash is merged with options given on message registration.
@@ -165,7 +164,7 @@ module Beetle
       queues.each do |name, opts|
         opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(name)
       end
-      register_handler(messages.keys) do |msg|
+      register_handler(queues.keys) do |msg|
         puts "-----===== new message =====-----"
         puts "SERVER: #{msg.server}"
         puts "HEADER: #{msg.header.inspect}"
