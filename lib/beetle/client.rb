@@ -121,11 +121,11 @@ module Beetle
       publisher.purge(queue_name)
     end
 
-    # start listening to a list of messages (default to all regsitered messages).
+    # start listening to a list of messages (default to all registered messages).
     # runs the given block before entering the eventmachine loop.
     def listen(messages=self.messages.keys, &block)
       messages = messages.map(&:to_s)
-      messages.each{|m| raise UnknownMessage.new(m) unless self.messages.include?(m)}
+      messages.each{|m| raise UnknownMessage.new("unknown message #{m}") unless self.messages.include?(m)}
       subscriber.listen(messages, &block)
     end
 
