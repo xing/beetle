@@ -168,14 +168,20 @@ module Beetle
 
     test "should delegate queue purging to the publisher instance" do
       client = Client.new
+      client.register_queue(:queue)
       client.send(:publisher).expects(:purge).with("queue").returns("ha!")
       assert_equal "ha!", client.purge("queue")
     end
 
     test "purging a queue should convert the queue name to a string" do
       client = Client.new
+      client.register_queue(:queue)
       client.send(:publisher).expects(:purge).with("queue").returns("ha!")
       assert_equal "ha!", client.purge(:queue)
+    end
+
+    test "trying to purge an unknown queue should raise an exception" do
+      assert_raises(UnknownQueue) { Client.new.purge(:mumu) }
     end
 
     test "should delegate rpc calls to the publisher instance" do
@@ -188,16 +194,18 @@ module Beetle
 
     test "should delegate listening to the subscriber instance" do
       client = Client.new
-      client.register_exchange("a")
-      client.register_queue("a")
-      client.register_message("a")
-      client.register_exchange("b")
-      client.register_queue("b")
-      client.register_message("b")
+      client.register_queue(:a)
+      client.register_message(:a)
+      client.register_queue(:b)
+      client.register_message(:b)
       client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
       x = 0
       client.listen([:a, "b"]) { x = 5 }
       assert_equal 5, x
+    end
+
+    test "trying to listen to an unknown message should raise an exception" do
+      assert_raises(UnknownMessage) { Client.new.listen([:a])}
     end
 
     test "should delegate stop_listening to the subscriber instance" do

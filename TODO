@@ -1,6 +1,5 @@
 - docs
 - example scripts
-- improve error messages on configuration errors
 - let handlers decide dynamically how long to wait for a retry
 - review log levels in all logger statements
 - RPC support
