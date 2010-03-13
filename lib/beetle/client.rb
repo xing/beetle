@@ -116,13 +116,17 @@ module Beetle
 
     # purges the given queue on all configured servers
     def purge(queue_name)
-      publisher.purge(queue_name.to_s)
+      queue_name = queue_name.to_s
+      raise UnknownQueue.new("unknown queue #{queue_name}") unless queues.include?(queue_name)
+      publisher.purge(queue_name)
     end
 
     # start listening to a list of messages (default to all regsitered messages).
     # runs the given block before entering the eventmachine loop.
     def listen(messages=self.messages.keys, &block)
-      subscriber.listen(messages.map(&:to_s), &block)
+      messages = messages.map(&:to_s)
+      messages.each{|m| raise UnknownMessage.new(m) unless self.messages.include?(m)}
+      subscriber.listen(messages, &block)
     end
 
     # stops the eventmachine loop
