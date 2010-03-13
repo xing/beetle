@@ -10,8 +10,8 @@ client = Beetle::Client.new
 
 client.register_exchange(:foobar)
 
-client.register_queue(:queue_1, :exchange => "foobar", :key => "foobar")
-client.register_queue(:queue_2, :exchange => "foobar", :key => "foobar")
+client.register_queue(:queue_1, :exchange => :foobar, :key => "foobar")
+client.register_queue(:queue_2, :exchange => :foobar, :key => "foobar")
 
 client.register_message(:foobar)
 

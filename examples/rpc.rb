@@ -10,12 +10,12 @@ client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
-client.register_queue("test")
-client.register_message("test")
+client.register_queue(:test)
+client.register_message(:test)
 
 # register a handler for the test message, listing on queue "test" with routing key "test"
 # echoing all data sent to it
-client.register_handler("test", {}) do |m|
+client.register_handler(:test) do |m|
   # send data back to publisher
   m.data
 end
