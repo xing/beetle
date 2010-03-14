@@ -10,12 +10,12 @@ client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
-client.register_queue(:test)
-client.register_message(:test)
+client.register_queue(:echo)
+client.register_message(:echo)
 
 # register a handler for the test message, listing on queue "test" with routing key "test"
 # echoing all data sent to it
-client.register_handler(:test) do |m|
+client.register_handler(:echo) do |m|
   # send data back to publisher
   m.data
 end
@@ -30,7 +30,7 @@ ms = Benchmark.ms do
   n.times do |i|
     content = "Hello #{i}"
     # puts "performing RPC with message content '#{content}'"
-    status, result = client.rpc("test", content)
+    status, result = client.rpc(:echo, content)
     # puts "status  #{status}"
     # puts "result  #{result}"
     # puts

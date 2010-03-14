@@ -4,5 +4,5 @@
 - review log levels in all logger statements
 - RPC support
 - optimize redis accesses:
-    - for non redundant messages with attempts => 1 we never need to store anything in redis
+    - for non redundant messages with attempts => 1 we never need to store anything in redis (should make RPC faster)
     - combine multiple redis accesses into one
