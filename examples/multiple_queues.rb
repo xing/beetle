@@ -8,19 +8,12 @@ Beetle.config.logger.level = Logger::INFO
 # instantiate a client
 client = Beetle::Client.new
 
-client.register_exchange(:foobar)
-
-client.register_queue(:queue_1, :exchange => :foobar, :key => "foobar")
-client.register_queue(:queue_2, :exchange => :foobar, :key => "foobar")
-
-client.register_message(:foobar)
-
-client.register_handler(:queue_1) do |message|
-  puts "Queue 1"
-end
-
-client.register_handler(:queue_2) do |message|
-  puts "Queue 2"
+client.configure :exchange => :foobar, :key => "foobar" do |config|
+  config.queue :queue_1
+  config.queue :queue_2
+  config.message :foobar
+  config.handler(:queue_1) { puts "Queue 1" }
+  config.handler(:queue_2) { puts "Queue 2" }
 end
 
 client.publish(:foobar, "baz")

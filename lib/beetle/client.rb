@@ -118,6 +118,36 @@ module Beetle
       subscriber.register_handler(queues, opts, handler, &block)
     end
 
+    private
+    class Configurator
+      def initialize(client, options={})
+        @client = client
+        @options = options
+      end
+      def method_missing(method, *args, &block)
+        super unless %w(exchange queue message handler).include?(method.to_s)
+        options = @options.merge(args.last.is_a?(Hash) ? args.pop : {})
+        @client.send("register_#{method}", *(args+[options]), &block)
+      end
+    end
+
+    public
+    # configure exchanges, queues, messages, handlers with a common set of options.
+    # allows one to call all register methods without the register_ prefix.
+    #
+    # Example:
+    #  client.configure :exchange => :foobar do |config|
+    #    config.queue :q1, :key => "foo"
+    #    config.queue :q2, :key => "bar"
+    #    config.message :foo
+    #    config.message :bar
+    #    config.handler :q1 { puts "got foo"}
+    #    config.handler :q2 { puts "got bar"}
+    #  end
+    def configure(options={}) #:yields: config
+      yield Configurator.new(self, options)
+    end
+
     # publish a message. the given options hash is merged with options given on message registration.
     def publish(message_name, data=nil, opts={})
       message_name = message_name.to_s
