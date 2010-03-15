@@ -5,16 +5,52 @@ module Beetle
   # responsible for message deduplification and determining if it should retry executing
   # the message handler after a handler has crashed. This is where the beef is.
   class Message
+    # current message format version
     FORMAT_VERSION = 2
+    # flag for encoding redundant messages
     FLAG_REDUNDANT = 1
+    # default lifetime of messages
     DEFAULT_TTL = 1.day
+    # forcefully abort a running handler after this many seonds.
+    # can be overriden when registering a handler.
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
+    # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
+    # how many seconds we should wait before retrying handler execution
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
+    # how many exceptions should be tolerated before giving up
     DEFAULT_EXCEPTION_LIMIT = 0
 
-    attr_reader :server, :queue, :header, :body, :uuid, :data, :format_version, :flags, :expires_at
-    attr_reader :timeout, :delay, :attempts_limit, :exceptions_limit, :exception, :handler_result
+    # server from which the message was received
+    attr_reader :server
+    # name of the queue on which the message was received
+    attr_reader :queue
+    # the AMQP header received with the message
+    attr_reader :header
+    # the encoded message boday
+    attr_reader :body
+    # the uuid of the message
+    attr_reader :uuid
+    # message payload
+    attr_reader :data
+    # the message format version of the message
+    attr_reader :format_version
+    # flags sent with the message
+    attr_reader :flags
+    # unix timestamp after which the message should be considered stale
+    attr_reader :expires_at
+    # how many seconds the handler is allowed to execute
+    attr_reader :timeout
+    # how long to wait before retrying the message handler
+    attr_reader :delay
+    # how many times we should try to run the handler
+    attr_reader :attempts_limit
+    # how many exceptions we should tolerate before giving up
+    attr_reader :exceptions_limit
+    # exception raised by handler execution
+    attr_reader :exception
+    # value returned by handler execution
+    attr_reader :handler_result
 
     def initialize(queue, header, body, opts = {})
       @keys   = {}
