@@ -51,12 +51,12 @@ module Beetle
       assert options[:immediate]
       assert options[:persistent]
       assert_equal key, options[:key]
-      assert_equal 1, options[:headers][:flags]
+      assert_equal "1", options[:headers][:flags]
     end
 
     test "the publishing options should silently ignore other parameters than the valid publishing keys" do
       options = Message.publishing_options(:redundant => true, :mandatory => true, :bogus => true)
-      assert_equal 1, options[:headers][:flags]
+      assert_equal "1", options[:headers][:flags]
       assert options[:mandatory]
       assert_nil options[:bogus]
     end
@@ -66,6 +66,11 @@ module Beetle
       Message.expects(:generate_uuid).returns(uuid)
       options = Message.publishing_options(:redundant => true)
       assert_equal uuid, options[:message_id]
+    end
+
+    test "the publishing options must only include string values" do
+      options = Message.publishing_options(:redundant => true, :mandatory => true, :bogus => true)
+      assert options[:headers].all? {|_, param| param.is_a?(String)}
     end
 
   end
