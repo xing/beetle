@@ -308,7 +308,6 @@ module Beetle
       logger = mock('logger')
       logger.expects(:error).returns(true)
       @pub.expects(:logger).returns(logger)
-      @pub.expects(:message_name).returns('foo')
       assert_equal 0, @pub.send(:select_next_server)
     end
 
