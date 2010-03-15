@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.12"
+  s.version = "0.0.13"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-03-10}
+  s.date = %q{2010-03-15}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -23,9 +23,11 @@ Gem::Specification.new do |s|
      "Rakefile",
      "TODO",
      "beetle.gemspec",
+     "doc/redundant_queues.graffle",
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
+     "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
      "examples/rpc.rb",
      "examples/simple.rb",
@@ -73,6 +75,7 @@ Gem::Specification.new do |s|
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
+     "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
      "examples/rpc.rb",
      "examples/simple.rb"
@@ -86,7 +89,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_runtime_dependency(%q<bunny>, [">= 0.6.0"])
       s.add_runtime_dependency(%q<redis>, [">= 0.1.2"])
-      s.add_runtime_dependency(%q<amqp>, [">= 0.6.6"])
+      s.add_runtime_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_runtime_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_development_dependency(%q<mocha>, [">= 0"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
@@ -94,7 +97,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_dependency(%q<bunny>, [">= 0.6.0"])
       s.add_dependency(%q<redis>, [">= 0.1.2"])
-      s.add_dependency(%q<amqp>, [">= 0.6.6"])
+      s.add_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_dependency(%q<mocha>, [">= 0"])
       s.add_dependency(%q<rcov>, [">= 0"])
@@ -103,7 +106,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
     s.add_dependency(%q<bunny>, [">= 0.6.0"])
     s.add_dependency(%q<redis>, [">= 0.1.2"])
-    s.add_dependency(%q<amqp>, [">= 0.6.6"])
+    s.add_dependency(%q<amqp>, [">= 0.6.7"])
     s.add_dependency(%q<activesupport>, [">= 2.3.4"])
     s.add_dependency(%q<mocha>, [">= 0"])
     s.add_dependency(%q<rcov>, [">= 0"])
