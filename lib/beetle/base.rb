@@ -7,7 +7,7 @@ module Beetle
     def initialize(client, options = {}) #:nodoc:
       @options = options
       @client = client
-      @servers = @client.servers
+      @servers = @client.servers.clone
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
