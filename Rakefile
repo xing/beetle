@@ -68,7 +68,7 @@ begin
     gemspec.add_dependency('uuid4r', '>=0.1.1')
     gemspec.add_dependency('bunny', '>=0.6.0')
     gemspec.add_dependency('redis', '>=0.1.2')
-    gemspec.add_dependency('amqp', '>=0.6.6')
+    gemspec.add_dependency('amqp', '>=0.6.7')
     gemspec.add_dependency('activesupport', '>=2.3.4')
 
     gemspec.add_development_dependency('mocha')
