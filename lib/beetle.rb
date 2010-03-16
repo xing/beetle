@@ -33,7 +33,7 @@ module Beetle
     autoload File.basename(libfile)[/(.*)\.rb/, 1].classify, libfile
   end
 
-  # returns the configuration object
+  # returns the configuration object and yields it if a block is given
   def self.config
     @config ||= Configuration.new
     if block_given?

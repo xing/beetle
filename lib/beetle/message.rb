@@ -53,7 +53,6 @@ module Beetle
     attr_reader :handler_result
 
     def initialize(queue, header, body, opts = {})
-      @keys   = {}
       @queue  = queue
       @header = header
       @body   = body
@@ -61,7 +60,7 @@ module Beetle
       decode
     end
 
-    def setup(opts)
+    def setup(opts) #:nodoc:
       @server           = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
@@ -70,6 +69,7 @@ module Beetle
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
     end
 
+    # extracts various values form the AMQP header properties
     def decode
       amqp_headers = header.properties
       if h = amqp_headers[:headers]
@@ -95,86 +95,107 @@ module Beetle
       opts
     end
 
-    def self.encode_v1(data, opts = {})
+    # TODO: remove after next release
+    def self.encode_v1(data, opts = {}) #:nodoc:
       expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
       [1, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
+    # unique message id. used to form various Redis keys.
     def msg_id
       @msg_id ||= "msgid:#{queue}:#{uuid}"
     end
 
-    def now
+    # current time (UNIX timestamp)
+    def now #:nodoc:
       Time.now.to_i
     end
 
-    def self.now
+    # current time (UNIX timestamp)
+    def self.now #:nodoc:
       Time.now.to_i
     end
 
+    # a message has expired if the header expiration timestamp is msaller than the current time
     def expired?
       @expires_at < now
     end
 
+    # generate uuid for publishing
     def self.generate_uuid
       UUID4R::uuid(1)
     end
 
+    # whether the publisher has tried sending this message to two servers
     def redundant?
       @flags & FLAG_REDUNDANT == FLAG_REDUNDANT
     end
 
+    # store handler timeout timestimp into Redis
     def set_timeout!
       redis.set(key(:timeout), now + timeout)
     end
 
+    # handler timed out?
     def timed_out?
       (t = redis.get(key(:timeout))) && t.to_i < now
     end
 
+    # reset handler timeout in Redis
     def timed_out!
       redis.set(key(:timeout), 0)
     end
 
+    # message handling completed?
     def completed?
       redis.get(key(:status)) == "completed"
     end
 
+    # mark message handling complete in Redis
     def completed!
       redis.set(key(:status), "completed")
       timed_out!
     end
 
+    # whether we should wait before running the handler
     def delayed?
       (t = redis.get(key(:delay))) && t.to_i > now
     end
 
+    # store delay value in REdis
     def set_delay!
       redis.set(key(:delay), now + delay)
     end
 
+    # how many times we already tried running the handler
     def attempts
       redis.get(key(:attempts)).to_i
     end
 
+    # record the fact that we are trying to run the handler
     def increment_execution_attempts!
       redis.incr(key(:attempts))
     end
 
+    # whether we have already tried running the handler as often as specified when the handler was registered
     def attempts_limit_reached?
       (limit = redis.get(key(:attempts))) && limit.to_i >= attempts_limit
     end
 
+    # increment number of exception occurences in Redis
     def increment_exception_count!
       redis.incr(key(:exceptions))
     end
 
+    # whether the number of exceptions has exceeded the limit set when the handler was registered
     def exceptions_limit_reached?
      redis.get(key(:exceptions)).to_i > exceptions_limit
     end
 
+    # have we already seen this message? if not, set the status to "incomplete" and store
+    # the message exipration time in Redis.
     def key_exists?
       old_message = 0 == redis.msetnx(key(:status) =>"incomplete", key(:expires) => @expires_at)
       if old_message
@@ -183,6 +204,7 @@ module Beetle
       old_message
     end
 
+    # aquire execution mutex before we run the handler (and delete it if we can't aquire it).
     def aquire_mutex!
       if mutex = redis.setnx(key(:mutex), now)
         logger.debug "Beetle: aquired mutex: #{msg_id}"
@@ -192,37 +214,46 @@ module Beetle
       mutex
     end
 
+    # delete execution mutex
     def delete_mutex!
       redis.del(key(:mutex))
       logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
+    # get the Redis instance
     def self.redis
       @redis ||= Redis.new(:host => Beetle.config.redis_host, :db => Beetle.config.redis_db)
     end
 
+    # list of key suffixes to use for storing values in Redis.
     KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]
 
+    # build a Redis key out of the message id of this message and a given suffix
     def key(suffix)
-      @keys[suffix] ||= self.class.key(msg_id, suffix)
+      self.class.key(msg_id, suffix)
     end
 
+    # list of keys which potentially exist in Redis for this messsage
     def keys
       self.class.keys(msg_id)
     end
 
+    # build a Redis key out of a message id and a given suffix
     def self.key(msg_id, suffix)
       "#{msg_id}:#{suffix}"
     end
 
+    # list of keys which potentially exist in Redis for the given message id
     def self.keys(msg_id)
       KEY_SUFFIXES.map{|suffix| key(msg_id, suffix)}
     end
 
+    # extract message id from a given Redis key
     def self.msg_id(key)
       key =~ /^(msgid:[^:]*:[-0-9a-f]*):.*$/ && $1
     end
 
+    # garbage collect keys in Redis (always assume the worst!)
     def self.garbage_collect_keys
       keys = redis.keys("msgid:*:expires")
       threshold = now + Beetle.config.gc_threshold
@@ -235,6 +266,7 @@ module Beetle
       end
     end
 
+    # process this message and do not allow any exception to escape to the caller
     def process(handler)
       logger.debug "Beetle: processing message #{msg_id}"
       result = nil
@@ -329,7 +361,10 @@ module Beetle
       Beetle.config.logger
     end
 
-    def ack!
+    # ack the message for rabbit. delete all keys if we are sure this is the last message
+    # with the given message id. if deleting the keys fails (network problem for example),
+    # the keys will be deleted by the class method garbage_collect_keys.
+    def ack! #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       if !redundant? || redis.incr(key(:ack_count)) == 2
