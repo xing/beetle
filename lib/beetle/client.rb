@@ -125,7 +125,7 @@ module Beetle
         @options = options
       end
       def method_missing(method, *args, &block)
-        super unless %w(exchange queue message handler).include?(method.to_s)
+        super unless %w(exchange queue binding message handler).include?(method.to_s)
         options = @options.merge(args.last.is_a?(Hash) ? args.pop : {})
         @client.send("register_#{method}", *(args+[options]), &block)
       end
