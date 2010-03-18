@@ -122,6 +122,32 @@ module Beetle
       assert_equal("murks", @client.messages["some_message"][:exchange])
     end
 
+    test "configure should yield a configurator configured with the client and the given options" do
+      options = {:exchange => :foobar}
+      Client::Configurator.expects(:new).with(@client, options).returns(42)
+      @client.configure(options) {|config| assert_equal 42, config}
+    end
+
+    test "a configurator should forward all known registration methods to the client" do
+      options = {:foo => :bar}
+      config = Client::Configurator.new(@client, options)
+      @client.expects(:register_exchange).with(:a, options)
+      config.exchange(:a)
+
+      @client.expects(:register_queue).with(:q, options.merge(:exchange => :foo))
+      config.queue(:q, :exchange => :foo)
+
+      @client.expects(:register_binding).with(:b, options.merge(:key => :baz))
+      config.binding(:b, :key => :baz)
+
+      @client.expects(:register_message).with(:m, options.merge(:exchange => :foo))
+      config.message(:m, :exchange => :foo)
+
+      @client.expects(:register_handler).with(:h, options.merge(:queue => :q))
+      config.handler(:h, :queue => :q)
+
+      assert_raises(NoMethodError){ config.moo }
+    end
   end
 
   class ClientTest < Test::Unit::TestCase
