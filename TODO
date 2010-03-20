@@ -2,7 +2,7 @@
 - example scripts
 - let handlers decide dynamically how long to wait for a retry
 - review log levels in all logger statements
-- RPC support
+- RPC test coverage
 - optimize redis accesses:
-    - for non redundant messages with attempts => 1 we never need to store anything in redis (should make RPC faster)
     - combine multiple redis accesses into one
+- ack redundant messages with attempts limit 1 immediately?
