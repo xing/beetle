@@ -133,6 +133,11 @@ module Beetle
       @flags & FLAG_REDUNDANT == FLAG_REDUNDANT
     end
 
+    # whether this is a message we can process without accessing redis
+    def simple?
+      !redundant? && attempts_limit == 1
+    end
+
     # store handler timeout timestimp into Redis
     def set_timeout!
       redis.set(key(:timeout), now + timeout)
@@ -290,6 +295,9 @@ module Beetle
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
+      elsif simple?
+        ack!
+        run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
       elsif !key_exists?
         set_timeout!
         run_handler!(handler)
@@ -319,34 +327,45 @@ module Beetle
       end
     end
 
+    def run_handler(handler)
+      Timeout::timeout(@timeout) { @handler_result = handler.call(self) }
+      RC::OK
+    rescue Exception => @exception
+      Beetle::reraise_expectation_errors!
+      logger.debug "Beetle: message handler crashed on #{msg_id}"
+      RC::HandlerCrash
+    ensure
+      ActiveRecord::Base.clear_active_connections! if defined?(ActiveRecord)
+    end
+
     def run_handler!(handler)
       increment_execution_attempts!
-      begin
-        Timeout::timeout(@timeout) { @handler_result = handler.call(self) }
-      rescue Exception => @exception
-        Beetle::reraise_expectation_errors!
-        increment_exception_count!
-        if attempts_limit_reached?
-          ack!
-          logger.debug "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
-          return RC::AttemptsLimitReached
-        elsif exceptions_limit_reached?
-          ack!
-          logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
-          return RC::ExceptionsLimitReached
-        else
-          delete_mutex!
-          timed_out!
-          set_delay!
-          logger.debug "Beetle: message handler crashed on #{msg_id}"
-          return RC::HandlerCrash
-        end
-      ensure
-        ActiveRecord::Base.clear_active_connections! if defined?(ActiveRecord)
+      case result = run_handler(handler)
+      when RC::OK
+        completed!
+        ack!
+        result
+      else
+        handler_failed!(result)
       end
-      completed!
-      ack!
-      RC::OK
+    end
+
+    def handler_failed!(result)
+      increment_exception_count!
+      if attempts_limit_reached?
+        ack!
+        logger.debug "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        RC::AttemptsLimitReached
+      elsif exceptions_limit_reached?
+        ack!
+        logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        RC::ExceptionsLimitReached
+      else
+        delete_mutex!
+        timed_out!
+        set_delay!
+        result
+      end
     end
 
     def redis
@@ -367,6 +386,7 @@ module Beetle
     def ack! #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
+      return if simple?
       if !redundant? || redis.incr(key(:ack_count)) == 2
         redis.del(keys)
       end

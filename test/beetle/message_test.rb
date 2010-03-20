@@ -169,7 +169,7 @@ module Beetle
     end
 
     test "an expired message should be acked without calling the handler" do
-      header = header_with_params({:ttl => -1})
+      header = header_with_params(:ttl => -1)
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo')
       assert message.expired?
@@ -180,9 +180,9 @@ module Beetle
     end
 
     test "a delayed message should not be acked and the handler should not be called" do
-      header = header_with_params({})
+      header = header_with_params()
       header.expects(:ack).never
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
       message.set_delay!
       assert !message.key_exists?
       assert message.delayed?
@@ -243,7 +243,7 @@ module Beetle
 
     test "processing a fresh message sucessfully should first run the handler and then ack it" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
       assert !message.attempts_limit_reached?
 
       proc = mock("proc")
@@ -266,6 +266,39 @@ module Beetle
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.__send__(:process_internal, proc)
       assert_equal "1", @r.get(message.key :ack_count)
+    end
+
+  end
+
+  class SimpleMessageTest < Test::Unit::TestCase
+    def setup
+      Message.expects(:redis).never
+      Message.any_instance.expects(:redis).never
+    end
+
+    test "when processing a simple message, ack should precede calling the handler" do
+      header = header_with_params({})
+      message = Message.new("somequeue", header, 'foo', :attempts => 1)
+
+      proc = mock("proc")
+      s = sequence("s")
+      header.expects(:ack).in_sequence(s)
+      proc.expects(:call).in_sequence(s)
+      assert_equal RC::OK, message.process(proc)
+    end
+
+    test "when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
+      header = header_with_params({})
+      message = Message.new("somequeue", header, 'foo', :attempts => 1)
+
+      proc = mock("proc")
+      s = sequence("s")
+      header.expects(:ack).in_sequence(s)
+      e = Exception.new("ohoh")
+      proc.expects(:call).in_sequence(s).raises(e)
+      proc.expects(:process_exception).with(e).in_sequence(s)
+      proc.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
+      assert_equal RC::AttemptsLimitReached, message.process(proc)
     end
 
   end
@@ -317,6 +350,7 @@ module Beetle
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
+      assert !message.simple?
 
       proc = lambda {|*args| raise "crash"}
       s = sequence("s")
@@ -327,7 +361,8 @@ module Beetle
 
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 1)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2)
+      message.increment_execution_attempts!
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -349,7 +384,7 @@ module Beetle
 
     test "a completed existing message should be just acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
       assert !message.key_exists?
       message.completed!
       assert message.completed?
@@ -363,7 +398,7 @@ module Beetle
 
     test "an incomplete, delayed existing message should be processed later" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :delay => 10.seconds)
+      message = Message.new("somequeue", header, 'foo', :delay => 10.seconds, :attempts => 2)
       assert !message.key_exists?
       assert !message.completed?
       message.set_delay!
@@ -380,7 +415,7 @@ module Beetle
 
     test "an incomplete, undelayed, not yet timed out, existing message should be processed later" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2)
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -399,7 +434,8 @@ module Beetle
 
     test "an incomplete, undelayed, not yet timed out, existing message which has reached the handler execution attempts limit should be acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -418,7 +454,8 @@ module Beetle
 
     test "an incomplete, undelayed, timed out, existing message which has reached the exceptions limit should be acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -507,10 +544,11 @@ module Beetle
       assert !result.failure?
     end
 
-    test "processing a message with a crashing processor and attempts limit 1 calls the processors exception handler and the failure handler" do
+    test "processing a message with a crashing processor calls the processors exception handler and failure handler if the attempts limit has been reached" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message.increment_execution_attempts!
       errback = mock("errback")
       failback = mock("failback")
       exception = Exception.new
@@ -524,7 +562,7 @@ module Beetle
       assert result.failure?
     end
 
-    test "processing a message with a crashing processor and exceptions limit 1 calls the processors exception handler and the failure handler" do
+    test "processing a message with a crashing processor calls the processors exception handler and failure handler if the exceptions limit has been reached" do
       header = header_with_params({})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :attempts => 2)
@@ -547,11 +585,11 @@ module Beetle
     test "a handler running longer than the specified timeout should be aborted" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo', :timeout => 0.1)
+      message = Message.new("somequeue", header, 'foo', :timeout => 0.1, :attempts => 2)
       action = lambda{|*args| while true; end}
       handler = Handler.create(action)
       result = message.process(handler)
-      assert_equal RC::AttemptsLimitReached, result
+      assert_equal RC::ExceptionsLimitReached, result
     end
   end
 
