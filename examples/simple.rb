@@ -2,25 +2,35 @@
 require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
+redundant = ARGV.include?('--redundant')
+
 # suppress debug messages
 Beetle.config.logger.level = Logger::INFO
 
 # instantiate a client
-client = Beetle::Client.new
+client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
 client.register_queue(:test)
-client.register_message(:test)
+client.purge(:test)
+client.register_message(:test, :redundant => redundant)
 
 # publish some test messages
 # at this point, the exchange will be created on the server and the queue will be bound to the exchange
+N = 3
 n = 0
-n += client.publish(:test, "Hello1")
-n += client.publish(:test, "Hello2")
-n += client.publish(:test, "Hello3")
+N.times do |i|
+  n += client.publish(:test, "Hello#{i+1}")
+end
 puts "published #{n} test messages"
 puts
+
+expected_publish_count = redundant ? 2*N : N
+if n != expected_publish_count
+  puts "could not publish all messages"
+  exit 1
+end
 
 # register a handler for the test message, listing on queue "test" with routing key "test"
 k = 0
@@ -41,4 +51,4 @@ client.listen do
 end
 
 puts "Received #{k} test messages"
-raise "Your setup is borked" if n != k
+raise "Your setup is borked" if N != k
