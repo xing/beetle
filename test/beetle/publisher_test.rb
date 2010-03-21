@@ -152,7 +152,7 @@ module Beetle
 
     test "publishing should use the message ttl passed in the options hash to encode the message body" do
       opts = {:ttl => 1.day}
-      Message.expects(:publishing_options).with(:ttl => 1.day)
+      Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
       @pub.expects(:select_next_server)
       e = mock("exchange")
       @pub.expects(:exchange).returns(e)
@@ -162,7 +162,7 @@ module Beetle
 
     test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
       opts = {:ttl => 1.day}
-      Message.expects(:publishing_options).with(:ttl => 1.day)
+      Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
       @pub.expects(:select_next_server)
       e = mock("exchange")
       @pub.expects(:exchange).returns(e)
