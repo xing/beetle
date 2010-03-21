@@ -36,6 +36,24 @@ namespace :beetle do
   end
 end
 
+namespace :rabbit do
+  def start(node_name, port)
+    script = File.expand_path(File.dirname(__FILE__)+"/script/start_rabbit")
+    puts "starting rabbit #{node_name} on port #{port}"
+    puts "type ^C a RETURN to abort"
+    sleep 1
+    exec "sudo #{script} #{node_name} #{port}"
+  end
+  desc "start rabbit instance 1"
+  task :start1 do
+    start "rabbit1", 5672
+  end
+  desc "start rabbit instance 2"
+  task :start2 do
+    start "rabbit2", 5673
+  end
+end
+
 task :default do
   Rake::Task[:test].invoke
 end

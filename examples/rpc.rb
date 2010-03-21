@@ -6,7 +6,7 @@ require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 Beetle.config.logger.level = Logger::INFO
 
 # instantiate a client
-client = Beetle::Client.new
+client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
