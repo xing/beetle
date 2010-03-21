@@ -28,7 +28,7 @@ module Beetle
       begin
         select_next_server
         bind_queues_for_exchange(exchange_name)
-        logger.debug "Beetle: trying to send #{message_name} to #{@server}"
+        logger.debug "Beetle: trying to send message #{message_name}:#{opts[:message_id]} to #{@server}"
         exchange(exchange_name).publish(data, opts)
         logger.debug "Beetle: message sent!"
         published = 1
@@ -55,7 +55,7 @@ module Beetle
           select_next_server
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
-          logger.debug "Beetle: trying to send #{message_name} to #{@server}"
+          logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
           exchange(exchange_name).publish(data, opts)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
@@ -81,7 +81,7 @@ module Beetle
       opts.delete(:queue)
       recycle_dead_servers unless @dead_servers.empty?
       tries = @servers.size
-      logger.debug "Beetle: rpc #{message_name}"
+      logger.debug "Beetle: performing rpc with message #{message_name}"
       result = nil
       status = "TIMEOUT"
       begin
@@ -90,9 +90,10 @@ module Beetle
         # create non durable, autodeleted temporary queue with a server assigned name
         queue = bunny.queue
         opts = Message.publishing_options(opts.merge :reply_to => queue.name)
-        logger.debug "Beetle: trying to send #{message_name} to #{@server}"
+        logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
         exchange(exchange_name).publish(data, opts)
         logger.debug "Beetle: message sent!"
+        logger.debug "Beetle: listening on reply queue #{queue.name}"
         queue.subscribe(:message_max => 1, :timeout => opts[:timeout] || RPC_DEFAULT_TIMEOUT) do |msg|
           logger.debug "Beetle: received reply!"
           result = msg[:payload]
