@@ -85,7 +85,7 @@ module Beetle
       queue_opts = @client.queues[queue_name][:amqp_name]
       amqp_queue_name = queue_opts
       callback = create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
-      logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key #"
+      logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # on server #{@server}"
       begin
         queues[queue_name].subscribe(opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true), &callback)
       rescue MQ::Error
