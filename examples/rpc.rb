@@ -3,7 +3,7 @@ require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
 # suppress debug messages
-Beetle.config.logger.level = Logger::INFO
+Beetle.config.logger.level = Logger::DEBUG
 
 # instantiate a client
 client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
