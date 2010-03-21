@@ -54,6 +54,20 @@ namespace :rabbit do
   end
 end
 
+namespace :redis do
+  def config_file(suffix)
+    File.expand_path(File.dirname(__FILE__)+"/etc/redis-#{suffix}.conf")
+  end
+  desc "start main redis"
+  task :start1 do
+    exec "redis-server #{config_file(:master)}"
+  end
+  desc "start slave redis"
+  task :start2 do
+    exec "redis-server #{config_file(:slave)}"
+  end
+end
+
 task :default do
   Rake::Task[:test].invoke
 end
