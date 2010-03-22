@@ -35,6 +35,7 @@ module Beetle
 
   # returns the configuration object and yields it if a block is given
   def self.config
+     #:yields: config
     @config ||= Configuration.new
     block_given? ? yield(@config) : @config
   end

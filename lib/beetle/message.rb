@@ -138,7 +138,7 @@ module Beetle
       !redundant? && attempts_limit == 1
     end
 
-    # store handler timeout timestimp into Redis
+    # store handler timeout timestamp into Redis
     def set_timeout!
       redis.set(key(:timeout), now + timeout)
     end
@@ -383,7 +383,8 @@ module Beetle
     # ack the message for rabbit. delete all keys if we are sure this is the last message
     # with the given message id. if deleting the keys fails (network problem for example),
     # the keys will be deleted by the class method garbage_collect_keys.
-    def ack! #:doc:
+    def ack!
+      #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       return if simple?

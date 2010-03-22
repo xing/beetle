@@ -65,8 +65,8 @@ module Beetle
     #   the binding key (defaults to the name of the queue)
     # automatically registers the specified exchange if it hasn't been registered yet
 
-    def register_binding(name, options={})
-      name = name.to_s
+    def register_binding(queue_name, options={})
+      name = queue_name.to_s
       opts = options.symbolize_keys
       exchange = (opts[:exchange] || name).to_s
       key = (opts[:key] || name).to_s
@@ -85,8 +85,8 @@ module Beetle
     # [<tt>:redundant</tt>]
     #   specifies whether the message should be published redundantly (defaults to false)
 
-    def register_message(name, options={})
-      name = name.to_s
+    def register_message(message_name, options={})
+      name = message_name.to_s
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :persistent => true
@@ -98,14 +98,14 @@ module Beetle
     # previously). The handler will be invoked when any messages arrive on the queue.
     #
     # Examples:
-    #   register_handler(["foo", "bar"], :timeout => 10.seconds) { |message| puts "received #{message}" }
+    #   register_handler([:foo, :bar], :timeout => 10.seconds) { |message| puts "received #{message}" }
     #
     #   on_error   = lambda{ puts "something went wrong with baz" }
     #   on_failure = lambda{ puts "baz has finally failed" }
     #
-    #   register_handler("baz", :exceptions => 1, :errback => on_error, :failback => on_failure) { puts "received baz" }
+    #   register_handler(:baz, :exceptions => 1, :errback => on_error, :failback => on_failure) { puts "received baz" }
     #
-    #   register_handler("bar", BarHandler)
+    #   register_handler(:bar, BarHandler)
     #
     # For details on handler classes see class Beetle::Handler
     #
@@ -119,7 +119,7 @@ module Beetle
     end
 
     private
-    class Configurator
+    class Configurator #:nodoc:all
       def initialize(client, options={})
         @client = client
         @options = options
@@ -132,7 +132,7 @@ module Beetle
     end
 
     public
-    # configure exchanges, queues, messages, handlers with a common set of options.
+    # configures exchanges, queues, messages and handlers with a common set of options.
     # allows one to call all register methods without the register_ prefix.
     #
     # Example:
@@ -148,7 +148,7 @@ module Beetle
       yield Configurator.new(self, options)
     end
 
-    # publish a message. the given options hash is merged with options given on message registration.
+    # publishes a message. the given options hash is merged with options given on message registration.
     def publish(message_name, data=nil, opts={})
       message_name = message_name.to_s
       raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
