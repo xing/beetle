@@ -324,4 +324,79 @@ module Beetle
       @pub.stop
     end
   end
+
+
+  class RPCTest < Test::Unit::TestCase
+    def setup
+      @client = Client.new
+      @pub = Publisher.new(@client)
+      @client.register_message(:test, :exchange => :some_exchange)
+    end
+
+    test "rpc should return a timeout status if bunny throws an exception" do
+      bunny = mock("bunny")
+      @pub.expects(:bunny).returns(bunny)
+      bunny.expects(:queue).raises(Bunny::ConnectionError.new)
+      s = sequence("rpc")
+      @pub.expects(:select_next_server).in_sequence(s)
+      @pub.expects(:bind_queues_for_exchange).with("some_exchange").in_sequence(s)
+      @pub.expects(:stop!)
+      assert_equal "TIMEOUT", @pub.rpc("test", "hello").first
+    end
+
+    test "rpc should return a timeout status if the answer doesn't arrive in time" do
+      bunny = mock("bunny")
+      reply_queue = mock("reply_queue")
+      exchange = mock("exchange")
+      @pub.expects(:bunny).returns(bunny)
+      bunny.expects(:queue).returns(reply_queue)
+      reply_queue.stubs(:name).returns("reply_queue")
+      s = sequence("rpc")
+      @pub.expects(:select_next_server).in_sequence(s)
+      @pub.expects(:bind_queues_for_exchange).with("some_exchange").in_sequence(s)
+      @pub.expects(:exchange).with("some_exchange").returns(exchange).in_sequence(s)
+      exchange.expects(:publish).in_sequence(s)
+      reply_queue.expects(:subscribe).with(:message_max => 1, :timeout => 10).in_sequence(s)
+      assert_equal "TIMEOUT", @pub.rpc("test", "hello").first
+    end
+
+    test "rpc should recover dead servers before selecting the next server" do
+      @pub.servers << "localhost:3333"
+      @pub.send(:mark_server_dead)
+      bunny = mock("bunny")
+      reply_queue = mock("reply_queue")
+      exchange = mock("exchange")
+      @pub.expects(:bunny).returns(bunny)
+      bunny.expects(:queue).returns(reply_queue)
+      reply_queue.stubs(:name).returns("reply_queue")
+      s = sequence("rpc")
+      @pub.expects(:recycle_dead_servers).in_sequence(s)
+      @pub.expects(:select_next_server).in_sequence(s)
+      @pub.expects(:bind_queues_for_exchange).with("some_exchange").in_sequence(s)
+      @pub.expects(:exchange).with("some_exchange").returns(exchange).in_sequence(s)
+      exchange.expects(:publish).in_sequence(s)
+      reply_queue.expects(:subscribe).with(:message_max => 1, :timeout => 10).in_sequence(s)
+      assert_equal "TIMEOUT", @pub.rpc("test", "hello").first
+    end
+
+    test "rpc should fetch the result and the status code from the reply message" do
+      bunny = mock("bunny")
+      reply_queue = mock("reply_queue")
+      exchange = mock("exchange")
+      @pub.expects(:bunny).returns(bunny)
+      bunny.expects(:queue).returns(reply_queue)
+      reply_queue.stubs(:name).returns("reply_queue")
+      s = sequence("rpc")
+      @pub.expects(:select_next_server).in_sequence(s)
+      @pub.expects(:bind_queues_for_exchange).with("some_exchange").in_sequence(s)
+      @pub.expects(:exchange).with("some_exchange").returns(exchange).in_sequence(s)
+      exchange.expects(:publish).in_sequence(s)
+      header = mock("header")
+      header.expects(:properties).returns({:headers => {:status => "OK"}})
+      msg = {:payload => 1, :header => header}
+      reply_queue.expects(:subscribe).with(:message_max => 1, :timeout => 10).in_sequence(s).yields(msg)
+      assert_equal ["OK",1], @pub.rpc("test", "hello")
+    end
+
+  end
 end

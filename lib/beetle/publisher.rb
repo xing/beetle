@@ -111,9 +111,7 @@ module Beetle
     end
 
     def purge(queue_name) #:nodoc:
-      each_server do
-        queue(queue_name).purge
-      end
+      each_server { queue(queue_name).purge }
     end
 
     def stop #:nodoc:
