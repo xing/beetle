@@ -745,6 +745,85 @@ module Beetle
     end
   end
 
+  class RedisFailoverTest < Test::Unit::TestCase
+    def setup
+      Message.instance_variable_set "@redis_instances", nil
+      Message.redis = nil
+      Beetle.config.redis_hosts = "localhost:1, localhost:2"
+    end
+
+    def teardown
+      Message.instance_variable_set "@redis_instances", nil
+      Message.redis = nil
+      Beetle.config.redis_hosts = "localhost:6379"
+    end
+
+    test "redis instances should be created for all servers" do
+      instances = Message.redis_instances
+      assert_equal ["localhost:1", "localhost:2" ], instances.map(&:server)
+    end
+
+    test "searching a redis master should find one if there is one" do
+      instances = Message.redis_instances
+      instances.first.expects(:info).returns(:role => "slave")
+      instances.second.expects(:info).returns(:role => "master")
+      assert_equal instances.second, Message.redis
+    end
+
+    test "searching a redis master should find one even if one cannot be accessed" do
+      instances = Message.redis_instances
+      instances.first.expects(:info).raises("murks")
+      instances.second.expects(:info).returns(:role => "master")
+      assert_equal instances.second, Message.redis
+    end
+
+    test "searching a redis master should raise an exception if there is none" do
+      instances = Message.redis_instances
+      instances.first.expects(:info).returns(:role => "slave")
+      instances.second.expects(:info).returns(:role => "slave")
+      assert_raises(NoRedisMaster) { Message.find_redis_master }
+    end
+
+    test "searching a redis master should raise an exception if there is more than one" do
+      instances = Message.redis_instances
+      instances.first.expects(:info).returns(:role => "master")
+      instances.second.expects(:info).returns(:role => "master")
+      assert_raises(TwoRedisMasters) { Message.find_redis_master }
+    end
+
+    test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
+      instances = Message.redis_instances
+      s = sequence("redis accesses")
+      instances.first.expects(:info).returns(:role => "master").in_sequence(s)
+      instances.second.expects(:info).returns(:role => "slave").in_sequence(s)
+      assert_equal instances.first, Message.redis
+      instances.first.expects(:get).with("x").raises("disconnected").in_sequence(s)
+      instances.first.expects(:info).raises("disconnected").in_sequence(s)
+      instances.second.expects(:info).returns(:role => "master").in_sequence(s)
+      instances.second.expects(:get).with("x").returns("42").in_sequence(s)
+      Message.any_instance.stubs(:setup)
+      Message.any_instance.stubs(:decode)
+      message = Message.new("queue", "header", "body")
+      message.expects(:sleep).once
+      assert_equal("42", message.with_redis_failover { Message.redis.get("x") })
+    end
+
+    test "a redis operation protected with a redis failover block should fail if it cannot find a new master" do
+      instances = Message.redis_instances
+      instances.first.expects(:info).returns(:role => "master")
+      instances.second.expects(:info).returns(:role => "slave")
+      assert_equal instances.first, Message.redis
+      instances.first.stubs(:get).with("x").raises("disconnected")
+      instances.first.stubs(:info).raises("disconnected")
+      instances.second.stubs(:info).returns(:role => "slave")
+      Message.any_instance.stubs(:setup)
+      Message.any_instance.stubs(:decode)
+      message = Message.new("queue", "header", "body")
+      message.stubs(:sleep).times(119)
+      assert_raises(NoRedisMaster) { message.with_redis_failover { Message.redis.get("x") } }
+    end
+  end
+
   class RedisAssumptionsTest < Test::Unit::TestCase
     def setup
       @r = Message.redis
@@ -756,7 +835,7 @@ module Beetle
       assert !@r.exists("hahahaha")
     end
 
-    test "msetnx returns an 0 or 1" do
+    test "msetnx returns 0 or 1" do
       assert_equal 1, @r.msetnx("a" => 1, "b" => 2)
       assert_equal "1", @r.get("a")
       assert_equal "2", @r.get("b")

@@ -248,22 +248,13 @@ module Beetle
         begin
           masters << redis if redis.info[:role] == "master"
         rescue Exception => e
-          logger.error "Beetle: could not determine status of instance #{redis.server}"
+          logger.error "Beetle: could not determine status of redis instance #{redis.server}"
         end
       end
-      raise "unable to determine a new master redis instance" if masters.empty?
-      raise "more than one master" if masters.size > 1
-      logger.debug "Beetle: configured new redis master #{masters.first.server}"
+      raise NoRedisMaster.new("unable to determine a new master redis instance") if masters.empty?
+      raise TwoRedisMasters.new("more than one redis master instances") if masters.size > 1
+      logger.info "Beetle: configured new redis master #{masters.first.server}"
       masters.first
-    end
-
-    def self.switch_redis
-      slave = redis_instances.find{|r| r.server != redis.server}
-      redis.shutdown rescue nil
-      logger.info "Beetle: shut down master #{redis.server}"
-      self.redis = nil
-      slave.slaveof("no one")
-      logger.info "Beetle: enabled master mode on #{slave.server}"
     end
 
     def self.redis_instances
@@ -277,12 +268,15 @@ module Beetle
       begin
         yield
       rescue Exception => e
+        Beetle::reraise_expectation_errors!
         logger.error "Beetle: redis connection error '#{e}'"
         if (tries+=1) < 120
           self.class.redis = nil
           sleep 1
           logger.info "Beetle: retrying redis operation"
           retry
+        else
+          raise NoRedisMaster.new(e.to_s)
         end
       end
     end
