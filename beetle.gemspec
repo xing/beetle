@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.16"
+  s.version = "0.0.17"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-03-15}
+  s.date = %q{2010-03-25}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -24,6 +24,8 @@ Gem::Specification.new do |s|
      "TODO",
      "beetle.gemspec",
      "doc/redundant_queues.graffle",
+     "etc/redis-master.conf",
+     "etc/redis-slave.conf",
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
@@ -40,8 +42,7 @@ Gem::Specification.new do |s|
      "lib/beetle/publisher.rb",
      "lib/beetle/r_c.rb",
      "lib/beetle/subscriber.rb",
-     "script/start_rabbits",
-     "script/test_publishing",
+     "script/start_rabbit",
      "snafu.rb",
      "test/beetle.yml",
      "test/beetle/base_test.rb",
@@ -54,11 +55,12 @@ Gem::Specification.new do |s|
      "test/beetle/r_c_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
-     "test/test_helper.rb"
+     "test/test_helper.rb",
+     "tmp/.gitignore"
   ]
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.5}
   s.summary = %q{High Availability AMQP Messaging with Redundant Queues}
   s.test_files = [
     "test/beetle/base_test.rb",
