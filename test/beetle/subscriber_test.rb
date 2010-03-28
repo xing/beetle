@@ -25,7 +25,11 @@ module Beetle
 
     test "new amqp connections should be created using current host and port" do
       m = mock("dummy")
-      AMQP.expects(:connect).with(:host => @sub.send(:current_host), :port => @sub.send(:current_port)).returns(m)
+      expected_amqp_options = {
+        :host => @sub.send(:current_host), :port => @sub.send(:current_port),
+        :user => "guest", :pass => "guest", :vhost => "/"
+      }
+      AMQP.expects(:connect).with(expected_amqp_options).returns(m)
       # TODO: smarter way to test? what triggers the amqp_connection private method call?
       assert_equal m, @sub.send(:new_amqp_connection)
     end
