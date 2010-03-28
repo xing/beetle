@@ -6,7 +6,7 @@ module Beetle
   # the message handler after a handler has crashed. This is where the beef is.
   class Message
     # current message format version
-    FORMAT_VERSION = 2
+    FORMAT_VERSION = 1
     # flag for encoding redundant messages
     FLAG_REDUNDANT = 1
     # default lifetime of messages
@@ -27,8 +27,6 @@ module Beetle
     attr_reader :queue
     # the AMQP header received with the message
     attr_reader :header
-    # the encoded message boday
-    attr_reader :body
     # the uuid of the message
     attr_reader :uuid
     # message payload
@@ -55,7 +53,7 @@ module Beetle
     def initialize(queue, header, body, opts = {})
       @queue  = queue
       @header = header
-      @body   = body
+      @data   = body
       setup(opts)
       decode
     end
@@ -70,18 +68,17 @@ module Beetle
     end
 
     # extracts various values form the AMQP header properties
-    def decode
+    def decode #:nodoc:
       amqp_headers = header.properties
-      if h = amqp_headers[:headers]
-        @format_version, @flags, @expires_at = h.values_at(:format_version, :flags, :expires_at).map {|v| v.to_i}
-        @uuid = amqp_headers[:message_id]
-        @data = @body
-      else
-        @format_version, @flags, @expires_at, @uuid, @data = @body.unpack("nnNA36A*")
-      end
+      @uuid = amqp_headers[:message_id]
+      headers = amqp_headers[:headers]
+      @format_version = headers[:format_version].to_i
+      @flags = headers[:flags].to_i
+      @expires_at = headers[:expires_at].to_i
     end
 
-    def self.publishing_options(opts = {})
+    # build hash with options for the publisher
+    def self.publishing_options(opts = {}) #:nodoc:
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
       expires_at = now + (opts[:ttl] || DEFAULT_TTL)
@@ -93,14 +90,6 @@ module Beetle
         :expires_at => expires_at.to_s
       }
       opts
-    end
-
-    # TODO: remove after next release
-    def self.encode_v1(data, opts = {}) #:nodoc:
-      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
-      flags = 0
-      flags |= FLAG_REDUNDANT if opts[:redundant]
-      [1, flags, expires_at, generate_uuid.to_s, data.to_s].pack("nnNA36A*")
     end
 
     # unique message id. used to form various Redis keys.
@@ -438,7 +427,7 @@ module Beetle
       #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
-      return if simple?
+      return if simple? # simple messages don't use redis
       with_redis_failover do
         if !redundant? || redis.incr(key(:ack_count)) == 2
           redis.del(keys)
