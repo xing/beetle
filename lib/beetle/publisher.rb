@@ -125,7 +125,8 @@ module Beetle
     end
 
     def new_bunny
-      b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging])
+      b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging],
+                    :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost)
       b.start
       b
     end

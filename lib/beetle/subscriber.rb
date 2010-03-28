@@ -133,7 +133,8 @@ module Beetle
 
     def new_amqp_connection
       # FIXME: wtf, how to test that reconnection feature....
-      con = AMQP.connect(:host => current_host, :port => current_port)
+      con = AMQP.connect(:host => current_host, :port => current_port,
+                         :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost)
       con.instance_variable_set("@on_disconnect", proc{ con.__send__(:reconnect) })
       con
     end
