@@ -808,7 +808,7 @@ module Beetle
       Message.any_instance.stubs(:setup)
       Message.any_instance.stubs(:decode)
       message = Message.new("queue", "header", "body")
-      message.stubs(:sleep).times(119)
+      message.expects(:sleep).times(119)
       assert_raises(NoRedisMaster) { message.with_redis_failover { Message.redis.get("x") } }
     end
   end
