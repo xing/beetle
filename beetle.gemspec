@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.17"
+  s.version = "0.0.18"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-03-25}
+  s.date = %q{2010-03-29}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -31,6 +31,7 @@ Gem::Specification.new do |s|
      "examples/handling_exceptions.rb",
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
+     "examples/redis_failover.rb",
      "examples/rpc.rb",
      "examples/simple.rb",
      "lib/beetle.rb",
@@ -79,6 +80,7 @@ Gem::Specification.new do |s|
      "examples/handling_exceptions.rb",
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
+     "examples/redis_failover.rb",
      "examples/rpc.rb",
      "examples/simple.rb"
   ]
