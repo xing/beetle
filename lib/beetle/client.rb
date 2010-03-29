@@ -201,7 +201,7 @@ module Beetle
         puts "MSGID: #{msg.msg_id}"
         puts "DATA: #{msg.data}"
       end
-      subscriber.listen &block
+      subscriber.listen(messages.keys, &block)
     end
 
     # evaluate the ruby files matching the given +glob+ pattern in the context of the client instance.
