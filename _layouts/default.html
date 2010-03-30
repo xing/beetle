@@ -1,0 +1,31 @@
+---
+nav:
+  - name: What
+    link: "#"
+  - name: The
+    link: "#"
+  - name: Frek
+    link: "#"
+---
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" type="text/css" href="css/syntax.css">
+    <link rel="stylesheet" type="text/css" href="css/base.css">
+  </head>
+  <body>
+    <div id="marginal">
+      {% if page.nav %}
+      <ul id="navigation">
+        {% for nav in page.nav %}
+        <li><a href="{{ nav['link'] }}">{{ nav['name'] }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <div id="content">
+      {{ content }}
+    </div>
+  </body>
+</html>
