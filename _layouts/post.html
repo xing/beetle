@@ -4,7 +4,7 @@
   <head>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width = 750">
-    <link rel="stylesheet" type="text/css" href="css/stylesheet.css" charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="../../../css/stylesheet.css" charset="utf-8">
     <title>{{ page.title }}</title>
   </head>
   <body id="intro">
@@ -28,11 +28,35 @@
       <div id="page_body">
         <div id="content">
           {{ content }}
+                    
+          <script type="text/javascript">var disqus_url = "http://.github.com/beetle/{{ post.url }}"; var disqus_title ="{{ post.title }}";</script>
+          <div id="disqus_thread"></div><script type="text/javascript" src="http://disqus.com/forums/beetle/embed.js"></script>
+          <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+          <script type="text/javascript">
+          //<![CDATA[
+          (function() {
+          		var links = document.getElementsByTagName('a');
+          		var query = '?';
+          		for(var i = 0; i < links.length; i++) {
+          			if(links[i].href.indexOf('#disqus_thread') >= 0) {
+          				query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+          			}
+          		}
+          		document.write('<script type="text/javascript" src="http://disqus.com/forums/beetle/get_num_replies.js' + query + '"></' + 'script>');
+          	})();
+          //]]>
+          </script>
+          
         </div>
         <div id="sidebar">
           <div class="item">
+            <!-- Download    -->
+            <h4>Install Bundle</h4>
+            <p>Coming soon</p>
+          </div>
+          <div class="item">
             <!-- Tickets   -->
-            <h4><a href="http://.lighthouseapp.com/projects/TODO/tickets">Tickets</a></h4>
+            <h4><a href="http://.lighthouseapp.com/projects/TODO/tickets" id="tickets" name="tickets">Tickets</a></h4>
             <p>
               Found a bug?<br />
               Request a feature?
@@ -40,10 +64,11 @@
           </div>
           <div class="item">
             <!-- Blog   -->
-            <h4><a href="atom.xml" id="rss_feed" name="rss_feed">Blog Posts</a></h4>
+            <a href="../../../atom.xml" id="rss_feed" name="rss_feed">Blog Posts</a>
+            <h4>Blog Posts</h4>
             <p>
               {% for post in site.posts %} 
-                <span>{{ post.date | date_to_string }}</span> » <a href="/beetle{{ post.url }}">{{ post.title }}</a><br>
+                <span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}">{{ post.title }}</a><br>
               {% endfor %}
             </p>
           </div>
