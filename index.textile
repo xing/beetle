@@ -1,0 +1,30 @@
+---
+layout: default
+title: Beetle
+---
+
+h1. Contents?!
+
+* Overview
+* Architecture
+** AMQP / RabbitMQ
+*** Messages, routing keys etc.
+*** Queues
+*** Exchanges
+*** Bindings
+* Redis
+* Message publishing
+** Message Types
+* Message processing
+** Exception handling
+** ...
+
+asdfasdf
+asdfasdfasdfasfd
+
+{% highlight ruby linenos%}
+  def rubycode
+    @with = "linenumbers"
+    puts @with
+  end
+{% endhighlight %}

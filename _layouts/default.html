@@ -1,8 +1,8 @@
 ---
 nav:
-  - name: What
+  - name: Index
     link: "#"
-  - name: The
+  - name: Bla
     link: "#"
   - name: Frek
     link: "#"
@@ -15,17 +15,19 @@ nav:
     <link rel="stylesheet" type="text/css" href="css/base.css">
   </head>
   <body>
-    <div id="marginal">
-      {% if page.nav %}
-      <ul id="navigation">
-        {% for nav in page.nav %}
-        <li><a href="{{ nav['link'] }}">{{ nav['name'] }}</a></li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-    <div id="content">
-      {{ content }}
+    <div id="container">
+      <div id="header">
+        {% if page.nav %}
+        <ul id="navigation">
+          {% for nav in page.nav %}
+          <li><a href="{{ nav['link'] }}">{{ nav['name'] }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <div id="content">
+        {{ content }}
+      </div>
     </div>
   </body>
 </html>
