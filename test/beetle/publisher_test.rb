@@ -207,9 +207,10 @@ module Beetle
     test "should bind the defined queues for the used exchanges when publishing" do
       @client.register_queue('test_queue_1', :exchange => 'test_exchange')
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
-      @pub.expects(:queue).with('test_queue_1')
-      @pub.expects(:queue).with('test_queue_2')
+      @client.register_queue('test_queue_3', :exchange => 'test_exchange_2')
+      @pub.expects(:bind_queue!).returns(1).times(3)
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
+      @pub.send(:bind_queues_for_exchange, 'test_exchange_2')
     end
 
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do

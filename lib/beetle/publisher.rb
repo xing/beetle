@@ -4,6 +4,7 @@ module Beetle
 
     def initialize(client, options = {}) #:nodoc:
       super
+      @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
     end
@@ -157,7 +158,9 @@ module Beetle
     end
 
     def bind_queues_for_exchange(exchange_name)
-      @client.exchanges[exchange_name][:queues].each {|q| queue(q) } if queues.empty?
+      return if @exchanges_with_bound_queues.include?(exchange_name)
+      @client.exchanges[exchange_name][:queues].each {|q| queue(q) }
+      @exchanges_with_bound_queues[exchange_name] = true
     end
 
     # TODO: Refactor, fethch the keys and stuff itself
