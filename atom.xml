@@ -3,25 +3,24 @@ layout: nil
 ---
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
- 
- <title>beetle</title>
- <link href="http://.github.com/beetle/atom.xml" rel="self"/>
- <link href="http://.github.com/beetle/"/>
+
+ <title>Beetle</title>
+ <link href="http://xing.github.com/beetle/atom.xml" rel="self"/>
  <updated>{{ site.time | date_to_xmlschema }}</updated>
- <id>http://.github.com/beetle/</id>
+ <id>http://xing.github.com/beetle/</id>
  <author>
-   <name>Dr Nic Williams</name>
-   <email>williams@gmail.com</email>
+   <name>Xing Engineering Dudes</name>
+   <email>engineering@xing.com</email>
  </author>
 
  {% for post in site.posts %}
  <entry>
    <title>{{ post.title }}</title>
-   <link href="http://.github.com/beetle{{ post.url }}"/>
+   <link href="http://xing.github.com/beetle{{ post.url }}"/>
    <updated>{{ post.date | date_to_xmlschema }}</updated>
-   <id>http://.github.com/beetle{{ post.id }}</id>
+   <id>http://xing.github.com/beetle{{ post.id }}</id>
    <content type="html">{{ post.content | xml_escape }}</content>
  </entry>
  {% endfor %}
- 
+
 </feed>

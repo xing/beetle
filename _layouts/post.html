@@ -1,34 +1,14 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
-"http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
-  <head>
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width = 750">
-    <link rel="stylesheet" type="text/css" href="../../../css/stylesheet.css" charset="utf-8">
-    <title>{{ page.title }}</title>
-  </head>
+  {% include head.html %}
   <body id="intro">
     <div id="wrapper">
-      <div id="header" onclick="javascript:window.location='/beetle/'">
-        <h1>beetle</h1>
-      </div>
-      <div id="navigation">
-        <ul>
-          <li id="navi_intro">
-            <a href="/beetle/">Intro</a>
-          </li>
-          <li id="navi_source">
-            <a href="http://github.com//beetle">Source</a>
-          </li>
-          <li id="navi_tickets">
-            <a href="http://.lighthouseapp.com/projects/TODO/tickets">Tickets</a>
-          </li>
-        </ul>
-      </div>
+      {% include navigation.html %}
       <div id="page_body">
         <div id="content">
+          <h2>{{ page.title }}</h2>
+          <p class="auth">Posted <span class="typo_date" title="{{ page.date | date_to_string }}">{{ page.date | date_to_string }}</span></p>
           {{ content }}
-                    
           <script type="text/javascript">var disqus_url = "http://.github.com/beetle/{{ post.url }}"; var disqus_title ="{{ post.title }}";</script>
           <div id="disqus_thread"></div><script type="text/javascript" src="http://disqus.com/forums/beetle/embed.js"></script>
           <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
@@ -46,29 +26,18 @@
           	})();
           //]]>
           </script>
-          
         </div>
         <div id="sidebar">
           <div class="item">
-            <!-- Download    -->
-            <h4>Install Bundle</h4>
-            <p>Coming soon</p>
-          </div>
-          <div class="item">
-            <!-- Tickets   -->
-            <h4><a href="http://.lighthouseapp.com/projects/TODO/tickets" id="tickets" name="tickets">Tickets</a></h4>
-            <p>
-              Found a bug?<br />
-              Request a feature?
-            </p>
+            <h4><a href="http://rubygems.org/gems/beetle">Install beetle from gemcutter</a></h4>
+            <p>gem install beetle</p>
           </div>
           <div class="item">
             <!-- Blog   -->
-            <a href="../../../atom.xml" id="rss_feed" name="rss_feed">Blog Posts</a>
-            <h4>Blog Posts</h4>
+            <h4><a href="/beetle/atom.xml" id="rss_feed" name="rss_feed">Blog Posts</a></h4>
             <p>
-              {% for post in site.posts %} 
-                <span>{{ post.date | date_to_string }}</span> » <a href="{{ post.url }}">{{ post.title }}</a><br>
+              {% for post in site.posts %}
+                <span>{{ post.date | date_to_string }}</span> » <a href="/beetle{{ post.url }}">{{ post.title }}</a><br>
               {% endfor %}
             </p>
           </div>

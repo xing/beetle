@@ -32,9 +32,9 @@ html>body #wrapper {
 #header h1 {
 	position: absolute;
 	left: 60px;
-	top: 40px;
-	width: 380px;
-	height: 50px;
+	top: 0px;
+	width: 600px;
+	height: 100px;
 	cursor: pointer;
 	color: white;
 }

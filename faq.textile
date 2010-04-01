@@ -1,0 +1,4 @@
+---
+layout: default
+title: Beetle - Frequently Askes Questions
+---

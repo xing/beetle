@@ -1,0 +1,6 @@
+---
+layout: post
+title: Welcome
+---
+
+After several months of hard work we proudly present beetle.
