@@ -8,27 +8,7 @@
         <div id="content">
           {{ content }}
         </div>
-        <div id="sidebar">
-          <div class="item">
-            <!-- Tickets   -->
-            <h4><a href="http://github.com/xing/beetle/issues">Tickets</a></h4>
-            <p>
-              Found a bug?<br />
-              Request a feature?
-            </p>
-          </div>
-          <div class="item">
-            <!-- Blog   -->
-            <h4><a href="/beetle/atom.xml" id="rss_feed" name="rss_feed">Blog Posts</a></h4>
-            <p>
-              {% for post in site.posts %}
-                <span>{{ post.date | date_to_string }}</span> » <a href="/beetle{{ post.url }}">{{ post.title }}</a><br>
-              {% endfor %}
-            </p>
-          </div>
-          <div class="item">
-            <script type="text/javascript" src="http://disqus.com/forums/beetle/combination_widget.js?num_items=5&color=orange&default_tab=recent"></script>
-          </div>
+        {% include sidebar.html %}
         </div>
       </div>
       <div id="footer">

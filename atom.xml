@@ -10,7 +10,7 @@ layout: nil
  <id>http://xing.github.com/beetle/</id>
  <author>
    <name>Xing Engineering Dudes</name>
-   <email>engineering@xing.com</email>
+   <email>opensource@lists.xing.com</email>
  </author>
 
  {% for post in site.posts %}
