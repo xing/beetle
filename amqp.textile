@@ -1,6 +1,0 @@
----
-layout: default
-title: Beetle - AMQP Concepts
----
-
-Everything you always wanted to know about AMQP but never dared to ask.
