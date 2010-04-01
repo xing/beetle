@@ -1,4 +1,4 @@
 ---
 layout: default
-title: Beetle - Frequently Askes Questions
+title: Beetle - Frequently Asked Questions
 ---

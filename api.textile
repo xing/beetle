@@ -1,0 +1,6 @@
+---
+layout: default
+title: Beetle - API
+---
+
+Everything you always wanted to know about the Beetle API but never dared to ask.
