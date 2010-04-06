@@ -23,6 +23,7 @@ which needs to handle a much higher load than what we needed for our application
 messaging.
 
 For our new messaging system, we had the following design goals:
+
 * Important messages should not be lost if one of the message brokers dies due to a
   hardware crash
 * It should be possible to upgrade broker software/hardware without system downtime
@@ -45,17 +46,16 @@ messages.
 This sounds relatively straightforward, but an actual implementation of the
 deduplification logic needs to address some nontrivial issues:
 
-* it must work reliably across process boundaries
+* it must work reliably across process/machine boundaries
 * it must guarantee atomicity for message handler execution
 * it must be scalable
 * it should provide protection against misbehaving message handlers
 * it should provide a way to restart failed handlers without entering an endless loop
 
 These requirements led us to try out a persistent key value store to hold the information
-we need on the consumer side to implement the deduplification logic: how often a message
-has been seen, how often we have tried running a message handler but failed, how long we
-should wait before retrying and whether some other process has already started a handler
-for the message (execution mutex).
+we need on the consumer side: how often a message has been seen, how often we have tried
+running a message handler but failed, how long we should wait before retrying and whether
+some other process has already started a handler for the message (execution mutex).
 
 Our current implementation uses [Redis][redis], as it seemed to be the simplest key value
 store out there, requiring the least amount of configuration with no additional software
