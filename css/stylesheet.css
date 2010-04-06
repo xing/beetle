@@ -15,26 +15,27 @@ a[href] {
 #wrapper { /* IE workaround */
 	margin: 0 auto;
 	padding: 0;
-	width: 750px;
+	width: 800px;
 }
 html>body #wrapper {
 	margin: 0 auto;
 	padding: 0;
 	width: auto;
-	max-width: 750px;
+	max-width: 800px;
 }
 
 #header {
 	position: relative;
 	background: #E9C000;
-	height: 113px;
+	height: 100px;
+	width: 100%;
 }
 #header h1 {
 	position: absolute;
-	left: 60px;
+	left: 50px;
+	right: 50px;
 	top: 0px;
-	width: 600px;
-	height: 100px;
+	height: 60px;
 	cursor: pointer;
 	color: white;
 }
@@ -83,7 +84,7 @@ html>body #wrapper {
 #content { /* IE workaround */
 	margin: 0;
 	padding: 25px;
-	width: 430px;
+	width: 480px;
 	height: 584px; /* (64+2*20+2)*6 - 2 - 2*25 */
 	background: #fff;
 }
@@ -92,7 +93,7 @@ html>body #content {
 	padding: 25px;
 	width: auto;
 	height: auto;
-	max-width: 430px;
+	max-width: 480px;
 	min-height: 584px; /* (64+2*20+2)*6 - 2 - 2*25 */
 	background: #fff;
 }
@@ -107,7 +108,7 @@ html>body #content {
 	margin: 0;
 	padding: 0;
 	top: 0px;
-	left: 480px;
+	left: 530px;
 	width: 270px;
 	background-color: #e8eaea;
 	position: absolute;
