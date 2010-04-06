@@ -75,6 +75,18 @@ that describes the behaviour of topic exchanges quite well:
 Queues
 =====
 
+Queues are the endpoint in the message system. A client can only
+receive messages if he is in any way subscribed to a queue. There is no 
+way to listen to an exchange directly. Therefore the queue has to be bound 
+to the exchange with a rule (the binding key) that determines which messages
+get routed to the queue.
+
+If more than one client subscribes to a queue, the broker decides
+which client receives which message. So a message in a queue is only
+received by one listener of the queue, never multiple ones (there are
+exceptions for un-acked messages that get requeued by calling "recover"
+on the connection or when the client disconnects).
+
 [amqp_specs]: http://www.amqp.org/confluence/display/AMQP/AMQP+Specification
 [rabbitmq_home]: http://www.rabbitmq.com
 [erlang_home]: http://www.erlang.org
