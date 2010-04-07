@@ -27,6 +27,7 @@ For our new messaging system, we had the following design goals:
 * Important messages should not be lost if one of the message brokers dies due to a
   hardware crash
 * It should be possible to upgrade broker software/hardware without system downtime
+* It should be scalable
 * Using the system should not require our appplication developers to be AMQP experts
 
 RabbitMQ provides high availability through clustering of several RabitMQ nodes. Each of
@@ -46,9 +47,8 @@ messages.
 This sounds relatively straightforward, but an actual implementation of the
 deduplification logic needs to address some nontrivial issues:
 
-* it must work reliably across process/machine boundaries
-* it must guarantee atomicity for message handler execution
-* it must be scalable
+* it should work reliably across process/machine boundaries
+* it should guarantee atomicity for message handler execution
 * it should provide protection against misbehaving message handlers
 * it should provide a way to restart failed handlers without entering an endless loop
 
@@ -62,8 +62,15 @@ store out there, requiring the least amount of configuration with no additional 
 components necessary to get it up and running. However, we use only a small subset of
 Redis' functionality, so we're by no means bound to it.
 
+Now, after several weeks of design and implementation work, we have ported all our old
+message processing code to the new infrastructure. So far everything went really smooth
+and we haven't had a single problem (which is what we expected :-). Which means we have
+finally reached a state where we can publish our work as a ruby gem.
 
+So ... if you're looking for a messaging system with high availability and reliability, we
+think you should give Beetle a try.
 
+Have fun!
 
 [rabbitmq]: http://www.rabbitmq.com/
 [redis]: http://code.google.com/p/redis/
