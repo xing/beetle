@@ -1,4 +1,0 @@
----
-layout: default
-title: Beetle - Frequently Asked Questions
----
