@@ -65,6 +65,7 @@ module Beetle
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
+      @store            = opts[:store]
     end
 
     # extracts various values form the AMQP header properties
@@ -129,186 +130,89 @@ module Beetle
 
     # store handler timeout timestamp into Redis
     def set_timeout!
-      with_redis_failover { redis.set(key(:timeout), now + timeout) }
+      @store.set(msg_id, :timeout, now + timeout)
     end
 
     # handler timed out?
     def timed_out?
-      with_redis_failover { (t = redis.get(key(:timeout))) && t.to_i < now }
+      (t = @store.get(msg_id, :timeout)) && t.to_i < now
     end
 
     # reset handler timeout in Redis
     def timed_out!
-      with_redis_failover { redis.set(key(:timeout), 0) }
+      @store.set(msg_id, :timeout, 0)
     end
 
     # message handling completed?
     def completed?
-      with_redis_failover { redis.get(key(:status)) == "completed" }
+      @store.get(msg_id, :status) == "completed"
     end
 
     # mark message handling complete in Redis
     def completed!
-      with_redis_failover { redis.set(key(:status), "completed") }
+      @store.set(msg_id, :status, "completed")
       timed_out!
     end
 
     # whether we should wait before running the handler
     def delayed?
-      with_redis_failover { (t = redis.get(key(:delay))) && t.to_i > now }
+      (t = @store.get(msg_id, :delay)) && t.to_i > now
     end
 
     # store delay value in REdis
     def set_delay!
-      with_redis_failover { redis.set(key(:delay), now + delay) }
+      @store.set(msg_id, :delay, now + delay)
     end
 
     # how many times we already tried running the handler
     def attempts
-      with_redis_failover { redis.get(key(:attempts)).to_i }
+      @store.get(msg_id, :attempts).to_i
     end
 
     # record the fact that we are trying to run the handler
     def increment_execution_attempts!
-      with_redis_failover { redis.incr(key(:attempts)) }
+      @store.incr(msg_id, :attempts)
     end
 
     # whether we have already tried running the handler as often as specified when the handler was registered
     def attempts_limit_reached?
-      with_redis_failover { (limit = redis.get(key(:attempts))) && limit.to_i >= attempts_limit }
+      (limit = @store.get(msg_id, :attempts)) && limit.to_i >= attempts_limit
     end
 
     # increment number of exception occurences in Redis
     def increment_exception_count!
-      with_redis_failover { redis.incr(key(:exceptions)) }
+      @store.incr(msg_id, :exceptions)
     end
 
     # whether the number of exceptions has exceeded the limit set when the handler was registered
     def exceptions_limit_reached?
-      with_redis_failover { redis.get(key(:exceptions)).to_i > exceptions_limit }
+      @store.get(msg_id, :exceptions).to_i > exceptions_limit
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
     # the message exipration time in Redis.
     def key_exists?
-      with_redis_failover do
-        old_message = 0 == redis.msetnx(key(:status) =>"incomplete", key(:expires) => @expires_at)
-        if old_message
-          logger.debug "Beetle: received duplicate message: #{key(:status)} on queue: #{@queue}"
-        end
-        old_message
+      old_message = 0 == @store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at)
+      if old_message
+        logger.debug "Beetle: received duplicate message: #{msg_id} on queue: #{@queue}"
       end
+      old_message
     end
 
     # aquire execution mutex before we run the handler (and delete it if we can't aquire it).
     def aquire_mutex!
-      with_redis_failover do
-        if mutex = redis.setnx(key(:mutex), now)
-          logger.debug "Beetle: aquired mutex: #{msg_id}"
-        else
-          delete_mutex!
-        end
-        mutex
+      if mutex = @store.setnx(msg_id, :mutex, now)
+        logger.debug "Beetle: aquired mutex: #{msg_id}"
+      else
+        delete_mutex!
       end
+      mutex
     end
 
     # delete execution mutex
     def delete_mutex!
-      with_redis_failover do
-        redis.del(key(:mutex))
-        logger.debug "Beetle: deleted mutex: #{msg_id}"
-      end
-    end
-
-    # get the Redis instance
-    def self.redis
-      @redis ||= find_redis_master
-    end
-
-    # set the redis instance
-    def self.redis=(redis)
-      @redis = redis
-    end
-
-    # find the master redis instance
-    def self.find_redis_master
-      masters = []
-      redis_instances.each do |redis|
-        begin
-          masters << redis if redis.info[:role] == "master"
-        rescue Exception => e
-          logger.error "Beetle: could not determine status of redis instance #{redis.server}"
-        end
-      end
-      raise NoRedisMaster.new("unable to determine a new master redis instance") if masters.empty?
-      raise TwoRedisMasters.new("more than one redis master instances") if masters.size > 1
-      logger.info "Beetle: configured new redis master #{masters.first.server}"
-      masters.first
-    end
-
-    def self.redis_instances
-      @redis_instances ||= Beetle.config.redis_hosts.split(/ *, */).map{|s| s.split(':')}.map do |host, port|
-         Redis.new(:host => host, :port => port, :db => Beetle.config.redis_db)
-      end
-    end
-
-    def with_redis_failover #:yields:
-      tries = 0
-      begin
-        yield
-      rescue Exception => e
-        Beetle::reraise_expectation_errors!
-        logger.error "Beetle: redis connection error '#{e}'"
-        if (tries+=1) < 120
-          self.class.redis = nil
-          sleep 1
-          logger.info "Beetle: retrying redis operation"
-          retry
-        else
-          raise NoRedisMaster.new(e.to_s)
-        end
-      end
-    end
-
-    # list of key suffixes to use for storing values in Redis.
-    KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]
-
-    # build a Redis key out of the message id of this message and a given suffix
-    def key(suffix)
-      self.class.key(msg_id, suffix)
-    end
-
-    # list of keys which potentially exist in Redis for this messsage
-    def keys
-      self.class.keys(msg_id)
-    end
-
-    # build a Redis key out of a message id and a given suffix
-    def self.key(msg_id, suffix)
-      "#{msg_id}:#{suffix}"
-    end
-
-    # list of keys which potentially exist in Redis for the given message id
-    def self.keys(msg_id)
-      KEY_SUFFIXES.map{|suffix| key(msg_id, suffix)}
-    end
-
-    # extract message id from a given Redis key
-    def self.msg_id(key)
-      key =~ /^(msgid:[^:]*:[-0-9a-f]*):.*$/ && $1
-    end
-
-    # garbage collect keys in Redis (always assume the worst!)
-    def self.garbage_collect_keys
-      keys = redis.keys("msgid:*:expires")
-      threshold = now + Beetle.config.gc_threshold
-      keys.each do |key|
-        expires_at = redis.get key
-        if expires_at && expires_at.to_i < threshold
-          msg_id = msg_id(key)
-          redis.del(keys(msg_id))
-        end
-      end
+      @store.del(msg_id, :mutex)
+      logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
     # process this message and do not allow any exception to escape to the caller
@@ -408,10 +312,6 @@ module Beetle
       end
     end
 
-    def redis
-      self.class.redis
-    end
-
     def logger
       @logger ||= self.class.logger
     end
@@ -428,10 +328,8 @@ module Beetle
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       return if simple? # simple messages don't use redis
-      with_redis_failover do
-        if !redundant? || redis.incr(key(:ack_count)) == 2
-          redis.del(keys)
-        end
+      if !redundant? || @store.incr(msg_id, :ack_count) == 2
+        @store.del_keys(msg_id)
       end
     end
   end

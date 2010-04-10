@@ -15,17 +15,17 @@ module Beetle
     # an options hash for the configured messages
     attr_reader :messages
 
-    # create a fresh Client instance with the given options.
-    # currently only one option is being honored:
-    #   :servers => "host1:port1, host2:port2"
-    # this overrides the default servers configured in Beetle.config.servers
+    # the deduplication store to use for this client
+    attr_reader :deduplication_store
 
-    def initialize(options = {})
-      @servers = (options[:servers] || Beetle.config.servers).split(/ *, */)
+    # create a fresh Client instance from a given configuration object
+    def initialize(config = Beetle.config)
+      @servers = config.servers.split(/ *, */)
       @exchanges = {}
       @queues = {}
       @messages = {}
       @bindings = {}
+      @deduplication_store = DeduplicationStore.new(config.redis_hosts, config.redis_db)
     end
 
     # register an exchange with the given _name_ and a set of _options_:

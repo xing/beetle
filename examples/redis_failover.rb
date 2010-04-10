@@ -41,13 +41,12 @@ client.register_handler(:test) do |m|
   sleep 1
 end
 
-# hack to swith redis programmatically
-class Beetle::Message
-  def self.switch_redis
+# hack to switch redis programmatically
+class Beetle::DeduplicationStore
+  def switch_redis
     slave = redis_instances.find{|r| r.server != redis.server}
     redis.shutdown rescue nil
     logger.info "Beetle: shut down master #{redis.server}"
-    self.redis = nil
     slave.slaveof("no one")
     logger.info "Beetle: enabled master mode on #{slave.server}"
   end
@@ -59,7 +58,7 @@ end
 # the block passed to listen will be yielded as the last step of the setup process
 client.listen do
   trap("INT") { client.stop_listening }
-  EM.add_timer(5) { Beetle::Message.switch_redis }
+  EM.add_timer(5) { client.deduplication_store.switch_redis }
 end
 
 puts "Received #{k} test messages"

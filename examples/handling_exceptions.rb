@@ -8,7 +8,7 @@ client = Beetle::Client.new
 client.register_queue(:test)
 client.register_message(:test)
 client.purge(:test)
-Beetle::Message.redis.flush_db
+client.deduplication_store.flushdb
 
 # declare a handler class for message processing
 # handler fails on the first execution attempt, then succeeds

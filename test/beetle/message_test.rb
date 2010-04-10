@@ -66,59 +66,57 @@ module Beetle
 
   class KeyManagementTest < Test::Unit::TestCase
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "should be able to extract msg_id from any key" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
-      message.keys.each do |key|
-        assert_equal message.msg_id, Message.msg_id(key)
+      message = Message.new("somequeue", header, 'foo', :store => @store)
+      @store.keys(message.msg_id).each do |key|
+        assert_equal message.msg_id, @store.msg_id(key)
       end
     end
 
     test "should be able to garbage collect expired keys" do
       Beetle.config.expects(:gc_threshold).returns(0)
       header = header_with_params({:ttl => 0})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
-      Message.stubs(:now).returns(Time.now.to_i+1)
-      @r.expects(:del).with(message.keys)
-      Message.garbage_collect_keys
+      @store.redis.expects(:del).with(@store.keys(message.msg_id))
+      @store.garbage_collect_keys(Time.now.to_i+1)
     end
 
     test "should not garbage collect not yet expired keys" do
       Beetle.config.expects(:gc_threshold).returns(0)
       header = header_with_params({:ttl => 0})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
-      Message.stubs(:now).returns(Time.now.to_i-1)
-      @r.expects(:del).never
-      Message.garbage_collect_keys
+      @store.redis.expects(:del).never
+      @store.garbage_collect_keys(Time.now.to_i-1)
     end
 
     test "successful processing of a non redundant message should delete all keys from the database" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       assert !message.expired?
       assert !message.redundant?
 
       message.process(lambda {|*args|})
 
-      message.keys.each do |key|
-        assert !@r.exists(key)
+      @store.keys(message.msg_id).each do |key|
+        assert !@store.redis.exists(key)
       end
     end
 
     test "succesful processing of a redundant message twice should delete all keys from the database" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       assert !message.expired?
       assert message.redundant?
@@ -126,41 +124,42 @@ module Beetle
       message.process(lambda {|*args|})
       message.process(lambda {|*args|})
 
-      message.keys.each do |key|
-        assert !@r.exists(key)
+      @store.keys(message.msg_id).each do |key|
+        assert !@store.redis.exists(key)
       end
     end
 
     test "successful processing of a redundant message once should insert all but the delay key and the exception count key into the database" do
       header = header_with_params({:redundant => true})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       assert !message.expired?
       assert message.redundant?
 
       message.process(lambda {|*args|})
 
-      assert @r.exists(message.key :status)
-      assert @r.exists(message.key :expires)
-      assert @r.exists(message.key :attempts)
-      assert @r.exists(message.key :timeout)
-      assert @r.exists(message.key :ack_count)
-      assert !@r.exists(message.key :delay)
-      assert !@r.exists(message.key :exceptions)
+      assert @store.exists(message.msg_id, :status)
+      assert @store.exists(message.msg_id, :expires)
+      assert @store.exists(message.msg_id, :attempts)
+      assert @store.exists(message.msg_id, :timeout)
+      assert @store.exists(message.msg_id, :ack_count)
+      assert !@store.exists(message.msg_id, :delay)
+      assert !@store.exists(message.msg_id, :exceptions)
     end
   end
 
   class AckingTest < Test::Unit::TestCase
+
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "an expired message should be acked without calling the handler" do
       header = header_with_params(:ttl => -1)
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert message.expired?
 
       processed = :no
@@ -171,7 +170,7 @@ module Beetle
     test "a delayed message should not be acked and the handler should not be called" do
       header = header_with_params()
       header.expects(:ack).never
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       message.set_delay!
       assert !message.key_exists?
       assert message.delayed?
@@ -184,16 +183,16 @@ module Beetle
     test "acking a non redundant message should remove the ack_count key" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       message.process(lambda {|*args|})
       assert !message.redundant?
-      assert !@r.exists(message.key :ack_count)
+      assert !@store.exists(message.msg_id, :ack_count)
     end
 
     test "a redundant message should be acked after calling the handler" do
       header = header_with_params({:redundant => true})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       message.expects(:ack!)
       assert message.redundant?
@@ -203,36 +202,36 @@ module Beetle
     test "acking a redundant message should increment the ack_count key" do
       header = header_with_params({:redundant => true})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
-      assert_equal nil, @r.get(message.key :ack_count)
+      assert_equal nil, @store.get(message.msg_id, :ack_count)
       message.process(lambda {|*args|})
       assert message.redundant?
-      assert_equal "1", @r.get(message.key :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count)
     end
 
     test "acking a redundant message twice should remove the ack_count key" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
 
       message.process(lambda {|*args|})
       message.process(lambda {|*args|})
       assert message.redundant?
-      assert !@r.exists(message.key :ack_count)
+      assert !@store.exists(message.msg_id, :ack_count)
     end
 
   end
 
   class FreshMessageTest < Test::Unit::TestCase
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "processing a fresh message sucessfully should first run the handler and then ack it" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       assert !message.attempts_limit_reached?
 
       proc = mock("proc")
@@ -244,7 +243,7 @@ module Beetle
 
     test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
       header = header_with_params({:redundant => true})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :store => @store)
       assert !message.attempts_limit_reached?
       assert message.redundant?
 
@@ -254,20 +253,21 @@ module Beetle
       message.expects(:completed!).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.__send__(:process_internal, proc)
-      assert_equal "1", @r.get(message.key :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count)
     end
 
   end
 
   class SimpleMessageTest < Test::Unit::TestCase
     def setup
-      Message.expects(:redis).never
-      Message.any_instance.expects(:redis).never
+      @store = DeduplicationStore.new
+      @store.flushdb
+      @store.expects(:redis).never
     end
 
     test "when processing a simple message, ack should precede calling the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 1)
+      message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
       proc = mock("proc")
       s = sequence("s")
@@ -278,7 +278,7 @@ module Beetle
 
     test "when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 1)
+      message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
       proc = mock("proc")
       s = sequence("s")
@@ -294,13 +294,13 @@ module Beetle
 
   class HandlerCrashTest < Test::Unit::TestCase
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "a message should not be acked if the handler crashes and the exception limit has not been reached" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :delay => 42, :timeout => 10.seconds, :exceptions => 1)
+      message = Message.new("somequeue", header, 'foo', :delay => 42, :timeout => 10.seconds, :exceptions => 1, :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -311,18 +311,18 @@ module Beetle
       header.expects(:ack).never
       assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert_equal "1", @r.get(message.key :exceptions)
-      assert_equal "0", @r.get(message.key :timeout)
-      assert_equal "52", @r.get(message.key :delay)
+      assert_equal "1", @store.get(message.msg_id, :exceptions)
+      assert_equal "0", @store.get(message.msg_id, :timeout)
+      assert_equal "52", @store.get(message.msg_id, :delay)
     end
 
     test "a message should delete the mutex before resetting the timer if attempts and exception limits havn't been reached" do
       Message.stubs(:now).returns(9)
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :delay => 42, :timeout => 10.seconds, :exceptions => 1)
+      message = Message.new("somequeue", header, 'foo', :delay => 42, :timeout => 10.seconds, :exceptions => 1, :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
-      assert !@r.get(message.key(:mutex))
+      assert !@store.get(message.msg_id, :mutex)
       assert !message.timed_out?
 
       proc = lambda {|*args| raise "crash"}
@@ -335,7 +335,7 @@ module Beetle
 
     test "a message should be acked if the handler crashes and the exception limit has been reached" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2, :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -350,7 +350,7 @@ module Beetle
 
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2, :store => @store)
       message.increment_execution_attempts!
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
@@ -367,13 +367,13 @@ module Beetle
 
   class SeenMessageTest < Test::Unit::TestCase
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "a completed existing message should be just acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       assert !message.key_exists?
       message.completed!
       assert message.completed?
@@ -387,7 +387,7 @@ module Beetle
 
     test "an incomplete, delayed existing message should be processed later" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :delay => 10.seconds, :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :delay => 10.seconds, :attempts => 2, :store => @store)
       assert !message.key_exists?
       assert !message.completed?
       message.set_delay!
@@ -404,7 +404,7 @@ module Beetle
 
     test "an incomplete, undelayed, not yet timed out, existing message should be processed later" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2, :store => @store)
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -423,7 +423,7 @@ module Beetle
 
     test "an incomplete, undelayed, not yet timed out, existing message which has reached the handler execution attempts limit should be acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
@@ -443,7 +443,7 @@ module Beetle
 
     test "an incomplete, undelayed, timed out, existing message which has reached the exceptions limit should be acked and not run the handler" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
@@ -462,7 +462,7 @@ module Beetle
 
     test "an incomplete, undelayed, timed out, existing message should be processed again if the mutex can be aquired" do
       header = header_with_params({:redundant => true})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -482,7 +482,7 @@ module Beetle
 
     test "an incomplete, undelayed, timed out, existing message should not be processed again if the mutex cannot be aquired" do
       header = header_with_params({:redundant => true})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert !message.completed?
       assert !message.delayed?
@@ -491,26 +491,27 @@ module Beetle
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       message.aquire_mutex!
-      assert @r.exists(message.key :mutex)
+      assert @store.exists(message.msg_id, :mutex)
 
       proc = mock("proc")
       proc.expects(:call).never
       header.expects(:ack).never
       assert_equal RC::MutexLocked, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert !@r.exists(message.key :mutex)
+      assert !@store.exists(message.msg_id, :mutex)
     end
 
   end
 
   class ProcessingTest < Test::Unit::TestCase
     def setup
-      Message.redis.flush_db
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "processing a message catches internal exceptions risen by process_internal and returns an internal error" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       message.expects(:process_internal).raises(Exception.new)
       handler = Handler.new
       handler.expects(:process_exception).never
@@ -520,7 +521,7 @@ module Beetle
 
     test "processing a message with a crashing processor calls the processors exception handler and returns an internal error" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :exceptions => 1)
+      message = Message.new("somequeue", header, 'foo', :exceptions => 1, :store => @store)
       errback = lambda{|*args|}
       exception = Exception.new
       action = lambda{|*args| raise exception}
@@ -536,7 +537,7 @@ module Beetle
     test "processing a message with a crashing processor calls the processors exception handler and failure handler if the attempts limit has been reached" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       message.increment_execution_attempts!
       errback = mock("errback")
       failback = mock("failback")
@@ -554,7 +555,7 @@ module Beetle
     test "processing a message with a crashing processor calls the processors exception handler and failure handler if the exceptions limit has been reached" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo', :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       errback = mock("errback")
       failback = mock("failback")
       exception = Exception.new
@@ -571,10 +572,15 @@ module Beetle
   end
 
   class HandlerTimeoutTest < Test::Unit::TestCase
+    def setup
+      @store = DeduplicationStore.new
+      @store.flushdb
+    end
+
     test "a handler running longer than the specified timeout should be aborted" do
       header = header_with_params({})
       header.expects(:ack)
-      message = Message.new("somequeue", header, 'foo', :timeout => 0.1, :attempts => 2)
+      message = Message.new("somequeue", header, 'foo', :timeout => 0.1, :attempts => 2, :store => @store)
       action = lambda{|*args| while true; end}
       handler = Handler.create(action)
       result = message.process(handler)
@@ -584,25 +590,25 @@ module Beetle
 
   class SettingsTest < Test::Unit::TestCase
     def setup
-      @r = Message.redis
-      @r.flushdb
+      @store = DeduplicationStore.new
+      @store.flushdb
     end
 
     test "completed! should store the status 'complete' in the database" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.completed?
       message.completed!
       assert message.completed?
-      assert_equal "completed", @r.get(message.key :status)
+      assert_equal "completed", @store.get(message.msg_id, :status)
     end
 
     test "set_delay! should store the current time plus the number of delayed seconds in the database" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :delay => 1)
+      message = Message.new("somequeue", header, 'foo', :delay => 1, :store => @store)
       message.expects(:now).returns(1)
       message.set_delay!
-      assert_equal "2", @r.get(message.key :delay)
+      assert_equal "2", @store.get(message.msg_id, :delay)
       message.expects(:now).returns(2)
       assert !message.delayed?
       message.expects(:now).returns(0)
@@ -611,10 +617,10 @@ module Beetle
 
     test "set_delay! should use the default delay if the delay hasn't been set on the message instance" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       message.expects(:now).returns(0)
       message.set_delay!
-      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @r.get(message.key :delay)
+      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @store.get(message.msg_id, :delay)
       message.expects(:now).returns(message.delay)
       assert !message.delayed?
       message.expects(:now).returns(0)
@@ -623,10 +629,10 @@ module Beetle
 
     test "set_timeout! should store the current time plus the number of timeout seconds in the database" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :timeout => 1)
+      message = Message.new("somequeue", header, 'foo', :timeout => 1, :store => @store)
       message.expects(:now).returns(1)
       message.set_timeout!
-      assert_equal "2", @r.get(message.key :timeout)
+      assert_equal "2", @store.get(message.msg_id, :timeout)
       message.expects(:now).returns(2)
       assert !message.timed_out?
       message.expects(:now).returns(3)
@@ -635,10 +641,10 @@ module Beetle
 
     test "set_timeout! should use the default timeout if the timeout hasn't been set on the message instance" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       message.expects(:now).returns(0)
       message.set_timeout!
-      assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @r.get(message.key :timeout)
+      assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @store.get(message.msg_id, :timeout)
       message.expects(:now).returns(message.timeout)
       assert !message.timed_out?
       message.expects(:now).returns(Message::DEFAULT_HANDLER_TIMEOUT+1)
@@ -647,7 +653,7 @@ module Beetle
 
     test "incrementing execution attempts should increment by 1" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert_equal 1, message.increment_execution_attempts!
       assert_equal 2, message.increment_execution_attempts!
       assert_equal 3, message.increment_execution_attempts!
@@ -655,7 +661,7 @@ module Beetle
 
     test "accessing execution attempts should return the number of execution attempts made so far" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert_equal 0, message.attempts
       message.increment_execution_attempts!
       assert_equal 1, message.attempts
@@ -667,27 +673,27 @@ module Beetle
 
     test "accessing execution attempts should return 0 if none were made" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert_equal 0, message.attempts
     end
 
 
     test "attempts limit should be set exception limit + 1 iff the configured attempts limit is equal to or smaller than the exceptions limit" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :exceptions => 1)
+      message = Message.new("somequeue", header, 'foo', :exceptions => 1, :store => @store)
       assert_equal 2, message.attempts_limit
       assert_equal 1, message.exceptions_limit
-      message = Message.new("somequeue", header, 'foo', :exceptions => 2)
+      message = Message.new("somequeue", header, 'foo', :exceptions => 2, :store => @store)
       assert_equal 3, message.attempts_limit
       assert_equal 2, message.exceptions_limit
-      message = Message.new("somequeue", header, 'foo', :attempts => 5, :exceptions => 2)
+      message = Message.new("somequeue", header, 'foo', :attempts => 5, :exceptions => 2, :store => @store)
       assert_equal 5, message.attempts_limit
       assert_equal 2, message.exceptions_limit
     end
 
     test "attempts limit should be reached after incrementing the attempt limit counter 'attempts limit' times" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :attempts =>2)
+      message = Message.new("somequeue", header, 'foo', :attempts =>2, :store => @store)
       assert !message.attempts_limit_reached?
       message.increment_execution_attempts!
       assert !message.attempts_limit_reached?
@@ -699,7 +705,7 @@ module Beetle
 
     test "incrementing exception counts should increment by 1" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert_equal 1, message.increment_exception_count!
       assert_equal 2, message.increment_exception_count!
       assert_equal 3, message.increment_exception_count!
@@ -707,7 +713,7 @@ module Beetle
 
     test "default exceptions limit should be reached after incrementing the attempt limit counter 1 time" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.exceptions_limit_reached?
       message.increment_exception_count!
       assert message.exceptions_limit_reached?
@@ -715,7 +721,7 @@ module Beetle
 
     test "exceptions limit should be reached after incrementing the attempt limit counter 'exceptions limit + 1' times" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', :exceptions => 1)
+      message = Message.new("somequeue", header, 'foo', :exceptions => 1, :store => @store)
       assert !message.exceptions_limit_reached?
       message.increment_exception_count!
       assert !message.exceptions_limit_reached?
@@ -727,111 +733,12 @@ module Beetle
 
     test "failure to aquire a mutex should delete it from the database" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo')
+      message = Message.new("somequeue", header, 'foo', :store => @store)
       assert message.aquire_mutex!
       assert !message.aquire_mutex!
-      assert !@r.exists(message.key :mutex)
+      assert !@store.exists(message.msg_id, :mutex)
     end
   end
 
-  class RedisFailoverTest < Test::Unit::TestCase
-    def setup
-      Message.instance_variable_set "@redis_instances", nil
-      Message.redis = nil
-      Beetle.config.redis_hosts = "localhost:1, localhost:2"
-    end
-
-    def teardown
-      Message.instance_variable_set "@redis_instances", nil
-      Message.redis = nil
-      Beetle.config.redis_hosts = "localhost:6379"
-    end
-
-    test "redis instances should be created for all servers" do
-      instances = Message.redis_instances
-      assert_equal ["localhost:1", "localhost:2" ], instances.map(&:server)
-    end
-
-    test "searching a redis master should find one if there is one" do
-      instances = Message.redis_instances
-      instances.first.expects(:info).returns(:role => "slave")
-      instances.second.expects(:info).returns(:role => "master")
-      assert_equal instances.second, Message.redis
-    end
-
-    test "searching a redis master should find one even if one cannot be accessed" do
-      instances = Message.redis_instances
-      instances.first.expects(:info).raises("murks")
-      instances.second.expects(:info).returns(:role => "master")
-      assert_equal instances.second, Message.redis
-    end
-
-    test "searching a redis master should raise an exception if there is none" do
-      instances = Message.redis_instances
-      instances.first.expects(:info).returns(:role => "slave")
-      instances.second.expects(:info).returns(:role => "slave")
-      assert_raises(NoRedisMaster) { Message.find_redis_master }
-    end
-
-    test "searching a redis master should raise an exception if there is more than one" do
-      instances = Message.redis_instances
-      instances.first.expects(:info).returns(:role => "master")
-      instances.second.expects(:info).returns(:role => "master")
-      assert_raises(TwoRedisMasters) { Message.find_redis_master }
-    end
-
-    test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
-      instances = Message.redis_instances
-      s = sequence("redis accesses")
-      instances.first.expects(:info).returns(:role => "master").in_sequence(s)
-      instances.second.expects(:info).returns(:role => "slave").in_sequence(s)
-      assert_equal instances.first, Message.redis
-      instances.first.expects(:get).with("x").raises("disconnected").in_sequence(s)
-      instances.first.expects(:info).raises("disconnected").in_sequence(s)
-      instances.second.expects(:info).returns(:role => "master").in_sequence(s)
-      instances.second.expects(:get).with("x").returns("42").in_sequence(s)
-      Message.any_instance.stubs(:setup)
-      Message.any_instance.stubs(:decode)
-      message = Message.new("queue", "header", "body")
-      message.expects(:sleep).once
-      assert_equal("42", message.with_redis_failover { Message.redis.get("x") })
-    end
-
-    test "a redis operation protected with a redis failover block should fail if it cannot find a new master" do
-      instances = Message.redis_instances
-      instances.first.expects(:info).returns(:role => "master")
-      instances.second.expects(:info).returns(:role => "slave")
-      assert_equal instances.first, Message.redis
-      instances.first.stubs(:get).with("x").raises("disconnected")
-      instances.first.stubs(:info).raises("disconnected")
-      instances.second.stubs(:info).returns(:role => "slave")
-      Message.any_instance.stubs(:setup)
-      Message.any_instance.stubs(:decode)
-      message = Message.new("queue", "header", "body")
-      message.expects(:sleep).times(119)
-      assert_raises(NoRedisMaster) { message.with_redis_failover { Message.redis.get("x") } }
-    end
-  end
-
-  class RedisAssumptionsTest < Test::Unit::TestCase
-    def setup
-      @r = Message.redis
-      @r.flushdb
-    end
-
-    test "trying to delete a non existent key doesn't throw an error" do
-      assert !@r.del("hahahaha")
-      assert !@r.exists("hahahaha")
-    end
-
-    test "msetnx returns 0 or 1" do
-      assert_equal 1, @r.msetnx("a" => 1, "b" => 2)
-      assert_equal "1", @r.get("a")
-      assert_equal "2", @r.get("b")
-      assert_equal 0, @r.msetnx("a" => 3, "b" => 4)
-      assert_equal "1", @r.get("a")
-      assert_equal "2", @r.get("b")
-    end
-  end
 end
 

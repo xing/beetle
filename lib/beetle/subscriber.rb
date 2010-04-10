@@ -98,7 +98,8 @@ module Beetle
       lambda do |header, data|
         begin
           processor = Handler.create(handler, opts)
-          m = Message.new(amqp_queue_name, header, data, opts.merge(:server => server))
+          message_options = opts.merge(:server => server, :store => @client.deduplication_store)
+          m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.recover?
             sleep 1
