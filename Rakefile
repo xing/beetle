@@ -81,7 +81,7 @@ end
 require 'rake/rdoctask'
 
 Rake::RDocTask.new do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
+  rdoc.rdoc_dir = 'site/rdoc'
   rdoc.title    = 'Beetle'
   rdoc.options << '--line-numbers' << '--inline-source' << '--quiet'
   rdoc.rdoc_files.include('README.rdoc')
