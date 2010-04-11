@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>Module: Beetle</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+    <div id="classHeader">
+        <table class="header-table">
+        <tr class="top-aligned-row">
+          <td><strong>Module</strong></td>
+          <td class="class-name-in-header">Beetle</td>
+        </tr>
+        <tr class="top-aligned-row">
+            <td><strong>In:</strong></td>
+            <td>
+                <a href="../files/lib/beetle/base_rb.html">
+                lib/beetle/base.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/client_rb.html">
+                lib/beetle/client.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/configuration_rb.html">
+                lib/beetle/configuration.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/deduplication_store_rb.html">
+                lib/beetle/deduplication_store.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/handler_rb.html">
+                lib/beetle/handler.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/message_rb.html">
+                lib/beetle/message.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/publisher_rb.html">
+                lib/beetle/publisher.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/r_c_rb.html">
+                lib/beetle/r_c.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle/subscriber_rb.html">
+                lib/beetle/subscriber.rb
+                </a>
+        <br />
+                <a href="../files/lib/beetle_rb.html">
+                lib/beetle.rb
+                </a>
+        <br />
+            </td>
+        </tr>
+
+        </table>
+    </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+
+
+   </div>
+
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000001">config</a>&nbsp;&nbsp;
+      </div>
+    </div>
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+    <div id="class-list">
+      <h3 class="section-bar">Classes and Modules</h3>
+
+      Class <a href="Beetle/Base.html" class="link">Beetle::Base</a><br />
+Class <a href="Beetle/Client.html" class="link">Beetle::Client</a><br />
+Class <a href="Beetle/Configuration.html" class="link">Beetle::Configuration</a><br />
+Class <a href="Beetle/ConfigurationError.html" class="link">Beetle::ConfigurationError</a><br />
+Class <a href="Beetle/DeduplicationStore.html" class="link">Beetle::DeduplicationStore</a><br />
+Class <a href="Beetle/Error.html" class="link">Beetle::Error</a><br />
+Class <a href="Beetle/Handler.html" class="link">Beetle::Handler</a><br />
+Class <a href="Beetle/Message.html" class="link">Beetle::Message</a><br />
+Class <a href="Beetle/NoRedisMaster.html" class="link">Beetle::NoRedisMaster</a><br />
+Class <a href="Beetle/Publisher.html" class="link">Beetle::Publisher</a><br />
+Class <a href="Beetle/Subscriber.html" class="link">Beetle::Subscriber</a><br />
+Class <a href="Beetle/TwoRedisMasters.html" class="link">Beetle::TwoRedisMasters</a><br />
+Class <a href="Beetle/UnknownMessage.html" class="link">Beetle::UnknownMessage</a><br />
+Class <a href="Beetle/UnknownQueue.html" class="link">Beetle::UnknownQueue</a><br />
+
+    </div>
+
+    <div id="constants-list">
+      <h3 class="section-bar">Constants</h3>
+
+      <div class="name-list">
+        <table summary="Constants">
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">EXCHANGE_CREATION_KEYS</td>
+          <td>=</td>
+          <td class="context-item-value">[:auto_delete, :durable, :internal, :nowait, :passive]</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+AMQP options for exchange creation
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">QUEUE_CREATION_KEYS</td>
+          <td>=</td>
+          <td class="context-item-value">[:passive, :durable, :exclusive, :auto_delete, :no_wait]</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+AMQP options for queue creation
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">QUEUE_BINDING_KEYS</td>
+          <td>=</td>
+          <td class="context-item-value">[:key, :no_wait]</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+AMQP options for queue bindings
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">PUBLISHING_KEYS</td>
+          <td>=</td>
+          <td class="context-item-value">[:key, :mandatory, :immediate, :persistent, :reply_to]</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+AMQP options for message publishing
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">SUBSCRIPTION_KEYS</td>
+          <td>=</td>
+          <td class="context-item-value">[:ack, :key]</td>
+          <td width="3em">&nbsp;</td>
+          <td class="context-item-desc">
+AMQP options for subscribing to queues
+
+</td>
+        </tr>
+        </table>
+      </div>
+    </div>
+
+
+
+      
+
+
+    <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Class methods</h3>
+
+      <div id="method-M000001" class="method-detail">
+        <a name="M000001"></a>
+
+        <div class="method-heading">
+          <a href="#M000001" class="method-signature">
+          <span class="method-name">config</span><span class="method-args">() {|config| ...}</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+returns the configuration object and yields it if a block is given
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000001-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000001-source">
+<pre>
+    <span class="ruby-comment cmt"># File lib/beetle.rb, line 41</span>
+41:   <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">config</span>
+42:      <span class="ruby-comment cmt">#:yields: config</span>
+43:     <span class="ruby-ivar">@config</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">Configuration</span>.<span class="ruby-identifier">new</span>
+44:     <span class="ruby-identifier">block_given?</span> <span class="ruby-value">? </span><span class="ruby-keyword kw">yield</span>(<span class="ruby-ivar">@config</span>) <span class="ruby-operator">:</span> <span class="ruby-ivar">@config</span>
+45:   <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>
