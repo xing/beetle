@@ -1,8 +1,8 @@
 # A simple usage example for Beetle
+# pass --redundant to this script to use redundant messaging
 require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
-# pass --redundant to this script to use redundant messaging
 redundant = ARGV.include?('--redundant')
 
 # suppress debug messages
@@ -34,7 +34,7 @@ if n != expected_publish_count
   exit 1
 end
 
-# register a handler for the test message, listing on queue "test" with routing key "test"
+# register a handler for the test message, listing on queue "test"
 k = 0
 client.register_handler(:test) do |m|
   k += 1
@@ -46,10 +46,10 @@ client.register_handler(:test) do |m|
 end
 
 # start listening
-# this starts the event machine event using EM.run
+# this starts the event machine event loop using EM.run
 # the block passed to listen will be yielded as the last step of the setup process
 client.listen do
-  EM.add_timer(0.1) { EM.stop_event_loop }
+  EM.add_timer(0.1) { client.stop_listening }
 end
 
 puts "Received #{k} test messages"

@@ -14,7 +14,7 @@ client.register_queue(:echo)
 client.register_message(:echo)
 
 if ARGV.include?("--server")
-  # register a handler for the test message, listing on queue "test" with routing key "test"
+  # register a handler for the test message, listing on queue "test"
   # echoing all data sent to it
   client.register_handler(:echo) do |m|
     # send data back to publisher
