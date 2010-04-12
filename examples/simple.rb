@@ -2,13 +2,15 @@
 require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
+# pass --redundant to this script to use redundant messaging
 redundant = ARGV.include?('--redundant')
 
 # suppress debug messages
 Beetle.config.logger.level = Logger::INFO
-
+# use two servers
+Beetle.config.servers = "localhost:5672, localhost:5673"
 # instantiate a client
-client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
+client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
