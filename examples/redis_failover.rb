@@ -25,13 +25,13 @@ end
 puts "published #{n} test messages"
 puts
 
-# check whether we wer able to pblish all messages
+# check whether we were able to publish all messages
 if n != 2*N
   puts "could not publish all messages"
   exit 1
 end
 
-# register a handler for the test message, listing on queue "test" with routing key "test"
+# register a handler for the test message, listing on queue "test"
 k = 0
 client.register_handler(:test) do |m|
   k += 1
@@ -52,9 +52,8 @@ class Beetle::DeduplicationStore
   end
 end
 
-
 # start listening
-# this starts the event machine event using EM.run
+# this starts the event machine loop using EM.run
 # the block passed to listen will be yielded as the last step of the setup process
 client.listen do
   trap("INT") { client.stop_listening }

@@ -30,7 +30,7 @@ N.times {|i| n += client.publish(:test, i) }
 puts "published #{n} test messages"
 
 client.listen do
-  EM.add_timer(0.1) { EM.stop_event_loop }
+  EM.add_timer(0.1) { client.stop_listening }
 end
 
 # retrieve processing result and clean redis

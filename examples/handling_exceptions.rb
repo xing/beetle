@@ -31,11 +31,11 @@ n = 0
 puts "published #{n} test messages"
 
 client.listen do
-  trap("INT") { EM.stop_event_loop }
+  trap("INT") { client.stop_listening }
   timer = EM.add_periodic_timer(1) do
     if $completed == n
       timer.cancel
-      EM.next_tick{EM.stop_event_loop}
+      client.stop_listening
     end
   end
 end
