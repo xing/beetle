@@ -2,12 +2,12 @@
 require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
-# suppress debug messages
 Beetle.config.logger.level = Logger::INFO
 Beetle.config.redis_hosts = "localhost:6379, localhost:6380"
+Beetle.config.servers = "localhost:5672, localhost:5673"
 
 # instantiate a client
-client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
+client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
@@ -59,6 +59,7 @@ end
 client.listen do
   trap("INT") { client.stop_listening }
   EM.add_timer(5) { client.deduplication_store.switch_redis }
+  EM.add_timer(11) { client.stop_listening }
 end
 
 puts "Received #{k} test messages"
