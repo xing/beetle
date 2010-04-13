@@ -1,4 +1,20 @@
 module Beetle
+  # This class provides the interface through which messaging is configured for both
+  # message producers and consumers. It keeps references to an instance of a
+  # Beetle::Subscriber, a Beetle::Publisher (both of which are instantiated on demand),
+  # and a reference to an instance of Beetle::DeduplicationStore.
+  #
+  # Configuration of exchanges, queues, messages, and message handlers is done by calls to
+  # corresponding register_ methods. Note that these methods just build up the
+  # configuration, they don't interact with the AMQP servers.
+  #
+  # On the publisher side, publishing a message will ensure that the exchange it will be
+  # sent to, and each of the that will receive a copy of the message, along with their
+  # correpsonding bindings will be created lazily. On the subscriber side, exchanges,
+  # queues and bindings will be created when the application starts listening.
+  #
+  # The net effect of this strategy is that producers and consumers can be started in any
+  # order.
   class Client
     # the servers available for publishing
     attr_reader :servers
@@ -108,7 +124,7 @@ module Beetle
     #   register_handler(:bar, BarHandler)
     #
     # For details on handler classes see class Beetle::Handler
-    #
+
     def register_handler(queues, *args, &block)
       queues = Array(queues).map(&:to_s)
       queues.each {|q| raise UnknownQueue.new(q) unless self.queues.include?(q)}
@@ -118,20 +134,6 @@ module Beetle
       subscriber.register_handler(queues, opts, handler, &block)
     end
 
-    private
-    class Configurator #:nodoc:all
-      def initialize(client, options={})
-        @client = client
-        @options = options
-      end
-      def method_missing(method, *args, &block)
-        super unless %w(exchange queue binding message handler).include?(method.to_s)
-        options = @options.merge(args.last.is_a?(Hash) ? args.pop : {})
-        @client.send("register_#{method}", *(args+[options]), &block)
-      end
-    end
-
-    public
     # configures exchanges, queues, messages and handlers with a common set of options.
     # allows one to call all register methods without the register_ prefix.
     #
@@ -218,6 +220,18 @@ module Beetle
     end
 
     private
+
+    class Configurator #:nodoc:all
+      def initialize(client, options={})
+        @client = client
+        @options = options
+      end
+      def method_missing(method, *args, &block)
+        super unless %w(exchange queue binding message handler).include?(method.to_s)
+        options = @options.merge(args.last.is_a?(Hash) ? args.pop : {})
+        @client.send("register_#{method}", *(args+[options]), &block)
+      end
+    end
 
     def publisher
       @publisher ||= Publisher.new(self)
