@@ -56,7 +56,7 @@
     </tr>
     <tr class="top-aligned-row">
       <td><strong>Last Update:</strong></td>
-      <td>Wed Feb 17 17:01:29 +0100 2010</td>
+      <td>Tue Apr 13 08:35:35 +0200 2010</td>
     </tr>
     </table>
   </div>
@@ -71,24 +71,57 @@
     <div id="description">
       <h1><a href="../classes/Beetle.html">Beetle</a></h1>
 <p>
-High Availability Messaging with Redundant Queues
+High Availability AMQP Messaging with Redundant Queues
 </p>
 <h2>About</h2>
 <p>
 <a href="../classes/Beetle.html">Beetle</a> grew out of a project to
-improve an existing ActiveMQ based messaging infrastructure.
+improve an existing ActiveMQ based messaging infrastructure. It offers the
+following features:
+</p>
+<ul>
+<li>High Availability (by using multiple message broker instances)
+
+</li>
+<li>Redundancy (by replicating queues)
+
+</li>
+<li>Simple client API (by encapsulating the publishing/ deduplication logic)
+
+</li>
+</ul>
+<p>
+More information can be found on the <a
+href="http://xing.github.com/beetle">project website</a>.
 </p>
 <h2>Usage</h2>
+<h3>Configuration</h3>
+<pre>
+    # configure machines
+
+    Beetle.config do |c|
+      config.servers = &quot;broker1:5672, broker2:5672&quot;
+      config.redis_hosts = &quot;redis1:6379, redis2:6379&quot;
+    end
+
+    # instantiate a beetle client
+
+    b = Beetle::Client.new
+
+    # configure exchanges, queues and messages
+
+    b.configure do |config|
+      config.queue :test
+      config.message :test
+      config.handler(:test) { |message| puts message.data }
+    end
+</pre>
 <h3>Publishing</h3>
 <pre>
-    b = Beetle::Client.new
-    b.register_queue(&quot;test&quot;)
-    b.register_message(&quot;test&quot;)
-    b.publish(&quot;test&quot;, &quot;I'm a test message&quot;)
+    b.publish :test, &quot;I'm a test message&quot;
 </pre>
 <h3>Subscribing</h3>
 <pre>
-    b.register_handler(&quot;test&quot;) { |message| puts message.data }
     b.listen
 </pre>
 <h2>Prerequisites</h2>
@@ -100,7 +133,7 @@ To set up a redundant messaging system you will need
 href="http://www.rabbitmq.com/">RabbitMQ</a>)
 
 </li>
-<li>at least one Redis server
+<li>at least one Redis server (better are two in a master/slave setup)
 
 </li>
 </ul>
