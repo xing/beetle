@@ -1,29 +1,51 @@
 = Beetle
 
-High Availability Messaging with Redundant Queues
+High Availability AMQP Messaging with Redundant Queues
 
 == About
 
 Beetle grew out of a project to improve an existing ActiveMQ based messaging
-infrastructure.
+infrastructure. It offers the following features:
+
+* High Availability (by using multiple message broker instances)
+* Redundancy (by replicating queues)
+* Simple client API (by encapsulating the publishing/ deduplication logic)
+
+More information can be found on the {project website}[http://xing.github.com/beetle].
 
 == Usage
 
-=== Publishing
+=== Configuration
+    # configure machines
+
+    Beetle.config do |c|
+      config.servers = "broker1:5672, broker2:5672"
+      config.redis_hosts = "redis1:6379, redis2:6379"
+    end
+
+    # instantiate a beetle client
+
     b = Beetle::Client.new
-    b.register_queue("test")
-    b.register_message("test")
-    b.publish("test", "I'm a test message")
+
+    # configure exchanges, queues and messages
+
+    b.configure do |config|
+      config.queue :test
+      config.message :test
+      config.handler(:test) { |message| puts message.data }
+    end
+
+=== Publishing
+    b.publish :test, "I'm a test message"
 
 === Subscribing
-    b.register_handler("test") { |message| puts message.data }
     b.listen
 
 == Prerequisites
 
 To set up a redundant messaging system you will need
 * at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
-* at least one Redis server
+* at least one Redis server (better are two in a master/slave setup)
 
 == Gem Dependencies
 
