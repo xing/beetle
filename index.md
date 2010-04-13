@@ -8,7 +8,11 @@ Beetle is a ruby gem built on top of the two widely used [bunny][bunny_gem] and
 
 * High Availability (by using N message broker instances)
 * Redundancy (by replicating queues on 2 out of N brokers)
-* Simple client API (by encapsulating the pubslishing/ deduplification logic)
+* Simple client API (by encapsulating the message publishing / message deduplication
+  logic)
+
+The
+
 
 [amqp_gem]: http://github.com/tmm1/amqp
 [bunny_gem]: http://github.com/celldee/bunny

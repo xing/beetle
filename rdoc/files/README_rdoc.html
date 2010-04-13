@@ -56,7 +56,7 @@
     </tr>
     <tr class="top-aligned-row">
       <td><strong>Last Update:</strong></td>
-      <td>Tue Apr 13 08:35:35 +0200 2010</td>
+      <td>Tue Apr 13 15:35:03 +0200 2010</td>
     </tr>
     </table>
   </div>
@@ -124,6 +124,23 @@ href="http://xing.github.com/beetle">project website</a>.
 <pre>
     b.listen
 </pre>
+<h3>Running the Examples</h3>
+<p>
+The top level Rakefile comes with targets to start several RabbitMQ and
+redis instances locally. Make sure the corresponding binaries are in your
+search path. Open four new shell windows and execute the following
+commands:
+</p>
+<pre>
+    rake rabbit:start1
+    rake rabbit:start2
+    rake redis:start1
+    rake redis:start2
+</pre>
+<p>
+After running the redis_failover.rb example you will need to restart both
+redis servers.
+</p>
 <h2>Prerequisites</h2>
 <p>
 To set up a redundant messaging system you will need
