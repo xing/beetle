@@ -92,10 +92,11 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'beetle'
-    gemspec.version = '0.0.20'
+    gemspec.version = '0.0.21'
     gemspec.summary = "High Availability AMQP Messaging with Redundant Queues"
     gemspec.description = "A highly available, reliable messaging infrastructure"
     gemspec.email = "developers@xing.com"
+    gemspec.homepage = "http://xing.github.com/beetle/"
     gemspec.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
     gemspec.add_dependency('uuid4r', '>=0.1.1')
     gemspec.add_dependency('bunny', '>=0.6.0')
