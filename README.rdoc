@@ -41,6 +41,8 @@ More information can be found on the {project website}[http://xing.github.com/be
 === Subscribing
     b.listen
 
+:include: examples/README.rdoc
+
 == Prerequisites
 
 To set up a redundant messaging system you will need
