@@ -1,49 +1,34 @@
-# A simple usage example for Beetle
-# pass --redundant to this script to use redundant messaging
+# simple.rb
+# this example shows you a very basic message/handler setup
+#
+#
+#
+# ! check the examples/README.rdoc for information on starting your redis/rabbit !
+#
+# start it with ruby multiple_exchanges.rb
+
 require "rubygems"
-require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
-redundant = ARGV.include?('--redundant')
-
-# suppress debug messages
+# set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
-# use two servers
-Beetle.config.servers = "localhost:5672, localhost:5673"
-# instantiate a client
+
+# setup client
 client = Beetle::Client.new
-
-# register a durable queue named 'test'
-# this implicitly registers a durable topic exchange called 'test'
 client.register_queue(:test)
+client.register_message(:test)
+
+# purge the test queue
 client.purge(:test)
-client.register_message(:test, :redundant => redundant)
 
-# publish some test messages
-# at this point, the exchange will be created on the server and the queue will be bound to the exchange
-N = 3
-n = 0
-N.times do |i|
-  n += client.publish(:test, "Hello#{i+1}")
-end
-puts "published #{n} test messages"
-puts
+# empty the dedup store
+client.deduplication_store.flushdb
 
-expected_publish_count = redundant ? 2*N : N
-if n != expected_publish_count
-  puts "could not publish all messages"
-  exit 1
-end
+# register our handler to the message, check out the message.rb for more stuff you can get from the message object
+client.register_handler(:test) {|message| puts "got message: #{message.data}"}
 
-# register a handler for the test message, listing on queue "test"
-k = 0
-client.register_handler(:test) do |m|
-  k += 1
-  puts "Received test message from server #{m.server}"
-  puts m.msg_id
-  p m.header
-  puts "Message content: #{m.data}"
-  puts
-end
+# publish our message
+client.publish(:test, 'bam')
 
 # start listening
 # this starts the event machine event loop using EM.run
@@ -52,5 +37,3 @@ client.listen do
   EM.add_timer(0.1) { client.stop_listening }
 end
 
-puts "Received #{k} test messages"
-raise "Your setup is borked" if N != k
