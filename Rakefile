@@ -92,7 +92,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'beetle'
-    gemspec.version = '0.0.21'
+    gemspec.version = '0.1'
     gemspec.summary = "High Availability AMQP Messaging with Redundant Queues"
     gemspec.description = "A highly available, reliable messaging infrastructure"
     gemspec.email = "developers@xing.com"
