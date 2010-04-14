@@ -106,7 +106,7 @@ How a handler is registered was already briefly described in the [wiring][wiring
 ## Exception handling
 <a name="exceptions" />
 
-The Handlers allow extensive modifications on its behavior in case an exception occurs. You can configure the maximum number of retries, the number of exceptions that occur while running the handler as well as callbacks in case of errors (and even in case the handler has finally failed / hit the maximum numbers of exceptions). Please refer to the rdoc about [register_handler](/beetle/rdoc/classes/Beetle/Client.html#M000048) and [the handler class](/beetle/rdoc/classes/Beetle/Handler.html) in general, since that's an delicate component of the Beetle architecture and effects the message processing significantly.
+The Handlers allow extensive modifications on its behavior in case an exception occurs. You can configure the maximum number of retries, the number of exceptions that occur while running the handler as well as callbacks in case of errors (and even in case the handler has finally failed / hit the maximum numbers of exceptions). Please refer to the rdoc about [register_handler](/beetle/rdoc/classes/Beetle/Client.html#M000048) and of course the [handling exceptions example][exception_example], since that's an delicate component of the Beetle architecture and effects the message processing significantly.
 
 # Redis failover
 <a name="redis_failover" />
@@ -115,6 +115,7 @@ In case the Redis server dies and you wan't to allow the consumers to switch ove
 Until we come up with a automated solution (for example by [Leader election][leader_election]) one of the old slaves has to be made to a master manually. This can be achieved through the protocol itself (by sending the command `SLAVEOF no one`) or by changing the Redis configuration files and restarting the service. **TODO**
 
 [beetle_examples]: http://github.com/xing/beetle/tree/master/examples/
+[exception_example]: http://github.com/xing/beetle/tree/master/examples/handling_exceptions.rb
 [redis_failover]: #redis_failover
 [wiring]: #wiring
 [configuration]: #configuration
