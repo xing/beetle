@@ -4,9 +4,10 @@ require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
 # suppress debug messages
 Beetle.config.logger.level = Logger::DEBUG
-
+Beetle.config.servers = "localhost:5672, localhost:5673"
 # instantiate a client
-client = Beetle::Client.new(:servers => "localhost:5672, localhost:5673")
+
+client = Beetle::Client.new
 
 # register a durable queue named 'test'
 # this implicitly registers a durable topic exchange called 'test'
