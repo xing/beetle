@@ -104,6 +104,10 @@ html>body #content {
 	margin-top: 0px;
 }
 
+#content ul {
+        padding-left: 15px;
+}
+
 #sidebar {
 	margin: 0;
 	padding: 0;
