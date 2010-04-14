@@ -13,7 +13,7 @@ title: Beetle - API
 
 If you prefer code examples over written documentation, have a look at the [examples][beetle_examples] in the Beetle source which should help you to understand the basic concepts of wiring, publishing and subscribing and the specifics when dealing with different use-cases.
 
-# Configuration and Infrastructure
+## Configuration and Infrastructure
 <a name="configuration" />
 Depending on the level of reliability and fault tolerance you need to achieve with Beetle, you have to setup your server infrastructure and the Beetle library accordingly.
 If you need failover when publishing messages, you need of course at least two message brokers (If you don't need failover or redundancy, you probaply shouldn't use Beetle at all since there are simpler solutions available that might just be perfect for your requirements. [Minion][minion] is one of these). 
@@ -33,7 +33,7 @@ Beetle.config.servers = "message_broker_1:5672, message_broker_2:5673"
 
 Consult [the configuration documentation][config_rdoc] for a complete list of the configuration options.
     
-# The Client
+## The Client
 <a name="client" />
 Beetle internally uses different classes for subscribing and publishing of messages, however this is completely transparent for the user. The class of interest for the programmer is `Beetle::Client` which is used for wiring, subscribing and publishing.
 The client can be initialized with an configured instance of `Beetle::Configuration` in case you need multiple clients with different Redis and/or Brokers. Usually you can rely on the global Beetle configuration and just instantiate a client object to work with.
@@ -42,7 +42,7 @@ The client can be initialized with an configured instance of `Beetle::Configurat
 client = Beetle::Client.new
 {% endhighlight %}
 
-## Wiring
+### Wiring
 <a name="wiring" />
 
 Wiring defines which message gets routed to which queue and which processor listens to which queue. A message needs to be configured with publishing options that manage attributes like redundancy and a name. To subscribe to a certain message a queue has to be bound to the same exchange as the message is been sent to with a binding key that matches the publishing key of the message. Let's look at the simplest example to wire a subscriber to a message called "user_created".
@@ -70,8 +70,13 @@ client.configure :exchange => :user_exchange do |config|
   config.message :user_deleted, :key => "deleted_user"
   config.message :user_updated, :key => "user_has_been_updated"
 
-  config.handler(:general_user_subscriber) { puts "Queue: general_user_subscriber" }
-  config.handler(:user_creation_subscriber) { puts "Queue: user_has_been_updated" }
+  config.handler(:general_user_subscriber) do |m|
+    puts "Queue: general_user_subscriber"
+  end
+
+  config.handler(:user_creation_subscriber) do |m|
+    puts "Queue: user_has_been_updated"
+  end
 end
 {% endhighlight %}
 
@@ -84,7 +89,7 @@ For detailed information about the wiring have a look at the rdoc for:
 * [register_queue](/beetle/rdoc/classes/Beetle/Client.html#M000045)
 * [register_bindign](/beetle/rdoc/classes/Beetle/Client.html#M000046)
 
-## Publishing
+### Publishing
 <a name="publishing" />
 
 After a message has been configured, publishing is as simple as calling `client.publish` with the message name as the first and the payload (in form of a string) as the second argument. Of course you can send whatever string you want as the payload, as long as your subscriber/handler is able to deal with the received data.
@@ -94,25 +99,25 @@ client.publish(:user_created, {:id => 42, :activated => false}.to_json)
 {% endhighlight %}
 
 
-## Subscribing
+### Subscribing
 <a name="subscribing" />
 
 Beetle handlers are subscribing to queues and not to messages directly at the moment. This means that the queue has to be configured in a way that the messages that are meant to be received by the client (and only those!) will be routed into the queue.
 
 We'll provide a simplified interface in a later release which will allow you to simplify that setup a lot and to subscribe directly to messages instead of queues (of course the handlers will still listen to queues, but the binding will be handled transparently to the user).
 
-How a handler is registered was already briefly described in the [wiring][wiring] section of this document. The handler will be called with one argument, which is an instance of [Beetle::Message][beetle_message_rdoc].
+How a handler is registered was already briefly described in the [wiring][wiring] section of this document. The handler will be called with one argument, which is an instance of [Beetle::Message][beetle_message_rdoc]. To actually start subscribing your handlers to the queues, call [listen][client_listen_rdoc] on the client.
 
-## Exception handling
+### Exception handling
 <a name="exceptions" />
 
 The Handlers allow extensive modifications on its behavior in case an exception occurs. You can configure the maximum number of retries, the number of exceptions that occur while running the handler as well as callbacks in case of errors (and even in case the handler has finally failed / hit the maximum numbers of exceptions). Please refer to the rdoc about [register_handler](/beetle/rdoc/classes/Beetle/Client.html#M000048) and of course the [handling exceptions example][exception_example], since that's an delicate component of the Beetle architecture and effects the message processing significantly.
 
-# Redis failover
+## Redis failover
 <a name="redis_failover" />
 In case the Redis server dies and you wan't to allow the consumers to switch over to the slave, you have promote the slave to the new master. The consumers will constantly try to find a new master from the ones configured. The failover and promotion of a new Redis master isn't done automatically at the moment because there are still some problems to overcome in case the old master is reachable again after he crashed or the network recovered from partitioning. One obvious risk would be that some of the consumers will switch to a new Redis instance, while others will stick to the old one. That'd be pretty much a worse case scenario because messages could get processed twice.
 
-Until we come up with a automated solution (for example by [Leader election][leader_election]) one of the old slaves has to be made to a master manually. This can be achieved through the protocol itself (by sending the command `SLAVEOF no one`) or by changing the Redis configuration files and restarting the service. **TODO**
+Until we come up with a automated solution (for example by [Leader election][leader_election]) one of the old slaves has to be made to a master manually. This can be achieved through the protocol itself (by sending the command `SLAVEOF no one`) or by changing the Redis configuration files and restarting the service.
 
 [beetle_examples]: http://github.com/xing/beetle/tree/master/examples/
 [exception_example]: http://github.com/xing/beetle/tree/master/examples/handling_exceptions.rb
@@ -126,4 +131,6 @@ Until we come up with a automated solution (for example by [Leader election][lea
 [minion]: http://github.com/orionz/minion
 [leader_election]: http://en.wikipedia.org/wiki/Leader_election
 [config_rdoc]: /beetle/rdoc/classes/Beetle/Configuration.html
-[beetle_message_rdoc]: /beetle/rdoc/classes/Beetle/Message.html
+[beetle_message_rdoc]: /beetle/rdoc/classes/Beetle/Message.html 
+[client_listen_rdoc]: /beetle/rdoc/classes/Beetle/Client.html#M000053
+
