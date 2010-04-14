@@ -2,7 +2,7 @@
 # this example shows you how to use the exception limiting feature of beetle
 # it allows you to control the number of retries your handler will go through
 #
-# ! check the examples/README for information on starting your redis/rabbit !
+# ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
 # start it with ruby attempts.rb
 
