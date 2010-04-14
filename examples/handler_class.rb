@@ -48,10 +48,11 @@ client.register_handler(:test, Handler)
 
 # publish 10 test messages
 message_count = 10
-message_count.times {|i| client.publish(:test, i) }
-puts "published #{message_count} test messages"
+published     = 0
+message_count.times {|i| published += client.publish(:test, i) } # publish returns the number of servers the message has been sent to
+puts "published #{published} test messages"
 
-# start our client listens, and stop it with a timer
+# start our listening loop and stop it with a timer -
 # the 0.1 figure should be well above the time necessary to handle
 # all 10 messages
 client.listen do
