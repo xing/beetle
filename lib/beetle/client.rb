@@ -9,14 +9,17 @@ module Beetle
   # configuration, they don't interact with the AMQP servers.
   #
   # On the publisher side, publishing a message will ensure that the exchange it will be
-  # sent to, and each of the that will receive a copy of the message, along with their
-  # correpsonding bindings will be created lazily. On the subscriber side, exchanges,
-  # queues and bindings will be created when the application starts listening.
+  # sent to, and each of the queues bound to the exchange, will be created on demand. On
+  # the subscriber side, exchanges, queues, bindings and queue subscriptions will be
+  # created when the application calls the listen method. An application can decide to
+  # subscribe to only a subset of the configured queues by passing a list of queue names
+  # to the listen method.
   #
   # The net effect of this strategy is that producers and consumers can be started in any
-  # order.
+  # order, so that no message is lost if message producers are accidentally started before
+  # the corresponding consumers.
   class Client
-    # the servers available for publishing
+    # the AMQP servers available for publishing
     attr_reader :servers
 
     # an options hash for the configured exchanges
@@ -134,8 +137,9 @@ module Beetle
       subscriber.register_handler(queues, opts, handler, &block)
     end
 
-    # configures exchanges, queues, messages and handlers with a common set of options.
-    # allows one to call all register methods without the register_ prefix.
+    # this is a convenience method to configure exchanges, queues, messages and handlers
+    # with a common set of options. allows one to call all register methods without the
+    # register_ prefix.
     #
     # Example:
     #  client.configure :exchange => :foobar do |config|

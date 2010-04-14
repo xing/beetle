@@ -2,11 +2,11 @@ module Beetle
   class Configuration
     # default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
     attr_accessor :logger
-    # number of seconds after which keys are removed form the message deduplification store (defaults to <tt>3.days</tt>)
+    # number of seconds after which keys are removed form the message deduplication store (defaults to <tt>3.days</tt>)
     attr_accessor :gc_threshold
-    # the machines where the deduplification store lives (defaults to <tt>"localhost"</tt>)
+    # the machines where the deduplication store lives (defaults to <tt>"localhost:6379"</tt>)
     attr_accessor :redis_hosts
-    # redis database number to use for the message deduplification store (defaults to <tt>4</tt>)
+    # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
@@ -14,7 +14,7 @@ module Beetle
     attr_accessor :vhost
     # the AMQP user to use when connecting to the AMQP servers
     attr_accessor :user
-    # the apssword to use when connectiong to the AMQP servers
+    # the password to use when connectiong to the AMQP servers
     attr_accessor :password
 
     def initialize #:nodoc:

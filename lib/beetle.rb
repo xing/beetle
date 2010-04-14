@@ -34,12 +34,12 @@ module Beetle
   # use ruby's autoload mechanism for loading beetle classes
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|
-    autoload File.basename(libfile)[/(.*)\.rb/, 1].classify, libfile
+    autoload File.basename(libfile)[/^(.*)\.rb$/, 1].classify, libfile
   end
 
-  # returns the configuration object and yields it if a block is given
+  # returns the default configuration object and yields it if a block is given
   def self.config
-     #:yields: config
+    #:yields: config
     @config ||= Configuration.new
     block_given? ? yield(@config) : @config
   end
