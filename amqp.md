@@ -3,8 +3,7 @@ layout: default
 title: Beetle - AMQP Concepts
 ---
 
-AMQP
-====
+## AMQP Concepts
 
 AMQP is the message bus used by beetle to publish and receive
 messages.  This page provides you with some information to help you to
@@ -22,8 +21,7 @@ version of the spec. However, you can safely read the 0.10 version,
 because the differences to 0.8 aren't critical in our case and it's a
 way better read.
 
-Broker
-====
+### Message Broker
 
 The message broker is the messaging middleware between clients that
 communicate via AMQP messaging. There are some popular implementations
@@ -32,8 +30,7 @@ broker of choice, because it is easy to setup, highly reliable,
 resource friendly and comes with no other requirement than
 [Erlang][erlang_home].
 
-Messages
-======
+### Messages
 
 The message is the actual payload together with headers and a routing
 key. A message is always sent with a routing key, which is used to
@@ -41,8 +38,7 @@ determine in which queue(s) a message will end up finally. The header
 contains some data used by the broker and clients as well as optional
 custom user data.
 
-Exchanges
-======
+### Exchanges
 
 You never send messages directly to queues. That would actually be
 contrary to the idea of loose cupling you generally want to achieve
@@ -52,8 +48,7 @@ queues. Depending on the type of the exchange, the routing is handled
 by a simple routing key, a topic routing key or simply by distributing
 the message to every queue that is bound to the exchange.
 
-Topic exchanges
--------------
+#### Topic exchanges
 
 In this brief introduction we'll only discuss topic exchanges since
 they are currently the only type of exchanges used by Beetle.
@@ -75,8 +70,7 @@ that describes the behaviour of topic exchanges quite well:
 > Thus the binding key "\*.stock.#" matches the routing keys "usd.stock"
 > and "eur.stock.db" but not "stock.nasdaq".
 
-Queues
-=====
+### Queues
 
 Queues are the endpoint in the message system. A client can only
 receive messages if he is in some way subscribed to a queue. There is
