@@ -1,13 +1,14 @@
 # attempts.rb
 # this example shows you how to use the exception limiting feature of beetle
 # it allows you to control the number of retries your handler will go through
+# with one message before giving up on it
 #
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
 # start it with ruby attempts.rb
 
 require "rubygems"
-require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
 # set Beetle log level to info, noisy but great for testing
 Beetle.config.logger.level = Logger::INFO

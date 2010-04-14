@@ -1,5 +1,7 @@
 # handler.rb
 # this example shows you how to create a simple Beetle::Handler to process your messages
+#
+#
 # 
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
@@ -31,11 +33,14 @@ $counter = 0
 # already implemented - see message.rb for more documentation on what you
 # can do with it
 class Handler < Beetle::Handler
+
+  # called when the handler receives the message
   def process
     i = message.data.to_i
     logger.info "adding #{i}"
     $counter += i
   end
+
 end
 
 # register our handler to the message
