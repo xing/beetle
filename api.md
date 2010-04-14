@@ -39,7 +39,7 @@ Beetle internally uses different classes for subscribing and publishing of messa
 The client can be initialized with an configured instance of `Beetle::Configuration` in case you need multiple clients with different Redis and/or Brokers. Usually you can rely on the global Beetle configuration and just instantiate a client object to work with.
 
 {% highlight ruby %}
-  client = Beetle::Client.new
+client = Beetle::Client.new
 {% endhighlight %}
 
 ## Wiring
@@ -78,11 +78,11 @@ end
 If you'd send a user_created, user_deleted and a user_updated message, the general_user_subscriber handler would receive all of them (because he is bound with the "#" as the binding key which matches every publishing key), while the user_creation handler will only receive the user_created message.
 
 For detailed information about the wiring have a look at the rdoc for:
-* [register_message](/rdoc/classes/Beetle/Client.html#M000047)
-* [register_handler](/rdoc/classes/Beetle/Client.html#M000048)
-* [register_exchange](/rdoc/classes/Beetle/Client.html#M000044)
-* [register_queue](/rdoc/classes/Beetle/Client.html#M000045)
-* [register_bindign](/rdoc/classes/Beetle/Client.html#M000046)
+* [register_message](/beetle/rdoc/classes/Beetle/Client.html#M000047)
+* [register_handler](/beetle/rdoc/classes/Beetle/Client.html#M000048)
+* [register_exchange](/beetle/rdoc/classes/Beetle/Client.html#M000044)
+* [register_queue](/beetle/rdoc/classes/Beetle/Client.html#M000045)
+* [register_bindign](/beetle/rdoc/classes/Beetle/Client.html#M000046)
 
 ## Publishing
 <a name="publishing" />
@@ -106,7 +106,7 @@ How a handler is registered was already briefly described in the [wiring][wiring
 ## Exception handling
 <a name="exceptions" />
 
-The Handlers allow extensive modifications on its behavior in case an exception occurs. You can configure the maximum number of retries, the number of exceptions that occur while running the handler as well as callbacks in case of errors (and even in case the handler has finally failed / hit the maximum numbers of exceptions). Please refer to the rdoc about [register_handler](/rdoc/classes/Beetle/Client.html#M000048) and [the handler class](/rdoc/classes/Beetle/Handler.html) in general, since that's an delicate component of the Beetle architecture and effects the message processing significantly.
+The Handlers allow extensive modifications on its behavior in case an exception occurs. You can configure the maximum number of retries, the number of exceptions that occur while running the handler as well as callbacks in case of errors (and even in case the handler has finally failed / hit the maximum numbers of exceptions). Please refer to the rdoc about [register_handler](/beetle/rdoc/classes/Beetle/Client.html#M000048) and [the handler class](/beetle/rdoc/classes/Beetle/Handler.html) in general, since that's an delicate component of the Beetle architecture and effects the message processing significantly.
 
 # Redis failover
 <a name="redis_failover" />
@@ -124,5 +124,5 @@ Until we come up with a automated solution (for example by [Leader election][lea
 [exceptions]: #exceptions
 [minion]: http://github.com/orionz/minion
 [leader_election]: http://en.wikipedia.org/wiki/Leader_election
-[config_rdoc]: /rdoc/classes/Beetle/Configuration.html
-[beetle_message_rdoc]: /rdoc/classes/Beetle/Message.html
+[config_rdoc]: /beetle/rdoc/classes/Beetle/Configuration.html
+[beetle_message_rdoc]: /beetle/rdoc/classes/Beetle/Message.html
