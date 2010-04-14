@@ -37,7 +37,7 @@ A typical configuration of a messaging system built with beetle looks like this:
 
 <div id="arch_img">
   <a href="/beetle/images/architecture.jpg">
-    <img src="/beetle/images/architecture.jpg" alt="Architecture" width="100%" height="100%"  border="0" />
+    <img src="/beetle/images/architecture.jpg" alt="Architecture" width="480px" height="360px"  border="0" />
   </a>
 </div>
 
