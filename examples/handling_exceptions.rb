@@ -48,13 +48,16 @@ end
 # register our handler to the message, configure it to our max_exceptions limit, we configure a delay of 0 to have it not wait before retrying
 client.register_handler(:test, Handler, :exceptions => 1, :delay => 0)
 
-# publish some test messages
+# publish 10 test messages
 n = 0
-10.times { |i| n += client.publish(:test, i+1) }
+10.times { |i| n += client.publish(:test, i+1) } # publish returns the number of servers the message has been sent to
 puts "published #{n} test messages"
 
+# start the listening loop
 client.listen do
+  # catch INT-signal and stop listening
   trap("INT") { client.stop_listening }
+  # we're adding a periodic timer to check wether all 10 messages have been processed without exceptions
   timer = EM.add_periodic_timer(1) do
     if $completed == n
       timer.cancel

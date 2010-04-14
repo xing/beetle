@@ -55,7 +55,7 @@ client.register_handler(:test, Handler, :exceptions => $max_exceptions, :delay =
 # publish a our test message
 client.publish(:test, "snafu")
 
-# and wait...
+# and start our listening loop...
 client.listen
 
 # error handling, if everything went right this shouldn't happen.
