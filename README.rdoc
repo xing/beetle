@@ -27,7 +27,7 @@ More information can be found on the {project website}[http://xing.github.com/be
 
     b = Beetle::Client.new
 
-    # configure exchanges, queues and messages
+    # configure exchanges, queues, bindings, messages and handlers
 
     b.configure do |config|
       config.queue :test

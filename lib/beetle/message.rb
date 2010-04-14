@@ -1,9 +1,10 @@
 require "timeout"
 
 module Beetle
-  # Instance of class Message are created when a scubscription callback fires. It is
-  # responsible for message deduplification and determining if it should retry executing
-  # the message handler after a handler has crashed. This is where the beef is.
+  # Instances of class Message are created when a scubscription callback fires. Class
+  # Message contains the code responsible for message deduplication and determining if it
+  # should retry executing the message handler after a handler has crashed (or forcefully
+  # aborted).
   class Message
     # current message format version
     FORMAT_VERSION = 1
@@ -11,7 +12,7 @@ module Beetle
     FLAG_REDUNDANT = 1
     # default lifetime of messages
     DEFAULT_TTL = 1.day
-    # forcefully abort a running handler after this many seonds.
+    # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
     DEFAULT_HANDLER_TIMEOUT = 300.seconds
     # how many times we should try to run a handler before giving up
@@ -93,7 +94,7 @@ module Beetle
       opts
     end
 
-    # unique message id. used to form various Redis keys.
+    # unique message id. used to form various keys in the deduplication store.
     def msg_id
       @msg_id ||= "msgid:#{queue}:#{uuid}"
     end
@@ -123,12 +124,12 @@ module Beetle
       @flags & FLAG_REDUNDANT == FLAG_REDUNDANT
     end
 
-    # whether this is a message we can process without accessing redis
+    # whether this is a message we can process without accessing the deduplication store
     def simple?
       !redundant? && attempts_limit == 1
     end
 
-    # store handler timeout timestamp into Redis
+    # store handler timeout timestamp in the deduplication store
     def set_timeout!
       @store.set(msg_id, :timeout, now + timeout)
     end
@@ -138,7 +139,7 @@ module Beetle
       (t = @store.get(msg_id, :timeout)) && t.to_i < now
     end
 
-    # reset handler timeout in Redis
+    # reset handler timeout in the deduplication store
     def timed_out!
       @store.set(msg_id, :timeout, 0)
     end
@@ -148,7 +149,7 @@ module Beetle
       @store.get(msg_id, :status) == "completed"
     end
 
-    # mark message handling complete in Redis
+    # mark message handling complete in the deduplication store
     def completed!
       @store.set(msg_id, :status, "completed")
       timed_out!
@@ -159,7 +160,7 @@ module Beetle
       (t = @store.get(msg_id, :delay)) && t.to_i > now
     end
 
-    # store delay value in REdis
+    # store delay value in the deduplication store
     def set_delay!
       @store.set(msg_id, :delay, now + delay)
     end
@@ -179,7 +180,7 @@ module Beetle
       (limit = @store.get(msg_id, :attempts)) && limit.to_i >= attempts_limit
     end
 
-    # increment number of exception occurences in Redis
+    # increment number of exception occurences in the deduplication store
     def increment_exception_count!
       @store.incr(msg_id, :exceptions)
     end
@@ -190,7 +191,7 @@ module Beetle
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
-    # the message exipration time in Redis.
+    # the message exipration timestamp in the deduplication store.
     def key_exists?
       old_message = 0 == @store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at)
       if old_message
@@ -320,14 +321,13 @@ module Beetle
       Beetle.config.logger
     end
 
-    # ack the message for rabbit. delete all keys if we are sure this is the last message
-    # with the given message id. if deleting the keys fails (network problem for example),
-    # the keys will be deleted by the class method garbage_collect_keys.
+    # ack the message for rabbit. deletes all keys associated with this message in the
+    # deduplication store if we are sure this is the last message with the given msg_id.
     def ack!
       #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
-      return if simple? # simple messages don't use redis
+      return if simple? # simple messages don't use the deduplication store
       if !redundant? || @store.incr(msg_id, :ack_count) == 2
         @store.del_keys(msg_id)
       end
