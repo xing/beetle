@@ -11,12 +11,12 @@ title: Beetle - API
 + [Exceptions][]
 * [Wiring][wiring]
 
-If you prefer code examples over written documentation, have a look at the Beetle source which contains quite some [examples][beetle_examples] which should help you to understand the basic concepts of wiring, publishing and subscribing and the specifics of different use-cases.
+If you prefer code examples over written documentation, have a look at the [examples][beetle_examples] in the Beetle source which should help you to understand the basic concepts of wiring, publishing and subscribing and the specifics when dealing with different use-cases.
 
 # Configuration and Infrastructure
 <a name="configuration" />
 Depending on the level of reliability and fault tolerance you need to achieve with Beetle, you have to setup your server infrastructure and the Beetle library accordingly.
-If you need failover when publishing messages, you need of course at least two message brokers (If you don't need failover or redundancy at all, you probaply shouldn't use Beetle at all since there are simpler solutions available that might just be perfect for your requirements. [Minion][minion] is one of these). 
+If you need failover when publishing messages, you need of course at least two message brokers (If you don't need failover or redundancy, you probaply shouldn't use Beetle at all since there are simpler solutions available that might just be perfect for your requirements. [Minion][minion] is one of these). 
 
 Having two Redis servers, running in master/slave replication mode, available allows you to switch over to the slave in case the master dies. Read more about that in the section about the [Redis Failover][redis_failover].
 
