@@ -59,17 +59,10 @@ html>body #wrapper {
 	text-shadow: 0px 2px 4px #000;
 }
 #navigation li a {
-	color: #5b5b5b;
+	color: #cccccc;
 	text-decoration: none;
 }
 
-#intro		#navi_intro			a,
-#blog			#navi_blog			a,
-#toc			#navi_manual		a,
-#chapter		#navi_manual		a,
-#wiki			#navi_wiki			a,
-#community	#navi_community	a,
-#contact		#navi_contact		a,
 #navigation li a:hover {
 	color: #fff;
 }
