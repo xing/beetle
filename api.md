@@ -22,14 +22,14 @@ Having two Redis servers, running in master/slave replication mode, available al
 
 Beetle can be configured using Beetle.configure
     
-    {% highlight ruby %}
-    Beetle.config do |config|
-      config.redis_hosts = "redis_host_1:6379, redis_host_2:6380"
-      config.logger = Logger.new(STDOUT)
-    end
+{% highlight ruby %}
+Beetle.config do |config|
+  config.redis_hosts = "redis_host_1:6379, redis_host_2:6380"
+  config.logger = Logger.new(STDOUT)
+end
 
-    Beetle.config.servers = "message_broker_1:5672, message_broker_2:5673"
-    {% endhighlight %}
+Beetle.config.servers = "message_broker_1:5672, message_broker_2:5673"
+{% endhighlight %}
 
 Consult [the configuration documentation][config_rdoc] for a complete list of the configuration options.
     
@@ -38,22 +38,22 @@ Consult [the configuration documentation][config_rdoc] for a complete list of th
 Beetle internally uses different classes for subscribing and publishing of messages, however this is completely transparent for the user. The class of interest for the programmer is `Beetle::Client` which is used for wiring, subscribing and publishing.
 The client can be initialized with an configured instance of `Beetle::Configuration` in case you need multiple clients with different Redis and/or Brokers. Usually you can rely on the global Beetle configuration and just instantiate a client object to work with.
 
-  {% highlight ruby %}
-    client = Beetle::Client.new
-  {% endhighlight %}
+{% highlight ruby %}
+  client = Beetle::Client.new
+{% endhighlight %}
 
 ## Wiring
 <a name="wiring" />
 
 Wiring defines which message gets routed to which queue and which processor listens to which queue. A message needs to be configured with publishing options that manage attributes like redundancy and a name. To subscribe to a certain message a queue has to be bound to the same exchange as the message is been sent to with a binding key that matches the publishing key of the message. Let's look at the simplest example to wire a subscriber to a message called "user_created".
 
-  {% highlight ruby %}
-  client.register_queue(:user_created)
-  client.register_message(:user_created)
-  client.register_handler(:user_created) do |m|
-    # the subscriber code
-  end
-  {% endhighlight %}
+{% highlight ruby %}
+client.register_queue(:user_created)
+client.register_message(:user_created)
+client.register_handler(:user_created) do |m|
+  # the subscriber code
+end
+{% endhighlight %}
 
 This registers a queue named "user_created", a message "user_created" which will be published to the exchange "user_created" with the publishing key "user_created"... you get the idea, right?
 
@@ -61,19 +61,19 @@ We have quite some conventions here which need to be explained. If no binding/pu
 
 Of course you can configure every component involved in the wiring if you need more control over whats happening internally. Say for example you want to publish multiple messages to the same exchange and bind queues to a subset of these exchanges.
 
-  {% highlight ruby %}
-    client.configure :exchange => :user_exchange do |config|
-      config.queue :general_user_subscriber, :key => "#"
-      config.queue :user_creation_subscriber, :key => "user_created"
+{% highlight ruby %}
+client.configure :exchange => :user_exchange do |config|
+  config.queue :general_user_subscriber, :key => "#"
+  config.queue :user_creation_subscriber, :key => "user_created"
 
-      config.message :user_created
-      config.message :user_deleted, :key => "deleted_user"
-      config.message :user_updated, :key => "user_has_been_updated"
+  config.message :user_created
+  config.message :user_deleted, :key => "deleted_user"
+  config.message :user_updated, :key => "user_has_been_updated"
 
-      config.handler(:general_user_subscriber) { puts "Queue: general_user_subscriber" }
-      config.handler(:user_creation_subscriber) { puts "Queue: user_has_been_updated" }
-    end
-  {% endhighlight %}
+  config.handler(:general_user_subscriber) { puts "Queue: general_user_subscriber" }
+  config.handler(:user_creation_subscriber) { puts "Queue: user_has_been_updated" }
+end
+{% endhighlight %}
 
 If you'd send a user_created, user_deleted and a user_updated message, the general_user_subscriber handler would receive all of them (because he is bound with the "#" as the binding key which matches every publishing key), while the user_creation handler will only receive the user_created message.
 
@@ -89,9 +89,9 @@ For detailed information about the wiring have a look at the rdoc for:
 
 After a message has been configured, publishing is as simple as calling `client.publish` with the message name as the first and the payload (in form of a string) as the second argument. Of course you can send whatever string you want as the payload, as long as your subscriber/handler is able to deal with the received data.
   
-  {% highlight ruby %}
-    client.publish(:user_created, {:id => 42, :activated => false}.to_json)
-  {% endhighlight %}
+{% highlight ruby %}
+client.publish(:user_created, {:id => 42, :activated => false}.to_json)
+{% endhighlight %}
 
 
 ## Subscribing
@@ -101,7 +101,7 @@ Beetle handlers are subscribing to queues and not to messages directly at the mo
 
 We'll provide a simplified interface in a later release which will allow you to simplify that setup a lot and to subscribe directly to messages instead of queues (of course the handlers will still listen to queues, but the binding will be handled transparently to the user).
 
-How a handler is registered was already briefly described in the [wiring][wiring] section of this document. The handler will be called with one argument, which is an instance of [Beetle::Message][beetle_message_rdoc]
+How a handler is registered was already briefly described in the [wiring][wiring] section of this document. The handler will be called with one argument, which is an instance of [Beetle::Message][beetle_message_rdoc].
 
 ## Exception handling
 <a name="exceptions" />
