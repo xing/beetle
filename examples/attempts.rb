@@ -1,15 +1,16 @@
 # attempts.rb
 # this example shows you how to use the exception limiting feature of beetle
 # it allows you to control the number of retries your handler will go through
+# with one message before giving up on it
 #
-# ! check the examples/README for information on starting your redis/rabbit !
+# ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
 # start it with ruby attempts.rb
 
 require "rubygems"
-require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
-# set Beetle log level to info, noisy but great for testing
+# set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
 
 # setup client
@@ -27,7 +28,9 @@ client.deduplication_store.flushdb
 $exceptions = 0
 $max_exceptions = 10
 
-# this is our message handler, it's wired to the message and will process the message 
+# declare a handler class for message processing
+# in this example we've not only overwritten the process method but also the
+# error and failure methods of the handler baseclass
 class Handler < Beetle::Handler
   
   # called when the handler receives the message - fail everytime
@@ -54,7 +57,7 @@ client.register_handler(:test, Handler, :exceptions => $max_exceptions, :delay =
 # publish a our test message
 client.publish(:test, "snafu")
 
-# and wait...
+# and start our listening loop...
 client.listen
 
 # error handling, if everything went right this shouldn't happen.
