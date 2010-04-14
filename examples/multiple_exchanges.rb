@@ -39,8 +39,9 @@ end
 client.publish(:foo, "message from foo exchange")
 client.publish(:bar, "message from bar exchange")
 
-# start the listen loop and stop listening after 0.1 seconds
-# this should be more than enough time to finish processing our messages
+# this starts the event machine event loop using EM.run
+# stop listening after 0.1 seconds this should be more than enough time
+# to finish processing our messages
 client.listen do
   EM.add_timer(0.1) { client.stop_listening }
 end

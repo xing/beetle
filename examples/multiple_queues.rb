@@ -1,6 +1,6 @@
 # multiple_queues.rb
-# 
-# 
+# this example shows how to route a message thru two queues to two handlers 
+# we're using the client.configure block to not duplicate our settings
 # 
 # 
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
