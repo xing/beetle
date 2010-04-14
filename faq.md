@@ -7,7 +7,7 @@ title: Beetle - Frequently Asked Questions
 
 If it's not fast enough for your use case. For example, we use RabbitMQ directly for our
 application logging. Other examples: streaming videos through your messaging system, using
-RabbitmMQ as a reverse http proxy.
+RabbitMQ as a reverse http proxy.
 
 ***What does High Availability mean?***
 
