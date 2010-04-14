@@ -10,7 +10,7 @@
 require "rubygems"
 require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
-# set Beetle log level to info, noisy but great for testing
+# set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
 
 # setup client
