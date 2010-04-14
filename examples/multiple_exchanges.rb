@@ -5,7 +5,7 @@
 # your handler will then receive messages from both exchanges
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
-# start it with ruby attempts.rb
+# start it with ruby multiple_exchanges.rb
 
 require "rubygems"
 require File.expand_path("../lib/beetle", File.dirname(__FILE__))
