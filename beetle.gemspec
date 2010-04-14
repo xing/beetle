@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.0.20"
+  s.version = "0.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-03-30}
+  s.date = %q{2010-04-14}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -26,18 +26,21 @@ Gem::Specification.new do |s|
      "doc/redundant_queues.graffle",
      "etc/redis-master.conf",
      "etc/redis-slave.conf",
+     "examples/README.rdoc",
      "examples/attempts.rb",
      "examples/handler_class.rb",
      "examples/handling_exceptions.rb",
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
      "examples/redis_failover.rb",
+     "examples/redundant.rb",
      "examples/rpc.rb",
      "examples/simple.rb",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
      "lib/beetle/client.rb",
      "lib/beetle/configuration.rb",
+     "lib/beetle/deduplication_store.rb",
      "lib/beetle/handler.rb",
      "lib/beetle/message.rb",
      "lib/beetle/publisher.rb",
@@ -50,6 +53,7 @@ Gem::Specification.new do |s|
      "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
+     "test/beetle/deduplication_store_test.rb",
      "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
@@ -57,8 +61,10 @@ Gem::Specification.new do |s|
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
      "test/test_helper.rb",
-     "tmp/.gitignore"
+     "tmp/master/.gitignore",
+     "tmp/slave/.gitignore"
   ]
+  s.homepage = %q{http://xing.github.com/beetle/}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.5}
@@ -68,6 +74,7 @@ Gem::Specification.new do |s|
      "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
+     "test/beetle/deduplication_store_test.rb",
      "test/beetle/handler_test.rb",
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
@@ -81,6 +88,7 @@ Gem::Specification.new do |s|
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
      "examples/redis_failover.rb",
+     "examples/redundant.rb",
      "examples/rpc.rb",
      "examples/simple.rb"
   ]
