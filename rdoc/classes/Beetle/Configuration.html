@@ -104,7 +104,7 @@
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
 number of seconds after which keys are removed form the message
-deduplification store (defaults to <tt>3.days</tt>)
+deduplication store (defaults to <tt>3.days</tt>)
 
 </td>
         </tr>
@@ -120,7 +120,7 @@ default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
           <td class="context-item-name">password</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the apssword to use when connectiong to the AMQP servers
+the password to use when connectiong to the AMQP servers
 
 </td>
         </tr>
@@ -128,8 +128,8 @@ the apssword to use when connectiong to the AMQP servers
           <td class="context-item-name">redis_db</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-redis database number to use for the message deduplification store
-(defaults to <tt>4</tt>)
+redis database number to use for the message deduplication store (defaults
+to <tt>4</tt>)
 
 </td>
         </tr>
@@ -137,8 +137,8 @@ redis database number to use for the message deduplification store
           <td class="context-item-name">redis_hosts</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the machines where the deduplification store lives (defaults to
-<tt>&quot;localhost&quot;</tt>)
+the machines where the deduplication store lives (defaults to
+<tt>&quot;localhost:6379&quot;</tt>)
 
 </td>
         </tr>

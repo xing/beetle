@@ -226,7 +226,7 @@ AMQP options for subscribing to queues
       
         <div class="method-description">
           <p>
-returns the configuration object and yields it if a block is given
+returns the default configuration object and yields it if a block is given
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000001-source');return false;">[Source]</a></p>
@@ -234,7 +234,7 @@ returns the configuration object and yields it if a block is given
 <pre>
     <span class="ruby-comment cmt"># File lib/beetle.rb, line 41</span>
 41:   <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">config</span>
-42:      <span class="ruby-comment cmt">#:yields: config</span>
+42:     <span class="ruby-comment cmt">#:yields: config</span>
 43:     <span class="ruby-ivar">@config</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">Configuration</span>.<span class="ruby-identifier">new</span>
 44:     <span class="ruby-identifier">block_given?</span> <span class="ruby-value">? </span><span class="ruby-keyword kw">yield</span>(<span class="ruby-ivar">@config</span>) <span class="ruby-operator">:</span> <span class="ruby-ivar">@config</span>
 45:   <span class="ruby-keyword kw">end</span>

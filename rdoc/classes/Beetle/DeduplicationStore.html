@@ -78,6 +78,43 @@
 
   <div id="contextContent">
 
+    <div id="description">
+      <p>
+The deduplication store is used internally by <a
+href="Client.html">Beetle::Client</a> to store information on the status of
+message processing. This includes:
+</p>
+<ul>
+<li>how often a message has already been seen by some consumer
+
+</li>
+<li>whether a message has been processed successfully
+
+</li>
+<li>how many attempts have been made to execute a message handler for a given
+message
+
+</li>
+<li>how long we should wait before trying to execute the message handler after
+a failure
+
+</li>
+<li>how many exceptions have been raised during previous execution attempts
+
+</li>
+<li>how long we should wait before trying to perform the next execution attempt
+
+</li>
+<li>whether some other process is already trying to execute the message handler
+
+</li>
+</ul>
+<p>
+It also provides a method to garbage collect <a
+href="DeduplicationStore.html#M000028">keys</a> for expired messages.
+</p>
+
+    </div>
 
 
    </div>
@@ -89,22 +126,21 @@
       <a href="#M000036">del</a>&nbsp;&nbsp;
       <a href="#M000037">del_keys</a>&nbsp;&nbsp;
       <a href="#M000038">exists</a>&nbsp;&nbsp;
-      <a href="#M000041">find_redis_master</a>&nbsp;&nbsp;
+      <a href="#M000040">find_redis_master</a>&nbsp;&nbsp;
       <a href="#M000039">flushdb</a>&nbsp;&nbsp;
       <a href="#M000030">garbage_collect_keys</a>&nbsp;&nbsp;
       <a href="#M000035">get</a>&nbsp;&nbsp;
       <a href="#M000034">incr</a>&nbsp;&nbsp;
       <a href="#M000027">key</a>&nbsp;&nbsp;
       <a href="#M000028">keys</a>&nbsp;&nbsp;
-      <a href="#M000043">logger</a>&nbsp;&nbsp;
+      <a href="#M000042">logger</a>&nbsp;&nbsp;
       <a href="#M000033">msetnx</a>&nbsp;&nbsp;
       <a href="#M000029">msg_id</a>&nbsp;&nbsp;
       <a href="#M000025">new</a>&nbsp;&nbsp;
       <a href="#M000026">redis</a>&nbsp;&nbsp;
-      <a href="#M000042">redis_instances</a>&nbsp;&nbsp;
+      <a href="#M000041">redis_instances</a>&nbsp;&nbsp;
       <a href="#M000031">set</a>&nbsp;&nbsp;
       <a href="#M000032">setnx</a>&nbsp;&nbsp;
-      <a href="#M000040">with_failover</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -155,15 +191,19 @@ for storing values in Redis.
         </div>
       
         <div class="method-description">
+          <p>
+creates a <a href="DeduplicationStore.html#M000025">new</a> deduplication
+store
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000025-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000025-source">
 <pre>
-   <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 3</span>
-3:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">hosts</span> = <span class="ruby-value str">&quot;localhost:6379&quot;</span>, <span class="ruby-identifier">db</span> = <span class="ruby-value">4</span>)
-4:       <span class="ruby-ivar">@hosts</span> = <span class="ruby-identifier">hosts</span>
-5:       <span class="ruby-ivar">@db</span> = <span class="ruby-identifier">db</span>
-6:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 15</span>
+15:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">hosts</span> = <span class="ruby-value str">&quot;localhost:6379&quot;</span>, <span class="ruby-identifier">db</span> = <span class="ruby-value">4</span>)
+16:       <span class="ruby-ivar">@hosts</span> = <span class="ruby-identifier">hosts</span>
+17:       <span class="ruby-ivar">@db</span> = <span class="ruby-identifier">db</span>
+18:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -181,14 +221,19 @@ for storing values in Redis.
         </div>
       
         <div class="method-description">
+          <p>
+delete <a href="DeduplicationStore.html#M000027">key</a> with given
+<tt>suffix</tt> for given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt>.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000036-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000036-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 65</span>
-65:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">del</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
-66:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
-67:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 83</span>
+83:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">del</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
+84:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
+85:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -204,14 +249,19 @@ for storing values in Redis.
         </div>
       
         <div class="method-description">
+          <p>
+delete all <a href="DeduplicationStore.html#M000028">keys</a> associated
+with the given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt>.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000037-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000037-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 69</span>
-69:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
-70:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>)) }
-71:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 88</span>
+88:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
+89:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>)) }
+90:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -227,24 +277,29 @@ for storing values in Redis.
         </div>
       
         <div class="method-description">
+          <p>
+check whether <a href="DeduplicationStore.html#M000027">key</a> with given
+suffix <a href="DeduplicationStore.html#M000038">exists</a> for a given
+<tt><a href="DeduplicationStore.html#M000029">msg_id</a></tt>.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000038-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000038-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 73</span>
-73:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">exists</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
-74:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">exists</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
-75:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 93</span>
+93:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">exists</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
+94:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">exists</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
+95:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000041" class="method-detail">
-        <a name="M000041"></a>
+      <div id="method-M000040" class="method-detail">
+        <a name="M000040"></a>
 
         <div class="method-heading">
-          <a href="#M000041" class="method-signature">
+          <a href="#M000040" class="method-signature">
           <span class="method-name">find_redis_master</span><span class="method-args">()</span>
           </a>
         </div>
@@ -255,24 +310,24 @@ find the master <a href="DeduplicationStore.html#M000026">redis</a>
 instance
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000041-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000041-source">
+            onclick="toggleCode('M000040-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000040-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 100</span>
-100:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">find_redis_master</span>
-101:       <span class="ruby-identifier">masters</span> = []
-102:       <span class="ruby-identifier">redis_instances</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">redis</span><span class="ruby-operator">|</span>
-103:         <span class="ruby-keyword kw">begin</span>
-104:           <span class="ruby-identifier">masters</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">redis</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:role</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;master&quot;</span>
-105:         <span class="ruby-keyword kw">rescue</span> <span class="ruby-constant">Exception</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">e</span>
-106:           <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Beetle: could not determine status of redis instance #{redis.server}&quot;</span>
-107:         <span class="ruby-keyword kw">end</span>
-108:       <span class="ruby-keyword kw">end</span>
-109:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">NoRedisMaster</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;unable to determine a new master redis instance&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">empty?</span>
-110:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">TwoRedisMasters</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;more than one redis master instances&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">size</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">1</span>
-111:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-node">&quot;Beetle: configured new redis master #{masters.first.server}&quot;</span>
-112:       <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">first</span>
-113:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 124</span>
+124:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">find_redis_master</span>
+125:       <span class="ruby-identifier">masters</span> = []
+126:       <span class="ruby-identifier">redis_instances</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">redis</span><span class="ruby-operator">|</span>
+127:         <span class="ruby-keyword kw">begin</span>
+128:           <span class="ruby-identifier">masters</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">redis</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">info</span>[<span class="ruby-identifier">:role</span>] <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;master&quot;</span>
+129:         <span class="ruby-keyword kw">rescue</span> <span class="ruby-constant">Exception</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">e</span>
+130:           <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Beetle: could not determine status of redis instance #{redis.server}&quot;</span>
+131:         <span class="ruby-keyword kw">end</span>
+132:       <span class="ruby-keyword kw">end</span>
+133:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">NoRedisMaster</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;unable to determine a new master redis instance&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">empty?</span>
+134:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">TwoRedisMasters</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;more than one redis master instances&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">size</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">1</span>
+135:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-node">&quot;Beetle: configured new redis master #{masters.first.server}&quot;</span>
+136:       <span class="ruby-identifier">masters</span>.<span class="ruby-identifier">first</span>
+137:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -288,14 +343,18 @@ instance
         </div>
       
         <div class="method-description">
+          <p>
+flush the configured <a href="DeduplicationStore.html#M000026">redis</a>
+database. useful for testing.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000039-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000039-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 77</span>
-77:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">flushdb</span>
-78:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">flushdb</span> }
-79:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 98</span>
+ 98:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">flushdb</span>
+ 99:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">flushdb</span> }
+100:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -319,18 +378,18 @@ garbage collect <a href="DeduplicationStore.html#M000028">keys</a> in Redis
             onclick="toggleCode('M000030-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000030-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 32</span>
-32:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">garbage_collect_keys</span>(<span class="ruby-identifier">now</span> = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">to_i</span>)
-33:       <span class="ruby-identifier">keys</span> = <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">keys</span>(<span class="ruby-value str">&quot;msgid:*:expires&quot;</span>)
-34:       <span class="ruby-identifier">threshold</span> = <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">gc_threshold</span>
-35:       <span class="ruby-identifier">keys</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span>
-36:         <span class="ruby-identifier">expires_at</span> = <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">get</span> <span class="ruby-identifier">key</span>
-37:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">expires_at</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">expires_at</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">threshold</span>
-38:           <span class="ruby-identifier">msg_id</span> = <span class="ruby-identifier">msg_id</span>(<span class="ruby-identifier">key</span>)
-39:           <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>))
-40:         <span class="ruby-keyword kw">end</span>
-41:       <span class="ruby-keyword kw">end</span>
-42:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 44</span>
+44:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">garbage_collect_keys</span>(<span class="ruby-identifier">now</span> = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">to_i</span>)
+45:       <span class="ruby-identifier">keys</span> = <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">keys</span>(<span class="ruby-value str">&quot;msgid:*:expires&quot;</span>)
+46:       <span class="ruby-identifier">threshold</span> = <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">gc_threshold</span>
+47:       <span class="ruby-identifier">keys</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span>
+48:         <span class="ruby-identifier">expires_at</span> = <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">get</span> <span class="ruby-identifier">key</span>
+49:         <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">expires_at</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">expires_at</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">threshold</span>
+50:           <span class="ruby-identifier">msg_id</span> = <span class="ruby-identifier">msg_id</span>(<span class="ruby-identifier">key</span>)
+51:           <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>))
+52:         <span class="ruby-keyword kw">end</span>
+53:       <span class="ruby-keyword kw">end</span>
+54:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -346,14 +405,18 @@ garbage collect <a href="DeduplicationStore.html#M000028">keys</a> in Redis
         </div>
       
         <div class="method-description">
+          <p>
+retrieve the value with given <tt>suffix</tt> for given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt>. returns a string.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000035-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000035-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 61</span>
-61:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
-62:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
-63:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 78</span>
+78:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
+79:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
+80:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -369,14 +432,19 @@ garbage collect <a href="DeduplicationStore.html#M000028">keys</a> in Redis
         </div>
       
         <div class="method-description">
+          <p>
+increment counter for <a href="DeduplicationStore.html#M000027">key</a>
+with given <tt>suffix</tt> for given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt>. returns an integer.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000034-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000034-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 57</span>
-57:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
-58:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
-59:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 73</span>
+73:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
+74:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)) }
+75:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -400,10 +468,10 @@ message id and a given suffix
             onclick="toggleCode('M000027-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000027-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 17</span>
-17:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
-18:       <span class="ruby-node">&quot;#{msg_id}:#{suffix}&quot;</span>
-19:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 29</span>
+29:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)
+30:       <span class="ruby-node">&quot;#{msg_id}:#{suffix}&quot;</span>
+31:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -427,33 +495,36 @@ potentially exist in Redis for the given message id
             onclick="toggleCode('M000028-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000028-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 22</span>
-22:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>)
-23:       <span class="ruby-constant">KEY_SUFFIXES</span>.<span class="ruby-identifier">map</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">suffix</span><span class="ruby-operator">|</span> <span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)}
-24:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 34</span>
+34:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">keys</span>(<span class="ruby-identifier">msg_id</span>)
+35:       <span class="ruby-constant">KEY_SUFFIXES</span>.<span class="ruby-identifier">map</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">suffix</span><span class="ruby-operator">|</span> <span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>)}
+36:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000043" class="method-detail">
-        <a name="M000043"></a>
+      <div id="method-M000042" class="method-detail">
+        <a name="M000042"></a>
 
         <div class="method-heading">
-          <a href="#M000043" class="method-signature">
+          <a href="#M000042" class="method-signature">
           <span class="method-name">logger</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
+          <p>
+returns the configured <a href="DeduplicationStore.html#M000042">logger</a>
+</p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000043-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000043-source">
+            onclick="toggleCode('M000042-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000042-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 121</span>
-121:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">logger</span>
-122:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
-123:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 147</span>
+147:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">logger</span>
+148:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
+149:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -469,15 +540,19 @@ potentially exist in Redis for the given message id
         </div>
       
         <div class="method-description">
+          <p>
+store some key/value pairs if none of the given <a
+href="DeduplicationStore.html#M000028">keys</a> exist.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000033-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000033-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 52</span>
-52:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">values</span>)
-53:       <span class="ruby-identifier">values</span> = <span class="ruby-identifier">values</span>.<span class="ruby-identifier">inject</span>({}){<span class="ruby-operator">|</span><span class="ruby-identifier">h</span>,(<span class="ruby-identifier">k</span>,<span class="ruby-identifier">v</span>)<span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">k</span>)] = <span class="ruby-identifier">v</span>; <span class="ruby-identifier">h</span>}
-54:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">values</span>) }
-55:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 67</span>
+67:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">values</span>)
+68:       <span class="ruby-identifier">values</span> = <span class="ruby-identifier">values</span>.<span class="ruby-identifier">inject</span>({}){<span class="ruby-operator">|</span><span class="ruby-identifier">h</span>,(<span class="ruby-identifier">k</span>,<span class="ruby-identifier">v</span>)<span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">k</span>)] = <span class="ruby-identifier">v</span>; <span class="ruby-identifier">h</span>}
+69:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">values</span>) }
+70:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -501,10 +576,10 @@ href="DeduplicationStore.html#M000027">key</a>
             onclick="toggleCode('M000029-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000029-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 27</span>
-27:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msg_id</span>(<span class="ruby-identifier">key</span>)
-28:       <span class="ruby-identifier">key</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp re">/^(msgid:[^:]*:[-0-9a-f]*):.*$/</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">$1</span>
-29:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 39</span>
+39:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msg_id</span>(<span class="ruby-identifier">key</span>)
+40:       <span class="ruby-identifier">key</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp re">/^(msgid:[^:]*:[-0-9a-f]*):.*$/</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">$1</span>
+41:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -527,35 +602,39 @@ href="DeduplicationStore.html#M000027">key</a>
             onclick="toggleCode('M000026-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000026-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 9</span>
- 9:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redis</span>
-10:       <span class="ruby-ivar">@redis</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">find_redis_master</span>
-11:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 21</span>
+21:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redis</span>
+22:       <span class="ruby-ivar">@redis</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">find_redis_master</span>
+23:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000042" class="method-detail">
-        <a name="M000042"></a>
+      <div id="method-M000041" class="method-detail">
+        <a name="M000041"></a>
 
         <div class="method-heading">
-          <a href="#M000042" class="method-signature">
+          <a href="#M000041" class="method-signature">
           <span class="method-name">redis_instances</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
+          <p>
+returns the list of <a href="DeduplicationStore.html#M000026">redis</a>
+instances
+</p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000042-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000042-source">
+            onclick="toggleCode('M000041-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000041-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 115</span>
-115:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redis_instances</span>
-116:       <span class="ruby-ivar">@redis_instances</span> <span class="ruby-operator">||=</span> <span class="ruby-ivar">@hosts</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp re">/ *, */</span>).<span class="ruby-identifier">map</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-value str">':'</span>)}.<span class="ruby-identifier">map</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">host</span>, <span class="ruby-identifier">port</span><span class="ruby-operator">|</span>
-117:          <span class="ruby-constant">Redis</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">:host</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">host</span>, <span class="ruby-identifier">:port</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">port</span>, <span class="ruby-identifier">:db</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-ivar">@db</span>)
-118:       <span class="ruby-keyword kw">end</span>
-119:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 140</span>
+140:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redis_instances</span>
+141:       <span class="ruby-ivar">@redis_instances</span> <span class="ruby-operator">||=</span> <span class="ruby-ivar">@hosts</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp re">/ *, */</span>).<span class="ruby-identifier">map</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-value str">':'</span>)}.<span class="ruby-identifier">map</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">host</span>, <span class="ruby-identifier">port</span><span class="ruby-operator">|</span>
+142:          <span class="ruby-constant">Redis</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">:host</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">host</span>, <span class="ruby-identifier">:port</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">port</span>, <span class="ruby-identifier">:db</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-ivar">@db</span>)
+143:       <span class="ruby-keyword kw">end</span>
+144:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -571,14 +650,19 @@ href="DeduplicationStore.html#M000027">key</a>
         </div>
       
         <div class="method-description">
+          <p>
+unconditionally store a <a href="DeduplicationStore.html#M000027">key</a>
+<tt>value&gt;</tt> with given <tt>suffix</tt> for given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt>.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000031-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000031-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 44</span>
-44:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>, <span class="ruby-identifier">value</span>)
-45:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>), <span class="ruby-identifier">value</span>) }
-46:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 57</span>
+57:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>, <span class="ruby-identifier">value</span>)
+58:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>), <span class="ruby-identifier">value</span>) }
+59:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -594,51 +678,20 @@ href="DeduplicationStore.html#M000027">key</a>
         </div>
       
         <div class="method-description">
+          <p>
+store a <a href="DeduplicationStore.html#M000027">key</a>
+<tt>value&gt;</tt> with given <tt>suffix</tt> for given <tt><a
+href="DeduplicationStore.html#M000029">msg_id</a></tt> if it doesn&#8216;t
+<a href="DeduplicationStore.html#M000038">exists</a> yet.
+</p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000032-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000032-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 48</span>
-48:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>, <span class="ruby-identifier">value</span>)
-49:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>), <span class="ruby-identifier">value</span>) }
-50:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000040" class="method-detail">
-        <a name="M000040"></a>
-
-        <div class="method-heading">
-          <a href="#M000040" class="method-signature">
-          <span class="method-name">with_failover</span><span class="method-args">( {|| ...}</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000040-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000040-source">
-<pre>
-    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 81</span>
-81:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">with_failover</span> <span class="ruby-comment cmt">#:yields:</span>
-82:       <span class="ruby-identifier">tries</span> = <span class="ruby-value">0</span>
-83:       <span class="ruby-keyword kw">begin</span>
-84:         <span class="ruby-keyword kw">yield</span>
-85:       <span class="ruby-keyword kw">rescue</span> <span class="ruby-constant">Exception</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">e</span>
-86:         <span class="ruby-constant">Beetle</span><span class="ruby-operator">::</span><span class="ruby-identifier">reraise_expectation_errors!</span>
-87:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Beetle: redis connection error '#{e}'&quot;</span>
-88:         <span class="ruby-keyword kw">if</span> (<span class="ruby-identifier">tries</span><span class="ruby-operator">+=</span><span class="ruby-value">1</span>) <span class="ruby-operator">&lt;</span> <span class="ruby-value">120</span>
-89:           <span class="ruby-ivar">@redis</span> = <span class="ruby-keyword kw">nil</span>
-90:           <span class="ruby-identifier">sleep</span> <span class="ruby-value">1</span>
-91:           <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-value str">&quot;Beetle: retrying redis operation&quot;</span>
-92:           <span class="ruby-keyword kw">retry</span>
-93:         <span class="ruby-keyword kw">else</span>
-94:           <span class="ruby-identifier">raise</span> <span class="ruby-constant">NoRedisMaster</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">e</span>.<span class="ruby-identifier">to_s</span>)
-95:         <span class="ruby-keyword kw">end</span>
-96:       <span class="ruby-keyword kw">end</span>
-97:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/deduplication_store.rb, line 62</span>
+62:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>, <span class="ruby-identifier">value</span>)
+63:       <span class="ruby-identifier">with_failover</span> { <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">key</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">suffix</span>), <span class="ruby-identifier">value</span>) }
+64:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>

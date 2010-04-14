@@ -56,7 +56,7 @@
     </tr>
     <tr class="top-aligned-row">
       <td><strong>Last Update:</strong></td>
-      <td>Tue Apr 13 15:35:03 +0200 2010</td>
+      <td>Wed Apr 14 06:12:26 +0200 2010</td>
     </tr>
     </table>
   </div>
@@ -108,7 +108,7 @@ href="http://xing.github.com/beetle">project website</a>.
 
     b = Beetle::Client.new
 
-    # configure exchanges, queues and messages
+    # configure exchanges, queues, bindings, messages and handlers
 
     b.configure do |config|
       config.queue :test
@@ -124,7 +124,12 @@ href="http://xing.github.com/beetle">project website</a>.
 <pre>
     b.listen
 </pre>
-<h3>Running the Examples</h3>
+<h3>Examples</h3>
+<p>
+<a href="../classes/Beetle.html">Beetle</a> ships with a number of <a
+href="http://github.com/xing/beetle/tree/master/examples/">example
+scripts</a>.
+</p>
 <p>
 The top level Rakefile comes with targets to start several RabbitMQ and
 redis instances locally. Make sure the corresponding binaries are in your
@@ -138,7 +143,7 @@ commands:
     rake redis:start2
 </pre>
 <p>
-After running the redis_failover.rb example you will need to restart both
+After running the redis_failover.rb script you will need to restart both
 redis servers.
 </p>
 <h2>Prerequisites</h2>

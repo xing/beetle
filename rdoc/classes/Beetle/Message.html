@@ -80,10 +80,10 @@
 
     <div id="description">
       <p>
-Instance of class <a href="Message.html">Message</a> are created when a
-scubscription callback fires. It is responsible for message deduplification
-and determining if it should retry executing the message handler after a
-handler has crashed. This is where the beef is.
+Instances of class <a href="Message.html">Message</a> are created when a
+scubscription callback fires. Class <a href="Message.html">Message</a>
+contains the code responsible for message deduplication and determining if
+it should retry executing the message handler after a handler has crashed.
 </p>
 
     </div>
@@ -170,8 +170,8 @@ default lifetime of messages
           <td class="context-item-value">300.seconds</td>
           <td width="3em">&nbsp;</td>
           <td class="context-item-desc">
-forcefully abort a running handler after this many seonds. can be overriden
-when registering a handler.
+forcefully abort a running handler after this many seconds. can be
+overriden when registering a handler.
 
 </td>
         </tr>
@@ -489,7 +489,7 @@ when the handler was registered
       
         <div class="method-description">
           <p>
-mark message handling complete in Redis
+mark message handling complete in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000012-source');return false;">[Source]</a></p>
@@ -649,7 +649,7 @@ the current time
       
         <div class="method-description">
           <p>
-increment number of exception occurences in Redis
+increment number of exception occurences in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000018-source');return false;">[Source]</a></p>
@@ -702,7 +702,8 @@ record the fact that we are trying to run the handler
         <div class="method-description">
           <p>
 have we already seen this message? if not, set the status to
-&quot;incomplete&quot; and store the message exipration time in Redis.
+&quot;incomplete&quot; and store the message exipration timestamp in the
+deduplication store.
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000020-source');return false;">[Source]</a></p>
@@ -732,7 +733,7 @@ have we already seen this message? if not, set the status to
       
         <div class="method-description">
           <p>
-unique message id. used to form various Redis keys.
+unique message id. used to form various keys in the deduplication store.
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000003-source');return false;">[Source]</a></p>
@@ -823,7 +824,7 @@ whether the publisher has tried sending this message to two servers
       
         <div class="method-description">
           <p>
-store delay value in REdis
+store delay value in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000014-source');return false;">[Source]</a></p>
@@ -849,7 +850,7 @@ store delay value in REdis
       
         <div class="method-description">
           <p>
-store handler timeout timestamp into Redis
+store handler timeout timestamp in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000008-source');return false;">[Source]</a></p>
@@ -876,7 +877,7 @@ store handler timeout timestamp into Redis
         <div class="method-description">
           <p>
 whether this is a message we can <a href="Message.html#M000023">process</a>
-without accessing redis
+without accessing the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000007-source');return false;">[Source]</a></p>
@@ -902,7 +903,7 @@ without accessing redis
       
         <div class="method-description">
           <p>
-reset handler timeout in Redis
+reset handler timeout in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000010-source');return false;">[Source]</a></p>
@@ -956,25 +957,24 @@ handler timed out?
       
         <div class="method-description">
           <p>
-ack the message for rabbit. delete all keys if we are sure this is the last
-message with the given message id. if deleting the keys fails (network
-problem for example), the keys will be deleted by the class method
-garbage_collect_keys.
+ack the message for rabbit. deletes all keys associated with this message
+in the deduplication store if we are sure this is the last message with the
+given <a href="Message.html#M000003">msg_id</a>.
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000024-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000024-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 326</span>
-326:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">ack!</span>
-327:       <span class="ruby-comment cmt">#:doc:</span>
-328:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: ack! for message #{msg_id}&quot;</span>
-329:       <span class="ruby-identifier">header</span>.<span class="ruby-identifier">ack</span>
-330:       <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">simple?</span> <span class="ruby-comment cmt"># simple messages don't use redis</span>
-331:       <span class="ruby-keyword kw">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:ack_count</span>) <span class="ruby-operator">==</span> <span class="ruby-value">2</span>
-332:         <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
-333:       <span class="ruby-keyword kw">end</span>
-334:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 325</span>
+325:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">ack!</span>
+326:       <span class="ruby-comment cmt">#:doc:</span>
+327:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: ack! for message #{msg_id}&quot;</span>
+328:       <span class="ruby-identifier">header</span>.<span class="ruby-identifier">ack</span>
+329:       <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">simple?</span> <span class="ruby-comment cmt"># simple messages don't use the deduplication store</span>
+330:       <span class="ruby-keyword kw">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:ack_count</span>) <span class="ruby-operator">==</span> <span class="ruby-value">2</span>
+331:         <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
+332:       <span class="ruby-keyword kw">end</span>
+333:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
