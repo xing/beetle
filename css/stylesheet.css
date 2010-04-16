@@ -26,9 +26,9 @@ html>body #wrapper {
 
 #header {
 	position: relative;
-	background: #E9C000;
 	height: 100px;
 	width: 100%;
+        background: #E9C000 url(/beetle/images/beetle_red_100.png) no-repeat right top;
 }
 #header h1 {
 	position: absolute;
@@ -39,6 +39,7 @@ html>body #wrapper {
 	cursor: pointer;
 	color: white;
 }
+
 
 #navigation {
 	background: #232323;
