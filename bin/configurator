@@ -1,0 +1,18 @@
+#! /usr/bin/env ruby
+
+require "rubygems"
+require "beetle"
+
+Beetle.config.redis_hosts = "localhost:6379, localhost:6380"
+Beetle.config.servers = "localhost:5672, localhost:5673"
+
+# setup client
+client = Beetle::Client.new
+client.register_queue(:test)
+client.register_message(:test)
+client.register_handler(:test, Beetle::Configurator)
+
+client.listen
+
+client.publish(:system, {:op => 'promise'})
+client.rpc(:system, {:op => 'give_master'})
