@@ -1,14 +1,14 @@
 require 'timeout'
 module Beetle
   class Configurator < Beetle::Handler
-  
+
     @@active_master  = nil
     @@client         = Beetle::Client.new
     @@alive_signals  = {}
     cattr_accessor :client
     cattr_accessor :active_master
     cattr_accessor :alive_signals
-    
+
     class << self
       def find_active_master
         return if active_master && reachable?(active_master)
@@ -19,7 +19,7 @@ module Beetle
           end
         end
       end
-      
+
       def reachable?(redis)
         begin
           Timeout::timeout(5) {
@@ -29,26 +29,26 @@ module Beetle
           false
         end
       end
-      
+
       def give_master(payload)
         # stores our list of servers and their ping times
         # alive_signals[server_name] = Time.now
         active_master
       end
-    
+
       def promise(payload)
-      
+
       end
-    
+
       def reconfigured(payload)
-      
+
       end
-    
+
       def going_offline(payload)
-      
+
       end
     end
-  
+
     def process
       json = ActiveSupport::JSON.decode(message.data)
       self.class.send(json.delete("op").to_sym, json)
