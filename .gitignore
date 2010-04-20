@@ -1,6 +1,6 @@
 *.log
 doc
 pkg
-_site
+site
 test/coverage
 .DS_Store
