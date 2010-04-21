@@ -55,5 +55,18 @@ module Beetle
 
     test "proposing a new master should set the current master to nil" do
     end
+
+    test "proposing a new master should wait for a response of every known server" do
+    end
+
+    test "proposing a new master should fail unless every known server respondes with an acknowledgement" do
+    end
+
+    test "proposing a new master should give the order to reconfigure if every server accepted the proposal" do
+    end
+
+    test "proposing a new master should wait for the reconfigured message from every known server after giving the order to reconfigure" do
+    end
+
   end
 end
