@@ -38,5 +38,22 @@ module Beetle
       assert_equal second_working_redis, Configurator.active_master
     end
 
+    test "find_active_master should retry to reach the current master if it doesn't respond" do
+    end
+
+    test "find_active_master should finally give up to reach the current master after xxx seconds" do
+    end
+
+    test "after giving up the current master, find_active_master should try to reach every known redis server until it finds a working one" do
+    end
+
+    test "find_active_master should not change the current master until it starts to propose a new master" do
+    end
+
+    test "give master should return the current master" do
+    end
+
+    test "proposing a new master should set the current master to nil" do
+    end
   end
 end

@@ -20,16 +20,6 @@ module Beetle
         end
       end
 
-      def reachable?(redis)
-        begin
-          Timeout::timeout(5) {
-            !!redis.info
-          }
-        rescue Timeout::Error => e
-          false
-        end
-      end
-
       def give_master(payload)
         # stores our list of servers and their ping times
         # alive_signals[server_name] = Time.now
@@ -46,6 +36,18 @@ module Beetle
 
       def going_offline(payload)
 
+      end
+
+      private
+
+      def reachable?(redis)
+        begin
+          Timeout::timeout(5) {
+            !!redis.info
+          }
+        rescue Timeout::Error => e
+          false
+        end
       end
     end
 
