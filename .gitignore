@@ -4,3 +4,4 @@ pkg
 _site
 test/coverage
 .DS_Store
+.rvmrc
