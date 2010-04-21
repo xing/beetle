@@ -8,13 +8,10 @@ Beetle.config.servers     = "localhost:5672, localhost:5673"
 
 # setup client
 client = Beetle::Client.new
-client.register_queue(:system, :key => '')
+client.register_queue(:system)
 client.register_message(:system)
 client.register_handler(:system, Beetle::Configurator)
 
 client.listen do
   trap("INT") { client.stop_listening }
 end
-
-
-# client.publish(:system, {:op => 'promise'})

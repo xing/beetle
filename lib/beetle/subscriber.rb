@@ -105,6 +105,9 @@ module Beetle
             sleep 1
             mq(server).recover
           elsif reply_to = header.properties[:reply_to]
+            # require 'ruby-debug'
+            # Debugger.start
+            # debugger
             status = result == Beetle::RC::OK ? "OK" : "FAILED"
             exchange = MQ::Exchange.new(mq(server), :direct, "", :key => reply_to)
             exchange.publish(m.handler_result.to_s, :headers => {:status => status})
