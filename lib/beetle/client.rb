@@ -37,8 +37,12 @@ module Beetle
     # the deduplication store to use for this client
     attr_reader :deduplication_store
 
+    # accessor for the beetle configuration
+    attr_reader :config
+
     # create a fresh Client instance from a given configuration object
     def initialize(config = Beetle.config)
+      @config  = config
       @servers = config.servers.split(/ *, */)
       @exchanges = {}
       @queues = {}

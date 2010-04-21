@@ -1,0 +1,15 @@
+#! /usr/bin/env ruby
+
+require "rubygems"
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
+
+Beetle.config.redis_hosts = "localhost:6379, localhost:6380"
+Beetle.config.servers = "localhost:5672, localhost:5673"
+
+# setup client
+client = Beetle::Client.new
+client.register_queue(:system)
+client.register_message(:system)
+
+result, status = client.rpc(:system, {:op => 'give_master'}.to_json)
+puts "result #{result} - status #{status}"

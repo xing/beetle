@@ -18,8 +18,9 @@ module Beetle
 
     test "find_active_master should return the first working redis" do
       non_working_redis  = mock('redis')
-      working_redis      = mock('redis', :info => 'ok')
       non_working_redis.expects(:info).raises(Timeout::Error)
+      working_redis      = mock('redis', :info => 'ok')
+      Beetle.config.redis_watcher_retries = 0
       configurator = Configurator.new
       configurator.client.deduplication_store.redis_instances = [non_working_redis, working_redis]
       Configurator.find_active_master
@@ -39,15 +40,36 @@ module Beetle
     end
 
     test "find_active_master should retry to reach the current master if it doesn't respond" do
+      redis = mock('redis')
+      redis.expects(:info).times(2).raises(Timeout::Error).then.returns('ok')
+      Beetle.config.redis_watcher_retry_timeout = 0.second
+      Beetle.config.redis_watcher_retries       = 1
+      configurator = Configurator.new
+      configurator.client.deduplication_store.redis_instances = [redis]
+      Configurator.active_master = redis
+      Configurator.find_active_master
+      assert_equal redis, Configurator.active_master
     end
 
-    test "find_active_master should finally give up to reach the current master after xxx seconds" do
+    test "find_active_master should finally give up to reach the current master after the max timeouts have been reached" do
+      non_working_redis  = mock('non-working-redis')
+      non_working_redis.expects(:info).raises(Timeout::Error).twice
+      working_redis      = mock('working-redis', :info => 'ok')
+      Beetle.config.redis_watcher_retry_timeout = 0.second
+      Beetle.config.redis_watcher_retries         = 1
+      configurator = Configurator.new
+      configurator.client.deduplication_store.redis_instances = [non_working_redis, working_redis]
+      Configurator.active_master = non_working_redis
+      Configurator.find_active_master
+      assert_equal working_redis, Configurator.active_master
     end
 
     test "after giving up the current master, find_active_master should try to reach every known redis server until it finds a working one" do
+      # see above
     end
 
     test "find_active_master should not change the current master until it starts to propose a new master" do
+      # Configurator.expects(:propose)
     end
 
     test "give master should return the current master" do

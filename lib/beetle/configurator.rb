@@ -11,9 +11,16 @@ module Beetle
 
     class << self
       def find_active_master
-        return if active_master && reachable?(active_master)
+        if active_master
+          return if reachable?(active_master)
+          client.config.redis_watcher_retries.times do
+            sleep client.config.redis_watcher_retry_timeout.to_i
+            return if reachable?(active_master)
+          end
+        end
+        available_redis_server = client.deduplication_store.redis_instances - [active_master]
         self.active_master = nil
-        client.deduplication_store.redis_instances.each do |redis|
+        available_redis_server.each do |redis|
           if reachable?(redis)
             self.active_master = redis
           end
@@ -23,7 +30,12 @@ module Beetle
       def give_master(payload)
         # stores our list of servers and their ping times
         # alive_signals[server_name] = Time.now
-        active_master
+        active_master || 'undefined'
+      end
+
+      def propose(new_master)
+        client.publish(:propose, new_master)
+        self.active_master = nil
       end
 
       def promise(payload)
@@ -52,13 +64,9 @@ module Beetle
     end
 
     def process
-      json = ActiveSupport::JSON.decode(message.data)
-      self.class.send(json.delete("op").to_sym, json)
+      hash = ActiveSupport::JSON.decode(message.data)
+      self.class.__send__(hash.delete("op").to_sym, hash)
     end
 
   end
 end
-
-# EM.add_periodic_timer(0.5) {
-#   Beetle::Configurator.find_active_master
-# }
