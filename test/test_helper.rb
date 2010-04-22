@@ -18,3 +18,8 @@ def header_with_params(opts = {})
   header.stubs(:properties).returns(beetle_headers)
   header
 end
+
+def redis_stub(name, opts = {:host => "foo", :port => 123})
+  stub(name, opts)
+end
+

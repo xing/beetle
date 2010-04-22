@@ -4,11 +4,11 @@ module Beetle
 
     @@active_master     = nil
     @@client            = Beetle::Client.new
-    @@alive_signals     = {}
+    @@alive_servers     = {}
     @@proposal_answers  = {}
     cattr_accessor :client
     cattr_accessor :active_master
-    cattr_accessor :alive_signals
+    cattr_accessor :alive_servers
     cattr_accessor :proposal_answers
 
     class << self
@@ -28,11 +28,12 @@ module Beetle
 
       def give_master(payload)
         # stores our list of servers and their ping times
-        # alive_signals[server_name] = Time.now
+        alive_servers[payload['server_name']] = Time.now
         active_master || 'undefined'
       end
 
       def propose(new_master)
+        self.proposal_answers = {}
         clear_active_master
         client.publish(:propose, {:host => new_master.host, :port => new_master.port}.to_json)
         setup_propose_check_timer
@@ -41,10 +42,6 @@ module Beetle
         # 3. send reconfigure command
         # 4. wait until everyone confirmed the reconfigure
         # 5. set active_master to new master
-      end
-
-      def all_promised?
-
       end
 
       def reconfigure
@@ -63,6 +60,10 @@ module Beetle
 
       end
 
+      def server_alive?(server)
+        alive_servers[server] && (alive_servers[server] > Time.now - 10.seconds)
+      end
+
       private
 
       def clear_active_master
@@ -70,10 +71,18 @@ module Beetle
       end
 
       def setup_propose_check_timer
-        self.proposal_answers = {}
         EM.add_timer(30) {
           check_propose_answers
         }
+      end
+
+      def check_propose_answers
+        proposed_server = ''
+        if proposal_answers.all? {|k, v| v == proposed_server}
+          reconfigure!
+        else
+          setup_propose_check_timer
+        end
       end
 
       def reachable?(redis)

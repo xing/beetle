@@ -2,6 +2,16 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
   class ConfiguratorTest < Test::Unit::TestCase
+    test "process should forward to class methods" do
+      message = mock('message', :data => '{"op":"give_master", "somevariable": "somevalue"}')
+      @configurator = Configurator.new
+      @configurator.stubs(:message).returns(message)
+      Configurator.expects(:give_master).with({"somevariable" => "somevalue"})
+      @configurator.process()
+    end
+  end
+
+  class ConfiguratorFindActiveMasterTest < Test::Unit::TestCase
 
     def setup
       Configurator.active_master = nil
@@ -12,13 +22,6 @@ module Beetle
       Configurator.stubs(:setup_propose_check_timer)
       @configurator = Configurator.new
       Configurator.client.deduplication_store.redis_instances = []
-    end
-
-    test "process should forward to class methods" do
-      message = mock('message', :data => '{"op":"give_master", "somevariable": "somevalue"}')
-      @configurator.stubs(:message).returns(message)
-      Configurator.expects(:give_master).with({"somevariable" => "somevalue"})
-      @configurator.process()
     end
 
     test "find_active_master should return if the current active_master if it is still active set" do
@@ -75,18 +78,61 @@ module Beetle
       assert_nil Configurator.active_master
     end
 
-    test "proposing a new master should publish the master to the system queue" do
+    test "give master should return the current master" do
+      Configurator.active_master = "foobar"
+      assert_equal 'foobar', Configurator.give_master({:server_name => 'foo'})
+    end
+
+    test "give master should set an alive timestamp for the given server" do
+      assert !Configurator.server_alive?('foo')
+      Configurator.give_master({'server_name' => 'foo'})
+      assert Configurator.server_alive?('foo')
+    end
+
+    test "servers that didnt ask for a server within the last 10 seconds are to be marked dead" do
+      Configurator.alive_servers['foo'] = Time.now - 10.seconds
+      assert !Configurator.server_alive?('foo')
+    end
+  end
+
+  class ConfiguratorProposingTest < Test::Unit::TestCase
+
+    def setup
+      Configurator.active_master = nil
+      dumb_client = Client.new
+      dumb_client.stubs(:publish)
+      dumb_client.stubs(:subscribe)
+      EM.stubs(:add_timer)
+      Configurator.client = dumb_client
+      @configurator = Configurator.new
+      Configurator.client.deduplication_store.redis_instances = []
+    end
+
+    test "proposing a new master should publish the master to the propose queue" do
       host = "my_host"
       port = "my_port"
-      payload = {:host => host, :port => port}
+      payload = {'host' => host, 'port' => port}
       new_master = redis_stub("new_master", payload)
-      Configurator.client.expects(:publish) do |json|
-        ActiveSupport::JSON.decode(json) == payload
+      Configurator.client.expects(:publish).with do |message_name, json|
+        message_name == :propose && ActiveSupport::JSON.decode(json) == payload
       end
       Configurator.propose(new_master)
     end
 
-    test "give master should return the current master" do
+    test "propose should create a timer to check for promises" do
+      EM.expects(:add_timer).yields
+      Configurator.expects(:check_propose_answers)
+      Configurator.propose(redis_stub('new_master'))
+    end
+
+    test "propose should reset the proposal_answers" do
+      Configurator.proposal_answers = {'server1' => 'ack'}
+      Configurator.propose(redis_stub('new_master'))
+      assert_equal({}, Configurator.proposal_answers)
+    end
+
+    test "check_propose_answers should return true if all " do
+    
     end
 
     test "proposing a new master should set the current master to nil" do
@@ -104,9 +150,6 @@ module Beetle
     test "proposing a new master should wait for the reconfigured message from every known server after giving the order to reconfigure" do
     end
 
-    private
-    def redis_stub(name, opts = {:host => "foo", :port => 123})
-      stub(name, opts)
-    end
   end
+
 end
