@@ -33,12 +33,9 @@ module Beetle
       end
 
       def propose(new_master)
-        self.active_master = nil
-        proposal_answers = {}
-        client.publish(:propose, new_master)
-        EM.add_timer(30) {
-          check_propose_answers
-        }
+        clear_active_master
+        client.publish(:propose, {:host => new_master.host, :port => new_master.port}.to_json)
+        setup_propose_check_timer
         # 1. wait for every server to respond (they delete the current redis from their config file before (!) they responde; then they check if they can reach it and answer with an ack/deny accordingly)
         # 2. setup new redis master (slaveof(no one))
         # 3. send reconfigure command
@@ -67,6 +64,17 @@ module Beetle
       end
 
       private
+
+      def clear_active_master
+        self.active_master = nil
+      end
+
+      def setup_propose_check_timer
+        self.proposal_answers = {}
+        EM.add_timer(30) {
+          check_propose_answers
+        }
+      end
 
       def reachable?(redis)
         begin

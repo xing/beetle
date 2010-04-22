@@ -5,71 +5,85 @@ module Beetle
 
     def setup
       Configurator.active_master = nil
-      configurator = Configurator.new
-      configurator.client.deduplication_store.redis_instances = []
+      dumb_client = Client.new
+      dumb_client.stubs(:publish)
+      dumb_client.stubs(:subscribe)
+      Configurator.client = dumb_client
+      Configurator.stubs(:setup_propose_check_timer)
+      @configurator = Configurator.new
+      Configurator.client.deduplication_store.redis_instances = []
     end
 
     test "process should forward to class methods" do
       message = mock('message', :data => '{"op":"give_master", "somevariable": "somevalue"}')
-      Configurator.any_instance.stubs(:message).returns(message)
+      @configurator.stubs(:message).returns(message)
       Configurator.expects(:give_master).with({"somevariable" => "somevalue"})
-      Configurator.new.process()
-    end
-
-    test "find_active_master should return the first working redis" do
-      non_working_redis  = mock('redis')
-      non_working_redis.expects(:info).raises(Timeout::Error)
-      working_redis      = mock('redis', :info => 'ok')
-      Beetle.config.redis_watcher_retries = 0
-      configurator = Configurator.new
-      configurator.client.deduplication_store.redis_instances = [non_working_redis, working_redis]
-      Configurator.find_active_master
-      assert_equal working_redis, Configurator.active_master
+      @configurator.process()
     end
 
     test "find_active_master should return if the current active_master if it is still active set" do
-      first_working_redis      = mock('redis1')
+      first_working_redis      = redis_stub('redis1')
       first_working_redis.expects(:info).never
-      second_working_redis     = mock('redis2', :info => 'ok')
+      second_working_redis     = redis_stub('redis2', :info => 'ok')
 
-      configurator = Configurator.new
-      configurator.client.deduplication_store.redis_instances = [first_working_redis, second_working_redis]
+      Configurator.client.deduplication_store.redis_instances = [first_working_redis, second_working_redis]
       Configurator.active_master = second_working_redis
       Configurator.find_active_master
       assert_equal second_working_redis, Configurator.active_master
     end
 
     test "find_active_master should retry to reach the current master if it doesn't respond" do
-      redis = mock('redis')
+      redis = redis_stub('redis')
       redis.expects(:info).times(2).raises(Timeout::Error).then.returns('ok')
       Beetle.config.redis_watcher_retry_timeout = 0.second
       Beetle.config.redis_watcher_retries       = 1
-      configurator = Configurator.new
-      configurator.client.deduplication_store.redis_instances = [redis]
+      Configurator.client.deduplication_store.redis_instances = [redis]
       Configurator.active_master = redis
       Configurator.find_active_master
       assert_equal redis, Configurator.active_master
     end
 
     test "find_active_master should finally give up to reach the current master after the max timeouts have been reached" do
-      non_working_redis  = mock('non-working-redis')
+      non_working_redis  = redis_stub('non-working-redis')
       non_working_redis.expects(:info).raises(Timeout::Error).twice
-      working_redis      = mock('working-redis', :info => 'ok')
-      Beetle.config.redis_watcher_retry_timeout = 0.second
+      working_redis      = redis_stub('working-redis')
+      working_redis.expects(:info).returns("ok")
+
+      Beetle.config.redis_watcher_retry_timeout   = 0.second
       Beetle.config.redis_watcher_retries         = 1
-      configurator = Configurator.new
-      configurator.client.deduplication_store.redis_instances = [non_working_redis, working_redis]
+      Configurator.client.deduplication_store.redis_instances = [non_working_redis, working_redis]
       Configurator.active_master = non_working_redis
       Configurator.find_active_master
-      assert_equal working_redis, Configurator.active_master
     end
 
-    test "after giving up the current master, find_active_master should try to reach every known redis server until it finds a working one" do
-      # see above
+    test "find_active_master should propose the first redis it consideres as working" do
+      Configurator.active_master = nil
+      working_redis = redis_stub('working-redis', :info => "ok")
+      Configurator.client.deduplication_store.redis_instances = [working_redis]
+      Configurator.expects(:propose).with(working_redis)
+      Configurator.find_active_master
     end
 
-    test "find_active_master should not change the current master until it starts to propose a new master" do
-      # Configurator.expects(:propose)
+    test "the current master should be set to nil during the proposal phase" do
+      Configurator.expects(:clear_active_master)
+      Configurator.propose(redis_stub('new_master'))
+    end
+
+    test "clear active master should set the current master to nil" do
+      Configurator.active_master = "snafu"
+      Configurator.send(:clear_active_master)
+      assert_nil Configurator.active_master
+    end
+
+    test "proposing a new master should publish the master to the system queue" do
+      host = "my_host"
+      port = "my_port"
+      payload = {:host => host, :port => port}
+      new_master = redis_stub("new_master", payload)
+      Configurator.client.expects(:publish) do |json|
+        ActiveSupport::JSON.decode(json) == payload
+      end
+      Configurator.propose(new_master)
     end
 
     test "give master should return the current master" do
@@ -90,5 +104,9 @@ module Beetle
     test "proposing a new master should wait for the reconfigured message from every known server after giving the order to reconfigure" do
     end
 
+    private
+    def redis_stub(name, opts = {:host => "foo", :port => 123})
+      stub(name, opts)
+    end
   end
 end
