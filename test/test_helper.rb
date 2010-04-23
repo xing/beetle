@@ -19,7 +19,16 @@ def header_with_params(opts = {})
   header
 end
 
-def redis_stub(name, opts = {:host => "foo", :port => 123})
+def redis_stub(name, opts = {})
+  opts = {'host' => "foo", 'port' => 123, 'server' => "foo:1234"}.update(opts)
   stub(name, opts)
 end
 
+def stub_configurator_class
+  Beetle::Configurator.active_master = nil
+  dumb_client = Beetle::Client.new
+  dumb_client.stubs(:publish)
+  dumb_client.stubs(:subscribe)
+  Beetle::Configurator.client = dumb_client
+  Beetle::Configurator.client.deduplication_store.redis_instances = []
+end
