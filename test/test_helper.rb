@@ -26,15 +26,15 @@ def redis_stub(name, opts = {})
   stub(name, opts)
 end
 
-def stub_configurator_class
-  Beetle::Configurator.active_master = nil
+def stub_watcher_class
+  Beetle::RedisWatcher.active_master = nil
   dumb_client = Beetle::Client.new
   dumb_client.stubs(:publish)
   dumb_client.stubs(:subscribe)
-  Beetle::Configurator.client = dumb_client
-  Beetle::Configurator.client.deduplication_store.redis_instances = []
+  Beetle::RedisWatcher.client = dumb_client
+  Beetle::RedisWatcher.client.deduplication_store.redis_instances = []
 end
 
 def add_alive_server(server)
-  Beetle::Configurator.give_master({'server_name' => server})
+  Beetle::RedisWatcher.give_master({'server_name' => server})
 end
