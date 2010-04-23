@@ -14,14 +14,9 @@ module Beetle
   class ConfiguratorFindActiveMasterTest < Test::Unit::TestCase
 
     def setup
-      Configurator.active_master = nil
-      dumb_client = Client.new
-      dumb_client.stubs(:publish)
-      dumb_client.stubs(:subscribe)
-      Configurator.client = dumb_client
+      stub_configurator_class
       Configurator.stubs(:setup_propose_check_timer)
       @configurator = Configurator.new
-      Configurator.client.deduplication_store.redis_instances = []
     end
 
     test "find_active_master should return if the current active_master if it is still active set" do
@@ -98,14 +93,9 @@ module Beetle
   class ConfiguratorProposingTest < Test::Unit::TestCase
 
     def setup
-      Configurator.active_master = nil
-      dumb_client = Client.new
-      dumb_client.stubs(:publish)
-      dumb_client.stubs(:subscribe)
+      stub_configurator_class
       EM.stubs(:add_timer)
-      Configurator.client = dumb_client
       @configurator = Configurator.new
-      Configurator.client.deduplication_store.redis_instances = []
     end
 
     test "proposing a new master should publish the master to the propose queue" do
@@ -126,7 +116,7 @@ module Beetle
     end
 
     test "propose should reset the proposal_answers" do
-      Configurator.proposal_answers = {'server1' => 'ack'}
+      Configurator.proposal_answers = {'foo' => 'bar'}
       Configurator.propose(redis_stub('new_master'))
       assert_equal({}, Configurator.proposal_answers)
     end
