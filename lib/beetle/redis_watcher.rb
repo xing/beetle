@@ -1,6 +1,6 @@
 require 'timeout'
 module Beetle
-  class Configurator < Beetle::Handler
+  class RedisWatcher < Beetle::Handler
 
     @@active_master     = nil
     @@client            = Beetle::Client.new
