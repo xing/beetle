@@ -12,6 +12,8 @@ module Beetle
     cattr_accessor :proposal_answers
 
     class << self
+      private :proposal_answers
+
       def find_active_master
         if active_master
           return if reachable?(active_master)
@@ -33,10 +35,10 @@ module Beetle
       end
 
       def propose(new_master)
-        self.proposal_answers = {}
+        setup_proposal_answers
         clear_active_master
         client.publish(:propose, {:host => new_master.host, :port => new_master.port}.to_json)
-        setup_propose_check_timer
+        setup_propose_check_timer(new_master.server)
         # 1. wait for every server to respond (they delete the current redis from their config file before (!) they responde; then they check if they can reach it and answer with an ack/deny accordingly)
         # 2. setup new redis master (slaveof(no one))
         # 3. send reconfigure command
@@ -64,25 +66,40 @@ module Beetle
         alive_servers[server] && (alive_servers[server] > Time.now - 10.seconds)
       end
 
+      def reset
+        self.alive_servers = {}
+        self.proposal_answers = {}
+        self.active_master = {}
+      end
+
       private
+      def setup_proposal_answers
+        @@proposal_answers = {}
+        alive_servers.each do |alive_signal|
+          @@proposal_answers[alive_signal[0]] = nil
+        end
+      end
 
       def clear_active_master
         self.active_master = nil
       end
 
-      def setup_propose_check_timer
-        EM.add_timer(30) {
-          check_propose_answers
+      def setup_propose_check_timer(proposed_server)
+        EM.add_timer(client.config.redis_watcher_propose_timer.to_i) {
+          check_propose_answers(proposed_server)
         }
       end
 
-      def check_propose_answers
-        proposed_server = ''
-        if proposal_answers.all? {|k, v| v == proposed_server}
-          reconfigure!
+      def check_propose_answers(proposed_server)
+        if all_alive_servers_promised?(proposed_server)
+          # reconfigure!
         else
-          setup_propose_check_timer
+          setup_propose_check_timer(proposed_server)
         end
+      end
+
+      def all_alive_servers_promised?(proposed_server)
+        proposal_answers.all? {|k, v| v == proposed_server}
       end
 
       def reachable?(redis)
