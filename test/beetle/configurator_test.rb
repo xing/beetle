@@ -134,29 +134,33 @@ module Beetle
       add_alive_server('server1')
       new_master = redis_stub('new_master')
       Configurator.propose(new_master)
-      assert !Configurator.send(:all_alive_servers_promised?, new_master.server)
+      assert !Configurator.send(:all_alive_servers_promised?, new_master)
     end
 
     test "all_alive_servers_promised? should return true if all alive server promised for the new server" do
       add_alive_server('server1')
       add_alive_server('server2')
-      Configurator.promise({'sender_name' => 'server1', 'acked_server' => 'new_master'})
-      Configurator.promise({'sender_name' => 'server2', 'acked_server' => 'new_master'})
-      assert Configurator.send(:all_alive_servers_promised?, 'new_master')
+      new_master = redis_stub('new_master')
+      Configurator.promise({'sender_name' => 'server1', 'acked_server' => new_master.server})
+      Configurator.promise({'sender_name' => 'server2', 'acked_server' => new_master.server})
+      assert Configurator.send(:all_alive_servers_promised?, new_master)
     end
 
 
     test "check_propose_answers should setup a new timer if not every server has answered" do
       new_master = redis_stub('new_master')
       EM.expects(:add_timer).twice.yields
+      Configurator.stubs(:reconfigure!)
       Configurator.expects(:all_alive_servers_promised?).twice.returns(false).then.returns(true)
       Configurator.propose(new_master)
     end
 
     test "check_propose_answers should stop checking and repropose after xx retries" do
+      # flunk <<-GRUEBEL
       # what happens in between?
       # What if a client timed out already?
       # How to keep clients alive in that phase?
+      # GRUEBEL
     end
 
     test "proposing a new master should set the current master to nil" do
@@ -167,13 +171,12 @@ module Beetle
       assert_equal nil, Configurator.active_master
     end
 
-    test "proposing a new master should wait for a response of every known server" do
-    end
-
-    test "proposing a new master should fail unless every known server respondes with an acknowledgement" do
-    end
-
     test "proposing a new master should give the order to reconfigure if every server accepted the proposal" do
+      new_master = redis_stub('new_master')
+      EM.stubs(:add_timer).yields
+      Configurator.stubs(:all_alive_servers_promised?).returns(true)
+      Configurator.expects(:reconfigure!).with(new_master)
+      Configurator.propose(new_master)
     end
 
     test "proposing a new master should wait for the reconfigured message from every known server after giving the order to reconfigure" do

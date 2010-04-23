@@ -38,7 +38,7 @@ module Beetle
         setup_proposal_answers
         clear_active_master
         client.publish(:propose, {:host => new_master.host, :port => new_master.port}.to_json)
-        setup_propose_check_timer(new_master.server)
+        setup_propose_check_timer(new_master)
         # 1. wait for every server to respond (they delete the current redis from their config file before (!) they responde; then they check if they can reach it and answer with an ack/deny accordingly)
         # 2. setup new redis master (slaveof(no one))
         # 3. send reconfigure command
@@ -92,14 +92,18 @@ module Beetle
 
       def check_propose_answers(proposed_server)
         if all_alive_servers_promised?(proposed_server)
-          # reconfigure!
+          reconfigure!(proposed_server)
         else
           setup_propose_check_timer(proposed_server)
         end
       end
 
       def all_alive_servers_promised?(proposed_server)
-        proposal_answers.all? {|k, v| v == proposed_server}
+        proposal_answers.all? {|k, v| v == proposed_server.server}
+      end
+
+      def reconfigure!(new_master)
+
       end
 
       def reachable?(redis)
