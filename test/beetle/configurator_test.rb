@@ -4,10 +4,10 @@ module Beetle
   class ConfiguratorTest < Test::Unit::TestCase
     test "process should forward to class methods" do
       message = mock('message', :data => '{"op":"give_master", "somevariable": "somevalue"}')
-      @configurator = Configurator.new
-      @configurator.stubs(:message).returns(message)
+      configurator = Configurator.new
+      configurator.stubs(:message).returns(message)
       Configurator.expects(:give_master).with({"somevariable" => "somevalue"})
-      @configurator.process()
+      configurator.process()
     end
   end
 
@@ -16,7 +16,6 @@ module Beetle
     def setup
       stub_configurator_class
       Configurator.stubs(:setup_propose_check_timer)
-      @configurator = Configurator.new
     end
 
     test "find_active_master should return if the current active_master if it is still active set" do
@@ -95,7 +94,6 @@ module Beetle
     def setup
       stub_configurator_class
       EM.stubs(:add_timer)
-      @configurator = Configurator.new
     end
 
     test "proposing a new master should publish the master to the propose queue" do
