@@ -34,3 +34,7 @@ def stub_configurator_class
   Beetle::Configurator.client = dumb_client
   Beetle::Configurator.client.deduplication_store.redis_instances = []
 end
+
+def add_alive_server(server)
+  Beetle::Configurator.give_master({'server_name' => server})
+end

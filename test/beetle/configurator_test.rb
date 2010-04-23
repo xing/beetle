@@ -18,6 +18,10 @@ module Beetle
       Configurator.stubs(:setup_propose_check_timer)
     end
 
+    def teardown
+      Configurator.alive_servers = {}
+    end
+
     test "find_active_master should return if the current active_master if it is still active set" do
       first_working_redis      = redis_stub('redis1')
       first_working_redis.expects(:info).never
@@ -84,8 +88,9 @@ module Beetle
     end
 
     test "servers that didnt ask for a server within the last 10 seconds are to be marked dead" do
-      Configurator.alive_servers['foo'] = Time.now - 10.seconds
-      assert !Configurator.server_alive?('foo')
+      add_alive_server('bar')
+      Configurator.alive_servers['bar'] = Time.now - 10.seconds
+      assert !Configurator.server_alive?('bar')
     end
   end
 
@@ -94,6 +99,10 @@ module Beetle
     def setup
       stub_configurator_class
       EM.stubs(:add_timer)
+    end
+
+    def teardown
+      Configurator.reset
     end
 
     test "proposing a new master should publish the master to the propose queue" do
@@ -108,22 +117,54 @@ module Beetle
     end
 
     test "propose should create a timer to check for promises" do
-      EM.expects(:add_timer).yields
+      EM.stubs(:add_timer).yields
       Configurator.expects(:check_propose_answers)
       Configurator.propose(redis_stub('new_master'))
     end
 
     test "propose should reset the proposal_answers" do
+      assert_equal({}, Configurator.send(:proposal_answers))
+      add_alive_server('server1')
       Configurator.proposal_answers = {'foo' => 'bar'}
       Configurator.propose(redis_stub('new_master'))
-      assert_equal({}, Configurator.proposal_answers)
+      assert_equal({'server1' => nil}, Configurator.send(:proposal_answers))
     end
 
-    test "check_propose_answers should return true if all " do
-    
+    test "all_alive_servers_promised? should return false if no alive server promised for the new server" do
+      add_alive_server('server1')
+      new_master = redis_stub('new_master')
+      Configurator.propose(new_master)
+      assert !Configurator.send(:all_alive_servers_promised?, new_master.server)
+    end
+
+    test "all_alive_servers_promised? should return true if all alive server promised for the new server" do
+      add_alive_server('server1')
+      add_alive_server('server2')
+      Configurator.promise({'sender_name' => 'server1', 'acked_server' => 'new_master'})
+      Configurator.promise({'sender_name' => 'server2', 'acked_server' => 'new_master'})
+      assert Configurator.send(:all_alive_servers_promised?, 'new_master')
+    end
+
+
+    test "check_propose_answers should setup a new timer if not every server has answered" do
+      new_master = redis_stub('new_master')
+      EM.expects(:add_timer).twice.yields
+      Configurator.expects(:all_alive_servers_promised?).twice.returns(false).then.returns(true)
+      Configurator.propose(new_master)
+    end
+
+    test "check_propose_answers should stop checking and repropose after xx retries" do
+      # what happens in between?
+      # What if a client timed out already?
+      # How to keep clients alive in that phase?
     end
 
     test "proposing a new master should set the current master to nil" do
+      Configurator.active_master = redis_stub('current master')
+      assert Configurator.active_master
+      new_master = redis_stub('new master')
+      Configurator.propose(new_master)
+      assert_equal nil, Configurator.active_master
     end
 
     test "proposing a new master should wait for a response of every known server" do

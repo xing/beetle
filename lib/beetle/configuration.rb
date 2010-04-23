@@ -12,8 +12,8 @@ module Beetle
     attr_accessor :redis_watcher_retries
     # how long should the redis watcher wait between retries
     attr_accessor :redis_watcher_retry_timeout
-    # 
-    attr_accessor :redis_watcher_propose_timeout
+    # number of seconds after which the watcher checks for propose answers after sending the proposes
+    attr_accessor :redis_watcher_propose_timer
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
     # the virtual host to use on the AMQP servers
@@ -30,6 +30,7 @@ module Beetle
       self.redis_db = 4
       self.redis_watcher_retry_timeout = 30.seconds
       self.redis_watcher_retries = 3
+      self.redis_watcher_propose_timer = 10.seconds
       self.servers = "localhost:5672"
       self.vhost = "/"
       self.user = "guest"
