@@ -20,7 +20,9 @@ def header_with_params(opts = {})
 end
 
 def redis_stub(name, opts = {})
-  opts = {'host' => "foo", 'port' => 123, 'server' => "foo:1234"}.update(opts)
+  default_port = "1234"
+  default_host = "foo"
+  opts = {'host' => default_host, 'port' => default_port, 'server' => "#{default_host}:#{default_port}"}.update(opts)
   stub(name, opts)
 end
 
