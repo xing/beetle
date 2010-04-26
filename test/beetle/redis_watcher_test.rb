@@ -57,12 +57,20 @@ module Beetle
       RedisWatcher.find_active_master
     end
 
-    test "find_active_master should propose the first redis it consideres as working" do
+    test "find_active_master should propose the first redis it considers as working" do
       RedisWatcher.active_master = nil
       working_redis = redis_stub('working-redis', :info => "ok")
       RedisWatcher.client.deduplication_store.redis_instances = [working_redis]
       RedisWatcher.expects(:propose).with(working_redis)
       RedisWatcher.find_active_master
+    end
+
+    test "a forced change in find_active_master should start a reconfiguration run" do
+      # XXX
+    end
+
+    test "" do
+      
     end
 
     test "the current master should be set to nil during the proposal phase" do
@@ -150,7 +158,7 @@ module Beetle
     test "check_propose_answers should setup a new timer if not every server has answered" do
       new_master = redis_stub('new_master')
       EM.expects(:add_timer).twice.yields
-      RedisWatcher.stubs(:reconfigure!)
+      RedisWatcher.stubs(:reconfigure)
       RedisWatcher.expects(:all_alive_servers_promised?).twice.returns(false).then.returns(true)
       RedisWatcher.propose(new_master)
     end
@@ -175,7 +183,7 @@ module Beetle
       new_master = redis_stub('new_master')
       EM.stubs(:add_timer).yields
       RedisWatcher.stubs(:all_alive_servers_promised?).returns(true)
-      RedisWatcher.expects(:reconfigure!).with(new_master)
+      RedisWatcher.expects(:reconfigure).with(new_master)
       RedisWatcher.propose(new_master)
     end
 
