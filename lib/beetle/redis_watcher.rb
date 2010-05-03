@@ -32,7 +32,7 @@ module Beetle
 
       def give_master(payload)
         # stores our list of servers and their ping times
-        alive_servers[payload['server_name']] = Time.now
+        alive_servers[payload['server_name']] = Time.now # unless vote_in_progess
         active_master || 'undefined'
       end
 
@@ -45,7 +45,6 @@ module Beetle
       end
 
       def reconfigure(new_master)
-        setup_reconfigured_answers
         client.publish(:reconfigure, {:host => new_master.host, :port => new_master.port}.to_json)
         setup_reconfigured_check_timer(new_master)
       end
@@ -82,13 +81,6 @@ module Beetle
         @@proposal_answers = {}
         alive_servers.each do |alive_signal|
           @@proposal_answers[alive_signal[0]] = nil
-        end
-      end
-
-      def setup_reconfigured_answers()
-        @@reconfigured_answers = {}
-        @@proposal_answers.each do |server, v|
-          @@reconfigured_answers[server] = nil
         end
       end
 

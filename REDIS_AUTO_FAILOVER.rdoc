@@ -1,0 +1,41 @@
+= Beetle Redis Failover
+
+Automatic Redis Failover (+ consistency on network partitions)
+
+== How it works
+
+===Our current setup:
+
+* Redis Server: redis-1 / redis-2, of them is our master (redis-1), the other a slave (redis-2)
+* Rest of the beetle setup: messaging servers etc.
+
+===How our failover works now:
+
+* on the first need to reach our redis server we go through our configured redis instances and find our current redis master
+* workers and publishers try to access this server as long as it is available
+* when it is not reachable anymore or connection attempts end up in an exception we go into a retry loop
+* if the loop finds an active master this becomes our current redis master again
+* if the loop finds several active master it throws an exception and stops - this is to make sure we don't get inconsistent datasets
+
+===Our problem(s):
+
+* while this mechanism works for any master slave setup, the slave master nominations and changes do not happen automatically. Although this allows an admin to make sure everything is in order when he triggers a switch (+1 point) this has the unfortunate downside that the system will practically shutdown on redis failures until a manual switch has occured (-10000 points).
+* (network partition tolerance relies on the admin correctly handling partitioning situations.)
+
+===Our solution:
+
+* create a small footprint paxos-like implementation over our own messaging bus
+* one redis-watcher (on some server), multiple redis-configurators (on all servers having workers)
+* the redis-configurator polls the master at the redis-watcher every x-seconds, this is also the registration process for workers (they are added to the alive-servers)
+* the redis-configurator sends a going_offline to the redis-watcher before a scheduled downtime
+* when the redis-watcher finds the redis-master to be down he will do series of retries
+* when the redis-master doesn't recover, the redis-master will call for a vote
+* from this moment on no changes are made to the alive-servers
+* the vote needs to be unanimous, details are found in the implementation
+* after having received a reconfiguration confirmation from all servers a switch is made
+* worker registrations are now open again
+* WIP -> configurators open up a named_pipe 
+
+
+
+===
