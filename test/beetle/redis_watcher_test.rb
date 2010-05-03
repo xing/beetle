@@ -65,8 +65,13 @@ module Beetle
       RedisWatcher.find_active_master
     end
 
-    test "a forced change in find_active_master should start a reconfiguration run" do
-      # XXX
+    test "a forced change in find_active_master should start a reconfiguration run eve if there is a working redis" do
+      working_redis_1 = redis_stub('working-redis_1', :info => "ok")
+      working_redis_2 = redis_stub('working-redis_2', :info => "ok")
+      RedisWatcher.active_master = working_redis_1
+      RedisWatcher.client.deduplication_store.redis_instances = [working_redis_1, working_redis_2]
+      RedisWatcher.expects(:propose).with(working_redis_2)
+      RedisWatcher.find_active_master(true)
     end
 
     test "" do
@@ -187,9 +192,45 @@ module Beetle
       RedisWatcher.propose(new_master)
     end
 
-    test "proposing a new master should wait for the reconfigured message from every known server after giving the order to reconfigure" do
+  end
+
+  class RedisWatcherReconfigurationTest < Test::Unit::TestCase
+
+    def setup
+      stub_watcher_class
+      EM.stubs(:add_timer)
+    end
+
+    test "the reconfigure method should publish the reconfigure message with the new master data" do
+      redis_options = {'host' => 'foobar', 'port' => '1234'}
+      new_master    = redis_stub('new_master', redis_options)
+      RedisWatcher.client.expects(:publish).with do |message_name, json|
+        message_name == :reconfigure && ActiveSupport::JSON.decode(json) == redis_options
+      end
+      RedisWatcher.reconfigure(new_master)
+    end
+
+    test "the reconfigure method should start the setup_reconfigured_check_timer" do
+      new_master    = redis_stub('new_master')
+      RedisWatcher.expects(:setup_reconfigured_check_timer).with(new_master)
+      RedisWatcher.reconfigure(new_master)
+    end
+
+    test "the reconfigure check timer should setup a timer to check wether all workers have answered properly" do
+      new_master    = redis_stub('new_master')
+      RedisWatcher.client.config.redis_watcher_propose_timer = 12
+      EM.expects(:add_timer).with(12).yields
+      RedisWatcher.expects(:check_reconfigured_answers)
+      RedisWatcher.send(:setup_reconfigured_check_timer, new_master)
+    end
+    
+    test "check_reconfigured_answers should "
+
+    test "the all_alive_servers_reconfigured? should return true if all workers have answered properly" do
+      
     end
 
   end
 
 end
+
