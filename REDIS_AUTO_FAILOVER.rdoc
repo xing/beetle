@@ -26,10 +26,10 @@ Automatic Redis Failover (+ consistency on network partitions)
 
 * create a small footprint paxos-like implementation over our own messaging bus
 * one redis-watcher (on some server), multiple redis-configurators (on all servers having workers)
-* the redis-configurator polls the master at the redis-watcher every x-seconds, this is also the registration process for workers (they are added to the alive-servers)
-* the redis-configurator sends a going_offline to the redis-watcher before a scheduled downtime
+* the redis-configurator polls the master from the redis-watcher every x-seconds, this is also the registration process for workers (they are added to the alive-servers)
+* the redis-master sends a going_offline to the redis-watcher before a scheduled downtime
 * when the redis-watcher finds the redis-master to be down he will do series of retries
-* when the redis-master doesn't recover, the redis-master will call for a vote
+* when the redis-master doesn't recover, the redis-watcher will call for a vote
 * from this moment on no changes are made to the alive-servers
 * the vote needs to be unanimous, details are found in the implementation
 * after having received a reconfiguration confirmation from all servers a switch is made
