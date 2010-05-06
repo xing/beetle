@@ -224,10 +224,8 @@ module Beetle
       RedisCoordinator.send(:setup_reconfigured_check_timer, new_master)
     end
     
-    test "check_reconfigured_answers should "
-
     test "the all_alive_servers_reconfigured? should return true if all workers have answered properly" do
-      
+      flunk      
     end
 
   end

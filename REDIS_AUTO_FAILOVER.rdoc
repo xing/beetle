@@ -24,18 +24,14 @@ Automatic Redis Failover (+ consistency on network partitions)
 
 ===Our solution:
 
-* create a small footprint paxos-like implementation over our own messaging bus
-* one redis-watcher (on some server), multiple redis-configurators (on all servers having workers)
-* the redis-configurator polls the master from the redis-watcher every x-seconds, this is also the registration process for workers (they are added to the alive-servers)
-* the redis-master sends a going_offline to the redis-watcher before a scheduled downtime
-* when the redis-watcher finds the redis-master to be down he will do series of retries
-* when the redis-master doesn't recover, the redis-watcher will call for a vote
-* from this moment on no changes are made to the alive-servers
-* the vote needs to be unanimous, details are found in the implementation
-* after having received a reconfiguration confirmation from all servers a switch is made
-* worker registrations are now open again
-* WIP -> configurators open up a named_pipe 
-
-
-
-===
+* one redis-coordinator process (on some server), dynamic redis-configuration in every worker process
+* on startup, every worker asks the redis-coordinator for the current redis-master. this is also the registration process for the workers (they are added to the workers list of the redis-coordinator)
+* if a worker cannot connect to the redis-coordinator or does not receive the redis-master info, it should do series of retries before exit with a proper message
+* when the redis-coordinator finds the redis-master to be down he will do series of retries
+* when the redis-master doesn't recover, the redis-coordinator will ask all known workers to reconfigure themselves to use the former redis-slave as the new redis-master
+* from this moment on no changes are made to the workers list of the redis-coordinator, and every worker stops working by unsubscribing from every work queue (not from the redis-coordinator queue)
+* every worker reconfigures itself to use the new redis-master and acknowledges the reconfiguration 
+* when *all* workers have sent a message to acknowledge the reconfiguration, the redis-coordinator promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one) and sends a message to every worker to let them continue their work
+* every worker starts working again by re-subscribing to the work queues
+* starting new workers is now possible again
+* TBD: how/when to remove/unregister dead workers from the redis-coordinator's workers list?
