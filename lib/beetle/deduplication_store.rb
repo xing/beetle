@@ -11,7 +11,6 @@ module Beetle
   #
   # It also provides a method to garbage collect keys for expired messages.
   class DeduplicationStore
-    # creates a new deduplication store
     attr_writer :redis_instances
 
     def initialize(hosts = "localhost:6379", db = 4)

@@ -24,14 +24,15 @@ Automatic Redis Failover (+ consistency on network partitions)
 
 ===Our solution:
 
-* one redis-coordinator process (on some server), dynamic redis-configuration in every worker process
-* on startup, every worker asks the redis-coordinator for the current redis-master. this is also the registration process for the workers (they are added to the workers list of the redis-coordinator)
-* if a worker cannot connect to the redis-coordinator or does not receive the redis-master info, it will retry a couple of time before it finally exits with an error message
-* when the redis-coordinator finds the redis-master to be down he will retry a couple of times
-* when the redis-master doesn't recover, the redis-coordinator will ask all known workers to reconfigure themselves to use the former redis-slave as the new redis-master
-* from this moment on no changes are made to the workers list of the redis-coordinator, and every worker stops working by unsubscribing from every work queue (not from the redis-coordinator queue)
-* every worker reconfigures itself to use the new redis-master and acknowledges the reconfiguration 
-* when *all* workers have sent a message to acknowledge the reconfiguration, the redis-coordinator promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one) and sends a message to every worker to let them continue their work
-* every worker starts working again by re-subscribing to the work queues
+* one redis-configuration-server process (on some server), redis-configuration-client in every worker process
+* on startup, every redis-configuration-client asks the redis-configuration-server for the current redis-master. this is also the registration process for the redis-configuration-clients (they are added to the redis-configuration-clients list of the redis-configuration-server)
+* if a redis-configuration-client cannot connect to the redis-configuration-server or does not receive the redis-master info, it will retry a couple of time before it finally exits with an error message
+* when the redis-configuration-server finds the redis-master to be down, it will retry a couple of times
+* when the redis-master doesn't recover, the redis-configuration-server will ask all known redis-configuration-clients to use the former redis-slave as the new redis-master ("reconfigure message")
+* from this moment on no changes are made to the redis-configuration-clients list of the redis-configuration-server, and the redis-configuration-client tells its worker object to stop working by unsubscribing from every work queue (not from the redis-configuration-server queue)
+* every redis-configuration-client reconfigures itself to use the new redis-master and acknowledges the reconfiguration ("reconfigured message")
+* when *all* redis-configuration-clients have sent the message to acknowledge the reconfiguration, the redis-configuration-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one) and sends a message to every redis-configuration-client to let them continue their work
+* every redis-configuration-client tells its worker object to start working again by re-subscribing to its work queues
 * starting new workers is now possible again
-* TBD: how/when to remove/unregister dead workers from the redis-coordinator's workers list?
+* TBD: how/when to remove/unregister dead redis-configuration-clients from the redis-configuration-server's workers list?
+* TBD: the redis-configuration-clients, instead of asking the redis-configuration-server for the redis-master on start, could also go through the list of redis servers to determine the current redis-master themselves
