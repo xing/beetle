@@ -1,7 +1,6 @@
 require 'timeout'
 module Beetle
-  # The authority for the redis master-slave setup.
-  class RedisCoordinator < Beetle::Handler
+  class RedisConfigurationServer < Beetle::Handler
 
     @@active_master         = nil
     @@client                = Beetle::Client.new
