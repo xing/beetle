@@ -8,12 +8,12 @@ module Beetle
     attr_accessor :redis_hosts
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
-    # how often should the redis watcher try to reach the master before nominating a new one 
-    attr_accessor :redis_watcher_retries
-    # how long should the redis watcher wait between retries
-    attr_accessor :redis_watcher_retry_timeout
-    # number of seconds after which the watcher checks for propose answers after sending the proposes
-    attr_accessor :redis_watcher_propose_timer
+    # how often should the redis configuration server try to reach the redis master before nominating a new one 
+    attr_accessor :redis_configuration_master_retries
+    # how long should the redis configuration server wait between retries
+    attr_accessor :redis_configuration_master_retry_timeout
+    # number of seconds after which the redis configuration server checks for reconfigured answers
+    attr_accessor :redis_configuration_reconfiguration_timeout
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
     # the virtual host to use on the AMQP servers
@@ -28,9 +28,9 @@ module Beetle
       self.gc_threshold = 3.days
       self.redis_hosts = "localhost:6379"
       self.redis_db = 4
-      self.redis_watcher_retry_timeout = 30.seconds
-      self.redis_watcher_retries = 3
-      self.redis_watcher_propose_timer = 10.seconds
+      self.redis_configuration_master_retries = 3
+      self.redis_configuration_master_retry_timeout = 30.seconds
+      self.redis_configuration_reconfiguration_timeout = 10.seconds
       self.servers = "localhost:5672"
       self.vhost = "/"
       self.user = "guest"
