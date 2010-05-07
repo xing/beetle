@@ -26,8 +26,8 @@ Automatic Redis Failover (+ consistency on network partitions)
 
 * one redis-coordinator process (on some server), dynamic redis-configuration in every worker process
 * on startup, every worker asks the redis-coordinator for the current redis-master. this is also the registration process for the workers (they are added to the workers list of the redis-coordinator)
-* if a worker cannot connect to the redis-coordinator or does not receive the redis-master info, it should do series of retries before exit with a proper message
-* when the redis-coordinator finds the redis-master to be down he will do series of retries
+* if a worker cannot connect to the redis-coordinator or does not receive the redis-master info, it will retry a couple of time before it finally exits with an error message
+* when the redis-coordinator finds the redis-master to be down he will retry a couple of times
 * when the redis-master doesn't recover, the redis-coordinator will ask all known workers to reconfigure themselves to use the former redis-slave as the new redis-master
 * from this moment on no changes are made to the workers list of the redis-coordinator, and every worker stops working by unsubscribing from every work queue (not from the redis-coordinator queue)
 * every worker reconfigures itself to use the new redis-master and acknowledges the reconfiguration 
