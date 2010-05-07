@@ -29,7 +29,7 @@ def redis_stub(name, opts = {})
   stub(name, opts)
 end
 
-def stub_watcher_class
+def stub_redis_configuration_server_class
   Beetle::RedisConfigurationServer.active_master = nil
   dumb_client = Beetle::Client.new
   dumb_client.stubs(:publish)
