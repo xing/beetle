@@ -10,7 +10,7 @@ module Beetle
       @mqs = {}
     end
 
-    # the client calls this method to subcsribe to all queues on all servers which have
+    # the client calls this method to subscribe to all queues on all servers which have
     # handlers registered for the given list of messages. this method does the following
     # things:
     #
