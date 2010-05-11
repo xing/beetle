@@ -42,7 +42,7 @@ Automatic Redis Failover (+ consistency on network partitions)
 * one redis-configuration-server process ("rc-server", on one server), one redis-configuration-client process ("rc-client") on every worker server
 * the rc-server and rc-clients exchange messages via a "system queue"
 * on startup, an rc-client can determine the current redis-master without the help of the rc-server by asking *all* configured redis servers for their current role, making sure that no reconfiguration round is in progress (by checking that the intended_role key on all redis servers still matches their current role)
-* if an rc-client cannot get the redis-master from the rc-server and cannot determine the redis-master itself, it will retry a couple of time before it finally exits
+* if an rc-client cannot determine the redis-master, it will retry a couple of time before it finally exits
 * periodically the rc-clients sends an "online" message to the rc-server, allowing it to keep a list of known rc-clients
 * when the rc-server finds the redis-master to be down, it will retry a couple of times before starting the following reconfiguration round
 
