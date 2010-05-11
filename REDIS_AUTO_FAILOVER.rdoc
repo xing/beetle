@@ -24,27 +24,34 @@ Automatic Redis Failover (+ consistency on network partitions)
 
 ===Our requirements:
 
-* automatic switch in case of master failure
-* automatic switch should not cause inconsitent data
-* worker should be able to start even if the redis-configuration-server is not available (but all redis servers are working and no reconfiguration is in progress)
-* either all or no client reconfigure
 * no single point of failure
+* automatic switch in case of redis-master failure
+* switch should not cause inconsistent data on the redis servers
+* workers should be able to determine the current redis-master without asking another process (as long as the redis servers are working and no reconfiguration is in progress)
 
 ===Our solution:
-- simple
+
+==== single redis server (simple)
+
 * when just one redis server is configured, none of this is done, all systems just use the configured server
-- redundant (not so simple)
-* one redis-configuration-server process (on some server), redis-configuration-client processes on every worker server
-* on startup, the redis-configuration-client asks the redis-configuration-server for the current redis-master
-* on startup, if the redis-configuration-server could not be reached the redis-configuration-client checks wether he can determine the current master by asking *all* configured redis servers for their status and making sure that no reconfiguration run is in progress (by checking that the intended_role key on the master redis says 'master')
-* periodically the rc-clients sends an online message to the rc-server, this is also the registration process for the rc-clients (they are added to the rc-clients list of the rc-server)
-* if a rc-client cannot connect to the rc-server or cannot determine the redis-master, it will retry a couple of time before it finally exits with an error message
-* when the rc-server finds the redis-master to be down, it will retry a couple of times
-* when the redis-master doesn't recover, the rc-server will ask all known rc-clients to use the former redis-slave as the new redis-master ("reconfigure message")
-* from this moment on no changes are made to the redis-configuration-clients list of the redis-configuration-server, and the redis-configuration-client tells its worker object to stop working by unsubscribing from every work queue (not from the redis-configuration-server queue)
-* every redis-configuration-client reconfigures itself to use the new redis-master and acknowledges the reconfiguration ("reconfigured message")
-* when *all* redis-configuration-clients have sent the message to acknowledge the reconfiguration, the redis-configuration-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one) and sends a message to every redis-configuration-client to let them continue their work
-* every redis-configuration-client tells its worker object to start working again by re-subscribing to its work queues
-* starting new workers is now possible again
-* TBD: how/when to remove/unregister dead redis-configuration-clients from the redis-configuration-server's workers list?
-* TBD: the redis-configuration-clients, instead of asking the redis-configuration-server for the redis-master on start, could also go through the list of redis servers to determine the current redis-master themselves
+
+==== redis master-slave setup (not so simple)
+
+===== prerequisites
+
+* one redis-configuration-server process ("rc-server", on one server), one redis-configuration-client process ("rc-client") on every worker server
+* the rc-server and rc-clients exchange messages via a "system queue"
+* on startup, an rc-client can determine the current redis-master without the help of the rc-server by asking *all* configured redis servers for their current role, making sure that no reconfiguration round is in progress (by checking that the intended_role key on all redis servers still matches their current role)
+* if an rc-client cannot get the redis-master from the rc-server and cannot determine the redis-master itself, it will retry a couple of time before it finally exits
+* periodically the rc-clients sends an "online" message to the rc-server, allowing it to keep a list of known rc-clients
+* when the rc-server finds the redis-master to be down, it will retry a couple of times before starting the following reconfiguration round
+
+===== when the redis-master doesn't recover (reconfiguration round)
+
+* the rc-server sets the intended_role key on the redis-slave to "master"
+* the rc-server tells all rc-clients to stop using the redis-master by sending an "invalidate" message
+* the rc-clients acknowledge via an "invalidated" message
+* the rc-server waits for *all* rc-clients to acknowledge the invalidation
+* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
+* the rc-server sends a "new master" message containing the new redis-master to every rc-client
+* the rc-clients use the new redis-master
