@@ -1,6 +1,4 @@
-= Beetle Redis Failover
-
-Automatic Redis Failover (+ consistency on network partitions)
+= Automatic Redis Failover for Beetle
 
 == How it works
 
@@ -12,22 +10,28 @@ Automatic Redis Failover (+ consistency on network partitions)
 ===How our failover works now:
 
 * on the first need to reach our redis server we go through our configured redis instances and find our current redis master
-* workers and publishers try to access this server as long as it is available
+* subscribers access this server as long as it is available
 * when it is not reachable anymore or connection attempts end up in an exception we go into a retry loop
 * if the loop finds an active master this becomes our current redis master again
 * if the loop finds several active master it throws an exception and stops - this is to make sure we don't get inconsistent datasets
 
 ===Our problem(s):
 
-* while this mechanism works for any master slave setup, the slave master nominations and changes do not happen automatically. Although this allows an admin to make sure everything is in order when he triggers a switch (+1 point) this has the unfortunate downside that the system will practically shutdown on redis failures until a manual switch has occured (-10000 points).
-* (network partition tolerance relies on the admin correctly handling partitioning situations.)
+* while this mechanism works for any master slave setup, the slave master nominations and
+  changes do not happen automatically. Although this allows an admin to make sure
+  everything is in order when he triggers a switch (+1 point) this has the unfortunate
+  downside that the system will practically shutdown on redis failures until a manual
+  switch has occured (-10000 points).
 
-===Our requirements:
+* in case of network partitioning we rely on the admin to correctly handle the situations.
+
+===Our goals:
 
 * no single point of failure
 * automatic switch in case of redis-master failure
 * switch should not cause inconsistent data on the redis servers
-* workers should be able to determine the current redis-master without asking another process (as long as the redis servers are working and no reconfiguration is in progress)
+* subscribers should be able to determine the current redis-master without asking another
+  process (as long as the redis servers are working and no reconfiguration is in progress)
 
 ===Our solution:
 
@@ -42,9 +46,9 @@ Automatic Redis Failover (+ consistency on network partitions)
 * one redis-configuration-server process ("rc-server", on one server), one redis-configuration-client process ("rc-client") on every worker server
 * the rc-server and rc-clients exchange messages via a "system queue"
 * on startup, an rc-client can determine the current redis-master without the help of the rc-server by asking *all* configured redis servers for their current role, making sure that no reconfiguration round is in progress (by checking that the intended_role key on all redis servers still matches their current role)
-* if an rc-client cannot determine the redis-master, it will retry a couple of time before it finally exits
+* if an rc-client cannot determine the redis-master, it will retry a couple of times before it finally exits
 * periodically the rc-clients sends an "online" message to the rc-server, allowing it to keep a list of known rc-clients
-* when the rc-server finds the redis-master to be down, it will retry a couple of times before starting the following reconfiguration round
+* when the rc-server finds the redis-master to be down, it will retry a couple of times before starting a reconfiguration round
 
 ===== when the redis-master doesn't recover (reconfiguration round)
 
@@ -52,6 +56,7 @@ Automatic Redis Failover (+ consistency on network partitions)
 * the rc-server tells all rc-clients to stop using the redis-master by sending an "invalidate" message
 * the rc-clients acknowledge via an "invalidated" message
 * the rc-server waits for *all* rc-clients to acknowledge the invalidation
-* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
+* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one and setting the intended_role key to "master")
 * the rc-server sends a "new master" message containing the new redis-master to every rc-client
 * the rc-clients use the new redis-master
+* the rc-server periodically tries to connect to the old master and configure it as a slave (by sending SLAVEOF new_master and setting intendend_role key to "slave")
