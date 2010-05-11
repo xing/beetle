@@ -1,13 +1,49 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class RedisConfigurationServerTest < Test::Unit::TestCase
-    test "process should forward to class methods" do
+  class RedisConfigurationServerProcessMethodTest < Test::Unit::TestCase
+    test "should forward incoming messages to class methods" do
       message = mock('message', :data => '{"op":"give_master", "somevariable": "somevalue"}')
-      watcher = RedisConfigurationServer.new
-      watcher.stubs(:message).returns(message)
+      server = RedisConfigurationServer.new
+      server.stubs(:message).returns(message)
       RedisConfigurationServer.expects(:give_master).with({"somevariable" => "somevalue"})
-      watcher.process()
+      server.process()
+    end
+  end
+
+  class RedisConfigurationServerActiveMasterReachableMethodTest < Test::Unit::TestCase
+
+    def setup
+      stub_redis_configuration_server_class
+      EM.stubs(:add_timer)
+    end
+
+    def teardown
+      RedisConfigurationServer.alive_servers = {}
+    end
+
+    test "should return false if no current active_master set" do
+      assert !RedisConfigurationServer.active_master_reachable?
+    end
+
+    test "should return false if active_master not reachable" do
+      non_reachable_redis = redis_stub('non_reachable_redis')
+      non_reachable_redis.stubs(:info).returns(false)
+      RedisConfigurationServer.active_master = non_reachable_redis
+      RedisConfigurationServer.client.config.redis_configuration_master_retries = 1
+      RedisConfigurationServer.client.config.redis_configuration_master_retry_timeout = 1
+      
+      assert !RedisConfigurationServer.active_master_reachable?
+    end
+
+    test "should return true if the current active_master is reachable" do
+      first_working_redis      = redis_stub('redis1')
+      first_working_redis.expects(:info).never
+      second_working_redis     = redis_stub('redis2', :info => 'ok') # enough to make reachable? happy
+
+      RedisConfigurationServer.client.deduplication_store.redis_instances = [first_working_redis, second_working_redis]
+      RedisConfigurationServer.active_master = second_working_redis
+      assert RedisConfigurationServer.active_master_reachable?
     end
   end
 
@@ -20,17 +56,6 @@ module Beetle
 
     def teardown
       RedisConfigurationServer.alive_servers = {}
-    end
-
-    test "find_active_master should return if the current active_master if it is still active set" do
-      first_working_redis      = redis_stub('redis1')
-      first_working_redis.expects(:info).never
-      second_working_redis     = redis_stub('redis2', :info => 'ok')
-
-      RedisConfigurationServer.client.deduplication_store.redis_instances = [first_working_redis, second_working_redis]
-      RedisConfigurationServer.active_master = second_working_redis
-      RedisConfigurationServer.find_active_master
-      assert_equal second_working_redis, RedisConfigurationServer.active_master
     end
 
     test "find_active_master should retry to reach the current master if it doesn't respond" do
