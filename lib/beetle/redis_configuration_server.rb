@@ -12,6 +12,17 @@ module Beetle
     cattr_accessor :reconfigured_answers
 
     class << self
+      def active_master_reachable?
+        if active_master
+          return true if reachable?(active_master)
+          client.config.redis_configuration_master_retries.times do
+            sleep client.config.redis_configuration_master_retry_timeout.to_i
+            return true if reachable?(active_master)
+          end
+        end
+        false
+      end
+
       def find_active_master(force_change = false)
         if !force_change && active_master
           return if reachable?(active_master)
