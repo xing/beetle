@@ -1,3 +1,7 @@
+require 'rubygems'
+require 'ruby-debug'
+Debugger.start
+
 require 'timeout'
 module Beetle
   class RedisConfigurationServer < Beetle::Handler
@@ -35,6 +39,11 @@ module Beetle
         available_redis_server.each do |redis|
           reconfigure(redis) and break if reachable?(redis)
         end
+      end
+
+      def online(payload)
+        alive_servers[payload['server_name']] = Time.now # unless vote_in_progess
+        p alive_servers
       end
 
       def give_master(payload)
@@ -105,8 +114,7 @@ module Beetle
     end
 
     def process
-      hash = ActiveSupport::JSON.decode(message.data)
-      self.class.__send__(hash.delete("op").to_sym, hash)
+      self.class.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
     end
 
   end
