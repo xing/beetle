@@ -29,7 +29,7 @@ class RedisTestServer
   end
   
   def stop
-    redis_client.shutdown
+    redis.shutdown
   rescue Errno::ECONNREFUSED
     # Seems to be always raised in older redis-rb
   ensure
@@ -39,11 +39,11 @@ class RedisTestServer
   end
   
   def master
-    redis_client.slaveof("no one")
+    redis.slaveof("no one")
   end
 
   def slave_of(other_redis_test_server)
-    redis_client.slaveof("127.0.0.1 #{other_redis_test_server.port}")
+    redis.slaveof("127.0.0.1 #{other_redis_test_server.port}")
   end
   
   def port
@@ -107,8 +107,8 @@ class RedisTestServer
       tmp_path + "/redis-test-server-#{name}/"
     end
     
-    def redis_client
-      @redis_client ||= Redis.new(:host => "127.0.0.1", :port => port)
+    def redis
+      @redis ||= Redis.new(:host => "127.0.0.1", :port => port)
     end
     
 end

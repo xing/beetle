@@ -4,19 +4,21 @@ Given /^a redis server "([^\"]*)" exists as master$/ do |redis_name|
   redis_server.master
 end
 
-Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master|
+Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   redis_server = RedisTestServer.find_or_initialize_by_name(redis_name)
   redis_server.start
-  redis_master_server = RedisTestServer.find_or_initialize_by_name(redis_master)
-  redis_server.slave_of(redis_master_server) 
+  master = RedisTestServer.find_or_initialize_by_name(redis_master_name)
+  redis_server.slave_of(master) 
 end
 
-Given /^a redis configuration server process "([^\"]*)" exists$/ do |arg1|
-  pending # express the regexp above with the code you wish you had
+Given /^a redis configuration server exists$/ do
+  pending
 end
 
-Given /^a redis configuration client process "([^\"]*)" exists$/ do |arg1|
-  pending # express the regexp above with the code you wish you had
+Given /^a redis configuration client "([^\"]*)" exists$/ do |redis_configuration_client_name|
+  @redis_configuration_clients ||= {}
+  @redis_configuration_clients[redis_configuration_client_name] ||= Class.new(Beetle::RedisConfigurationClient)
+  @redis_configuration_clients[redis_configuration_client_name].listen
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |arg1|

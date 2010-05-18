@@ -1,6 +1,6 @@
-require 'rubygems'
-require 'ruby-debug'
-Debugger.start
+# require 'rubygems'
+# require 'ruby-debug'
+# Debugger.start
 
 require 'timeout'
 module Beetle

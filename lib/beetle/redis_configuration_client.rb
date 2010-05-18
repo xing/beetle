@@ -2,42 +2,22 @@ require 'timeout'
 module Beetle
   class RedisConfigurationClient < Beetle::Handler
 
-    @@active_master         = nil
-    @@client                = Beetle::Client.new
-    cattr_accessor :active_master
-    cattr_accessor :client
-    
-    client.configure :exchange => :system do |config|
-
-      config.message :online
-      config.queue   :online
-
-      config.message :going_down
-      config.queue   :going_down
-
-      config.message :reconfigure
-      config.queue   :reconfigure
-
-      config.message :reconfigured
-      config.queue   :reconfigured
-
-      config.message :invalidate
-      config.queue   :invalidate
-
-      config.message :invalidated
-      config.queue   :invalidated
-
-      config.handler(:online,       Beetle::RedisConfigurationServer)
-      config.handler(:going_down,   Beetle::RedisConfigurationServer)
-      config.handler(:reconfigured, Beetle::RedisConfigurationServer)
-      config.handler(:invalidated,  Beetle::RedisConfigurationServer)
-
-      config.handler(:reconfigure,  Beetle::RedisConfigurationClient)
-      config.handler(:invalidate,   Beetle::RedisConfigurationClient)
-    end
-    
-
     class << self
+      attr_accessor :active_master
+      attr_accessor :beetle_client
+
+      @beetle_client = Beetle::Client.new
+      @beetle_client.configure :exchange => :system do |config|
+        config.message :online
+        config.message :going_down
+        config.queue   :reconfigure
+        config.message :reconfigured
+        config.queue   :invalidate
+        config.message :invalidated
+        config.handler(:reconfigure,  self)
+        config.handler(:invalidate,   self)
+      end
+
       def find_active_server(master, slave)
         client.publish(:online, {:server_name => `hostname`}.to_json)
         # client.config.redis_configuration_master_retries.times do
