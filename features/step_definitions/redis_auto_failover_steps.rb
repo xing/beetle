@@ -1,13 +1,14 @@
 Given /^a redis server "([^\"]*)" exists as master$/ do |redis_name|
   redis_server = RedisTestServer.find_or_initialize_by_name(redis_name)
-  # redis_server.master!
   redis_server.start
+  redis_server.master
 end
 
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master|
   redis_server = RedisTestServer.find_or_initialize_by_name(redis_name)
-  # redis_server.slave_of!(TestRedisServer.find_by_name(redis_master)) 
   redis_server.start
+  redis_master_server = RedisTestServer.find_or_initialize_by_name(redis_master)
+  redis_server.slave_of(redis_master_server) 
 end
 
 Given /^a redis configuration server process "([^\"]*)" exists$/ do |arg1|
@@ -26,7 +27,7 @@ Given /^the retry timeout for the redis master check is reached$/ do
   pending # express the regexp above with the code you wish you had
 end
 
-Then /^the role of "([^\"]*)" should be "([^\"]*)"$/ do |arg1, arg2|
+Then /^the role of redis server "([^\"]*)" should be "([^\"]*)"$/ do |arg1, arg2|
   pending # express the regexp above with the code you wish you had
 end
 
