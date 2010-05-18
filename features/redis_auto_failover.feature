@@ -6,7 +6,6 @@ Feature: Redis auto failover
     Given a redis server "redis-1" exists as master
     And a redis server "redis-2" exists as slave of "redis-1"
   
-  @current  
   Scenario: Redis master switch
     Given a redis configuration server process "rc-server" exists
     And a redis configuration client process "rc-client-1" exists

@@ -2,15 +2,15 @@ require 'fileutils'
 require 'erb'
 require 'redis'
 
-# Manages redis server instances for testing 
+# Creates and manages named redis server instances for testing with ease
 class RedisTestServer
 
   @@instances = []
   
-  attr_accessor :name
+  attr_reader :name
   
   def initialize(name)
-    self.name = name
+    @name = name
     @@instances << self
   end
 
@@ -36,6 +36,18 @@ class RedisTestServer
     remove_dir
     remove_config
     remove_pidfile
+  end
+  
+  def master
+    redis_client.slaveof("no one")
+  end
+
+  def slave_of(other_redis_test_server)
+    redis_client.slaveof("127.0.0.1 #{other_redis_test_server.port}")
+  end
+  
+  def port
+    6381 + @@instances.index(self)
   end
 
   private
