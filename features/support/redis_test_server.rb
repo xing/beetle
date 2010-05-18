@@ -99,8 +99,8 @@ class RedisTestServer
       File.read(pidfile)
     end
     
-    def port
-      6381 + @@instances.index(self)
+    def logfile
+      tmp_path + "/redis-test-server-#{name}.log"
     end
     
     def dir
