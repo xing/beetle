@@ -48,6 +48,6 @@ client.configure :exchange => :system do |config|
   config.handler(:invalidate,   Beetle::RedisConfigurationClient)
 end
 
-client.publish(:online, {:server_name => 'BAM'}.to_json)
+Beetle::RedisConfigurationClient.find_active_server('a', 'b')
 
 client.listen
