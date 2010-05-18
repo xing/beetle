@@ -1,0 +1,12 @@
+#! /usr/bin/env ruby
+
+require "rubygems"
+require File.expand_path("../lib/beetle", File.dirname(__FILE__))
+
+Beetle.config.redis_hosts = "localhost:6379, localhost:6380"
+Beetle.config.servers = "localhost:5672, localhost:5673"
+
+# set Beetle log level to info, less noisy than debug
+Beetle.config.logger.level = Logger::INFO
+
+# Beetle::RedisConfigurationClient.client.listen
