@@ -92,7 +92,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name    = 'beetle'
-    gemspec.version = '0.1'
+    gemspec.version = '0.2'
     gemspec.summary = "High Availability AMQP Messaging with Redundant Queues"
     gemspec.description = "A highly available, reliable messaging infrastructure"
     gemspec.email = "developers@xing.com"
@@ -106,6 +106,7 @@ begin
 
     gemspec.add_development_dependency('mocha')
     gemspec.add_development_dependency('rcov')
+    gemspec.add_development_dependency('cucumber')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
