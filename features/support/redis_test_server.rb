@@ -49,6 +49,10 @@ class RedisTestServer
   def port
     6381 + @@instances.index(self)
   end
+  
+  def ip_with_port
+    "127.0.0.1:#{port}"
+  end
 
   private
   
@@ -57,7 +61,7 @@ class RedisTestServer
     end
     
     def remove_dir
-      FileUtils.rm_r(dir)
+      FileUtils.rm_r(dir) if File.exists?(dir)
     end
 
     def create_config
@@ -67,11 +71,11 @@ class RedisTestServer
     end
     
     def remove_config
-      FileUtils.rm(config_filename)
+      FileUtils.rm(config_filename) if File.exists?(config_filename)
     end
     
     def remove_pidfile
-      FileUtils.rm(pidfile)
+      FileUtils.rm(pidfile) if File.exists?(pidfile)
     end
     
     def tmp_path
