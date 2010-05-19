@@ -14,7 +14,7 @@ Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do 
   redis_servers_string = redis_server_names.split(",").map do |redis_name|
     RedisTestServer.find_or_initialize_by_name(redis_name).ip_with_port
   end.join(",")
-  `ruby bin/redis_configuration_server --redis-servers=#{redis_servers_string} > /dev/null 2>&1 &`
+  `ruby bin/redis_configuration_server --redis-servers=#{redis_servers_string} --redis-retry-timeout 1 > /dev/null 2>&1 &`
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_server_names|
@@ -29,7 +29,7 @@ Given /^redis server "([^\"]*)" is down$/ do |redis_name|
 end
 
 Given /^the retry timeout for the redis master check is reached$/ do
-  pending # express the regexp above with the code you wish you had
+  sleep 5
 end
 
 Then /^the role of redis server "([^\"]*)" should be "([^\"]*)"$/ do |arg1, arg2|

@@ -4,10 +4,21 @@ require "rubygems"
 require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 require "optparse"
 
+Beetle.config.redis_hosts = "localhost:6379, localhost:6380"
+
 opts = OptionParser.new 
-opts.on("-r", "--redis-servers host1:port1,host2:port2,...", String) do |val|
-  Beetle.config.redis_hosts = val || "localhost:6379, localhost:6380"
+opts.on("-h", "--help") do
+  puts opts.to_s
+  exit
 end
+opts.on("-r", "--redis-servers host1:port1,host2:port2,...", String) do |val|
+  Beetle.config.redis_hosts = val
+end
+opts.on("-t", "--redis-retry-timeout seconds", Integer) do |val|
+  Beetle.config.redis_configuration_master_retry_timeout = val
+end
+opts.parse!
+
 
 Beetle.config.servers = "localhost:5672, localhost:5673"
 
