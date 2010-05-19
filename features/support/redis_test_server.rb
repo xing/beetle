@@ -42,8 +42,8 @@ class RedisTestServer
     redis.slaveof("no one")
   end
 
-  def slave_of(other_redis_test_server)
-    redis.slaveof("127.0.0.1 #{other_redis_test_server.port}")
+  def slave_of(master_port)
+    redis.slaveof("127.0.0.1 #{master_port}")
   end
   
   def port

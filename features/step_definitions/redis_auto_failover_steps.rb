@@ -7,18 +7,17 @@ end
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   redis_server = RedisTestServer.find_or_initialize_by_name(redis_name)
   redis_server.start
-  master = RedisTestServer.find_or_initialize_by_name(redis_master_name)
-  redis_server.slave_of(master) 
+  redis_server.slave_of(RedisTestServer.find_or_initialize_by_name(redis_master_name).port) 
 end
 
 Given /^a redis configuration server exists$/ do
-  pending
+  `ruby bin/redis_configuration_server --redis-servers=127.0.0.1:6381,127.0.0.1:6382 > /dev/null 2>&1 &`
 end
 
 Given /^a redis configuration client "([^\"]*)" exists$/ do |redis_configuration_client_name|
   @redis_configuration_clients ||= {}
-  @redis_configuration_clients[redis_configuration_client_name] ||= Class.new(Beetle::RedisConfigurationClient)
-  @redis_configuration_clients[redis_configuration_client_name].listen
+  @redis_configuration_clients[redis_configuration_client_name] ||= Beetle::RedisConfigurationClient.new
+  @redis_configuration_clients[redis_configuration_client_name].start
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |arg1|
