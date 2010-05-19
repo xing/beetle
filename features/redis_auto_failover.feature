@@ -38,12 +38,12 @@ Feature: Redis auto failover
     And the redis master of "rc-client-1" should still be "redis-1"
     And the redis master of "rc-client-2" should still be "redis-1"
     
-  Scenario: Reconfiguration round in progress
+  Scenario: Reconfiguration round in progress when client joins
     Given a reconfiguration round is in progress
     And a redis configuration client "rc-client-1" exists
     Then the redis master of "rc-client-1" should be nil
 
-  Scenario: Redis master cannot be determined
+  Scenario: Redis master cannot be determined by client
     Given redis "redis-1" is down
     And redis "redis-2" is down
     And a redis configuration client "rc-client-1" exists

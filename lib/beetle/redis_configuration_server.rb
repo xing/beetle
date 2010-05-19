@@ -4,18 +4,56 @@
 
 require 'timeout'
 module Beetle
-  class RedisConfigurationServer < Beetle::Handler
+  class RedisConfigurationServer
+    
+    class SystemMessageHandler < Beetle::Handler
+      cattr_accessor :delegate_messages_to
+      def process
+        self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
+      end
+    end
+    
+    attr_accessor :active_master
+    attr_accessor :alive_servers
+    
+    def initialize
+      SystemMessageHandler.delegate_messages_to = self
 
-    @@active_master         = nil
-    @@client                = Beetle::Client.new
-    @@alive_servers         = {}
-    @@reconfigured_answers  = {}
-    cattr_accessor :client
-    cattr_accessor :active_master
-    cattr_accessor :alive_servers
-    cattr_accessor :reconfigured_answers
+      @beetle_client = Beetle::Client.new
+      @beetle_client.configure :exchange => :system do |config|
+        config.message :online
+        config.queue   :online
+        config.message :going_down
+        config.queue   :going_down
+        config.message :invalidated
+        config.queue   :invalidated
 
-    class << self
+        config.handler(:online,       SystemMessageHandler)
+        config.handler(:going_down,   SystemMessageHandler)
+        config.handler(:invalidated,  SystemMessageHandler)
+      end
+      self.alive_servers = {}
+    end
+    
+    def start
+      # do other stuff too
+      @beetle_client.listen
+    end
+    
+    # SystemMessageHandler delegated messages
+    def online(payload)
+      alive_servers[payload['server_name']] = Time.now # unless vote_in_progess
+      p alive_servers
+    end
+
+    def going_down(payload)
+    end
+    
+    def invalidated(payload)
+    end
+    
+    private
+
       def active_master_reachable?
         if active_master
           return true if reachable?(active_master)
@@ -41,11 +79,6 @@ module Beetle
         end
       end
 
-      def online(payload)
-        alive_servers[payload['server_name']] = Time.now # unless vote_in_progess
-        p alive_servers
-      end
-
       def give_master(payload)
         # stores our list of servers and their ping times
         alive_servers[payload['server_name']] = Time.now # unless vote_in_progess
@@ -55,10 +88,6 @@ module Beetle
       def reconfigure(new_master)
         client.publish(:reconfigure, {:host => new_master.host, :port => new_master.port}.to_json)
         setup_reconfigured_check_timer(new_master)
-      end
-
-      def reconfigured(payload)
-        reconfigured_answers[payload['sender_name']] = payload['acked_server']
       end
 
       def going_offline(payload)
@@ -112,10 +141,4 @@ module Beetle
         end
       end
     end
-
-    def process
-      self.class.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
-    end
-
-  end
 end

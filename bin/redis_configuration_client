@@ -9,4 +9,4 @@ Beetle.config.servers = "localhost:5672, localhost:5673"
 # set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
 
-# Beetle::RedisConfigurationClient.client.listen
+Beetle::RedisConfigurationClient.new.start
