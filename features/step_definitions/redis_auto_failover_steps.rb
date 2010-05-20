@@ -8,18 +8,20 @@ Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name
   RedisTestServer[redis_name].slave_of(RedisTestServer[redis_master_name].port) 
 end
 
-Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_server_names|
-  redis_servers_string = redis_server_names.split(",").map do |redis_name|
+Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
+  redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  `ruby bin/redis_configuration_server --redis-servers=#{redis_servers_string} --redis-retry-timeout 1 > /dev/null 2>&1 &`
+  pid = fork {`ruby -d bin/redis_configuration_server --redis-servers=#{redis_servers_string} --redis-retry-timeout 1 > tmp/redis_configuration_server.log 2>&1 &`}
+  $PIDS_TO_KILL << pid
 end
 
-Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_server_names|
-  redis_servers_string = redis_server_names.split(",").map do |redis_name|
+Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
+  redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  fork {`ruby bin/redis_configuration_client --redis-servers=#{redis_servers_string} > /dev/null 2>&1 &`}
+  pid = fork {`ruby bin/redis_configuration_client --redis-servers=#{redis_servers_string} > /dev/null 2>&1 &`}
+  $PIDS_TO_KILL << pid
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|
@@ -30,12 +32,12 @@ Given /^the retry timeout for the redis master check is reached$/ do
   sleep 5
 end
 
-Then /^the role of redis server "([^\"]*)" should be "([^\"]*)"$/ do |arg1, arg2|
-  pending # express the regexp above with the code you wish you had
+Then /^the role of redis server "([^\"]*)" should be master$/ do |redis_name|
+  assert RedisTestServer[redis_name].master?
 end
 
-Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |arg1, arg2|
-  pending # express the regexp above with the code you wish you had
+Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
+  pending
 end
 
 Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout for the redis master check$/ do |arg1|

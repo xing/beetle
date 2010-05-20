@@ -44,6 +44,10 @@ class RedisTestServer
   def master
     redis.slaveof("no one")
   end
+  
+  def master?
+    redis.info["role"] == "master"
+  end
 
   def slave_of(master_port)
     redis.slaveof("127.0.0.1 #{master_port}")

@@ -12,7 +12,7 @@ Feature: Redis auto failover
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
-    Then the role of redis server "redis-2" should be "master"
+    Then the role of redis server "redis-2" should be master
     And the redis master of "rc-client-1" should be "redis-2"
     And the redis master of "rc-client-2" should be "redis-2"
     
@@ -50,4 +50,6 @@ Feature: Redis auto failover
     Then the redis master of "rc-client-1" should be nil
 
   Scenario: Former redis master coming back online
+
+  Scenario: Clients should not use the redis while a reconfiguration is in progress
   
