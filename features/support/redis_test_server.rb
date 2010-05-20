@@ -14,12 +14,15 @@ class RedisTestServer
     @@instances << self
   end
 
-  def self.find_or_initialize_by_name(name)
-    @@instances.find(lambda{ new(name) }) {|i| i.name == name }
-  end
+  class << self
+    def find_or_initialize_by_name(name)
+      @@instances.find(lambda{ new(name) }) {|i| i.name == name }
+    end
+    alias_method :[], :find_or_initialize_by_name
   
-  def self.stop_all
-    @@instances.each{|i| i.stop }
+    def stop_all
+      @@instances.each{|i| i.stop }
+    end
   end
   
   def start
