@@ -13,32 +13,36 @@ module Beetle
     
     # Methods called from RedisConfigurationClientMessageHandler
     def client_online(payload)
-      server_name = payload[:server_name]
+      server_name = payload["server_name"]
       logger.info "Received client_online message with server_name '#{server_name}'"
     end
 
     def client_offline(payload)
-      server_name = payload[:server_name]
+      server_name = payload["server_name"]
       logger.info "Received client_offline message with server_name '#{server_name}'"
     end
     
     def client_invalidated(payload)
-      server_name = payload[:server_name]
+      server_name = payload["server_name"]
       logger.info "Received client_invalidated message with server_name '#{server_name}'"
     end
     
     # Method called from RedisWatcher
-    def redis_unavailable(exception)
+    def redis_unavailable
       logger.warn "Redis master not available"
       # invalidate_current_master
       # wait_for_invalidation_acknowledgements
       if new_redis_master
         logger.warn "Setting new redis master to #{new_redis_master.server}"
-        new_redis_master.slaveof("no one") 
+        host = new_redis_master_host
+        port = new_redis_master_port
+        new_redis_master.slaveof("no one")
+        @redis_master = Redis.new(:host => host, :port => port)
+        logger.info "Publishing reconfigure message with host '#{host}' port '#{port}'"
+        beetle_client.publish(:reconfigure, {:host => host, :port => port}.to_json)
       else
         logger.error "No redis slave available to become new master"
       end
-      # beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
     end
     
     private
@@ -59,11 +63,12 @@ module Beetle
         end
         
         def watch
-          EventMachine::add_periodic_timer(1) { 
+          timer = EventMachine::add_periodic_timer(1) { 
             begin
               @redis.info
-            rescue Exception => e
-              @watcher_delegate.__send__(:redis_unavailable, e)
+            rescue Exception
+              @watcher_delegate.__send__(:redis_unavailable)
+              timer.cancel
             end
           }
         end
@@ -102,6 +107,14 @@ module Beetle
       
       def new_redis_master
         first_available_redis_slave
+      end
+      
+      def new_redis_master_host
+        new_redis_master.server.split(":")[0]
+      end
+      
+      def new_redis_master_port
+        new_redis_master.server.split(":")[1]
       end
       
       def first_available_redis_slave
