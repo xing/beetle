@@ -18,8 +18,8 @@ module Beetle
     end
 
     def reconfigure(payload)
-      host = payload[:host]
-      port = payload[:port]
+      host = payload["host"]
+      port = payload["port"]
       logger.info "Received reconfigure message with '#{host}:#{port}'"
       @redis_master = Redis.new(:host => host, :port => port)
     end
