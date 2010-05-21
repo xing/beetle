@@ -1,21 +1,27 @@
 module Beetle
   class RedisConfigurationClient < Beetle::Handler
+    include RedisConfigurationLogger
 
     def start
-      puts "Starting RedisConfigurationClient" if $DEBUG
+      logger.info "RedisConfigurationClient Starting"
       RedisConfigurationServerMessageHandler.delegate_messages_to = self
-      beetle_client.publish(:client_online, {:server_name => `hostname`.chomp}.to_json)
+      logger.info "Publishing client_online message with server_name '#{server_name}'"
+      beetle_client.publish(:client_online, {:server_name => server_name}.to_json)
+      logger.info "Listening"
       beetle_client.listen
     end
 
     # RedisConfigurationServerMessageHandler delegated messages
     def invalidate(payload)
+      logger.info "Received invalidate message"
       @redis_master = nil
     end
 
     def reconfigure(payload)
-      @redis_master = Redis.new(:host => payload[:host], :port => payload[:port])
-      @redis_master.info
+      host = payload[:host]
+      port = payload[:port]
+      logger.info "Received reconfigure message with '#{host}:#{port}'"
+      @redis_master = Redis.new(:host => host, :port => port)
     end
     
     private
@@ -27,6 +33,9 @@ module Beetle
         end
       end
       
+      def server_name
+        `hostname`.chomp
+      end
       
       def beetle_client
         @beetle_client ||= build_beetle_client

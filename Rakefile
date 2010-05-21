@@ -103,10 +103,11 @@ begin
     gemspec.add_dependency('redis', '>=0.1.2')
     gemspec.add_dependency('amqp', '>=0.6.7')
     gemspec.add_dependency('activesupport', '>=2.3.4')
+    gemspec.add_dependency('daemons', '>=1.0.10')
 
     gemspec.add_development_dependency('mocha')
     gemspec.add_development_dependency('rcov')
-    gemspec.add_development_dependency('cucumber')
+    gemspec.add_development_dependency('cucumber', '>=0.7.2')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
