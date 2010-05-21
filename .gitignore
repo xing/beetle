@@ -5,3 +5,5 @@ site
 test/coverage
 .DS_Store
 .rvmrc
+redis_configuration_client.output
+redis_configuration_server.output

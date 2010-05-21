@@ -5,23 +5,22 @@ end
 
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   RedisTestServer[redis_name].start
-  RedisTestServer[redis_name].slave_of(RedisTestServer[redis_master_name].port) 
+  RedisTestServer[redis_name].slave_of(RedisTestServer[redis_master_name].port)
+  sleep 2 # master-slave sync may take a while
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
   redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  pid = fork {`ruby -d bin/redis_configuration_server --redis-servers=#{redis_servers_string} --redis-retry-timeout 1 > tmp/redis_configuration_server.log 2>&1 &`}
-  $PIDS_TO_KILL << pid
+  `ruby bin/redis_configuration_server start -- --redis-servers=#{redis_servers_string} --redis-retry-timeout 1`
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
   redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  pid = fork {`ruby bin/redis_configuration_client --redis-servers=#{redis_servers_string} > /dev/null 2>&1 &`}
-  $PIDS_TO_KILL << pid
+  `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string}`
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|

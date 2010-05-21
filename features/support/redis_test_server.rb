@@ -6,12 +6,16 @@ require 'redis'
 class RedisTestServer
 
   @@instances = []
+  @@next_available_port = 6381
   
-  attr_reader :name
+  attr_reader :name, :port
   
   def initialize(name)
     @name = name
+    @port = @@next_available_port
+    
     @@instances << self
+    @@next_available_port = @@next_available_port + 1
   end
 
   class << self
@@ -32,9 +36,9 @@ class RedisTestServer
   end
   
   def stop
+    @@instances.delete(self)
     redis.shutdown
   rescue Errno::ECONNREFUSED
-    # Seems to be always raised in older redis-rb
   ensure
     remove_dir
     remove_config
@@ -51,10 +55,6 @@ class RedisTestServer
 
   def slave_of(master_port)
     redis.slaveof("127.0.0.1 #{master_port}")
-  end
-  
-  def port
-    6381 + @@instances.index(self)
   end
   
   def ip_with_port
