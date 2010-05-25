@@ -6,6 +6,8 @@ require 'test/unit/assertions'
 World(Test::Unit::Assertions)
 
 After do
+  redis_master_files = File.dirname(__FILE__) + "/../../tmp/redis-master-*"
+  `rm -f #{redis_master_files}`
   `ruby bin/redis_configuration_client stop`
   `ruby bin/redis_configuration_server stop`
   RedisTestServer.stop_all

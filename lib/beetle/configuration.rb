@@ -14,6 +14,8 @@ module Beetle
     attr_accessor :redis_configuration_master_retry_timeout
     # number of seconds after which the redis configuration server checks for reconfigured answers
     attr_accessor :redis_configuration_reconfiguration_timeout
+    # file wher the redis configuration client stores the current redis master to be used by the workers
+    attr_accessor :redis_master_file_path
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
     # the virtual host to use on the AMQP servers
@@ -31,6 +33,7 @@ module Beetle
       self.redis_configuration_master_retries = 3
       self.redis_configuration_master_retry_timeout = 30.seconds
       self.redis_configuration_reconfiguration_timeout = 10.seconds
+      self.redis_master_file_path = "/var/beetle/redis-master"
       self.servers = "localhost:5672"
       self.vhost = "/"
       self.user = "guest"

@@ -20,7 +20,8 @@ Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" e
   redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string}`
+  redis_master_file_path = File.expand_path(File.dirname(__FILE__) + "/../../tmp/redis-master-#{redis_configuration_client_name}")
+  `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string} --redis-master-file=#{redis_master_file_path} --id #{redis_configuration_client_name}`
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|
@@ -36,7 +37,8 @@ Then /^the role of redis server "([^\"]*)" should be master$/ do |redis_name|
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
-  pending
+  redis_master_file_path = File.expand_path(File.dirname(__FILE__) + "/../../tmp/redis-master-#{redis_configuration_client_name}")
+  assert_equal RedisTestServer[redis_name].ip_with_port, File.read(redis_master_file_path).chomp
 end
 
 Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout for the redis master check$/ do |arg1|

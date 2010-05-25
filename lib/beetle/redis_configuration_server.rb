@@ -13,18 +13,18 @@ module Beetle
     
     # Methods called from RedisConfigurationClientMessageHandler
     def client_online(payload)
-      server_name = payload["server_name"]
-      logger.info "Received client_online message with server_name '#{server_name}'"
+      id = payload["id"]
+      logger.info "Received client_online message from id '#{id}'"
     end
 
     def client_offline(payload)
-      server_name = payload["server_name"]
-      logger.info "Received client_offline message with server_name '#{server_name}'"
+      id = payload["id"]
+      logger.info "Received client_offline message from id '#{id}'"
     end
     
     def client_invalidated(payload)
-      server_name = payload["server_name"]
-      logger.info "Received client_invalidated message with server_name '#{server_name}'"
+      id = payload["id"]
+      logger.info "Received client_invalidated message from id '#{id}'"
     end
     
     # Method called from RedisWatcher

@@ -1,17 +1,23 @@
 module Beetle
   class RedisConfigurationClient < Beetle::Handler
     include RedisConfigurationLogger
-
+    
+    attr_accessor :id
+    
+    def id
+      @id || `hostname`.chomp
+    end
+    
     def start
       logger.info "RedisConfigurationClient Starting"
       RedisConfigurationServerMessageHandler.delegate_messages_to = self
-      logger.info "Publishing client_online message with server_name '#{server_name}'"
-      beetle_client.publish(:client_online, {:server_name => server_name}.to_json)
+      logger.info "Publishing client_online message with id '#{id}'"
+      beetle_client.publish(:client_online, {:id => id}.to_json)
       logger.info "Listening"
       beetle_client.listen
     end
 
-    # RedisConfigurationServerMessageHandler delegated messages
+    # Methods called from RedisConfigurationServerMessageHandler
     def invalidate(payload)
       logger.info "Received invalidate message"
       @redis_master = nil
@@ -20,7 +26,9 @@ module Beetle
     def reconfigure(payload)
       host = payload["host"]
       port = payload["port"]
-      logger.info "Received reconfigure message with '#{host}:#{port}'"
+      logger.info "Received reconfigure message with host '#{host}' port '#{port}'"
+      logger.info "Writing redis master info to file #{redis_master_file_path}"
+      write_redis_master_file(host, port)
       @redis_master = Redis.new(:host => host, :port => port)
     end
     
@@ -49,17 +57,30 @@ module Beetle
           config.message :client_offline
           config.queue   :client_offline
           config.message :invalidate
-          config.queue   :invalidate
+          config.queue   internal_queue_name(:invalidate), :key => "invalidate"
           config.message :client_invalidated
           config.queue   :client_invalidated
           config.message :reconfigure
-          config.queue   :reconfigure
+          config.queue   internal_queue_name(:reconfigure), :key => "reconfigure"
 
-          config.handler(:invalidate,   RedisConfigurationServerMessageHandler)
-          config.handler(:reconfigure,  RedisConfigurationServerMessageHandler)
+          config.handler(internal_queue_name(:invalidate),   RedisConfigurationServerMessageHandler)
+          config.handler(internal_queue_name(:reconfigure),  RedisConfigurationServerMessageHandler)
         end
         beetle_client
       end
-    
+      
+      def internal_queue_name(prefix)
+        "#{prefix}-#{id}"
+      end
+      
+      def write_redis_master_file(host, port)
+        File.open(redis_master_file_path, "w") do |file|
+          file.puts "#{host}:#{port}"
+        end
+      end
+      
+      def redis_master_file_path
+        beetle_client.config.redis_master_file_path
+      end
   end
 end
