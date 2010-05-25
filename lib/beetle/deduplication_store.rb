@@ -20,7 +20,7 @@ module Beetle
 
     # get the Redis instance
     def redis
-      @redis ||= find_redis_master
+      find_redis_master
     end
 
     # list of key suffixes to use for storing values in Redis.
@@ -123,18 +123,8 @@ module Beetle
 
     # find the master redis instance
     def find_redis_master
-      masters = []
-      redis_instances.each do |redis|
-        begin
-          masters << redis if redis.info[:role] == "master"
-        rescue Exception => e
-          logger.error "Beetle: could not determine status of redis instance #{redis.server}"
-        end
-      end
-      raise NoRedisMaster.new("unable to determine a new master redis instance") if masters.empty?
-      raise TwoRedisMasters.new("more than one redis master instances") if masters.size > 1
-      logger.info "Beetle: configured new redis master #{masters.first.server}"
-      masters.first
+      host, port = File.read(Beetle.config.redis_master_file_path).chomp.split(':')
+      Redis.new(:host => host, :port => port, :db => @db)
     end
 
     # returns the list of redis instances
