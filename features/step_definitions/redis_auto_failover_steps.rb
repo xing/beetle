@@ -20,8 +20,7 @@ Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" e
   redis_servers_string = redis_names.split(",").map do |redis_name|
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
-  redis_master_file_path = File.expand_path(File.dirname(__FILE__) + "/../../tmp/redis-master-#{redis_configuration_client_name}")
-  `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string} --redis-master-file=#{redis_master_file_path} --id #{redis_configuration_client_name}`
+  `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string} --redis-master-file=#{redis_master_file_path(redis_configuration_client_name)} --id #{redis_configuration_client_name}`
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|
@@ -37,8 +36,20 @@ Then /^the role of redis server "([^\"]*)" should be master$/ do |redis_name|
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
-  redis_master_file_path = File.expand_path(File.dirname(__FILE__) + "/../../tmp/redis-master-#{redis_configuration_client_name}")
-  assert_equal RedisTestServer[redis_name].ip_with_port, File.read(redis_master_file_path).chomp
+  assert_equal RedisTestServer[redis_name].ip_with_port, File.read(redis_master_file_path(redis_configuration_client_name)).chomp
+end
+
+Given /^a beetle handler using the redis-master file from "([^\"]*)" exists$/ do |redis_configuration_client_name|
+  `ruby features/support/beetle_handler start -- --redis-master-file=#{redis_master_file_path(redis_configuration_client_name)}`
+end
+
+Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
+  Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
+  Beetle.config.logger.level = Logger::INFO
+  client = Beetle::Client.new
+  client.register_queue(:echo)
+  client.register_message(:echo)
+  assert_equal RedisTestServer[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
 end
 
 Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout for the redis master check$/ do |arg1|

@@ -10,5 +10,10 @@ After do
   `rm -f #{redis_master_files}`
   `ruby bin/redis_configuration_client stop`
   `ruby bin/redis_configuration_server stop`
+  `ruby features/support/beetle_handler stop`
   RedisTestServer.stop_all
+end
+
+def redis_master_file_path(client_name)
+  File.expand_path(File.dirname(__FILE__) + "/../../tmp/redis-master-#{client_name}")
 end
