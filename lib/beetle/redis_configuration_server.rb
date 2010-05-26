@@ -5,7 +5,6 @@ module Beetle
     def start
       logger.info "RedisConfigurationServer Starting"
       RedisConfigurationClientMessageHandler.delegate_messages_to = self
-      logger.info "Listening and watching"
       beetle_client.listen do
         redis_master_watcher.watch
       end
@@ -29,17 +28,18 @@ module Beetle
     
     # Method called from RedisWatcher
     def redis_unavailable
-      logger.warn "Redis master not available"
+      logger.warn "Redis master '#{redis_master.server}' not available"
       # invalidate_current_master
       # wait_for_invalidation_acknowledgements
       if new_redis_master
-        logger.warn "Setting new redis master to #{new_redis_master.server}"
-        host = new_redis_master_host
-        port = new_redis_master_port
-        new_redis_master.slaveof("no one")
-        @redis_master = Redis.new(:host => host, :port => port)
-        logger.info "Publishing reconfigure message with host '#{host}' port '#{port}'"
-        beetle_client.publish(:reconfigure, {:host => host, :port => port}.to_json)
+        logger.warn "Setting new redis master to '#{new_redis_master.server}'"
+        new_redis_master.master!
+        logger.info "Publishing reconfigure message with new host '#{new_redis_master.host}' port '#{new_redis_master.port}'"
+        beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
+        @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
+        @new_redis_master = nil
+        redis_master_watcher.redis = redis_master
+        redis_master_watcher.continue
       else
         logger.error "No redis slave available to become new master"
       end
@@ -57,20 +57,34 @@ module Beetle
       end
       
       class RedisWatcher
-        def initialize(redis, watcher_delegate)
+        attr_accessor :redis, :pause
+        
+        def initialize(redis, watcher_delegate, logger)
           @redis = redis
           @watcher_delegate = watcher_delegate
+          @logger = logger
+          @pause = false
         end
         
         def watch
           timer = EventMachine::add_periodic_timer(1) { 
+            return if @pause
+            @logger.debug "Watching redis '#{redis.server}'"
             begin
               @redis.info
             rescue Exception
+              pause
               @watcher_delegate.__send__(:redis_unavailable)
-              timer.cancel
             end
           }
+        end
+        
+        def pause
+          @pause = true
+        end
+        
+        def continue
+          @pause = false
         end
       end
       
@@ -98,42 +112,33 @@ module Beetle
       end
       
       def redis_master_watcher
-        @redis_master_watcher ||= RedisWatcher.new(redis_master, self)
+        @redis_master_watcher ||= RedisWatcher.new(redis_master, self, logger)
       end
       
       def redis_master
-        @redis_master ||= find_initial_redis_master
+        @redis_master ||= initial_redis_master
       end
-      
-      def find_initial_redis_master
-        all_available_redis.find{ |redis| redis.info["role"] == "master" }
-      end
-      
-      def new_redis_master
-        redis_slaves.first
-      end
-      
-      def new_redis_master_host
-        new_redis_master.server.split(":")[0]
-      end
-      
-      def new_redis_master_port
-        new_redis_master.server.split(":")[1]
-      end
-      
-      def redis_slaves
-        all_available_redis.select{ |redis| redis.info["role"] == "slave" }
+
+      def initial_redis_master
+        all_available_redis.find{ |redis| redis.master? }
       end
       
       def all_available_redis
-        all_redis.select{ |redis| redis.info rescue false }
+        all_redis.select{ |redis| redis.available? }
       end
 
       def all_redis
         beetle_client.config.redis_hosts.split(",").map do |redis_host_string|
-          host, port = redis_host_string.split(":")
-          Redis.new(:host => host, :port => port) rescue nil
+          Redis.from_host_string(redis_host_string)
         end
+      end
+      
+      def new_redis_master
+        @new_redis_master ||= redis_slaves.first
+      end
+      
+      def redis_slaves
+        all_available_redis.select{ |redis| redis.slave? }
       end
     end
 end

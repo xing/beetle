@@ -36,6 +36,8 @@ module Beetle
   Dir["#{lib_dir}/*.rb"].each do |libfile|
     autoload File.basename(libfile)[/^(.*)\.rb$/, 1].classify, libfile
   end
+  
+  require "#{lib_dir}/redis_ext"
 
   # returns the default configuration object and yields it if a block is given
   def self.config
