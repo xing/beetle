@@ -55,3 +55,5 @@ Feature: Redis auto failover
 
   Scenario: Clients should not use the redis while a reconfiguration is in progress
   
+  Scenario: Ambiguity when determining initial redis master 
+  

@@ -102,11 +102,15 @@ module Beetle
       end
       
       def redis_master
-        @redis_master ||= Redis.new(:host => "127.0.0.1", :port => 6381)
+        @redis_master ||= find_initial_redis_master
+      end
+      
+      def find_initial_redis_master
+        all_available_redis.find{ |redis| redis.info["role"] == "master" }
       end
       
       def new_redis_master
-        first_available_redis_slave
+        redis_slaves.first
       end
       
       def new_redis_master_host
@@ -117,16 +121,19 @@ module Beetle
         new_redis_master.server.split(":")[1]
       end
       
-      def first_available_redis_slave
-        available_redis_slaves.find { |redis_slave| redis_slave.info }
+      def redis_slaves
+        all_available_redis.select{ |redis| redis.info["role"] == "slave" }
       end
       
-      def available_redis_slaves
-        all_redis.select{ |redis| redis.info["role"] == "slave" rescue false }
+      def all_available_redis
+        all_redis.select{ |redis| redis.info rescue false }
       end
-      
+
       def all_redis
-        [6381, 6382].map{ |port| Redis.new(:host => "127.0.0.1", :port => port) }
+        beetle_client.config.redis_hosts.split(",").map do |redis_host_string|
+          host, port = redis_host_string.split(":")
+          Redis.new(:host => host, :port => port) rescue nil
+        end
       end
     end
 end
