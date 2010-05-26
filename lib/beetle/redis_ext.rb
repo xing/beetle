@@ -1,5 +1,5 @@
 class Redis
-  def self.from_host_string(host_string)
+  def self.from_server_string(host_string)
     host, port = host_string.split(':')
     new(:host => host, :port => port)
   end

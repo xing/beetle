@@ -128,8 +128,8 @@ module Beetle
       end
 
       def all_redis
-        beetle_client.config.redis_hosts.split(",").map do |redis_host_string|
-          Redis.from_host_string(redis_host_string)
+        beetle_client.config.redis_hosts.split(",").map do |redis_server_string|
+          Redis.from_server_string(redis_server_string)
         end
       end
       
