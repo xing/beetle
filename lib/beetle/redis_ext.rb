@@ -1,6 +1,6 @@
 class Redis
-  def self.from_server_string(host_string)
-    host, port = host_string.split(':')
+  def self.from_server_string(server_string)
+    host, port = server_string.split(':')
     new(:host => host, :port => port)
   end
 end
@@ -22,5 +22,9 @@ class Redis::Client
   
   def master!
     slaveof("no one")
+  end
+  
+  def slave_of!(host, port)
+    slaveof("#{host} #{port}")
   end
 end
