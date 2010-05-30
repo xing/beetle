@@ -66,8 +66,8 @@ module Beetle
 
     # store some key/value pairs if none of the given keys exist.
     def msetnx(msg_id, values)
-      values = values.inject({}){|h,(k,v)| h[key(msg_id, k)] = v; h}
-      with_failover { redis.msetnx(values) }
+      values = values.inject([]){|a,(k,v)| a.concat([key(msg_id, k), v])}
+      with_failover { redis.msetnx(*values) }
     end
 
     # increment counter for key with given <tt>suffix</tt> for given <tt>msg_id</tt>. returns an integer.
@@ -87,7 +87,7 @@ module Beetle
 
     # delete all keys associated with the given <tt>msg_id</tt>.
     def del_keys(msg_id)
-      with_failover { redis.del(keys(msg_id)) }
+      with_failover { redis.del(*keys(msg_id)) }
     end
 
     # check whether key with given suffix exists for a given <tt>msg_id</tt>.

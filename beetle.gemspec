@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-05-21}
+  s.date = %q{2010-05-29}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.executables = ["redis_configuration_client", "redis_configuration_server"]
@@ -115,7 +115,7 @@ Gem::Specification.new do |s|
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_runtime_dependency(%q<bunny>, [">= 0.6.0"])
-      s.add_runtime_dependency(%q<redis>, [">= 0.1.2"])
+      s.add_runtime_dependency(%q<redis>, [">= 1.0.7"])
       s.add_runtime_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_runtime_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_runtime_dependency(%q<daemons>, [">= 1.0.10"])
@@ -125,7 +125,7 @@ Gem::Specification.new do |s|
     else
       s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_dependency(%q<bunny>, [">= 0.6.0"])
-      s.add_dependency(%q<redis>, [">= 0.1.2"])
+      s.add_dependency(%q<redis>, [">= 1.0.7"])
       s.add_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_dependency(%q<daemons>, [">= 1.0.10"])
@@ -136,7 +136,7 @@ Gem::Specification.new do |s|
   else
     s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
     s.add_dependency(%q<bunny>, [">= 0.6.0"])
-    s.add_dependency(%q<redis>, [">= 0.1.2"])
+    s.add_dependency(%q<redis>, [">= 1.0.7"])
     s.add_dependency(%q<amqp>, [">= 0.6.7"])
     s.add_dependency(%q<activesupport>, [">= 2.3.4"])
     s.add_dependency(%q<daemons>, [">= 1.0.10"])
