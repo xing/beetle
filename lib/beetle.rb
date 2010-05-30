@@ -5,6 +5,15 @@ require 'uuid4r'
 require 'active_support'
 require 'redis'
 
+# Redis 2 removed some useful methods. add them back.
+if Redis::VERSION >= "2.0.0"
+  class Redis
+    def host; @client.host; end
+    def port; @client.port; end
+    def server; "#{host}:#{port}"; end
+  end
+end
+
 module Beetle
 
   # abstract superclass for Beetle specific exceptions
