@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-04-14}
+  s.date = %q{2010-05-29}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.extra_rdoc_files = [
@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
      "examples/redundant.rb",
      "examples/rpc.rb",
      "examples/simple.rb",
+     "ideas/simple_client.rb",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
      "lib/beetle/client.rb",
@@ -47,10 +48,8 @@ Gem::Specification.new do |s|
      "lib/beetle/r_c.rb",
      "lib/beetle/subscriber.rb",
      "script/start_rabbit",
-     "snafu.rb",
      "test/beetle.yml",
      "test/beetle/base_test.rb",
-     "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
      "test/beetle/deduplication_store_test.rb",
@@ -67,11 +66,10 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://xing.github.com/beetle/}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.5}
+  s.rubygems_version = %q{1.3.6}
   s.summary = %q{High Availability AMQP Messaging with Redundant Queues}
   s.test_files = [
     "test/beetle/base_test.rb",
-     "test/beetle/bla.rb",
      "test/beetle/client_test.rb",
      "test/beetle/configuration_test.rb",
      "test/beetle/deduplication_store_test.rb",
@@ -100,7 +98,7 @@ Gem::Specification.new do |s|
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_runtime_dependency(%q<bunny>, [">= 0.6.0"])
-      s.add_runtime_dependency(%q<redis>, [">= 0.1.2"])
+      s.add_runtime_dependency(%q<redis>, [">= 1.0.7"])
       s.add_runtime_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_runtime_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_development_dependency(%q<mocha>, [">= 0"])
@@ -108,7 +106,7 @@ Gem::Specification.new do |s|
     else
       s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_dependency(%q<bunny>, [">= 0.6.0"])
-      s.add_dependency(%q<redis>, [">= 0.1.2"])
+      s.add_dependency(%q<redis>, [">= 1.0.7"])
       s.add_dependency(%q<amqp>, [">= 0.6.7"])
       s.add_dependency(%q<activesupport>, [">= 2.3.4"])
       s.add_dependency(%q<mocha>, [">= 0"])
@@ -117,7 +115,7 @@ Gem::Specification.new do |s|
   else
     s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
     s.add_dependency(%q<bunny>, [">= 0.6.0"])
-    s.add_dependency(%q<redis>, [">= 0.1.2"])
+    s.add_dependency(%q<redis>, [">= 1.0.7"])
     s.add_dependency(%q<amqp>, [">= 0.6.7"])
     s.add_dependency(%q<activesupport>, [">= 2.3.4"])
     s.add_dependency(%q<mocha>, [">= 0"])
