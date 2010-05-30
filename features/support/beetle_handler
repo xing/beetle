@@ -6,15 +6,16 @@ require "optparse"
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
 Daemons.run_proc("beetle_handler", :log_output => true) do
-  opts = OptionParser.new 
-  
+  opts = OptionParser.new
+
   opts.on("-f", "--redis-master-file path", String) do |val|
     Beetle.config.redis_master_file_path = val
   end
-  
+
   opts.parse!(ARGV - ["start", "--"])
 
   Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
+  Beetle.config.redis_hosts = "127.0.0.1:6381, 127.0.0.1:6382"
 
   # set Beetle log level to info, less noisy than debug
   Beetle.config.logger.level = Logger::INFO
@@ -23,7 +24,7 @@ Daemons.run_proc("beetle_handler", :log_output => true) do
   client.register_queue(:echo)
   client.purge(:echo)
   client.register_message(:echo)
-  client.register_handler(:echo) {|message| client.deduplication_store.redis.server}
+  client.register_handler(:echo) {|message| client.deduplication_store.redis.server rescue "no redis master"}
   puts "Started beetle handler"
   client.listen
 end

@@ -1,30 +1,67 @@
-class Redis
+# Redis convenience and compatibility layer
+class Redis #:nodoc:
   def self.from_server_string(server_string)
     host, port = server_string.split(':')
     new(:host => host, :port => port)
   end
+
+  module RoleSupport
+    def available?
+      info rescue false
+    end
+
+    def role
+      info["role"] rescue ""
+    end
+
+    def master?
+      role == "master"
+    end
+
+    def slave?
+      role == "slave"
+    end
+  end
+
 end
 
-class Redis::Client
-  attr_reader :host, :port
+if Redis::VERSION >= "2.0.1"
 
-  def available?
-    info rescue false
+  class Redis #:nodoc:
+    # Redis 2 removed some useful methods. add them back.
+    def host; @client.host; end
+    def port; @client.port; end
+    def server; "#{host}:#{port}"; end
+
+    include Redis::RoleSupport
+
+    def master!
+      slaveof("no", "one")
+    end
+
+    def slave_of!(host, port)
+      slaveof(host, port)
+    end
   end
-  
-  def master?
-    info["role"] == "master"
+
+elsif Redis::VERSION >= "1.0.7" && Redis::VERSION < "2.0.0"
+
+  class Redis::Client #:nodoc:
+    attr_reader :host, :port
+
+    include Redis::RoleSupport
+
+    def master!
+      slaveof("no one")
+    end
+
+    def slave_of!(host, port)
+      slaveof("#{host} #{port}")
+    end
   end
-  
-  def slave?
-    info["role"] == "slave"
-  end
-  
-  def master!
-    slaveof("no one")
-  end
-  
-  def slave_of!(host, port)
-    slaveof("#{host} #{port}")
-  end
+
+else
+
+  raise "Your redis-rb version is not supported!"
+
 end

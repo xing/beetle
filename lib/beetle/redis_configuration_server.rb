@@ -1,7 +1,7 @@
 module Beetle
   class RedisConfigurationServer
     include RedisConfigurationLogger
-    
+
     def start
       logger.info "RedisConfigurationServer Starting"
       RedisConfigurationClientMessageHandler.delegate_messages_to = self
@@ -9,7 +9,7 @@ module Beetle
         redis_master_watcher.watch
       end
     end
-    
+
     # Methods called from RedisConfigurationClientMessageHandler
     def client_online(payload)
       id = payload["id"]
@@ -20,12 +20,12 @@ module Beetle
       id = payload["id"]
       logger.info "Received client_offline message from id '#{id}'"
     end
-    
+
     def client_invalidated(payload)
       id = payload["id"]
       logger.info "Received client_invalidated message from id '#{id}'"
     end
-    
+
     # Method called from RedisWatcher
     def redis_unavailable
       logger.warn "Redis master '#{redis_master.server}' not available"
@@ -44,101 +44,106 @@ module Beetle
         logger.error "No redis slave available to become new master"
       end
     end
-    
+
     private
-    
-      class RedisConfigurationClientMessageHandler < Beetle::Handler
-        cattr_accessor :delegate_messages_to
-        def process
-          method_name = message.header.routing_key
-          payload = ActiveSupport::JSON.decode(message.data)
-          self.class.delegate_messages_to.__send__(method_name, payload)
-        end
+
+    class RedisConfigurationClientMessageHandler < Beetle::Handler
+      cattr_accessor :delegate_messages_to
+      def process
+        method_name = message.header.routing_key
+        payload = ActiveSupport::JSON.decode(message.data)
+        self.class.delegate_messages_to.__send__(method_name, payload)
       end
-      
-      class RedisWatcher
-        attr_accessor :redis, :pause
-        
-        def initialize(redis, watcher_delegate, logger)
-          @redis = redis
-          @watcher_delegate = watcher_delegate
-          @logger = logger
-          @pause = false
-        end
-        
-        def watch
-          timer = EventMachine::add_periodic_timer(1) { 
-            return if @pause
-            @logger.debug "Watching redis '#{redis.server}'"
-            begin
-              @redis.info
-            rescue Exception
+    end
+
+    class RedisWatcher
+      attr_accessor :redis, :pause
+
+      def initialize(redis, watcher_delegate, logger)
+        @redis = redis
+        @watcher_delegate = watcher_delegate
+        @logger = logger
+        @pause = false
+        @retries = 0
+      end
+
+      def watch
+        timer = EventMachine::add_periodic_timer(1) {
+          return if @pause
+          @logger.debug "Watching redis '#{redis.server}'"
+          begin
+            @redis.info
+          rescue Exception
+            if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
+              @retries = 0
               pause
               @watcher_delegate.__send__(:redis_unavailable)
             end
-          }
-        end
-        
-        def pause
-          @pause = true
-        end
-        
-        def continue
-          @pause = false
-        end
-      end
-      
-      def beetle_client
-        @beetle_client ||= build_beetle_client
-      end
-      
-      def build_beetle_client
-        beetle_client = Beetle::Client.new
-        beetle_client.configure :exchange => :system do |config|
-          config.message :client_online
-          config.queue   :client_online
-          config.message :client_offline
-          config.queue   :client_offline
-          config.message :client_invalidated
-          config.queue   :client_invalidated
-          config.message :reconfigure
-          config.queue   :reconfigure
-
-          config.handler(:client_online,      RedisConfigurationClientMessageHandler)
-          config.handler(:client_offline,     RedisConfigurationClientMessageHandler)
-          config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
-        end
-        beetle_client
-      end
-      
-      def redis_master_watcher
-        @redis_master_watcher ||= RedisWatcher.new(redis_master, self, logger)
-      end
-      
-      def redis_master
-        @redis_master ||= initial_redis_master
+          end
+        }
       end
 
-      def initial_redis_master
-        all_available_redis.find{ |redis| redis.master? }
-      end
-      
-      def all_available_redis
-        all_redis.select{ |redis| redis.available? }
+      def pause
+        @pause = true
       end
 
-      def all_redis
-        beetle_client.config.redis_hosts.split(",").map do |redis_server_string|
-          Redis.from_server_string(redis_server_string)
-        end
-      end
-      
-      def new_redis_master
-        @new_redis_master ||= redis_slaves.first
-      end
-      
-      def redis_slaves
-        all_available_redis.select{ |redis| redis.slave? }
+      def continue
+        @pause = false
       end
     end
+
+    def beetle_client
+      @beetle_client ||= build_beetle_client
+    end
+
+    def build_beetle_client
+      beetle_client = Beetle::Client.new
+      beetle_client.configure :exchange => :system do |config|
+        config.message :client_online
+        config.queue   :client_online
+        config.message :client_offline
+        config.queue   :client_offline
+        config.message :client_invalidated
+        config.queue   :client_invalidated
+        config.message :reconfigure
+        config.queue   :reconfigure
+
+        config.handler(:client_online,      RedisConfigurationClientMessageHandler)
+        config.handler(:client_offline,     RedisConfigurationClientMessageHandler)
+        config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
+      end
+      beetle_client
+    end
+
+    def redis_master_watcher
+      @redis_master_watcher ||= RedisWatcher.new(redis_master, self, logger)
+    end
+
+    def redis_master
+      @redis_master ||= initial_redis_master
+    end
+
+    def initial_redis_master
+      all_available_redis.find{ |redis| redis.master? }
+    end
+
+    def all_available_redis
+      all_redis.select{ |redis| redis.available? }
+    end
+
+    def all_redis
+      beetle_client.config.redis_hosts.split(",").map do |redis_server_string|
+        Redis.from_server_string(redis_server_string)
+      end
+    end
+
+    def new_redis_master
+      @new_redis_master ||= redis_slaves.first
+    end
+
+    def redis_slaves
+      all_available_redis.select{ |redis| redis.slave? }
+    end
+
+  end
 end
