@@ -32,15 +32,19 @@ Given /^the retry timeout for the redis master check is reached$/ do
 end
 
 Then /^the role of redis server "([^\"]*)" should be master$/ do |redis_name|
-  assert RedisTestServer[redis_name].master?
+  assert RedisTestServer[redis_name].master?, "#{redis_name} is not a master"
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
-  assert_equal RedisTestServer[redis_name].ip_with_port, File.read(redis_master_file_path(redis_configuration_client_name)).chomp
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  server_info = File.read(master_file).chomp
+  assert_equal RedisTestServer[redis_name].ip_with_port, server_info
 end
 
 Given /^a beetle handler using the redis-master file from "([^\"]*)" exists$/ do |redis_configuration_client_name|
-  `ruby features/support/beetle_handler start -- --redis-master-file=#{redis_master_file_path(redis_configuration_client_name)}`
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  `ruby features/support/beetle_handler start -- --redis-master-file=#{master_file}`
+  assert File.exist?(master_file), "file #{master_file} does not exist"
 end
 
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
@@ -52,16 +56,17 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
   assert_equal RedisTestServer[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
 end
 
-Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout for the redis master check$/ do |arg1|
-  pending # express the regexp above with the code you wish you had
+Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout for the redis master check$/ do |redis_name|
+  RedisTestServer[redis_name].restart(1)
 end
 
-Then /^the role of "([^\"]*)" should still be "([^\"]*)"$/ do |arg1, arg2|
-  pending # express the regexp above with the code you wish you had
+Then /^the role of redis server "([^\"]*)" should still be "([^\"]*)"$/ do |redis_name, role|
+  RedisTestServer[redis_name].__send__ "#{role}?"
 end
 
-Then /^the redis master of "([^\"]*)" should still be "([^\"]*)"$/ do |arg1, arg2|
-  pending # express the regexp above with the code you wish you had
+Then /^the redis master of "([^\"]*)" should still be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  assert_equal RedisTestServer[redis_name].ip_with_port, File.read(master_file).chomp
 end
 
 Given /^a reconfiguration round is in progress$/ do

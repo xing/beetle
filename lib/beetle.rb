@@ -5,15 +5,6 @@ require 'uuid4r'
 require 'active_support'
 require 'redis'
 
-# Redis 2 removed some useful methods. add them back.
-if Redis::VERSION >= "2.0.0"
-  class Redis
-    def host; @client.host; end
-    def port; @client.port; end
-    def server; "#{host}:#{port}"; end
-  end
-end
-
 module Beetle
 
   # abstract superclass for Beetle specific exceptions
@@ -45,7 +36,7 @@ module Beetle
   Dir["#{lib_dir}/*.rb"].each do |libfile|
     autoload File.basename(libfile)[/^(.*)\.rb$/, 1].classify, libfile
   end
-  
+
   require "#{lib_dir}/redis_ext"
 
   # returns the default configuration object and yields it if a block is given

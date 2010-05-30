@@ -14,6 +14,8 @@ class Test::Unit::TestCase
 end
 
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
+Beetle.config.redis_master_file_path = File.dirname(__FILE__) + "/../tmp/redis-master-for-unit-tests"
+File.open(Beetle.config.redis_master_file_path, "w"){|f| f.puts "localhost:6379"}
 
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)

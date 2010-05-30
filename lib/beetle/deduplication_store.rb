@@ -123,21 +123,53 @@ module Beetle
 
     # find the master redis instance
     def find_redis_master
-      host, port = File.read(Beetle.config.redis_master_file_path).chomp.split(':')
-      Redis.new(:host => host, :port => port, :db => @db)
+      server = read_master_file
+      redis_instances.find{|r| r.server == server}
     end
 
     # returns the list of redis instances
     def redis_instances
       @redis_instances ||= @hosts.split(/ *, */).map{|s| s.split(':')}.map do |host, port|
-         Redis.new(:host => host, :port => port, :db => @db)
+         Redis.new(:host => host, :port => port.to_i, :db => @db)
       end
+    end
+
+    # auto configure redis master
+    def auto_configure
+      if single_master_reachable? || master_and_slave_reachable?
+        @redis = redis_instances.find{|r| r.role == "master"}
+      end
+    end
+
+    # whether we have a master slave configuration
+    def single_master_reachable?
+      redis_instances.size == 1 && redis_instances.first.master?
+    end
+
+    # can we access both master and slave
+    def master_and_slave_reachable?
+      redis_instances.map(&:role).sort == %w(master slave)
+    end
+
+    # master file path
+    def master_file
+      Beetle.config.redis_master_file_path
+    end
+
+    # externally configured master
+    def read_master_file
+      File.exist?(master_file) ? File.read(master_file).chomp : ""
+    end
+
+    # save currently configured master to config file
+    def save_configured_master
+      server = @redis ? @redis.server : ""
+      File.open(master_file, "w"){|f| f.puts server}
     end
 
     # returns the configured logger
     def logger
       Beetle.config.logger
     end
-
   end
 end
