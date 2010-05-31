@@ -73,8 +73,8 @@ module Beetle
     def register_queue(name, options={})
       name = name.to_s
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
-      opts.merge! :durable => true, :passive => false, :exclusive => false, :auto_delete => false, :amqp_name => name
+      opts = {:exchange => name, :key => name, :auto_delete => false}.merge!(options.symbolize_keys)
+      opts.merge! :durable => true, :passive => false, :exclusive => false, :amqp_name => name
       exchange = opts.delete(:exchange).to_s
       key = opts.delete(:key)
       queues[name] = opts

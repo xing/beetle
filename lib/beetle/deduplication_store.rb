@@ -164,6 +164,11 @@ module Beetle
     # save currently configured master to config file
     def save_configured_master
       server = @redis ? @redis.server : ""
+      write_master_file server
+    end
+
+    # save server string to config file
+    def write_master_file(server)
       File.open(master_file, "w"){|f| f.puts server}
     end
 
