@@ -6,7 +6,6 @@ end
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   RedisTestServer[redis_name].start
   RedisTestServer[redis_name].slave_of(RedisTestServer[redis_master_name].port)
-  sleep 2 # master-slave sync may take a while
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
@@ -69,6 +68,16 @@ Then /^the redis master of "([^\"]*)" should still be "([^\"]*)"$/ do |redis_con
   assert_equal RedisTestServer[redis_name].ip_with_port, File.read(master_file).chomp
 end
 
+Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  assert_equal "", File.read(master_file).chomp
+end
+
+Given /^the first redis configuration client is not able to send the client_invalidated message$/ do
+  # we kill the redis configuration process brutally, so that it cannot send an offline message before exit
+  Process.kill("KILL", first_redis_configuration_client_pid)
+end
+
 Given /^a reconfiguration round is in progress$/ do
   pending # express the regexp above with the code you wish you had
 end
@@ -78,9 +87,5 @@ Then /^the redis master of "([^\"]*)" should be nil$/ do |arg1|
 end
 
 Given /^the retry timeout for the redis master determination is reached$/ do
-  pending # express the regexp above with the code you wish you had
-end
-
-Given /^the redis configuration client process "([^\"]*)" is disconnected from the system queue$/ do |arg1|
   pending # express the regexp above with the code you wish you had
 end

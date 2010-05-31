@@ -24,7 +24,9 @@ class RedisTestServer
     alias_method :[], :find_or_initialize_by_name
 
     def stop_all
-      @@instances.values.each{|i| i.stop}
+      processes = `ps aux | grep redis-server | grep -v grep | grep test-server | cut -d' ' -f2`.split("\n").reject(&:blank?)
+      `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1`
+      @@instances.values.each{|i| i.cleanup}
     end
   end
 
@@ -32,6 +34,11 @@ class RedisTestServer
     create_dir
     create_config
     `redis-server #{config_filename}`
+    begin
+      available?
+    rescue
+      retry
+    end
   end
 
   def restart(delay=1)
@@ -41,28 +48,41 @@ class RedisTestServer
   end
 
   def stop
-    redis.shutdown
-  rescue Errno::ECONNREFUSED
+    Process.kill("KILL", pid)
   ensure
+    cleanup
+  end
+  
+  def cleanup
     remove_dir
     remove_config
     remove_pidfile
   end
 
   def master
-    redis.slaveof("no one")
+    redis.master!
+  rescue Errno::ECONNREFUSED, Errno::EAGAIN
+    sleep 0.5
+    retry
+  end
+
+  def available?
+    redis.available?
   end
 
   def master?
-    redis.info["role"] == "master"
+    redis.master?
   end
 
   def slave?
-    redis.info["role"] == "slave"
+    redis.slave?
   end
 
   def slave_of(master_port)
-    redis.slaveof("127.0.0.1 #{master_port}")
+    redis.slave_of!("127.0.0.1", master_port)
+  rescue Errno::ECONNREFUSED, Errno::EAGAIN
+    sleep 0.5
+    retry
   end
 
   def ip_with_port
@@ -115,7 +135,7 @@ class RedisTestServer
   end
 
   def pid
-    File.read(pidfile)
+    File.read(pidfile).chomp.to_i
   end
 
   def logfile

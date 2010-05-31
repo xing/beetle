@@ -52,6 +52,14 @@ namespace :rabbit do
   task :start2 do
     start "rabbit2", 5673
   end
+  desc "reset rabbit instances (deletes all data!)"
+  task :reset do
+     ["rabbit1", "rabbit2"].each do |node|
+       `sudo rabbitmqctl -n #{node} stop_app`
+       `sudo rabbitmqctl -n #{node} reset`
+       `sudo rabbitmqctl -n #{node} start_app`
+     end
+  end
 end
 
 namespace :redis do
