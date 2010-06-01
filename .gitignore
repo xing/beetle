@@ -8,3 +8,4 @@ test/coverage
 redis_configuration_client.output
 redis_configuration_server.output
 beetle_handler.output
+erl_crash.dump
