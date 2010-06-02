@@ -117,7 +117,6 @@ module Beetle
     end
 
     def all_available_redis
-      p all_redis
       all_redis.select{ |redis| redis.available? }
     end
 
