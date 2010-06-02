@@ -24,20 +24,24 @@ class RedisTestServer
     alias_method :[], :find_or_initialize_by_name
 
     def stop_all
-      processes = `ps aux | grep redis-server | grep -v grep | grep test-server | cut -d' ' -f2`.split("\n").reject(&:blank?)
-      `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1`
-      @@instances.values.each{|i| i.cleanup}
+      # processes = `ps aux | grep redis-server | grep -v grep | grep test-server | cut -d' ' -f2`.split("\n").reject(&:blank?)
+      # `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1`
+      @@instances.values.each{|i| i.stop}
     end
   end
 
   def start
+    raise "zombie redis #{name} exists. giving up" if running?
     create_dir
     create_config
     `redis-server #{config_filename}`
+    tries = 0
     begin
       available?
     rescue
-      retry
+      sleep 1
+      retry if (tries +=1) > 5
+      raise "could not start redis #{name}"
     end
   end
 
@@ -47,23 +51,54 @@ class RedisTestServer
     `redis-server #{config_filename}`
   end
 
+  # TODO: some of this needs to moved into our code
   def stop
-    Process.kill("KILL", pid)
+    return unless running?
+    10.times do
+      break if (redis.info["bgsave_in_progress"]) == 0 rescue false
+      sleep 1
+    end
+    # puts redis.info.inspect
+    redis.shutdown rescue Errno::ECONNREFUSED
+    begin
+      5.times do
+        return unless running?
+        sleep 1
+      end
+      puts "forcing kill -9 of redis server #{name}"
+      5.times do
+        Process.kill("KILL", pid)
+        return unless running?
+        sleep 1
+      end
+      puts "could not stop redis #{name} #{$!}" if running?
+    end
   ensure
     cleanup
   end
-  
+
   def cleanup
     remove_dir
     remove_config
     remove_pidfile
   end
 
+  # TODO: the retry logic must be moved into the actual code
   def master
+    tries = 0
     redis.master!
   rescue Errno::ECONNREFUSED, Errno::EAGAIN
-    sleep 0.5
-    retry
+    puts "master role setting for #{name} failed: #{$!}"
+    sleep 1
+    retry if (tries+=1) > 5
+    raise "could not setup master #{name} #{$!}"
+  end
+
+  def running?
+    cmd = "ps aux | grep 'redis-server #{config_filename}' | grep -v grep"
+    res = `#{cmd}`
+    x = res.chomp.split("\n")
+    x.size == 1
   end
 
   def available?
@@ -78,11 +113,17 @@ class RedisTestServer
     redis.slave?
   end
 
+  # TODO: the retry logic must be moved into the actual code
   def slave_of(master_port)
-    redis.slave_of!("127.0.0.1", master_port)
-  rescue Errno::ECONNREFUSED, Errno::EAGAIN
-    sleep 0.5
-    retry
+    tries = 0
+    begin
+      redis.slave_of!("127.0.0.1", master_port)
+    rescue Errno::ECONNREFUSED, Errno::EAGAIN
+      puts "slave role setting for #{name} failed: #{$!}"
+      sleep 1
+      retry if (tries+=1) > 5
+      raise "could not setup slave #{name}: #{$!}"
+    end
   end
 
   def ip_with_port
