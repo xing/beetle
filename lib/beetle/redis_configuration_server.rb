@@ -20,6 +20,7 @@ module Beetle
       id = payload["id"]
       logger.info "Received client_online message from id '#{id}'"
       @clients_online[id] = true
+      beetle_client.publish(:reconfigure, {:host => redis_master.host, :port => redis_master.port}.to_json)
     end
 
     def client_offline(payload)
@@ -37,7 +38,11 @@ module Beetle
     # Method called from RedisWatcher
     def redis_unavailable
       logger.warn "Redis master '#{redis_master.server}' not available"
-      invalidate_current_master
+      if @clients_online.empty?
+        switch_master
+      else
+        invalidate_current_master
+      end
     end
 
     private
@@ -58,33 +63,21 @@ module Beetle
         @redis = redis
         @watcher_delegate = watcher_delegate
         @logger = logger
-        @pause = false
         @retries = 0
       end
 
       def watch
-        timer = EventMachine::add_periodic_timer(1) {
-          unless @pause
+        EventMachine::add_periodic_timer(1) {
+          if @redis
             @logger.debug "Watching redis '#{@redis.server}'"
-            begin
-              @redis.info
-            rescue Exception
+            unless @redis.available?
               if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
                 @retries = 0
-                pause
                 @watcher_delegate.__send__(:redis_unavailable)
               end
             end
           end
         }
-      end
-
-      def pause
-        @pause = true
-      end
-
-      def continue
-        @pause = false
       end
     end
 
@@ -124,6 +117,7 @@ module Beetle
     end
 
     def all_available_redis
+      p all_redis
       all_redis.select{ |redis| redis.available? }
     end
 
@@ -158,8 +152,8 @@ module Beetle
         beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
         @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
         @new_redis_master = nil
+        
         redis_master_watcher.redis = redis_master
-        redis_master_watcher.continue
       else
         logger.error "No redis slave available to become new master"
       end
