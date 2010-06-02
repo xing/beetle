@@ -39,10 +39,16 @@ Feature: Redis auto failover
     Then the role of redis server "redis-2" should still be "slave"
     And the redis master of "rc-client-2" should be undefined
     
+  Scenario: Redis configuration client joins after a reconfiguration
+    Given redis server "redis-1" is down
+    And the retry timeout for the redis master check is reached
+    Then the role of redis server "redis-2" should be master
+    And a redis configuration client "rc-client-late" using redis servers "redis-1,redis-2" exists
+    And the retry timeout for the redis master check is reached
+    Then the redis master of "rc-client-late" should be "redis-2"
+
   Scenario: Redis configuration client joins while reconfiguration round in progress
-    Given a reconfiguration round is in progress
-    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
-    Then the redis master of "rc-client-1" should be nil
+    # Hard to test here... unit test?
 
   Scenario: Redis configuration client can not determine current redis master
     Given redis server "redis-1" is down
@@ -56,4 +62,3 @@ Feature: Redis auto failover
   Scenario: Clients should not use the redis while a reconfiguration is in progress
   
   Scenario: Ambiguity when determining initial redis master 
-  
