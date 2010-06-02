@@ -25,7 +25,7 @@ class RedisTestServer
 
     def stop_all
       # processes = `ps aux | grep redis-server | grep -v grep | grep test-server | cut -d' ' -f2`.split("\n").reject(&:blank?)
-      # `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1`
+      # `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1` if processes.any?
       @@instances.values.each{|i| i.stop}
     end
   end
