@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.version = "0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
-  s.date = %q{2010-05-29}
+  s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
+  s.date = %q{2010-06-02}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.executables = ["redis_configuration_client", "redis_configuration_server"]
@@ -44,6 +44,7 @@ Gem::Specification.new do |s|
      "examples/simple.rb",
      "features/redis_auto_failover.feature",
      "features/step_definitions/redis_auto_failover_steps.rb",
+     "features/support/beetle_handler",
      "features/support/env.rb",
      "features/support/redis.conf.erb",
      "features/support/redis_test_server.rb",
@@ -58,7 +59,9 @@ Gem::Specification.new do |s|
      "lib/beetle/publisher.rb",
      "lib/beetle/r_c.rb",
      "lib/beetle/redis_configuration_client.rb",
+     "lib/beetle/redis_configuration_logger.rb",
      "lib/beetle/redis_configuration_server.rb",
+     "lib/beetle/redis_ext.rb",
      "lib/beetle/subscriber.rb",
      "script/start_rabbit",
      "test/beetle.yml",
@@ -122,6 +125,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<mocha>, [">= 0"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
       s.add_development_dependency(%q<cucumber>, [">= 0.7.2"])
+      s.add_development_dependency(%q<daemon_controller>, [">= 0"])
     else
       s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
       s.add_dependency(%q<bunny>, [">= 0.6.0"])
@@ -132,6 +136,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<mocha>, [">= 0"])
       s.add_dependency(%q<rcov>, [">= 0"])
       s.add_dependency(%q<cucumber>, [">= 0.7.2"])
+      s.add_dependency(%q<daemon_controller>, [">= 0"])
     end
   else
     s.add_dependency(%q<uuid4r>, [">= 0.1.1"])
@@ -143,6 +148,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<mocha>, [">= 0"])
     s.add_dependency(%q<rcov>, [">= 0"])
     s.add_dependency(%q<cucumber>, [">= 0.7.2"])
+    s.add_dependency(%q<daemon_controller>, [">= 0"])
   end
 end
 
