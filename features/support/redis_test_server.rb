@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'erb'
 require 'redis'
+require 'daemon_controller'
 
 # Creates and manages named redis server instances for testing with ease
 class RedisTestServer
@@ -24,25 +25,14 @@ class RedisTestServer
     alias_method :[], :find_or_initialize_by_name
 
     def stop_all
-      # processes = `ps aux | grep redis-server | grep -v grep | grep test-server | cut -d' ' -f2`.split("\n").reject(&:blank?)
-      # `kill -9 #{processes.join(' ')} 1>/dev/null 2>&1` if processes.any?
       @@instances.values.each{|i| i.stop}
     end
   end
 
   def start
-    raise "zombie redis #{name} exists. giving up" if running?
     create_dir
     create_config
-    `redis-server #{config_filename}`
-    tries = 0
-    begin
-      available?
-    rescue
-      sleep 1
-      retry if (tries +=1) > 5
-      raise "could not start redis #{name}"
-    end
+    daemon_controller.start
   end
 
   def restart(delay=1)
@@ -51,28 +41,13 @@ class RedisTestServer
     `redis-server #{config_filename}`
   end
 
-  # TODO: some of this needs to moved into our code
   def stop
-    return unless running?
-    10.times do
-      break if (redis.info["bgsave_in_progress"]) == 0 rescue false
-      sleep 1
-    end
-    # puts redis.info.inspect
-    redis.shutdown rescue Errno::ECONNREFUSED
-    begin
-      5.times do
-        return unless running?
-        sleep 1
-      end
-      puts "forcing kill -9 of redis server #{name}"
-      5.times do
-        Process.kill("KILL", pid)
-        return unless running?
-        sleep 1
-      end
-      puts "could not stop redis #{name} #{$!}" if running?
-    end
+    # TODO: Might need to be moved into RedisConfigurationServer
+    #     10.times do
+    #       break if (redis.info["bgsave_in_progress"]) == 0 rescue false
+    #       sleep 1
+    #     end
+    daemon_controller.stop
   ensure
     cleanup
   end
@@ -83,7 +58,7 @@ class RedisTestServer
     remove_pidfile
   end
 
-  # TODO: the retry logic must be moved into the actual code
+  # TODO: The retry logic must be moved into RedisConfigurationServer
   def master
     tries = 0
     redis.master!
@@ -113,7 +88,7 @@ class RedisTestServer
     redis.slave?
   end
 
-  # TODO: the retry logic must be moved into the actual code
+  # TODO: The retry logic must be moved into RedisConfigurationServer
   def slave_of(master_port)
     tries = 0
     begin
@@ -190,5 +165,16 @@ class RedisTestServer
   def redis
     @redis ||= Redis.new(:host => "127.0.0.1", :port => port)
   end
-
+  
+  def daemon_controller
+    @daemon_controller = DaemonController.new(
+       :identifier    => "Redis test server",
+       :start_command => "redis-server #{config_filename}",
+       :ping_command  => lambda { running? && available? },
+       :pid_file      => pidfile,
+       :log_file      => logfile,
+       :timeout       => 5
+    )
+  end
+  
 end

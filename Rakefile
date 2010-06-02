@@ -105,7 +105,7 @@ begin
     gemspec.description = "A highly available, reliable messaging infrastructure"
     gemspec.email = "developers@xing.com"
     gemspec.homepage = "http://xing.github.com/beetle/"
-    gemspec.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh"]
+    gemspec.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
     gemspec.add_dependency('uuid4r', '>=0.1.1')
     gemspec.add_dependency('bunny', '>=0.6.0')
     gemspec.add_dependency('redis', '>=1.0.7')
@@ -116,6 +116,7 @@ begin
     gemspec.add_development_dependency('mocha')
     gemspec.add_development_dependency('rcov')
     gemspec.add_development_dependency('cucumber', '>=0.7.2')
+    gemspec.add_development_dependency('daemon_controller')
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
