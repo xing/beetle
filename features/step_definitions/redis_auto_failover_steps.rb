@@ -6,6 +6,9 @@ end
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   RedisTestServer[redis_name].start
   RedisTestServer[redis_name].slave_of(RedisTestServer[redis_master_name].port)
+  begin
+    sleep 1
+  end while RedisTestServer[redis_name].redis.info["bgsave_in_progress"] == 1
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
@@ -13,6 +16,7 @@ Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do 
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
   `ruby bin/redis_configuration_server start -- --redis-servers=#{redis_servers_string} --redis-retry-timeout 1`
+  sleep 3
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
@@ -20,6 +24,7 @@ Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" e
     RedisTestServer[redis_name].ip_with_port
   end.join(",")
   `ruby bin/redis_configuration_client start -- --redis-servers=#{redis_servers_string} --redis-master-file=#{redis_master_file_path(redis_configuration_client_name)} --id #{redis_configuration_client_name}`
+  sleep 1
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|

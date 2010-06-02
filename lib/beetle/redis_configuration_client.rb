@@ -36,7 +36,7 @@ module Beetle
       host = payload["host"]
       port = payload["port"]
       logger.warn "Received reconfigure message with host '#{host}' port '#{port}'"
-      logger.warn "Writing redis master info to file"
+      logger.warn "Writing redis master info to file '#{beetle_client.deduplication_store.master_file}'"
       write_redis_master_file("#{host}:#{port}")
       @redis_master = Redis.new(:host => host, :port => port)
     end

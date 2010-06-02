@@ -44,8 +44,7 @@ Feature: Redis auto failover
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be master
     And a redis configuration client "rc-client-late" using redis servers "redis-1,redis-2" exists
-    And the retry timeout for the redis master check is reached
-    Then the redis master of "rc-client-late" should be "redis-2"
+    And the redis master of "rc-client-late" should be "redis-2"
 
   Scenario: Redis configuration client joins while reconfiguration round in progress
     # Hard to test here... unit test?

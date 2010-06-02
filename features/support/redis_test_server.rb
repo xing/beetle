@@ -61,12 +61,14 @@ class RedisTestServer
   # TODO: The retry logic must be moved into RedisConfigurationServer
   def master
     tries = 0
-    redis.master!
-  rescue Errno::ECONNREFUSED, Errno::EAGAIN
-    puts "master role setting for #{name} failed: #{$!}"
-    sleep 1
-    retry if (tries+=1) > 5
-    raise "could not setup master #{name} #{$!}"
+    begin
+      redis.master!
+    rescue Errno::ECONNREFUSED, Errno::EAGAIN
+      puts "master role setting for #{name} failed: #{$!}"
+      sleep 1
+      retry if (tries+=1) > 5
+      raise "could not setup master #{name} #{$!}"
+    end
   end
 
   def running?
@@ -103,6 +105,10 @@ class RedisTestServer
 
   def ip_with_port
     "127.0.0.1:#{port}"
+  end
+  
+  def redis
+    @redis ||= Redis.new(:host => "127.0.0.1", :port => port)
   end
 
   private
@@ -162,10 +168,6 @@ class RedisTestServer
     tmp_path + "/redis-test-server-#{name}/"
   end
 
-  def redis
-    @redis ||= Redis.new(:host => "127.0.0.1", :port => port)
-  end
-  
   def daemon_controller
     @daemon_controller = DaemonController.new(
        :identifier    => "Redis test server",
