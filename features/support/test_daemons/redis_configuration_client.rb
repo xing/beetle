@@ -32,7 +32,7 @@ module TestDaemons
     end
 
     def daemon_controller
-      @daemon_controller = DaemonController.new(
+      @daemon_controller ||= DaemonController.new(
          :identifier    => "Redis configuration test client",
          :start_command => "ruby bin/redis_configuration_client start -- --redis-servers=#{@redis_servers.join(',')} --redis-master-file=#{redis_master_file} --id #{@name}",
          :ping_command  => lambda{ true },

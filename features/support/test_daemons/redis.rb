@@ -170,7 +170,7 @@ module TestDaemons
     end
 
     def daemon_controller
-      @daemon_controller = DaemonController.new(
+      @daemon_controller ||= DaemonController.new(
          :identifier    => "Redis test server",
          :start_command => "redis-server #{config_filename}",
          :ping_command  => lambda { running? && available? },
