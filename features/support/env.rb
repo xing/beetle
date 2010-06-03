@@ -14,12 +14,15 @@ After do
 end
 
 def cleanup_test_env
+  `ruby features/support/beetle_handler stop`
+
+  TestDaemons::RedisConfigurationClient.stop_all
   redis_master_files = File.dirname(__FILE__) + "/../../tmp/redis-master-*"
   `rm -f #{redis_master_files}`
-  `ruby bin/redis_configuration_client stop`
-  `ruby bin/redis_configuration_server stop`
-  `ruby features/support/beetle_handler stop`
-  RedisTestServer.stop_all
+
+  TestDaemons::RedisConfigurationServer.stop
+
+  TestDaemons::Redis.stop_all
 end
 
 def redis_master_file_path(client_name)
