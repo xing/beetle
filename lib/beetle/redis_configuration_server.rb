@@ -1,9 +1,11 @@
+require 'forwardable'
+
 module Beetle
   class RedisConfigurationServer
     include RedisConfigurationLogger
-    
+
     def initialize
-      RedisConfigurationClientMessageHandler.delegate_messages_to = self
+      RedisConfigurationClientMessageHandler.configuration_server = self
       @clients_online = {}
       @client_invalidated_messages_received = {}
     end
@@ -48,20 +50,26 @@ module Beetle
     private
 
     class RedisConfigurationClientMessageHandler < Beetle::Handler
-      cattr_accessor :delegate_messages_to
+      extend Forwardable
+
+      cattr_accessor :configuration_server
+
+      delegate :client_online, :client_offline, :client_invalidated, :to => :@@configuration_server
+
       def process
         method_name = message.header.routing_key
         payload = ActiveSupport::JSON.decode(message.data)
-        self.class.delegate_messages_to.__send__(method_name, payload)
+        send(method_name, payload)
       end
     end
 
     class RedisWatcher
-      attr_accessor :redis, :pause
 
-      def initialize(redis, watcher_delegate, logger)
+      attr_accessor :redis
+
+      def initialize(redis, configuration_server, logger)
         @redis = redis
-        @watcher_delegate = watcher_delegate
+        @configuration_server = configuration_server
         @logger = logger
         @retries = 0
       end
@@ -73,7 +81,7 @@ module Beetle
             unless @redis.available?
               if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
                 @retries = 0
-                @watcher_delegate.__send__(:redis_unavailable)
+                @configuration_server.redis_unavailable
               end
             end
           end
@@ -133,16 +141,16 @@ module Beetle
     def redis_slaves
       all_available_redis.select{ |redis| redis.slave? }
     end
-    
+
     def invalidate_current_master
       @client_invalidated_messages_received = {}
       beetle_client.publish(:invalidate, {}.to_json)
     end
-    
+
     def all_client_invalidated_messages_received?
       @clients_online.size == @client_invalidated_messages_received.size
     end
-    
+
     def switch_master
       if new_redis_master
         logger.warn "Setting new redis master to '#{new_redis_master.server}'"
@@ -151,7 +159,7 @@ module Beetle
         beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
         @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
         @new_redis_master = nil
-        
+
         redis_master_watcher.redis = redis_master
       else
         logger.error "No redis slave available to become new master"
