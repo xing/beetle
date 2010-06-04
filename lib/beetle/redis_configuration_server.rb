@@ -139,7 +139,7 @@ module Beetle
     end
 
     def redis_slaves
-      all_available_redis.select{ |redis| redis.slave? }
+      all_available_redis.select{ |redis| redis.slave_of?(redis_master.host, redis_master.port) }
     end
 
     def invalidate_current_master
