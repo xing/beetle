@@ -1,6 +1,8 @@
+require 'rubygems'
 require 'fileutils'
 require 'erb'
 require 'redis'
+require 'lib/beetle/redis_ext'
 require 'daemon_controller'
 
 module TestDaemons
