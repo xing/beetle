@@ -56,14 +56,18 @@ Given /^the retry timeout for the redis master determination is reached$/ do
   pending # express the regexp above with the code you wish you had
 end
 
+Given /^redis server "([^\"]*)" is coming back$/ do |redis_name|
+  TestDaemons::Redis[redis_name].start
+end
 
-Then /^the role of redis server "([^\"]*)" should be master$/ do |redis_name|
-  master = false
+
+Then /^the role of redis server "([^\"]*)" should be (master|slave)$/ do |redis_name, role|
+  expected_role = false
   10.times do
-    master = true and break if TestDaemons::Redis[redis_name].master?
+    expected_role = true and break if TestDaemons::Redis[redis_name].__send__ "#{role}?"
     sleep 1
   end
-  raise "#{redis_name} is not a master" unless master
+  raise "#{redis_name} is not a #{role}" unless expected_role
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
