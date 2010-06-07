@@ -21,11 +21,10 @@ Given /^redis server "([^\"]*)" is slave of "([^\"]*)"$/ do |redis_name, redis_m
   end while !slave.slave_of?(master.host, master.port)
 end
 
-Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
-  redis_servers = redis_names.split(",").map do |redis_name|
-    TestDaemons::Redis[redis_name].ip_with_port
-  end
-  TestDaemons::RedisConfigurationServer.start(redis_servers)
+Given /^a redis configuration server using redis servers "([^\"]*)" with clients "([^\"]*)" exists$/ do |redis_names, redis_configuration_client_names|
+  redis_servers = redis_names.split(",").map { |redis_name| TestDaemons::Redis[redis_name].ip_with_port }.join(",")
+  redis_configuration_clients = redis_configuration_client_names
+  TestDaemons::RedisConfigurationServer.start(redis_servers, redis_configuration_clients)
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|

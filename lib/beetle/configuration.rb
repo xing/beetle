@@ -16,6 +16,8 @@ module Beetle
     attr_accessor :redis_configuration_reconfiguration_timeout
     # file where the redis configuration client stores the current redis master to be used by the workers
     attr_accessor :redis_master_file_path
+    # the redis configuration clients living on the worker machines, taking part in the redis failover
+    attr_accessor :redis_configuration_client_ids
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
     # the virtual host to use on the AMQP servers
@@ -34,6 +36,7 @@ module Beetle
       self.redis_configuration_master_retry_timeout = 30.seconds
       self.redis_configuration_reconfiguration_timeout = 10.seconds
       self.redis_master_file_path = "/var/beetle/redis-master"
+      self.redis_configuration_client_ids = ""
       self.servers = "localhost:5672"
       self.vhost = "/"
       self.user = "guest"

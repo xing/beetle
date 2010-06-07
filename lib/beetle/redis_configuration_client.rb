@@ -2,7 +2,7 @@ module Beetle
   class RedisConfigurationClient < Beetle::Handler
     include RedisConfigurationLogger
 
-    attr_accessor :id
+    attr_writer :id
 
     def id
       @id || `hostname`.chomp
@@ -18,8 +18,6 @@ module Beetle
       beetle_client.deduplication_store.save_configured_master
       @redis_master = beetle_client.deduplication_store.redis
 
-      logger.info "Publishing client_online message with id '#{id}'"
-      beetle_client.publish(:client_online, {:id => id}.to_json)
       logger.info "Listening"
       beetle_client.listen
     end
@@ -61,8 +59,6 @@ module Beetle
     def build_beetle_client
       beetle_client = Beetle::Client.new
       beetle_client.configure :exchange => :system, :auto_delete => true do |config|
-        config.message :client_online
-        config.message :client_offline
         config.message :invalidate
         config.queue   internal_queue_name(:invalidate), :key => "invalidate"
         config.message :client_invalidated

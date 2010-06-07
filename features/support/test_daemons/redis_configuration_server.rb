@@ -8,8 +8,9 @@ module TestDaemons
 
     @@started = false
 
-    def self.start(redis_servers)
+    def self.start(redis_servers, redis_configuration_clients)
       @@redis_servers = redis_servers
+      @@redis_configuration_clients = redis_configuration_clients
       daemon_controller.start
       @@started = true
     end
@@ -21,7 +22,7 @@ module TestDaemons
     def self.daemon_controller
       @@daemon_controller ||= DaemonController.new(
          :identifier    => "Redis configuration test server",
-         :start_command => "ruby bin/redis_configuration_server start -- --redis-servers=#{@@redis_servers.join(",")} --redis-retry-timeout 1",
+         :start_command => "ruby bin/redis_configuration_server start -- --redis-servers=#{@@redis_servers} --client-ids=#{@@redis_configuration_clients} --redis-retry-timeout 1",
          :ping_command  => lambda{ true },
          :pid_file      => pid_file,
          :log_file      => log_file,

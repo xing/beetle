@@ -12,6 +12,9 @@ Daemons.run_proc("redis_configuration_server", :log_output => true) do
   opts.on("-r", "--redis-servers host1:port1,host2:port2,...", String) do |val|
     Beetle.config.redis_hosts = val
   end
+  opts.on("-c", "--client-ids client-id1,client-id2,...", String) do |val|
+    Beetle.config.redis_configuration_client_ids = val
+  end
   opts.on("-t", "--redis-retry-timeout seconds", Integer) do |val|
     Beetle.config.redis_configuration_master_retry_timeout = val
   end
