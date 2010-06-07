@@ -6,7 +6,7 @@ module Beetle
 
     def initialize
       RedisConfigurationClientMessageHandler.configuration_server = self
-      @clients_online = {}
+      @clients = Beetle.config.redis_configuration_client_ids.split(",")
       @client_invalidated_messages_received = {}
     end
 
@@ -15,19 +15,6 @@ module Beetle
       beetle_client.listen do
         redis_master_watcher.watch
       end
-    end
-
-    # Methods called from RedisConfigurationClientMessageHandler
-    def client_online(payload)
-      id = payload["id"]
-      logger.info "Received client_online message from id '#{id}'"
-      @clients_online[id] = true
-      beetle_client.publish(:reconfigure, {:host => redis_master.host, :port => redis_master.port}.to_json)
-    end
-
-    def client_offline(payload)
-      id = payload["id"]
-      logger.info "Received client_offline message from id '#{id}'"
     end
 
     def client_invalidated(payload)
@@ -40,7 +27,7 @@ module Beetle
     # Method called from RedisWatcher
     def redis_unavailable
       logger.warn "Redis master '#{redis_master.server}' not available"
-      if @clients_online.empty?
+      if @clients.empty?
         switch_master
       else
         invalidate_current_master
@@ -96,17 +83,11 @@ module Beetle
     def build_beetle_client
       beetle_client = Beetle::Client.new
       beetle_client.configure :exchange => :system, :auto_delete => true do |config|
-        config.message :client_online
-        config.queue   :client_online
-        config.message :client_offline
-        config.queue   :client_offline
         config.message :client_invalidated
         config.queue   :client_invalidated
         config.message :invalidate
         config.message :reconfigure
 
-        config.handler(:client_online,      RedisConfigurationClientMessageHandler)
-        config.handler(:client_offline,     RedisConfigurationClientMessageHandler)
         config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
       end
       beetle_client
@@ -147,8 +128,9 @@ module Beetle
       beetle_client.publish(:invalidate, {}.to_json)
     end
 
+    # TODO Check client id, not only number of messages received
     def all_client_invalidated_messages_received?
-      @clients_online.size == @client_invalidated_messages_received.size
+      @clients.size == @client_invalidated_messages_received.size
     end
 
     def switch_master

@@ -7,7 +7,7 @@ Feature: Redis auto failover
     And a redis server "redis-2" exists as slave of "redis-1"
 
   Scenario: Successful redis master switch
-    Given a redis configuration server using redis servers "redis-1,redis-2" exists
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And a beetle handler using the redis-master file from "rc-client-1" exists
@@ -21,13 +21,13 @@ Feature: Redis auto failover
   Scenario: Available slave is not slave of current master
     Given a redis server "redis-3" exists as master
     And a redis server "redis-4" exists as slave of "redis-3"
-    And a redis configuration server using redis servers "redis-1,redis-4,redis-2" exists
+    And a redis configuration server using redis servers "redis-1,redis-4,redis-2" with clients "" exists
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "master"
 
   Scenario: Redis master only temporarily down (no switch necessary)
-    Given a redis configuration server using redis servers "redis-1,redis-2" exists
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And a beetle handler using the redis-master file from "rc-client-1" exists
@@ -40,7 +40,7 @@ Feature: Redis auto failover
     And the redis master of the beetle handler should be "redis-1"
 
   Scenario: "client_invalidated" message not acknowledged by all redis configuration clients (no switch possible)
-    Given a redis configuration server using redis servers "redis-1,redis-2" exists
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And the first redis configuration client is not able to send the client_invalidated message
@@ -50,7 +50,7 @@ Feature: Redis auto failover
     And the redis master of "rc-client-2" should be undefined
 
   Scenario: Redis configuration client joins after a reconfiguration
-    Given a redis configuration server using redis servers "redis-1,redis-2" exists
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1" exists
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "master"
