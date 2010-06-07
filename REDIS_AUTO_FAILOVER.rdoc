@@ -31,7 +31,7 @@
 * automatic switch in case of redis-master failure
 * switch should not cause inconsistent data on the redis servers
 * subscribers should be able to determine the current redis-master without asking another
-  process (as long as the redis servers are working and no reconfiguration is in progress)
+  process (as long as the redis servers are working)
 
 ===Our solution:
 
@@ -44,19 +44,17 @@
 ===== prerequisites
 
 * one redis-configuration-server process ("rc-server", on one server), one redis-configuration-client process ("rc-client") on every worker server
+* the rc-server knows about all possible rc-clients using a configured list
 * the rc-server and rc-clients exchange messages via a "system queue"
-* on startup, an rc-client can determine the current redis-master without the help of the rc-server by asking *all* configured redis servers for their current role, making sure that no reconfiguration round is in progress (by checking that the intended_role key on all redis servers still matches their current role)
+* on startup, an rc-client can determine the current redis-master without the help of the rc-server by checking that either only one redis is available (as master) or by checking that redis master and slave are available
 * if an rc-client cannot determine the redis-master, it will retry a couple of times before it finally exits
-* periodically the rc-clients sends an "online" message to the rc-server, allowing it to keep a list of known rc-clients
 * when the rc-server finds the redis-master to be down, it will retry a couple of times before starting a reconfiguration round
 
 ===== when the redis-master doesn't recover (reconfiguration round)
 
-* the rc-server sets the intended_role key on the redis-slave to "master"
 * the rc-server tells all rc-clients to stop using the redis-master by sending an "invalidate" message
 * the rc-clients acknowledge via an "invalidated" message
 * the rc-server waits for *all* rc-clients to acknowledge the invalidation
-* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one and setting the intended_role key to "master")
-* the rc-server sends a "new master" message containing the new redis-master to every rc-client
+* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
+* the rc-server sends a "reconfigure" message containing the new redis-master to every rc-client
 * the rc-clients use the new redis-master
-* the rc-server periodically tries to connect to the old master and configure it as a slave (by sending SLAVEOF new_master and setting intendend_role key to "slave")
