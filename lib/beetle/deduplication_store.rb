@@ -16,11 +16,13 @@ module Beetle
     def initialize(hosts = "localhost:6379", db = 4)
       @hosts = hosts
       @db = db
+      @current_master = nil
+      @last_time_the_master_changed = nil
     end
 
     # get the Redis instance
     def redis
-      find_redis_master
+      redis_master
     end
 
     # list of key suffixes to use for storing values in Redis.
@@ -120,10 +122,19 @@ module Beetle
       end
     end
 
-    # find the master redis instance
-    def find_redis_master
+    def redis_master
+        set_current_redis_master_from_master_file if redis_master_file_changed?
+        @current_master
+    end
+
+    def redis_master_file_changed?
+      @last_time_the_master_changed != File.mtime(master_file)
+    end
+
+    def set_current_redis_master_from_master_file
       server = read_master_file
-      redis_instances.find{|r| r.server == server}
+      @last_time_the_master_changed = File.mtime(master_file)
+      @current_master = redis_instances.find{|r| r.server == server}
     end
 
     # returns the list of redis instances

@@ -35,12 +35,21 @@ module Beetle
 
     test "find redis master should find the externally configured server" do
       @store.expects(:read_master_file).returns("localhost:1")
-      assert_equal "localhost:1", @store.find_redis_master.server
+      assert_equal "localhost:1", @store.redis_master.server
     end
 
     test "find redis master should find none if the externally configured server is not in the list of instances" do
       @store.expects(:read_master_file).returns("")
-      assert_nil @store.find_redis_master
+      assert_nil @store.redis_master
+    end
+
+    test "should keep using the current redis master if the external configuration file hasn't changed since the last request" do
+      last_modified_time = Time.new
+      File.stubs(:mtime).returns(last_modified_time)
+
+      @store.expects(:read_master_file).once.returns("localhost:1")
+      @store.redis_master
+      @store.redis_master
     end
 
     test "autoconfigure should find the master if both master and slave are reachable" do
@@ -53,11 +62,9 @@ module Beetle
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
       instances = @store.redis_instances
       s = sequence("redis accesses")
-      @store.expects(:read_master_file).returns("localhost:1").in_sequence(s)
-      assert_equal instances.first, @store.redis
-      @store.expects(:read_master_file).returns("localhost:1").in_sequence(s)
+      @store.expects(:redis_master).returns(instances.first).in_sequence(s)
       instances.first.expects(:get).with("foo:x").raises("disconnected").in_sequence(s)
-      @store.expects(:read_master_file).returns("localhost:2").in_sequence(s)
+      @store.expects(:redis_master).returns(instances.second).in_sequence(s)
       instances.second.expects(:get).with("foo:x").returns("42").in_sequence(s)
       assert_equal("42", @store.get("foo", "x"))
     end
