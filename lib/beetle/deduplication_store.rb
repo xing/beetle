@@ -111,7 +111,6 @@ module Beetle
         Beetle::reraise_expectation_errors!
         logger.error "Beetle: redis connection error '#{e}'"
         if (tries+=1) < 120
-          @redis = nil
           sleep 1
           logger.info "Beetle: retrying redis operation"
           retry
@@ -137,7 +136,7 @@ module Beetle
     # auto configure redis master
     def auto_configure
       if single_master_reachable? || master_and_slave_reachable?
-        @redis = redis_instances.find{|r| r.role == "master"}
+        redis_instances.find{|r| r.role == "master"}
       end
     end
 
