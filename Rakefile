@@ -2,6 +2,7 @@ require 'rake'
 require 'rake/testtask'
 require 'lib/beetle'
 require 'rcov/rcovtask'
+require 'cucumber/rake/task'
 
 namespace :test do
   namespace :coverage do
@@ -76,8 +77,13 @@ namespace :redis do
   end
 end
 
+Cucumber::Rake::Task.new(:cucumber) do |t|
+  t.cucumber_opts = "features --format progress"
+end
+
 task :default do
   Rake::Task[:test].invoke
+  Rake::Task[:cucumber].invoke
 end
 
 Rake::TestTask.new do |t|
