@@ -5,10 +5,20 @@ end
 
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   TestDaemons::Redis[redis_name].start
+  Given "redis server \"#{redis_name}\" is slave of \"#{redis_master_name}\""
+end
+
+Given /^redis server "([^\"]*)" is master$/ do |redis_name|
+  TestDaemons::Redis[redis_name].master
+end
+
+Given /^redis server "([^\"]*)" is slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   TestDaemons::Redis[redis_name].slave_of(TestDaemons::Redis[redis_master_name].port)
+  master = TestDaemons::Redis[redis_master_name].redis
+  slave = TestDaemons::Redis[redis_name].redis
   begin
     sleep 1
-  end while TestDaemons::Redis[redis_name].redis.info["bgsave_in_progress"] == 1
+  end while !slave.slave_of?(master.host, master.port)
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" exists$/ do |redis_names|
@@ -53,15 +63,22 @@ Given /^a reconfiguration round is in progress$/ do
 end
 
 Given /^the retry timeout for the redis master determination is reached$/ do
-  pending # express the regexp above with the code you wish you had
+  sleep 1
 end
 
 Given /^redis server "([^\"]*)" is coming back$/ do |redis_name|
   TestDaemons::Redis[redis_name].start
 end
 
+Given /^an old redis master file for "([^\"]*)" with master "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_name|
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  File.open(master_file, 'w') do |f|
+    f.puts TestDaemons::Redis[redis_name].ip_with_port
+  end
+end
 
-Then /^the role of redis server "([^\"]*)" should be (master|slave)$/ do |redis_name, role|
+
+Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redis_name, role|
   expected_role = false
   10.times do
     expected_role = true and break if TestDaemons::Redis[redis_name].__send__ "#{role}?"
@@ -81,6 +98,11 @@ Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configura
   raise "#{redis_name} is not master of #{redis_configuration_client_name}" unless master
 end
 
+Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
+  master_file = redis_master_file_path(redis_configuration_client_name)
+  assert_equal "", File.read(master_file).chomp
+end
+
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
   Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
   Beetle.config.logger.level = Logger::INFO
@@ -88,22 +110,4 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
   client.register_queue(:echo)
   client.register_message(:echo)
   assert_equal TestDaemons::Redis[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
-end
-
-Then /^the role of redis server "([^\"]*)" should still be "([^\"]*)"$/ do |redis_name, role|
-  TestDaemons::Redis[redis_name].__send__ "#{role}?"
-end
-
-Then /^the redis master of "([^\"]*)" should still be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
-  assert_equal TestDaemons::Redis[redis_name].ip_with_port, File.read(master_file).chomp
-end
-
-Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
-  assert_equal "", File.read(master_file).chomp
-end
-
-Then /^the redis master of "([^\"]*)" should be nil$/ do |arg1|
-  pending # express the regexp above with the code you wish you had
 end
