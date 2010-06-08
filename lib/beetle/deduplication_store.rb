@@ -123,8 +123,8 @@ module Beetle
     end
 
     def redis_master
-        set_current_redis_master_from_master_file if redis_master_file_changed?
-        @current_master
+      set_current_redis_master_from_master_file if redis_master_file_changed?
+      @current_master
     end
 
     def redis_master_file_changed?
@@ -147,7 +147,7 @@ module Beetle
     # auto configure redis master
     def auto_configure
       if single_master_reachable? || master_and_slave_reachable?
-        redis_instances.find{|r| r.role == "master"}
+        @redis = redis_instances.find{|r| r.role == "master"}
       end
     end
 
