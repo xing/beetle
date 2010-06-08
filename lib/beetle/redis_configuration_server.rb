@@ -6,7 +6,7 @@ module Beetle
 
     def initialize
       RedisConfigurationClientMessageHandler.configuration_server = self
-      @clients = Beetle.config.redis_configuration_client_ids.split(",")
+      @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
       @client_invalidated_messages_received = {}
     end
 
@@ -27,7 +27,7 @@ module Beetle
     # Method called from RedisWatcher
     def redis_unavailable
       logger.warn "Redis master '#{redis_master.server}' not available"
-      if @clients.empty?
+      if @client_ids.empty?
         switch_master
       else
         invalidate_current_master
@@ -128,9 +128,8 @@ module Beetle
       beetle_client.publish(:invalidate, {}.to_json)
     end
 
-    # TODO Check client id, not only number of messages received
     def all_client_invalidated_messages_received?
-      @clients.size == @client_invalidated_messages_received.size
+      Set.new(@client_ids) == Set.new(@client_invalidated_messages_received.keys)
     end
 
     def switch_master
