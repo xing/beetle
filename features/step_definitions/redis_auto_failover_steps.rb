@@ -109,3 +109,18 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
   client.register_message(:echo)
   assert_equal TestDaemons::Redis[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
 end
+
+Then /^a system notification for "([^\"]*)" not being available should be sent$/ do |redis_name|
+  text = "Redis master '#{TestDaemons::Redis[redis_name].ip_with_port}' not available"
+  assert_match /#{text}/, File.readlines(system_notification_log_path).last
+end
+
+Then /^a system notification for switching from "([^\"]*)" to "([^\"]*)" should be sent$/ do |old_redis_master_name, new_redis_master_name|
+  text = "Redis master switched from '#{TestDaemons::Redis[old_redis_master_name].ip_with_port}' to '#{TestDaemons::Redis[new_redis_master_name].ip_with_port}'"
+  assert_match /#{text}/, File.read(system_notification_log_path)
+end
+
+Then /^a system notification for no slave available to become new master should be sent$/ do
+  text = "Redis master could not be switched, no slave available to become new master"
+  assert_match /#{text}/, File.readlines(system_notification_log_path).last
+end

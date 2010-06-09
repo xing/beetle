@@ -9,5 +9,15 @@ module Beetle
         logger
       end
     end
+
+    def disable_logging
+      @logger = DisabledLogger.new(STDOUT)
+    end
+
+    private
+
+    class DisabledLogger < Logger
+      def add(*args, &blk); end
+    end
   end
 end

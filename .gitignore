@@ -5,9 +5,7 @@ site
 test/coverage
 .DS_Store
 .rvmrc
-redis_configuration_client.output
-redis_configuration_server.output
-beetle_handler.output
+*.output
 erl_crash.dump
 *.pid.lock
 tmp/*
