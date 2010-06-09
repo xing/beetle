@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-06-02}
+  s.date = %q{2010-06-09}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
   s.executables = ["redis_configuration_client", "redis_configuration_server"]
@@ -46,8 +46,11 @@ Gem::Specification.new do |s|
      "features/step_definitions/redis_auto_failover_steps.rb",
      "features/support/beetle_handler",
      "features/support/env.rb",
-     "features/support/redis.conf.erb",
-     "features/support/redis_test_server.rb",
+     "features/support/system_notification_logger",
+     "features/support/test_daemons/redis.conf.erb",
+     "features/support/test_daemons/redis.rb",
+     "features/support/test_daemons/redis_configuration_client.rb",
+     "features/support/test_daemons/redis_configuration_server.rb",
      "ideas/simple_client.rb",
      "lib/beetle.rb",
      "lib/beetle/base.rb",
@@ -72,7 +75,6 @@ Gem::Specification.new do |s|
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/r_c_test.rb",
-     "test/beetle/redis_configuration_client_test.rb",
      "test/beetle/redis_configuration_server_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
@@ -83,7 +85,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://xing.github.com/beetle/}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.5}
   s.summary = %q{High Availability AMQP Messaging with Redundant Queues}
   s.test_files = [
     "test/beetle/base_test.rb",
@@ -93,7 +95,6 @@ Gem::Specification.new do |s|
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/r_c_test.rb",
-     "test/beetle/redis_configuration_client_test.rb",
      "test/beetle/redis_configuration_server_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
