@@ -3,10 +3,13 @@ require 'forwardable'
 module Beetle
   class RedisConfigurationServer
     include RedisConfigurationLogger
+    
+    attr_reader :redis_master
 
     def initialize
       RedisConfigurationClientMessageHandler.configuration_server = self
       @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
+      @invalidation_message_token = nil
       @client_invalidated_messages_received = {}
     end
 
@@ -17,9 +20,15 @@ module Beetle
       end
     end
 
+    # Method called from RedisConfigurationClientMessageHandler
     def client_invalidated(payload)
       id = payload["id"]
-      logger.info "Received client_invalidated message from id '#{id}'"
+      token = payload["token"]
+      logger.info "Received client_invalidated message from id '#{id}' with token '#{token}'"
+      if token != @invalidation_message_token
+        logger.warn "Ignored client_invalidated message from id '#{id}' (token was '#{token}', but expected '#{@invalidation_message_token}')"
+        return
+      end
       @client_invalidated_messages_received[id] = true
       switch_master if all_client_invalidated_messages_received?
     end
@@ -41,7 +50,7 @@ module Beetle
 
       cattr_accessor :configuration_server
 
-      delegate :client_online, :client_offline, :client_invalidated, :to => :@@configuration_server
+      delegate :client_invalidated, :to => :@@configuration_server
 
       def process
         method_name = message.header.routing_key
@@ -51,7 +60,6 @@ module Beetle
     end
 
     class RedisWatcher
-
       attr_accessor :redis
 
       def initialize(redis, configuration_server, logger)
@@ -124,8 +132,9 @@ module Beetle
     end
 
     def invalidate_current_master
+      @invalidation_message_token = Time.now.to_s
       @client_invalidated_messages_received = {}
-      beetle_client.publish(:invalidate, {}.to_json)
+      beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
     end
 
     def all_client_invalidated_messages_received?
