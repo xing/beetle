@@ -25,9 +25,10 @@ module Beetle
     # Methods called from RedisConfigurationServerMessageHandler
     def invalidate(payload)
       logger.info "Received invalidate message"
+      token = payload["token"]
       clear_redis_master_file
       @redis_master = nil
-      beetle_client.publish(:client_invalidated, {:id => id}.to_json)
+      beetle_client.publish(:client_invalidated, {"id" => id, "token" => token}.to_json)
     end
 
     def reconfigure(payload)
@@ -43,6 +44,7 @@ module Beetle
 
     class RedisConfigurationServerMessageHandler < Beetle::Handler
       cattr_accessor :delegate_messages_to
+
       def process
         self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
       end
