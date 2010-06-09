@@ -7,6 +7,7 @@ World(Test::Unit::Assertions)
 
 Before do
   cleanup_test_env
+  `ruby features/support/system_notification_logger start`
 end
 
 After do
@@ -14,12 +15,17 @@ After do
 end
 
 def cleanup_test_env
-  `ruby features/support/beetle_handler stop`
   TestDaemons::RedisConfigurationClient.stop_all
   TestDaemons::RedisConfigurationServer.stop
-  TestDaemons::Redis.stop_all
+
+  `ruby features/support/beetle_handler stop`
   redis_master_files = tmp_path + "/redis-master-*"
   `rm -f #{redis_master_files}`
+
+  `ruby features/support/system_notification_logger stop`
+  `rm -f #{system_notification_log_path}`
+
+  TestDaemons::Redis.stop_all
 end
 
 def redis_master_file_path(client_name)
@@ -28,6 +34,10 @@ end
 
 def first_redis_configuration_client_pid
   File.read("redis_configuration_client0.pid").chomp.to_i
+end
+
+def system_notification_log_path
+  tmp_path + "/system_notifications.log"
 end
 
 def tmp_path

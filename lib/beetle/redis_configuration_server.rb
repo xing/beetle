@@ -1,9 +1,7 @@
-require 'forwardable'
-
 module Beetle
   class RedisConfigurationServer
     include RedisConfigurationLogger
-    
+
     attr_reader :redis_master
 
     def initialize
@@ -26,7 +24,7 @@ module Beetle
       token = payload["token"]
       logger.info "Received client_invalidated message from id '#{id}' with token '#{token}'"
       if token != @invalidation_message_token
-        logger.warn "Ignored client_invalidated message from id '#{id}' (token was '#{token}', but expected '#{@invalidation_message_token}')"
+        logger.info "Ignored client_invalidated message from id '#{id}' (token was '#{token}', but expected '#{@invalidation_message_token}')"
         return
       end
       @client_invalidated_messages_received[id] = true
@@ -35,7 +33,10 @@ module Beetle
 
     # Method called from RedisWatcher
     def redis_unavailable
-      logger.warn "Redis master '#{redis_master.server}' not available"
+      msg = "Redis master '#{redis_master.server}' not available"
+      logger.warn(msg)
+      beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+
       if @client_ids.empty?
         switch_master
       else
@@ -46,8 +47,6 @@ module Beetle
     private
 
     class RedisConfigurationClientMessageHandler < Beetle::Handler
-      extend Forwardable
-
       cattr_accessor :configuration_server
 
       delegate :client_invalidated, :to => :@@configuration_server
@@ -95,6 +94,7 @@ module Beetle
         config.queue   :client_invalidated
         config.message :invalidate
         config.message :reconfigure
+        config.message :system_notification
 
         config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
       end
@@ -143,7 +143,10 @@ module Beetle
 
     def switch_master
       if new_redis_master
-        logger.warn "Setting new redis master to '#{new_redis_master.server}'"
+        msg = "Redis master switched from '#{@redis_master.server}' to '#{new_redis_master.server}'"
+        logger.warn(msg)
+        beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+
         new_redis_master.master!
         logger.info "Publishing reconfigure message with new host '#{new_redis_master.host}' port '#{new_redis_master.port}'"
         beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
@@ -152,7 +155,9 @@ module Beetle
 
         redis_master_watcher.redis = redis_master
       else
-        logger.error "No redis slave available to become new master"
+        msg = "Redis master could not be switched, no slave available to become new master"
+        logger.error(msg)
+        beetle_client.publish(:system_notification, {"message" => msg}.to_json)
       end
     end
 
