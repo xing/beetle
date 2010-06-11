@@ -9,3 +9,4 @@ test/coverage
 erl_crash.dump
 *.pid.lock
 tmp/*
+.bundle
