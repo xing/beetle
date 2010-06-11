@@ -4,3 +4,7 @@ pkg
 site
 test/coverage
 .DS_Store
+.bundle
+.rvmrc
+tmp
+*.output
