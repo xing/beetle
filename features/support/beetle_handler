@@ -9,13 +9,12 @@ Daemons.run_proc("beetle_handler", :log_output => true) do
   opts = OptionParser.new
 
   opts.on("-f", "--redis-master-file path", String) do |val|
-    Beetle.config.redis_master_file_path = val
+    Beetle.config.redis_master_file = val
   end
 
   opts.parse!(ARGV - ["start", "--"])
 
   Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
-  Beetle.config.redis_hosts = "127.0.0.1:6381, 127.0.0.1:6382"
 
   # set Beetle log level to info, less noisy than debug
   Beetle.config.logger.level = Logger::INFO

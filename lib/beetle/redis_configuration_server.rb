@@ -4,8 +4,10 @@ module Beetle
 
     attr_reader :redis_master
 
-    def initialize
+    # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
+    def initialize(redis_server_strings)
       RedisConfigurationClientMessageHandler.configuration_server = self
+      @redis_server_strings = redis_server_strings
       @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
       @invalidation_message_token = nil
       @client_invalidated_messages_received = {}
@@ -69,7 +71,7 @@ module Beetle
       end
 
       def watch
-        EventMachine::add_periodic_timer(1) {
+        EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
           if @redis
             @logger.debug "Watching redis '#{@redis.server}'"
             unless @redis.available?
@@ -110,17 +112,15 @@ module Beetle
     end
 
     def initial_redis_master
-      all_available_redis.find{ |redis| redis.master? }
+      all_available_redis.find{|redis| redis.master? }
     end
 
     def all_available_redis
-      all_redis.select{ |redis| redis.available? }
+      all_redis.select{|redis| redis.available? }
     end
 
     def all_redis
-      beetle_client.config.redis_hosts.split(",").map do |redis_server_string|
-        Redis.from_server_string(redis_server_string)
-      end
+      @all_redis ||= @redis_server_strings.map{|r| Redis.from_server_string(r) }
     end
 
     def new_redis_master
@@ -128,11 +128,11 @@ module Beetle
     end
 
     def redis_slaves
-      all_available_redis.select{ |redis| redis.slave_of?(redis_master.host, redis_master.port) }
+      all_available_redis.select{|redis| redis.slave_of?(redis_master.host, redis_master.port) }
     end
 
     def invalidate_current_master
-      @invalidation_message_token = Time.now.to_s
+      @invalidation_message_token = Time.now.to_f.to_s
       @client_invalidated_messages_received = {}
       beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
     end
@@ -160,6 +160,5 @@ module Beetle
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
       end
     end
-
   end
 end

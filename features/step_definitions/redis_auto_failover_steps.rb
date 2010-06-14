@@ -42,7 +42,7 @@ Given /^the retry timeout for the redis master check is reached$/ do
 end
 
 Given /^a beetle handler using the redis-master file from "([^\"]*)" exists$/ do |redis_configuration_client_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
+  master_file = redis_master_file(redis_configuration_client_name)
   `ruby features/support/beetle_handler start -- --redis-master-file=#{master_file}`
   assert File.exist?(master_file), "file #{master_file} does not exist"
 end
@@ -69,7 +69,7 @@ Given /^redis server "([^\"]*)" is coming back$/ do |redis_name|
 end
 
 Given /^an old redis master file for "([^\"]*)" with master "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
+  master_file = redis_master_file(redis_configuration_client_name)
   File.open(master_file, 'w') do |f|
     f.puts TestDaemons::Redis[redis_name].ip_with_port
   end
@@ -86,7 +86,7 @@ Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redi
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
+  master_file = redis_master_file(redis_configuration_client_name)
   master = false
   10.times do
     server_info = File.read(master_file).chomp
@@ -97,7 +97,7 @@ Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configura
 end
 
 Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
-  master_file = redis_master_file_path(redis_configuration_client_name)
+  master_file = redis_master_file(redis_configuration_client_name)
   assert_equal "", File.read(master_file).chomp
 end
 

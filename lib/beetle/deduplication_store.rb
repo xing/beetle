@@ -13,16 +13,15 @@ module Beetle
   class DeduplicationStore
     attr_writer :redis_instances
 
-    def initialize(hosts = "localhost:6379", db = 4)
-      @hosts = hosts
+    def initialize(db = 4)
       @db = db
       @current_master = nil
-      @last_time_the_master_changed = nil
+      @last_time_master_file_changed = nil
     end
 
     # get the Redis instance
     def redis
-      redis_master
+      redis_master_from_master_file
     end
 
     # list of key suffixes to use for storing values in Redis.
@@ -122,64 +121,29 @@ module Beetle
       end
     end
 
-    def redis_master
+    def redis_master_from_master_file
       set_current_redis_master_from_master_file if redis_master_file_changed?
       @current_master
     end
-
+    
     def redis_master_file_changed?
-      @last_time_the_master_changed != File.mtime(master_file)
+      @last_time_master_file_changed != File.mtime(master_file)
     end
 
     def set_current_redis_master_from_master_file
-      server = read_master_file
-      @last_time_the_master_changed = File.mtime(master_file)
-      @current_master = redis_instances.find{|r| r.server == server}
-    end
-
-    # returns the list of redis instances
-    def redis_instances
-      @redis_instances ||= @hosts.split(/ *, */).map{|s| s.split(':')}.map do |host, port|
-         Redis.new(:host => host, :port => port.to_i, :db => @db)
-      end
-    end
-
-    # auto configure redis master
-    def auto_configure
-      if single_master_reachable? || master_and_slave_reachable?
-        @redis = redis_instances.find{|r| r.role == "master"}
-      end
-    end
-
-    # whether we have a master slave configuration
-    def single_master_reachable?
-      redis_instances.size == 1 && redis_instances.first.master?
-    end
-
-    # can we access both master and slave
-    def master_and_slave_reachable?
-      redis_instances.map(&:role).sort == %w(master slave)
+      @last_time_master_file_changed = File.mtime(master_file)
+      server_string = read_master_file
+      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @db) : nil
     end
 
     # master file path
     def master_file
-      Beetle.config.redis_master_file_path
+      Beetle.config.redis_master_file
     end
 
     # externally configured master
     def read_master_file
       File.exist?(master_file) ? File.read(master_file).chomp : ""
-    end
-
-    # save currently configured master to config file
-    def save_configured_master
-      server = @redis ? @redis.server : ""
-      write_master_file server
-    end
-
-    # save server string to config file
-    def write_master_file(server)
-      File.open(master_file, "w"){|f| f.puts server}
     end
 
     # returns the configured logger

@@ -28,7 +28,7 @@ def cleanup_test_env
   TestDaemons::Redis.stop_all
 end
 
-def redis_master_file_path(client_name)
+def redis_master_file(client_name)
   tmp_path + "/redis-master-#{client_name}"
 end
 

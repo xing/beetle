@@ -25,55 +25,42 @@ module Beetle
 
   class RedisFailoverTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new("localhost:1, localhost:2")
+      @store = DeduplicationStore.new
     end
 
-    test "redis instances should be created for all servers" do
-      instances = @store.redis_instances
-      assert_equal ["localhost:1", "localhost:2" ], instances.map(&:server)
-    end
-
-    test "find redis master should find the externally configured server" do
+    test "redis should match the redis master file" do
       @store.expects(:read_master_file).returns("localhost:1")
-      assert_equal "localhost:1", @store.redis_master.server
+      assert_equal "localhost:1", @store.redis.server
     end
 
-    test "find redis master should find none if the externally configured server is not in the list of instances" do
+    test "redis should be nil if the redis master file is blank" do
+      @store.expects(:redis_master_file_changed?).returns(true)
       @store.expects(:read_master_file).returns("")
-      assert_nil @store.redis_master
+      assert_nil @store.redis
     end
 
-    test "should keep using the current redis master if the external configuration file hasn't changed since the last request" do
+    test "should keep using the current redis if the redis master file hasn't changed since the last request" do
       last_modified_time = Time.new
       File.stubs(:mtime).returns(last_modified_time)
-
       @store.expects(:read_master_file).once.returns("localhost:1")
-      @store.redis_master
-      @store.redis_master
-    end
-
-    test "autoconfigure should find the master if both master and slave are reachable" do
-      instances = @store.redis_instances
-      instances.first.stubs(:role).returns("slave")
-      instances.second.stubs(:role).returns("master")
-      assert_equal instances.second, @store.auto_configure
+      2.times { @store.redis }
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
-      instances = @store.redis_instances
+      redis1 = stub()
+      redis2 = stub()
       s = sequence("redis accesses")
-      @store.expects(:redis_master).returns(instances.first).in_sequence(s)
-      instances.first.expects(:get).with("foo:x").raises("disconnected").in_sequence(s)
-      @store.expects(:redis_master).returns(instances.second).in_sequence(s)
-      instances.second.expects(:get).with("foo:x").returns("42").in_sequence(s)
+      @store.expects(:redis).returns(redis1).in_sequence(s)
+      redis1.expects(:get).with("foo:x").raises("disconnected").in_sequence(s)
+      @store.expects(:redis).returns(redis2).in_sequence(s)
+      redis2.expects(:get).with("foo:x").returns("42").in_sequence(s)
       assert_equal("42", @store.get("foo", "x"))
     end
 
     test "a redis operation protected with a redis failover block should fail if it cannot find a new master" do
-      instances = @store.redis_instances
-      @store.stubs(:read_master_file).returns("localhost:1")
-      assert_equal instances.first, @store.redis
-      instances.first.stubs(:get).with("foo:x").raises("disconnected")
+      redis1 = stub()
+      @store.stubs(:redis).returns(redis1)
+      redis1.stubs(:get).with("foo:x").raises("disconnected")
       @store.expects(:sleep).times(119)
       assert_raises(NoRedisMaster) { @store.get("foo", "x") }
     end

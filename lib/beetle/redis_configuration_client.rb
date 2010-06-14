@@ -8,16 +8,17 @@ module Beetle
       @id || `hostname`.chomp
     end
 
-    def initialize
+    # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
+    def initialize(redis_server_strings)
+      @redis_server_strings = redis_server_strings
       RedisConfigurationServerMessageHandler.delegate_messages_to = self
     end
 
     def start
       logger.info "RedisConfigurationClient Starting"
-      beetle_client.deduplication_store.auto_configure
-      beetle_client.deduplication_store.save_configured_master
-      @redis_master = beetle_client.deduplication_store.redis
-
+      clear_redis_master_file
+      auto_configure
+      write_redis_master_file(@redis_master.server) if @redis_master
       logger.info "Listening"
       beetle_client.listen
     end
@@ -35,7 +36,6 @@ module Beetle
       host = payload["host"]
       port = payload["port"]
       logger.warn "Received reconfigure message with host '#{host}' port '#{port}'"
-      logger.warn "Writing redis master info to file '#{beetle_client.deduplication_store.master_file}'"
       write_redis_master_file("#{host}:#{port}")
       @redis_master = Redis.new(:host => host, :port => port)
     end
@@ -48,10 +48,6 @@ module Beetle
       def process
         self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
       end
-    end
-
-    def server_name
-      `hostname`.chomp
     end
 
     def beetle_client
@@ -77,12 +73,39 @@ module Beetle
       "#{prefix}-#{id}"
     end
 
-    def write_redis_master_file(server)
-      beetle_client.deduplication_store.write_master_file(server)
+    def clear_redis_master_file
+      logger.debug "Clearing redis master file '#{master_file}'"
+      write_redis_master_file("")
     end
 
-    def clear_redis_master_file
-      write_redis_master_file("")
+    def write_redis_master_file(redis_server_string)
+      logger.debug "Writing '#{redis_server_string}' to redis master file '#{master_file}'"
+      File.open(master_file, "w"){|f| f.puts redis_server_string}
+    end
+
+    def master_file
+      Beetle.config.redis_master_file
+    end
+
+    # auto configure redis master
+    def auto_configure
+      if single_master_reachable? || master_and_slave_reachable?
+        @redis_master = redis_instances.find{|r| r.role == "master"}
+      end
+    end
+
+    # whether we have a master slave configuration
+    def single_master_reachable?
+      redis_instances.size == 1 && redis_instances.first.master?
+    end
+
+    # can we access both master and slave
+    def master_and_slave_reachable?
+      redis_instances.map(&:role).sort == %w(master slave)
+    end
+
+    def redis_instances
+      @redis_instances ||= @redis_server_strings.map{|s| Redis.from_server_string(s)}
     end
   end
 end
