@@ -1,8 +1,9 @@
 # Redis convenience and compatibility layer
 class Redis #:nodoc:
-  def self.from_server_string(server_string)
+  def self.from_server_string(server_string, options = {})
     host, port = server_string.split(':')
-    new(:host => host, :port => port)
+    options = ({:host => host, :port => port}).update(options)
+    new(options)
   end
 
   module RoleSupport
