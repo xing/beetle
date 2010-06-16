@@ -5,14 +5,15 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.2"
+  s.version = "0.2.0.beta1"
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+  s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-06-09}
+  s.date = %q{2010-06-16}
+  s.default_executable = %q{beetle}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
-  s.executables = ["redis_configuration_client", "redis_configuration_server"]
+  s.executables = ["beetle"]
   s.extra_rdoc_files = [
     "README.rdoc",
      "TODO"
@@ -25,8 +26,7 @@ Gem::Specification.new do |s|
      "Rakefile",
      "TODO",
      "beetle.gemspec",
-     "bin/redis_configuration_client",
-     "bin/redis_configuration_server",
+     "bin/beetle",
      "doc/redundant_queues.graffle",
      "etc/redis-master.conf",
      "etc/redis-slave.conf",
@@ -55,6 +55,9 @@ Gem::Specification.new do |s|
      "lib/beetle.rb",
      "lib/beetle/base.rb",
      "lib/beetle/client.rb",
+     "lib/beetle/commands.rb",
+     "lib/beetle/commands/configuration_client.rb",
+     "lib/beetle/commands/configuration_server.rb",
      "lib/beetle/configuration.rb",
      "lib/beetle/deduplication_store.rb",
      "lib/beetle/handler.rb",
