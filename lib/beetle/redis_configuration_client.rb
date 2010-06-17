@@ -84,7 +84,7 @@ module Beetle
     end
 
     def master_file
-      Beetle.config.redis_master_file
+      Beetle.config.redis_server
     end
 
     # auto configure redis master

@@ -21,7 +21,13 @@ module Beetle
 
     # get the Redis instance
     def redis
-      redis_master_from_master_file
+      redis_master_source = File.exists?(Beetle.config.redis_server) ? "master_file" : "server_string"
+      _eigenclass_.class_eval <<-EVALS, __FILE__, __LINE__
+        def redis
+          redis_master_from_#{redis_master_source}
+        end
+      EVALS
+      redis
     end
 
     # list of key suffixes to use for storing values in Redis.
@@ -121,34 +127,35 @@ module Beetle
       end
     end
 
+    def redis_master_from_server_string
+      @current_master ||= Redis.from_server_string(Beetle.config.redis_server, :db => @db)
+    end
+
     def redis_master_from_master_file
       set_current_redis_master_from_master_file if redis_master_file_changed?
       @current_master
     end
-    
+
     def redis_master_file_changed?
-      @last_time_master_file_changed != File.mtime(master_file)
+      @last_time_master_file_changed != File.mtime(Beetle.config.redis_server)
     end
 
     def set_current_redis_master_from_master_file
-      @last_time_master_file_changed = File.mtime(master_file)
+      @last_time_master_file_changed = File.mtime(Beetle.config.redis_server)
       server_string = read_master_file
       @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @db) : nil
     end
 
-    # master file path
-    def master_file
-      Beetle.config.redis_master_file
-    end
-
-    # externally configured master
     def read_master_file
-      File.exist?(master_file) ? File.read(master_file).chomp : ""
+      File.read(Beetle.config.redis_server).chomp
     end
 
-    # returns the configured logger
     def logger
       Beetle.config.logger
+    end
+
+    def _eigenclass_
+      class << self; self; end
     end
   end
 end
