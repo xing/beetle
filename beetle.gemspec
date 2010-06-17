@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.2.0.beta1"
+  s.version = "0.2.0.beta2"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-06-16}
+  s.date = %q{2010-06-17}
   s.default_executable = %q{beetle}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
