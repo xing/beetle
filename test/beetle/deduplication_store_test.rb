@@ -23,27 +23,59 @@ module Beetle
     end
   end
 
-  class RedisFailoverTest < Test::Unit::TestCase
+  class RedisServerStringTest < Test::Unit::TestCase
     def setup
+      @original_redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new
+      @server_string = "my_test_host_from_file:9999"
+      Beetle.config.redis_server = @server_string
+    end
+
+    def teardown
+      Beetle.config.redis_server = @original_redis_server
+    end
+
+    test "redis should match the redis server string" do
+      assert_equal @server_string, @store.redis.server
+    end
+  end
+
+  class RedisServerFileTest < Test::Unit::TestCase
+    def setup
+      @original_redis_server = Beetle.config.redis_server
+      @store = DeduplicationStore.new
+      @server_string = "my_test_host_from_file:6379"
+      Beetle.config.redis_server = redis_test_master_file(@server_string)
+    end
+
+    def teardown
+      Beetle.config.redis_server = @original_redis_server
     end
 
     test "redis should match the redis master file" do
-      @store.expects(:read_master_file).returns("localhost:1")
-      assert_equal "localhost:1", @store.redis.server
+      assert_equal @server_string, @store.redis.server
     end
 
     test "redis should be nil if the redis master file is blank" do
-      @store.expects(:redis_master_file_changed?).returns(true)
-      @store.expects(:read_master_file).returns("")
+      redis_test_master_file("")
       assert_nil @store.redis
     end
 
     test "should keep using the current redis if the redis master file hasn't changed since the last request" do
-      last_modified_time = Time.new
-      File.stubs(:mtime).returns(last_modified_time)
       @store.expects(:read_master_file).once.returns("localhost:1")
       2.times { @store.redis }
+    end
+
+    def redis_test_master_file(server_string)
+      path = File.expand_path("../../../tmp/redis-master-for-unit-tests", __FILE__)
+      File.open(path, "w"){|f| f.puts server_string}
+      path
+    end
+  end
+
+  class RedisFailoverTest < Test::Unit::TestCase
+    def setup
+      @store = DeduplicationStore.new
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do

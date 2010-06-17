@@ -13,7 +13,7 @@ module Beetle
         end
 
         opts.on("-f", "--redis-master-file path", String) do |val|
-          Beetle.config.redis_master_file = val
+          Beetle.config.redis_server = val
         end
 
         client_id = nil

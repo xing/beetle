@@ -4,8 +4,10 @@ module Beetle
     attr_accessor :logger
     # number of seconds after which keys are removed form the message deduplication store (defaults to <tt>3.days</tt>)
     attr_accessor :gc_threshold
-    # file that contains the redis server for deduplication, like <tt>localhost:6379</tt> (defaults to <tt>"/var/beetle/redis-master"</tt>)
-    attr_accessor :redis_master_file
+    # the redis server to use for deduplication
+    # either a string like <tt>"localhost:6379"</tt> (default) or a file that contains the string.
+    # use a file if you are using a beetle configuration_client process to update it for automatic redis failover.
+    attr_accessor :redis_server
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
 
@@ -29,7 +31,7 @@ module Beetle
     def initialize #:nodoc:
       self.logger = Logger.new(STDOUT)
       self.gc_threshold = 3.days
-      self.redis_master_file = "/var/beetle/redis-master"
+      self.redis_server = "localhost:6379"
       self.redis_db = 4
 
       self.redis_configuration_master_retries = 3

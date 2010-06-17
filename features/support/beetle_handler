@@ -9,7 +9,7 @@ Daemons.run_proc("beetle_handler", :log_output => true) do
   opts = OptionParser.new
 
   opts.on("-f", "--redis-master-file path", String) do |val|
-    Beetle.config.redis_master_file = val
+    Beetle.config.redis_server = val
   end
 
   opts.parse!(ARGV - ["start", "--"])
