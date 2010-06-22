@@ -74,12 +74,12 @@ module Beetle
     end
 
     def clear_redis_master_file
-      logger.debug "Clearing redis master file '#{master_file}'"
+      logger.warn "Clearing redis master file '#{master_file}'"
       write_redis_master_file("")
     end
 
     def write_redis_master_file(redis_server_string)
-      logger.debug "Writing '#{redis_server_string}' to redis master file '#{master_file}'"
+      logger.warn "Writing '#{redis_server_string}' to redis master file '#{master_file}'"
       File.open(master_file, "w"){|f| f.puts redis_server_string}
     end
 
