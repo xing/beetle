@@ -29,7 +29,14 @@ module Beetle
     attr_accessor :password
 
     def initialize #:nodoc:
-      self.logger = Logger.new(STDOUT)
+      self.logger = begin
+        logger = Logger.new(STDOUT)
+        logger.formatter = Logger::Formatter.new
+        logger.level = Logger::DEBUG
+        logger.datetime_format = "%Y-%m-%d %H:%M:%S"
+        logger
+      end
+      
       self.gc_threshold = 3.days
       self.redis_server = "localhost:6379"
       self.redis_db = 4

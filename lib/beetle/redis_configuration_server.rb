@@ -1,6 +1,6 @@
 module Beetle
   class RedisConfigurationServer
-    include RedisConfigurationLogger
+    include Logging
 
     attr_reader :redis_master
 

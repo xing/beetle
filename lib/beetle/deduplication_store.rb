@@ -11,6 +11,8 @@ module Beetle
   #
   # It also provides a method to garbage collect keys for expired messages.
   class DeduplicationStore
+    include Logging
+
     attr_writer :redis_instances
 
     def initialize(db = 4)
@@ -148,10 +150,6 @@ module Beetle
 
     def read_master_file
       File.read(Beetle.config.redis_server).chomp
-    end
-
-    def logger
-      Beetle.config.logger
     end
 
     def _eigenclass_

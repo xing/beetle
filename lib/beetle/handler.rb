@@ -6,6 +6,8 @@ module Beetle
   # Most applications will define Handler subclasses and override the process, error and
   # failure methods.
   class Handler
+    include Logging
+
     # the Message instance which caused the handler to be created
     attr_reader :message
 
@@ -79,11 +81,6 @@ module Beetle
     # no failure callback was specified when this handler instance was created.
     def failure(result)
       logger.error "Beetle: handler has finally failed"
-    end
-
-    # returns the configured Beetle logger
-    def logger
-      Beetle.config.logger
     end
 
     # returns the configured Beetle logger
