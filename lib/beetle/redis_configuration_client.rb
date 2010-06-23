@@ -9,8 +9,10 @@ module Beetle
     end
 
     # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
-    def initialize(redis_server_strings)
+    def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
+      @current_token = nil
+
       RedisConfigurationServerMessageHandler.delegate_messages_to = self
     end
 
@@ -25,11 +27,13 @@ module Beetle
 
     # Methods called from RedisConfigurationServerMessageHandler
     def invalidate(payload)
-      logger.info "Received invalidate message"
       token = payload["token"]
-      clear_redis_master_file
-      @redis_master = nil
-      beetle_client.publish(:client_invalidated, {"id" => id, "token" => token}.to_json)
+      logger.info "Received invalidate message with token #{token}"
+      if redeem_token(token)
+        invalidate!
+      else
+        logger.info "Ignored invalidate message (token was '#{token}', but expected to be >= '#{@current_token}')"
+      end
     end
 
     def reconfigure(payload)
@@ -71,6 +75,17 @@ module Beetle
 
     def internal_queue_name(prefix)
       "#{prefix}-#{id}"
+    end
+
+    def redeem_token(token)
+      @current_token = token if @current_token.nil? || token > @current_token
+      token >= @current_token
+    end
+
+    def invalidate!
+      clear_redis_master_file
+      @redis_master = nil
+      beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
 
     def clear_redis_master_file

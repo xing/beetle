@@ -6,11 +6,12 @@ module Beetle
 
     # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
     def initialize(redis_server_strings)
-      RedisConfigurationClientMessageHandler.configuration_server = self
       @redis_server_strings = redis_server_strings
       @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
-      @invalidation_message_token = nil
+      @invalidation_message_token = 0
       @client_invalidated_messages_received = {}
+
+      RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
     def start
@@ -132,7 +133,7 @@ module Beetle
     end
 
     def invalidate_current_master
-      @invalidation_message_token = Time.now.to_f.to_s
+      @invalidation_message_token += 1
       @client_invalidated_messages_received = {}
       beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
     end
