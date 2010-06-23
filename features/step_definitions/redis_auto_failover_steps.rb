@@ -38,7 +38,7 @@ Given /^redis server "([^\"]*)" is down$/ do |redis_name|
 end
 
 Given /^the retry timeout for the redis master check is reached$/ do
-  sleep 5
+  sleep 10
 end
 
 Given /^a beetle handler using the redis-master file from "([^\"]*)" exists$/ do |redis_configuration_client_name|
