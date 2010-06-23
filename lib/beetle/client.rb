@@ -19,6 +19,8 @@ module Beetle
   # order, so that no message is lost if message producers are accidentally started before
   # the corresponding consumers.
   class Client
+    include Logging
+
     # the AMQP servers available for publishing
     attr_reader :servers
 
@@ -220,11 +222,6 @@ module Beetle
       Dir[glob].each do |f|
         eval(File.read(f), b, f)
       end
-    end
-
-    # returns the configured Logger instance
-    def logger
-      @logger ||= Beetle.config.logger
     end
 
     private

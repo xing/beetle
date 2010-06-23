@@ -5,7 +5,6 @@ module Beetle
     test "should ignore outdated client_invalidated messages" do
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       server = RedisConfigurationServer.new([])
-      server.disable_logging
 
       server.instance_variable_set(:@invalidation_message_token, "foo")
       server.client_invalidated("id" => "rc-client-1", "token" => "foo")

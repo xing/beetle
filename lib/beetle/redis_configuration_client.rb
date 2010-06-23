@@ -1,6 +1,6 @@
 module Beetle
   class RedisConfigurationClient < Beetle::Handler
-    include RedisConfigurationLogger
+    include Logging
 
     attr_writer :id
 

@@ -6,6 +6,8 @@ module Beetle
   # should retry executing the message handler after a handler has crashed (or forcefully
   # aborted).
   class Message
+    include Logging
+
     # current message format version
     FORMAT_VERSION = 1
     # flag for encoding redundant messages
@@ -311,14 +313,6 @@ module Beetle
         set_delay!
         result
       end
-    end
-
-    def logger
-      @logger ||= self.class.logger
-    end
-
-    def self.logger
-      Beetle.config.logger
     end
 
     # ack the message for rabbit. deletes all keys associated with this message in the
