@@ -2,13 +2,13 @@ module Beetle
   class RedisConfigurationServer
     include Logging
 
-    attr_reader :redis_master
+    attr_reader :redis_master, :invalidation_message_token
 
     # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
-    def initialize(redis_server_strings)
+    def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
-      @invalidation_message_token = 0
+      @invalidation_message_token = Time.now.to_i
       @client_invalidated_messages_received = {}
 
       RedisConfigurationClientMessageHandler.configuration_server = self
