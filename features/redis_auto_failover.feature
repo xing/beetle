@@ -43,9 +43,7 @@ Feature: Redis auto failover
 
   Scenario: "client_invalidated" message not acknowledged by all redis configuration clients (no switch possible)
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
-    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
-    And the first redis configuration client is not able to send the client_invalidated message
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "slave"
@@ -83,3 +81,16 @@ Feature: Redis auto failover
     And an old redis master file for "rc-client-1" with master "redis-1" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     Then the redis master of "rc-client-1" should be undefined
+
+  Scenario: all "client_invalidated" message get acknowledged after the acknowledgement round failed initially
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And redis server "redis-1" is down
+    And the retry timeout for the redis master check is reached
+    Then the role of redis server "redis-2" should be "slave"
+    And the redis master of "rc-client-2" should be undefined
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And the retry timeout for the redis master check is reached
+    And the role of redis server "redis-2" should be "master"
+    And the redis master of "rc-client-1" should be "redis-2"
+    And the redis master of "rc-client-2" should be "redis-2"

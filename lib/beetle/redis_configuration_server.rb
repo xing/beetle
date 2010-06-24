@@ -14,6 +14,10 @@ module Beetle
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
+    def paused?
+      redis_master_watcher.paused?
+    end
+
     def start
       logger.info "RedisConfigurationServer Starting"
       beetle_client.listen do
@@ -31,12 +35,16 @@ module Beetle
         return
       end
       @client_invalidated_messages_received[id] = true
-      switch_master if all_client_invalidated_messages_received?
+      if all_client_invalidated_messages_received?
+          @invalidate_timer.cancel if @invalidate_timer
+          switch_master
+      end
     end
 
     # Method called from RedisWatcher
     def redis_unavailable
       msg = "Redis master '#{redis_master.server}' not available"
+      redis_master_watcher.pause
       logger.warn(msg)
       beetle_client.publish(:system_notification, {"message" => msg}.to_json)
 
@@ -48,43 +56,6 @@ module Beetle
     end
 
     private
-
-    class RedisConfigurationClientMessageHandler < Beetle::Handler
-      cattr_accessor :configuration_server
-
-      delegate :client_invalidated, :to => :@@configuration_server
-
-      def process
-        method_name = message.header.routing_key
-        payload = ActiveSupport::JSON.decode(message.data)
-        send(method_name, payload)
-      end
-    end
-
-    class RedisWatcher
-      attr_accessor :redis
-
-      def initialize(redis, configuration_server, logger)
-        @redis = redis
-        @configuration_server = configuration_server
-        @logger = logger
-        @retries = 0
-      end
-
-      def watch
-        EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
-          if @redis
-            @logger.debug "Watching redis '#{@redis.server}'"
-            unless @redis.available?
-              if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
-                @retries = 0
-                @configuration_server.redis_unavailable
-              end
-            end
-          end
-        }
-      end
-    end
 
     def beetle_client
       @beetle_client ||= build_beetle_client
@@ -134,9 +105,17 @@ module Beetle
     end
 
     def invalidate_current_master
-      @invalidation_message_token += 1
+      generate_new_token
       @client_invalidated_messages_received = {}
       beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
+      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_master_invalidation_timeout) do
+        generate_new_token
+        redis_master_watcher.continue
+      end
+    end
+
+    def generate_new_token
+      @invalidation_message_token += 1
     end
 
     def all_client_invalidated_messages_received?
@@ -160,6 +139,54 @@ module Beetle
         msg = "Redis master could not be switched, no slave available to become new master"
         logger.error(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+      end
+      redis_master_watcher.continue
+    end
+    
+    class RedisConfigurationClientMessageHandler < Beetle::Handler
+      cattr_accessor :configuration_server
+
+      delegate :client_invalidated, :to => :@@configuration_server
+
+      def process
+        method_name = message.header.routing_key
+        payload = ActiveSupport::JSON.decode(message.data)
+        send(method_name, payload)
+      end
+    end
+
+    class RedisWatcher
+      attr_accessor :redis
+
+      def initialize(redis, configuration_server, logger)
+        @redis = redis
+        @configuration_server = configuration_server
+        @logger = logger
+        @retries = 0
+      end
+
+      def pause
+        @watch_timer.cancel if @watch_timer
+        @watch_timer = nil
+      end
+
+      def watch
+        @watch_timer ||= EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
+          if @redis
+            @logger.debug "Watching redis '#{@redis.server}'"
+            unless @redis.available?
+              if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
+                @retries = 0
+                @configuration_server.redis_unavailable
+              end
+            end
+          end
+        }
+      end
+      alias continue watch
+
+      def paused?
+        !@watch_timer
       end
     end
   end

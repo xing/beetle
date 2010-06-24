@@ -16,6 +16,8 @@ module Beetle
     attr_accessor :redis_configuration_master_retries
     # number of seconds to wait between retries (defaults to <tt>10</tt>)
     attr_accessor :redis_configuration_master_retry_timeout
+    # number of seconds the redis configuration server waits until the invalidation times out (defaults to <tt>5</tt>)
+    attr_accessor :redis_configuration_master_invalidation_timeout
     # the redis configuration clients living on the worker machines, taking part in the redis failover (defaults to <tt>""</tt>)
     attr_accessor :redis_configuration_client_ids
 
@@ -43,6 +45,7 @@ module Beetle
 
       self.redis_configuration_master_retries = 3
       self.redis_configuration_master_retry_timeout = 10.seconds
+      self.redis_configuration_master_invalidation_timeout = 5.seconds
       self.redis_configuration_client_ids = ""
 
       self.servers = "localhost:5672"
