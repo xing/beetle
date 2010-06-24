@@ -8,7 +8,7 @@ module Beetle
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
-      @invalidation_message_token = Time.now.to_i
+      @invalidation_message_token = (Time.now.to_f * 1000).to_i
       @client_invalidated_messages_received = {}
 
       RedisConfigurationClientMessageHandler.configuration_server = self
@@ -113,6 +113,7 @@ module Beetle
     end
 
     def initial_redis_master
+      # TODO retry if nil
       all_available_redis.find{|redis| redis.master? }
     end
 
