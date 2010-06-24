@@ -51,15 +51,6 @@ Given /^redis server "([^\"]*)" is down for less seconds than the retry timeout 
   TestDaemons::Redis[redis_name].restart(1)
 end
 
-Given /^the first redis configuration client is not able to send the client_invalidated message$/ do
-  # we kill the redis configuration process brutally, so that it cannot send an offline message before exit
-  Process.kill("KILL", first_redis_configuration_client_pid)
-end
-
-Given /^a reconfiguration round is in progress$/ do
-  pending # express the regexp above with the code you wish you had
-end
-
 Given /^the retry timeout for the redis master determination is reached$/ do
   sleep 1
 end

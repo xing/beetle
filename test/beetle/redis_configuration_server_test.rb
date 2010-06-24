@@ -24,12 +24,37 @@ module Beetle
     end
   end
   
-  class RedisConfigurationServerRetryInvalidationTest < Test::Unit::TestCase
-    test "should retry the invalidation round if not all clients invalidated in time" do
+  class RedisConfigurationServerInvalidationTest < Test::Unit::TestCase
+    def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
-      server = RedisConfigurationServer.new
-      server.redis_unavailable
-      server.send(:beetle_client).expects(:publish).with(:invalidate, anything).twice
+      @server = RedisConfigurationServer.new
+      @server.stubs(:redis_master).returns(stub('redis stub', :server => 'stubbed_server'))
+      @server.send(:beetle_client).stubs(:listen).yields
+      EM::Timer.stubs(:new).returns(true)
+      EM.stubs(:add_periodic_timer) do
+        yield
+        return true
+      end
+    end
+    
+    test "should pause watching of the redis server" do 
+      EM.stubs(:add_periodic_timer).returns(stub("timer", :cancel => true))
+      @server.start
+      assert !@server.paused?
+      
+      @server.send(:redis_unavailable)
+      assert @server.paused?
+    end
+  
+    test "should setup an invalidation timout" do
+      EM::Timer.expects(:new)
+      @server.send(:redis_unavailable)
+    end
+    
+    test "should continue watching after the invalidation timout has expired" do
+      EM::Timer.expects(:new).yields
+      @server.send(:redis_unavailable)
+      assert !@server.paused?
     end
   end
 end
