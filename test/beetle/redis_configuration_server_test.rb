@@ -16,11 +16,20 @@ module Beetle
   end
 
   class RedisConfigurationServerInvalidationMessageTokenTest < Test::Unit::TestCase
-    test "should initialize the invalidation message token with the current timestamp" do
-      now = Time.now
-      Time.stubs(:now).returns(now)
+    test "should initialize the invalidation message token to not reuse old tokens" do
       server = RedisConfigurationServer.new
-      assert_equal now.to_i, server.invalidation_message_token
+      sleep 0.1
+      server_2 = RedisConfigurationServer.new
+      assert server_2.invalidation_message_token > server.invalidation_message_token
+    end
+  end
+  
+  class RedisConfigurationServerRetryInvalidationTest < Test::Unit::TestCase
+    test "should retry the invalidation round if not all clients invalidated in time" do
+      Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
+      server = RedisConfigurationServer.new
+      server.redis_unavailable
+      server.send(:beetle_client).expects(:publish).with(:invalidate, anything).twice
     end
   end
 end
