@@ -28,13 +28,10 @@ module Beetle
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
-      @server.stubs(:redis_master).returns(stub('redis stub', :server => 'stubbed_server'))
+      @server.stubs(:redis_master).returns(stub('redis stub', :server => 'stubbed_server', :available? => false))
       @server.send(:beetle_client).stubs(:listen).yields
       EM::Timer.stubs(:new).returns(true)
-      EM.stubs(:add_periodic_timer) do
-        yield
-        return true
-      end
+      EventMachine.stubs(:add_periodic_timer).yields
     end
     
     test "should pause watching of the redis server" do 
@@ -51,9 +48,9 @@ module Beetle
       @server.send(:redis_unavailable)
     end
     
-    test "should continue watching after the invalidation timout has expired" do
+    test "should continue watching after the invalidation timeout has expired" do
       EM::Timer.expects(:new).yields
-      @server.send(:redis_unavailable)
+      @server.redis_unavailable
       assert !@server.paused?
     end
   end
