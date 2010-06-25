@@ -43,7 +43,7 @@ module Beetle
       assert @server.paused?
     end
   
-    test "should setup an invalidation timout" do
+    test "should setup an invalidation timeout" do
       EM::Timer.expects(:new)
       @server.send(:redis_unavailable)
     end
