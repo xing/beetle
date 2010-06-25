@@ -6,12 +6,12 @@ module Beetle
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       server = RedisConfigurationServer.new
 
-      server.instance_variable_set(:@invalidation_message_token, 2)
+      server.instance_variable_set(:@current_token, 2)
       server.client_invalidated("id" => "rc-client-1", "token" => 2)
       old_token = 1.minute.ago.to_f
       server.client_invalidated("id" => "rc-client-2", "token" => 1)
 
-      assert_equal({"rc-client-1" => true}, server.instance_variable_get(:@client_invalidated_messages_received))
+      assert_equal(["rc-client-1"].to_set, server.instance_variable_get(:@client_invalidated_ids_received))
     end
   end
 
@@ -20,7 +20,7 @@ module Beetle
       server = RedisConfigurationServer.new
       sleep 0.1
       server_2 = RedisConfigurationServer.new
-      assert server_2.invalidation_message_token > server.invalidation_message_token
+      assert server_2.current_token > server.current_token
     end
   end
   

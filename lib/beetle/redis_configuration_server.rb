@@ -2,14 +2,15 @@ module Beetle
   class RedisConfigurationServer
     include Logging
 
-    attr_reader :redis_master, :invalidation_message_token
+    attr_reader :redis_master, :current_token
 
     # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
-      @client_ids = Beetle.config.redis_configuration_client_ids.split(",")
-      @invalidation_message_token = (Time.now.to_f * 1000).to_i
-      @client_invalidated_messages_received = {}
+      @client_ids = Set.new(Beetle.config.redis_configuration_client_ids.split(","))
+      @current_token = (Time.now.to_f * 1000).to_i
+      @client_pong_ids_received = Set.new
+      @client_invalidated_ids_received = Set.new
       @paused = true
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
@@ -25,19 +26,30 @@ module Beetle
       end
     end
 
-    # Method called from RedisConfigurationClientMessageHandler
+    # Methods called from RedisConfigurationClientMessageHandler
+    def pong(payload)
+      id = payload["id"]
+      token = payload["token"]
+      logger.info "Received pong message from id '#{id}' with token '#{token}'"
+      return unless redeem_token(token)
+      @client_pong_ids_received << id
+      if all_client_pong_ids_received?
+        logger.debug "All client pong messages received"
+        @available_timer.cancel if @available_timer
+        invalidate_current_master
+      end
+    end
+
     def client_invalidated(payload)
       id = payload["id"]
       token = payload["token"]
       logger.info "Received client_invalidated message from id '#{id}' with token '#{token}'"
-      if token != @invalidation_message_token
-        logger.info "Ignored client_invalidated message from id '#{id}' (token was '#{token}', but expected '#{@invalidation_message_token}')"
-        return
-      end
-      @client_invalidated_messages_received[id] = true
-      if all_client_invalidated_messages_received?
-          @invalidate_timer.cancel if @invalidate_timer
-          switch_master
+      return unless redeem_token(token)
+      @client_invalidated_ids_received << id
+      if all_client_invalidated_ids_received?
+        logger.debug "All client invalidated messages received"
+        @invalidate_timer.cancel if @invalidate_timer
+        switch_master
       end
     end
 
@@ -51,8 +63,12 @@ module Beetle
       if @client_ids.empty?
         switch_master
       else
-        invalidate_current_master
+        start_invalidation
       end
+    end
+    
+    def start_invalidation
+      check_all_clients_available
     end
 
     private
@@ -66,10 +82,14 @@ module Beetle
       beetle_client.configure :exchange => :system, :auto_delete => true do |config|
         config.message :client_invalidated
         config.queue   :client_invalidated
+        config.message :pong
+        config.queue   :pong
+        config.message :ping
         config.message :invalidate
         config.message :reconfigure
         config.message :system_notification
 
+        config.handler(:pong,               RedisConfigurationClientMessageHandler)
         config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
       end
       beetle_client
@@ -84,7 +104,7 @@ module Beetle
     end
 
     def initial_redis_master
-      # TODO retry if nil
+      # TODO what if no initial master available?
       all_available_redis.find{|redis| redis.master? }
     end
 
@@ -103,25 +123,43 @@ module Beetle
     def redis_slaves
       all_available_redis.select{|redis| redis.slave_of?(redis_master.host, redis_master.port) }
     end
+    
+    def redeem_token(token)
+      valid_token = token == @current_token
+      logger.info "Ignored message (token was '#{token.inspect}', but expected '#{@current_token.inspect}')" unless valid_token
+      valid_token
+    end
+    
+    def check_all_clients_available
+      generate_new_token
+      @client_pong_ids_received.clear
+      beetle_client.publish(:ping, {"token" => @current_token}.to_json)
+      @available_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
+    end
 
     def invalidate_current_master
       generate_new_token
-      @client_invalidated_messages_received = {}
-      beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
-      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_master_invalidation_timeout) { cancel_invalidation }
+      @client_invalidated_ids_received.clear
+      beetle_client.publish(:invalidate, {"token" => @current_token}.to_json)
+      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def cancel_invalidation
+      logger.debug "Invalidation cancelled"
       generate_new_token
       redis_master_watcher.continue
     end
 
     def generate_new_token
-      @invalidation_message_token += 1
+      @current_token += 1
     end
 
-    def all_client_invalidated_messages_received?
-      Set.new(@client_ids) == Set.new(@client_invalidated_messages_received.keys)
+    def all_client_pong_ids_received?
+      @client_ids == @client_pong_ids_received
+    end
+
+    def all_client_invalidated_ids_received?
+      @client_ids == @client_invalidated_ids_received
     end
 
     def switch_master
@@ -148,7 +186,7 @@ module Beetle
     class RedisConfigurationClientMessageHandler < Beetle::Handler
       cattr_accessor :configuration_server
 
-      delegate :client_invalidated, :to => :@@configuration_server
+      delegate :pong, :client_invalidated, :to => :@@configuration_server
 
       def process
         method_name = message.header.routing_key
@@ -168,14 +206,16 @@ module Beetle
       end
 
       def pause
+        @logger.info "Pause checking availability of redis '#{@redis.server}'"
         @watch_timer.cancel if @watch_timer
+        @watch_timer = nil
         @paused = true
       end
 
       def watch
         @watch_timer ||= EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
           if @redis
-            @logger.debug "Watching redis '#{@redis.server}'"
+            @logger.debug "Checking availability of redis '#{@redis.server}'"
             unless @redis.available?
               if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
                 @retries = 0
