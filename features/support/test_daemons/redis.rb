@@ -178,7 +178,7 @@ module TestDaemons
          :ping_command  => lambda { running? && available? },
          :pid_file      => pid_file,
          :log_file      => log_file,
-         :timeout       => 5
+         :start_timeout => 5
       )
     end
   
