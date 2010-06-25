@@ -108,10 +108,12 @@ module Beetle
       generate_new_token
       @client_invalidated_messages_received = {}
       beetle_client.publish(:invalidate, {"token" => @invalidation_message_token}.to_json)
-      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_master_invalidation_timeout) do
-        generate_new_token
-        redis_master_watcher.continue
-      end
+      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_master_invalidation_timeout) { cancel_invalidation }
+    end
+
+    def cancel_invalidation
+      generate_new_token
+      redis_master_watcher.continue
     end
 
     def generate_new_token
