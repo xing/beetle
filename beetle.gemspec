@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.2.0.beta2"
+  s.version = "0.2.0.beta3"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-06-17}
+  s.date = %q{2010-06-25}
   s.default_executable = %q{beetle}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
@@ -61,11 +61,11 @@ Gem::Specification.new do |s|
      "lib/beetle/configuration.rb",
      "lib/beetle/deduplication_store.rb",
      "lib/beetle/handler.rb",
+     "lib/beetle/logging.rb",
      "lib/beetle/message.rb",
      "lib/beetle/publisher.rb",
      "lib/beetle/r_c.rb",
      "lib/beetle/redis_configuration_client.rb",
-     "lib/beetle/redis_configuration_logger.rb",
      "lib/beetle/redis_configuration_server.rb",
      "lib/beetle/redis_ext.rb",
      "lib/beetle/subscriber.rb",
@@ -78,6 +78,7 @@ Gem::Specification.new do |s|
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/r_c_test.rb",
+     "test/beetle/redis_configuration_client_test.rb",
      "test/beetle/redis_configuration_server_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
@@ -98,6 +99,7 @@ Gem::Specification.new do |s|
      "test/beetle/message_test.rb",
      "test/beetle/publisher_test.rb",
      "test/beetle/r_c_test.rb",
+     "test/beetle/redis_configuration_client_test.rb",
      "test/beetle/redis_configuration_server_test.rb",
      "test/beetle/subscriber_test.rb",
      "test/beetle_test.rb",
