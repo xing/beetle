@@ -47,7 +47,7 @@ Feature: Redis auto failover
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "slave"
-    And the redis master of "rc-client-1" should be undefined
+    And the redis master of "rc-client-1" should be "redis-1"
 
   Scenario: No redis slave available to become new master (no switch possible)
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
@@ -88,7 +88,7 @@ Feature: Redis auto failover
     And redis server "redis-1" is down
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "slave"
-    And the redis master of "rc-client-1" should be undefined
+    And the redis master of "rc-client-1" should be "redis-1"
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And the retry timeout for the redis master check is reached
     And the role of redis server "redis-2" should be "master"

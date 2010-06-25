@@ -17,7 +17,7 @@ module Beetle
     end
 
     def start
-      logger.info "RedisConfigurationClient Starting"
+      logger.info "RedisConfigurationClient Starting (#{id})"
       clear_redis_master_file
       auto_configure
       write_redis_master_file(@redis_master.server) if @redis_master
@@ -26,14 +26,16 @@ module Beetle
     end
 
     # Methods called from RedisConfigurationServerMessageHandler
+    def ping(payload)
+      token = payload["token"]
+      logger.info "Received ping message with token #{token}"
+      pong! if redeem_token(token)
+    end
+
     def invalidate(payload)
       token = payload["token"]
       logger.info "Received invalidate message with token #{token}"
-      if redeem_token(token)
-        invalidate!
-      else
-        logger.info "Ignored invalidate message (token was '#{token}', but expected to be >= '#{@current_token}')"
-      end
+      invalidate! if redeem_token(token)
     end
 
     def reconfigure(payload)
@@ -61,14 +63,18 @@ module Beetle
     def build_beetle_client
       beetle_client = Beetle::Client.new
       beetle_client.configure :exchange => :system, :auto_delete => true do |config|
+        config.message :ping
+        config.queue   internal_queue_name(:ping), :key => "ping"
+        config.message :pong
         config.message :invalidate
         config.queue   internal_queue_name(:invalidate), :key => "invalidate"
         config.message :client_invalidated
         config.message :reconfigure
         config.queue   internal_queue_name(:reconfigure), :key => "reconfigure"
 
-        config.handler(internal_queue_name(:invalidate),   RedisConfigurationServerMessageHandler)
-        config.handler(internal_queue_name(:reconfigure),  RedisConfigurationServerMessageHandler)
+        config.handler(internal_queue_name(:ping),        RedisConfigurationServerMessageHandler)
+        config.handler(internal_queue_name(:invalidate),  RedisConfigurationServerMessageHandler)
+        config.handler(internal_queue_name(:reconfigure), RedisConfigurationServerMessageHandler)
       end
       beetle_client
     end
@@ -79,7 +85,13 @@ module Beetle
 
     def redeem_token(token)
       @current_token = token if @current_token.nil? || token > @current_token
-      token >= @current_token
+      token_valid = token >= @current_token
+      logger.info "Ignored message (token was '#{token}', but expected to be >= '#{@current_token}')" unless token_valid
+      token_valid
+    end
+
+    def pong!
+      beetle_client.publish(:pong, {"id" => id, "token" => @current_token}.to_json)
     end
 
     def invalidate!

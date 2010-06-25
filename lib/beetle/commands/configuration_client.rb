@@ -28,12 +28,13 @@ module Beetle
           dir = val
         end
 
+        opts.on("-v", "--verbose") do |val|
+          Beetle.config.logger.level = Logger::DEBUG
+        end
+
         opts.parse!(ARGV - ["start", "--"])
 
         Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
-
-        # set Beetle log level to info, less noisy than debug
-        Beetle.config.logger.level = Logger::INFO
 
         Daemons.run_proc("redis_configuration_client", :multiple => true, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           client = Beetle::RedisConfigurationClient.new(redis_server_strings)
