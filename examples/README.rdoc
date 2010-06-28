@@ -10,5 +10,3 @@ windows and execute the following commands:
     rake rabbit:start2
     rake redis:start1
     rake redis:start2
-
-After running the redis_failover.rb script you will need to restart both redis servers.
