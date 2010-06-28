@@ -9,6 +9,8 @@ module Beetle
   # It will make sure that all configured RedisConfigurationClient instances
   # do not use the old master anymore before making a switch, to prevent
   # inconsistent data.
+  #
+  # Usually started via <tt>bin/beetle configuration_server</tt>.
   class RedisConfigurationServer
     include Logging
 
