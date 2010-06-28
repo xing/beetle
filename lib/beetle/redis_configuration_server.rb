@@ -1,24 +1,42 @@
 module Beetle
+  # A RedisConfigurationServer is the supervisor part of beetle's
+  # redis failover solution
+  #
+  # An single instance of RedisConfigurationServer works as a supervisor for
+  # several RedisConfigurationClient instances. It is responsible for watching
+  # the redis master and electing and publishing a new master in case of failure.
+  #
+  # It will make sure that all configured RedisConfigurationClient instances
+  # do not use the old master anymore before making a switch, to prevent
+  # inconsistent data.
   class RedisConfigurationServer
     include Logging
 
-    attr_reader :redis_master, :current_token
+    # The current redis master
+    attr_reader :redis_master
 
-    # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
+    # The current token used to detect correct message order
+    attr_reader :current_token
+
+    # redis_server_strings is an array of host:port strings,
+    # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
+    #
+    # One of them must be a redis master.
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @client_ids = Set.new(Beetle.config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
-      @paused = true
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
+    # Test if redis is currently being watched
     def paused?
       redis_master_watcher.paused?
     end
 
+    # Start watching redis
     def start
       logger.info "RedisConfigurationServer Starting"
       beetle_client.listen do
@@ -26,7 +44,8 @@ module Beetle
       end
     end
 
-    # Methods called from RedisConfigurationClientMessageHandler
+    # Method called from RedisConfigurationClientMessageHandler
+    # when pong message from a RedisConfigurationClient is received
     def pong(payload)
       id = payload["id"]
       token = payload["token"]
@@ -40,6 +59,8 @@ module Beetle
       end
     end
 
+    # Method called from RedisConfigurationClientMessageHandler
+    # when client_invalidated message from a RedisConfigurationClient is received
     def client_invalidated(payload)
       id = payload["id"]
       token = payload["token"]
@@ -53,7 +74,7 @@ module Beetle
       end
     end
 
-    # Method called from RedisWatcher
+    # Method called from RedisWatcher when watched redis becomes unavailable
     def redis_unavailable
       msg = "Redis master '#{redis_master.server}' not available"
       redis_master_watcher.pause
@@ -65,10 +86,6 @@ module Beetle
       else
         start_invalidation
       end
-    end
-    
-    def start_invalidation
-      check_all_clients_available
     end
 
     private
@@ -123,29 +140,33 @@ module Beetle
     def redis_slaves
       all_available_redis.select{|redis| redis.slave_of?(redis_master.host, redis_master.port) }
     end
-    
+
     def redeem_token(token)
       valid_token = token == @current_token
       logger.info "Ignored message (token was '#{token.inspect}', but expected '#{@current_token.inspect}')" unless valid_token
       valid_token
     end
-    
+
+    def start_invalidation
+      @client_pong_ids_received.clear
+      @client_invalidated_ids_received.clear
+      check_all_clients_available
+    end
+
     def check_all_clients_available
       generate_new_token
-      @client_pong_ids_received.clear
       beetle_client.publish(:ping, {"token" => @current_token}.to_json)
       @available_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def invalidate_current_master
       generate_new_token
-      @client_invalidated_ids_received.clear
       beetle_client.publish(:invalidate, {"token" => @current_token}.to_json)
       @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def cancel_invalidation
-      logger.debug "Invalidation cancelled"
+      logger.warn "Redis master invalidation cancelled: 'pong' received from '#{@client_pong_ids_received.to_a.join(',')}', 'client_invalidated' received from '#{@client_invalidated_ids_received.to_a.join(',')}'"
       generate_new_token
       redis_master_watcher.continue
     end
@@ -182,7 +203,7 @@ module Beetle
       end
       redis_master_watcher.continue
     end
-    
+
     class RedisConfigurationClientMessageHandler < Beetle::Handler
       cattr_accessor :configuration_server
 
@@ -203,6 +224,7 @@ module Beetle
         @configuration_server = configuration_server
         @logger = logger
         @retries = 0
+        @paused = true
       end
 
       def pause
