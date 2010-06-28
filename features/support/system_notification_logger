@@ -4,9 +4,10 @@ require "rubygems"
 require "daemons"
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
-system_notification_log_file_path = File.expand_path("../../tmp/system_notifications.log", File.dirname(__FILE__))
+tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
+system_notification_log_file_path = "#{tmp_path}/system_notifications.log"
 
-Daemons.run_proc("system_notification_logger", :log_output => true) do
+Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
   Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
 
   # set Beetle log level to info, less noisy than debug

@@ -24,7 +24,7 @@ module TestDaemons
       clients_parameter_string = @@redis_configuration_clients.blank? ? "" : "--client-ids #{@@redis_configuration_clients}"
       DaemonController.new(
          :identifier    => "Redis configuration test server",
-         :start_command => "ruby bin/beetle configuration_server start -- -v --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-retry-timeout 1",
+         :start_command => "ruby bin/beetle configuration_server start -- -v --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-retry-timeout 1 --pid-dir=#{tmp_path}",
          :ping_command  => lambda{ true },
          :pid_file      => pid_file,
          :log_file      => log_file,
@@ -33,11 +33,11 @@ module TestDaemons
     end
     
     def self.pid_file
-      "redis_configuration_server.pid"
+      "#{tmp_path}/redis_configuration_server.pid"
     end
     
     def self.log_file
-      "redis_configuration_server.output"
+      "#{tmp_path}/redis_configuration_server.output"
     end
     
     def self.tmp_path
