@@ -1,21 +1,41 @@
 module Beetle
+  # A RedisConfigurationClient is the subordinate part of beetle's
+  # redis failover solution
+  #
+  # An instances of RedisConfigurationClient lives on every server that
+  # hosts beetle handlers (consumers). A RedisConfigurationClient is responsible
+  # for determining an initial redis master and reacting to redis master switches
+  # initiated by the RedisConfigurationServer.
+  #
+  # It will write the current redis master host:port string to a file
+  # specified via Configuration#redis_server, which is then read by
+  # DeduplicationStore on redis access.
+  #
+  # Usually started via <tt>bin/beetle configuration_client</tt>.
   class RedisConfigurationClient < Beetle::Handler
     include Logging
 
+    # Set a custom unique id for this instance
+    #
+    # Must match an entry in Configuration#redis_configuration_client_ids
+    # for a redis failover to work.
     attr_writer :id
 
+    # Unique id for this instance (defaults to the hostname)
     def id
       @id || `hostname`.chomp
     end
 
-    # redis_server_strings is an array like ["192.168.1.2:6379", "192.168.1.3:6379"]
+    # redis_server_strings is an array of host:port strings,
+    # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @current_token = nil
-
       RedisConfigurationServerMessageHandler.delegate_messages_to = self
     end
 
+    # Start determining initial redis master and reacting
+    # to failover related messages sent by RedisConfigurationServer
     def start
       logger.info "RedisConfigurationClient Starting (#{id})"
       clear_redis_master_file
@@ -25,19 +45,24 @@ module Beetle
       beetle_client.listen
     end
 
-    # Methods called from RedisConfigurationServerMessageHandler
+    # Method called from RedisConfigurationServerMessageHandler
+    # when pong message from RedisConfigurationServer is received
     def ping(payload)
       token = payload["token"]
       logger.info "Received ping message with token #{token}"
       pong! if redeem_token(token)
     end
 
+    # Method called from RedisConfigurationServerMessageHandler
+    # when invalidate message from RedisConfigurationServer is received
     def invalidate(payload)
       token = payload["token"]
       logger.info "Received invalidate message with token #{token}"
       invalidate! if redeem_token(token)
     end
 
+    # Method called from RedisConfigurationServerMessageHandler
+    # when reconfigure message from RedisConfigurationServer is received
     def reconfigure(payload)
       host = payload["host"]
       port = payload["port"]
