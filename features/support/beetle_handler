@@ -5,7 +5,9 @@ require "daemons"
 require "optparse"
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
-Daemons.run_proc("beetle_handler", :log_output => true) do
+tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
+
+Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
   opts = OptionParser.new
 
   opts.on("-f", "--redis-master-file path", String) do |val|

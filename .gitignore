@@ -1,6 +1,4 @@
 *.log
-*.output
-*.pid*
 .bundle
 .DS_Store
 .rvmrc
