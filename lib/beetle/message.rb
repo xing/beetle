@@ -275,7 +275,7 @@ module Beetle
     end
 
     def run_handler(handler)
-      Timeout::timeout(@timeout) { @handler_result = handler.call(self) }
+      Timeout::timeout(@timeout.to_f) { @handler_result = handler.call(self) }
       RC::OK
     rescue Exception => @exception
       Beetle::reraise_expectation_errors!
