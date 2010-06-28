@@ -16,9 +16,9 @@ module Beetle
     attr_accessor :redis_configuration_master_retries
     # number of seconds to wait between retries (defaults to <tt>10</tt>)
     attr_accessor :redis_configuration_master_retry_timeout
-    # number of seconds the redis configuration server waits until the invalidation times out (defaults to <tt>5</tt>)
+    # number of seconds the redis configuration server waits for answers from clients (defaults to <tt>5</tt>)
     attr_accessor :redis_configuration_client_timeout
-    # the redis configuration clients living on the worker machines, taking part in the redis failover (defaults to <tt>""</tt>)
+    # the redis configuration client ids living on the worker machines taking part in the redis failover, separated by comma (defaults to <tt>""</tt>)
     attr_accessor :redis_configuration_client_ids
 
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
