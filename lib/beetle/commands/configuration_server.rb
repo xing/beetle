@@ -6,23 +6,29 @@ module Beetle
   module Commands
     class ConfigurationServer
       def self.execute
+        command, controller_options, app_options = Daemons::Controller.split_argv(ARGV)
+
         opts = OptionParser.new
+        opts.banner = "Usage: beetle configuration_server #{command} [options] -- [server options]"
+        opts.separator ""
+        opts.separator "server options:"
+
         redis_server_strings = []
-        opts.on("-r", "--redis-servers host1:port1,host2:port2,...", String) do |val|
-          redis_server_strings = val.split(",")
+        opts.on("--redis-servers LIST", Array, "Required for start command (e.g. 192.168.0.1:6379,192.168.0.2:6379)") do |val|
+          redis_server_strings = val
         end
 
-        opts.on("-c", "--client-ids client-id1,client-id2,...", String) do |val|
+        opts.on("--client-ids LIST", "Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)") do |val|
           Beetle.config.redis_configuration_client_ids = val
         end
 
-        opts.on("-t", "--redis-retry-timeout seconds", Integer) do |val|
+        opts.on("--redis-retry-timeout SEC", Integer, "Number of seconds to wait between master checks") do |val|
           Beetle.config.redis_configuration_master_retry_timeout = val
         end
 
         dir_mode = nil
         dir = nil
-        opts.on("-p", "--pid-dir path", String) do |val|
+        opts.on("--pid-dir DIR", String, "Write pid and log to DIR") do |val|
           dir_mode = :normal
           dir = val
         end
@@ -31,7 +37,12 @@ module Beetle
           Beetle.config.logger.level = Logger::DEBUG
         end
 
-        opts.parse!(ARGV - ["start", "--"])
+        opts.parse!(app_options)
+
+        if command =~ /start|run/ && redis_server_strings.empty?
+          puts opts
+          exit
+        end
 
         Daemons.run_proc("redis_configuration_server", :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           Beetle::RedisConfigurationServer.new(redis_server_strings).start
