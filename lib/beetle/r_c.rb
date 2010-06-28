@@ -27,7 +27,7 @@ module Beetle
     end
 
     rc :OK
-    rc :Ancient, :failure
+    rc :Ancient
     rc :AttemptsLimitReached, :failure
     rc :ExceptionsLimitReached, :failure
     rc :Delayed, :recover
