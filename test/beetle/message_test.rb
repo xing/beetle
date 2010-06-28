@@ -577,7 +577,7 @@ module Beetle
       @store.flushdb
     end
 
-    test "a handler running longer than the specified timeout should be aborted" do
+    test "a handler running longer than the specified timeout should be aborted (when given a float timeout number)" do
       header = header_with_params({})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :timeout => 0.1, :attempts => 2, :store => @store)
@@ -586,6 +586,17 @@ module Beetle
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
     end
+
+    test "a handler running longer than the specified timeout should be aborted (when using active_support seconds)" do
+      header = header_with_params({})
+      header.expects(:ack)
+      message = Message.new("somequeue", header, 'foo', :timeout => 1.seconds, :attempts => 2, :store => @store)
+      action = lambda{|*args| while true; end}
+      handler = Handler.create(action)
+      result = message.process(handler)
+      assert_equal RC::ExceptionsLimitReached, result
+    end
+
   end
 
   class SettingsTest < Test::Unit::TestCase
