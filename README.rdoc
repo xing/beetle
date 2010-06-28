@@ -20,7 +20,7 @@ More information can be found on the {project website}[http://xing.github.com/be
 
     Beetle.config do |c|
       config.servers = "broker1:5672, broker2:5672"
-      config.redis_hosts = "redis1:6379, redis2:6379"
+      config.redis_server = "redis1:6379"
     end
 
     # instantiate a beetle client
