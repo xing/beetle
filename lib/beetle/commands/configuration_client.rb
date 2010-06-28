@@ -34,8 +34,6 @@ module Beetle
 
         opts.parse!(ARGV - ["start", "--"])
 
-        Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
-
         Daemons.run_proc("redis_configuration_client", :multiple => true, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           client = Beetle::RedisConfigurationClient.new(redis_server_strings)
           client.id = client_id if client_id

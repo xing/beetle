@@ -33,8 +33,6 @@ module Beetle
 
         opts.parse!(ARGV - ["start", "--"])
 
-        Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
-        
         Daemons.run_proc("redis_configuration_server", :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           Beetle::RedisConfigurationServer.new(redis_server_strings).start
         end
