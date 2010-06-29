@@ -70,7 +70,7 @@ For development, you'll need
 {Stefan Kaes}[http://github.com/skaes],
 {Pascal Friederich}[http://github.com/paukul],
 {Ali Jelveh}[http://github.com/dudemeister] and
-{Sebastian Röbke}[http://github.com/boosty].
+{Sebastian Roebke}[http://github.com/boosty].
 
 You cand find out more about our work on our {dev blog}[http://devblog.xing.com].
 
@@ -78,6 +78,3 @@ Copyright (c) 2010 {XING AG}[http://www.xing.com/]
 
 Released under the MIT license. For full details see MIT-LICENSE included in this
 distribution.
-
-
-

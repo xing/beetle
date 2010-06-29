@@ -10,7 +10,7 @@ module Beetle
   # do not use the old master anymore before making a switch, to prevent
   # inconsistent data.
   #
-  # Usually started via <tt>bin/beetle configuration_server</tt>.
+  # Usually started via <tt>beetle configuration_server</tt> command.
   class RedisConfigurationServer
     include Logging
 
@@ -47,7 +47,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationClientMessageHandler
-    # when pong message from a RedisConfigurationClient is received
+    # when "pong" message from a RedisConfigurationClient is received
     def pong(payload)
       id = payload["id"]
       token = payload["token"]
@@ -62,7 +62,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationClientMessageHandler
-    # when client_invalidated message from a RedisConfigurationClient is received
+    # when "client_invalidated" message from a RedisConfigurationClient is received
     def client_invalidated(payload)
       id = payload["id"]
       token = payload["token"]
@@ -206,7 +206,7 @@ module Beetle
       redis_master_watcher.continue
     end
 
-    class RedisConfigurationClientMessageHandler < Beetle::Handler
+    class RedisConfigurationClientMessageHandler < Beetle::Handler #:nodoc:
       cattr_accessor :configuration_server
 
       delegate :pong, :client_invalidated, :to => :@@configuration_server
@@ -218,7 +218,7 @@ module Beetle
       end
     end
 
-    class RedisWatcher
+    class RedisWatcher #:nodoc:
       attr_accessor :redis
 
       def initialize(redis, configuration_server, logger)
