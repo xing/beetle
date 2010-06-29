@@ -11,7 +11,6 @@ module Beetle
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
 
-    ## redis configuration server options
     # how often should the redis configuration server try to reach the redis master before nominating a new one (defaults to <tt>3</tt>)
     attr_accessor :redis_configuration_master_retries
     # number of seconds to wait between retries (defaults to <tt>10</tt>)

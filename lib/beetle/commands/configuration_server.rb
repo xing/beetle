@@ -4,6 +4,8 @@ require 'beetle'
 
 module Beetle
   module Commands
+    # Command to start a RedisConfigurationServer daemon.
+    # Use via <tt>beetle configuration_server</tt>.
     class ConfigurationServer
       def self.execute
         command, controller_options, app_options = Daemons::Controller.split_argv(ARGV)

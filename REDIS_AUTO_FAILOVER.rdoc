@@ -1,60 +1,112 @@
 = Automatic Redis Failover for Beetle
 
-== How it works
+== Introduction
 
-===Our current setup:
+Redis is used as the persistence layer in the AMQP message deduplication
+process. Because it is such a critical piece in our infrastructure, it is
+essential that a failure of this service is as unlikely as possible. As our
+AMQP workers are working in a highly distributed manner, all accessing the same
+Redis server, a automatic failover to another Redis server has to be very
+defensive and ensure that every worker in the system will switch to the new
+server at the same time. If the new server would not get accepted from every
+worker, a switch would not be possible. This ensures that even in the case of a
+partitioned network it is impossible that two different workers use two
+different Redis servers for message deduplication.
 
-* Redis Server: redis-1 / redis-2, of them is our master (redis-1), the other a slave (redis-2)
-* Rest of the beetle setup: messaging servers etc.
+== Our goals
 
-===How our failover works now:
-
-* on the first need to reach our redis server we go through our configured redis instances and find our current redis master
-* subscribers access this server as long as it is available
-* when it is not reachable anymore or connection attempts end up in an exception we go into a retry loop
-* if the loop finds an active master this becomes our current redis master again
-* if the loop finds several active master it throws an exception and stops - this is to make sure we don't get inconsistent datasets
-
-===Our problem(s):
-
-* while this mechanism works for any master slave setup, the slave master nominations and
-  changes do not happen automatically. Although this allows an admin to make sure
-  everything is in order when he triggers a switch (+1 point) this has the unfortunate
-  downside that the system will practically shutdown on redis failures until a manual
-  switch has occured (-10000 points).
-
-* in case of network partitioning we rely on the admin to correctly handle the situations.
-
-===Our goals:
-
+* opt-in, no need to use the redis-failover solution
 * no single point of failure
 * automatic switch in case of redis-master failure
 * switch should not cause inconsistent data on the redis servers
-* subscribers should be able to determine the current redis-master without asking another
-  process (as long as the redis servers are working)
+* workers should be able to determine the current redis-master without asking
+  another process (as long as the redis servers are working)
 
-===Our solution:
+== How it works
 
-==== single redis server (simple)
+To ensure consistency, a service (the Redis Configuration Server - RCS) is
+constantly checking the availability and configuration of the currently
+configured Redis master server. If this service detects that the Redis master
+is no longer available, it tries to find an alternative server (one of the
+slaves) which could be promoted to be the new Redis master.
 
-* when just one redis server is configured, none of this is done, all systems just use the configured server
+On every worker server runs another daemon, the Redis Configuration Client
+(RCC) which listens to messages sent by the RCS.
 
-==== redis master-slave setup (not so simple)
+If the RCS finds another potential Redis Master, it sends out a message to see
+if all known RCCs are still available (once again to eliminate the risk of a
+partitioned network). If all RCCs have answered to that message, the RCS sends
+out a message which tells the RCCs to invalidate the current master. This
+happens by deleting the contents of a special configuration file which is used
+by the workers to store the current Redis master (the content of that file is
+the hostname:port of the currently active Redis master). By doing that, it is
+ensured that no operations are done to any Redis server anymore, because the
+AMQP workers check this files mtime and reads its contents in case that the
+file changed, before every Redis operation. When the file has been emptied, the
+RCCs respond to the "invalidate" message of the RCS. When all RCCs have
+responded, the RCS knows for sure that it is save to switch the Redis master
+now. It sends a "reconfigure" message with the new Redis master hostname:port
+to the RCCs, which then write that value into the redis master configuration
+file.
 
-===== prerequisites
+=== Prerequisites
 
-* one redis-configuration-server process ("rc-server", on one server), one redis-configuration-client process ("rc-client") on every worker server
-* the rc-server knows about all possible rc-clients using a configured list
-* the rc-server and rc-clients exchange messages via a "system queue"
-* on startup, an rc-client can determine the current redis-master without the help of the rc-server by checking that either only one redis is available (as master) or by checking that redis master and slave are available
-* if an rc-client cannot determine the redis-master, it will retry a couple of times before it finally exits
-* when the rc-server finds the redis-master to be down, it will retry a couple of times before starting a reconfiguration round
+* one redis-configuration-server process ("RCS", on one server), one redis-configuration-client process ("RCC") on every worker server
+* the RCS knows about all possible RCCs using a configured list
+* the RCS and RCCs exchange messages via a "system queue"
 
-===== when the redis-master doesn't recover (reconfiguration round)
+=== Flow of actions
 
-* the rc-server tells all rc-clients to stop using the redis-master by sending an "invalidate" message
-* the rc-clients acknowledge via an "invalidated" message
-* the rc-server waits for *all* rc-clients to acknowledge the invalidation
-* the rc-server promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
-* the rc-server sends a "reconfigure" message containing the new redis-master to every rc-client
-* the rc-clients use the new redis-master
+* on startup, an RCC can determine the current redis-master without the help of the RCS by checking that either only one redis is available (as master) or by checking that redis master and slave are available
+* when the RCS finds the redis-master to be down, it will retry a couple of times before starting a reconfiguration round
+* the RCS sends all RCCs a "ping" message to check if every client is there and able to to answer
+* the RCCs acknowledge via a "pong" message
+* the RCS waits for *all* RCCs to reply via pong
+* the RCS tells all RCCs to stop using the redis-master by sending an "invalidate" message
+* the RCCs acknowledge via an "invalidated" message
+* the RCS waits for *all* RCCs to acknowledge the invalidation
+* the RCS promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
+* the RCS sends a "reconfigure" message containing the new redis-master to every RCC
+* the RCCs write the new redis-master to their redis master configuration file
+
+== How to use it
+
+This example uses two worker servers, identified by rcc-1 and rcc-2.
+
+=== Configuration
+
+See Beetle::Configuration for setting redis configuration server options.
+
+=== On one server
+
+Start the Redis Configuration Server:
+
+  beetle configuration_server start -- --redis-servers redis-master:6379,redis-slave:6379 --client-ids rcc-1,rcc-2
+
+Get help for starting/stopping the server:
+
+  beetle configuration_server -h
+
+Get help for client options:
+
+  beetle configuration_server start -- -h
+
+=== On every worker server
+
+Start the Redis Configuration Client:
+
+On first worker server:
+
+  beetle configuration_client start -- --redis-servers redis-master:6379,redis-slave:6379 --client-id rcc-1
+
+On second worker server:
+
+  beetle configuration_client start -- --redis-servers redis-master:6379,redis-slave:6379 --client-id rcc-2
+
+Get help for starting/stopping the client:
+
+  beetle configuration_client -h
+
+Get help for client options:
+
+  beetle configuration_client start -- -h

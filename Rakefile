@@ -99,6 +99,7 @@ Rake::RDocTask.new do |rdoc|
   rdoc.title    = 'Beetle'
   rdoc.options << '--line-numbers' << '--inline-source' << '--quiet'
   rdoc.rdoc_files.include('README.rdoc')
+  rdoc.rdoc_files.include('REDIS_AUTO_FAILOVER.rdoc')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
