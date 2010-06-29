@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-06-25}
+  s.date = %q{2010-06-29}
   s.default_executable = %q{beetle}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
@@ -36,12 +36,10 @@ Gem::Specification.new do |s|
      "examples/handling_exceptions.rb",
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
-     "examples/redis_failover.rb",
-     "examples/redis_failover/failover_config_client.rb",
-     "examples/redis_failover/failover_config_server.rb",
      "examples/redundant.rb",
      "examples/rpc.rb",
      "examples/simple.rb",
+     "features/README.rdoc",
      "features/redis_auto_failover.feature",
      "features/step_definitions/redis_auto_failover_steps.rb",
      "features/support/beetle_handler",
@@ -109,9 +107,6 @@ Gem::Specification.new do |s|
      "examples/handling_exceptions.rb",
      "examples/multiple_exchanges.rb",
      "examples/multiple_queues.rb",
-     "examples/redis_failover/failover_config_client.rb",
-     "examples/redis_failover/failover_config_server.rb",
-     "examples/redis_failover.rb",
      "examples/redundant.rb",
      "examples/rpc.rb",
      "examples/simple.rb"
