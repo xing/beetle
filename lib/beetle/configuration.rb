@@ -11,6 +11,9 @@ module Beetle
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
 
+    # how often we should retry a redis operation before giving up, with a one second sleep between retries (defaults to <tt>60*24*7</tt>)
+    attr_accessor :redis_operation_retries
+
     ## redis configuration server options
     # how often should the redis configuration server try to reach the redis master before nominating a new one (defaults to <tt>3</tt>)
     attr_accessor :redis_configuration_master_retries
@@ -38,10 +41,11 @@ module Beetle
         logger.datetime_format = "%Y-%m-%d %H:%M:%S"
         logger
       end
-      
+
       self.gc_threshold = 3.days
       self.redis_server = "localhost:6379"
       self.redis_db = 4
+      self.redis_operation_retries = 60 * 24 * 7 # one week
 
       self.redis_configuration_master_retries = 3
       self.redis_configuration_master_retry_timeout = 10.seconds

@@ -93,7 +93,7 @@ module Beetle
       redis1 = stub()
       @store.stubs(:redis).returns(redis1)
       redis1.stubs(:get).with("foo:x").raises("disconnected")
-      @store.expects(:sleep).times(119)
+      @store.expects(:sleep).times(Beetle.config.redis_operation_retries-1)
       assert_raises(NoRedisMaster) { @store.get("foo", "x") }
     end
   end
