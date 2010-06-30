@@ -3,15 +3,16 @@ module Beetle
   # redis failover solution
   #
   # An instances of RedisConfigurationClient lives on every server that
-  # hosts beetle handlers (consumers). A RedisConfigurationClient is responsible
-  # for determining an initial redis master and reacting to redis master switches
-  # initiated by the RedisConfigurationServer.
+  # hosts beetle consumers (worker server). 
+  # A RedisConfigurationClient is responsible for determining an initial
+  # redis master and reacting to redis master switches initiated by the 
+  # RedisConfigurationServer.
   #
   # It will write the current redis master host:port string to a file
   # specified via Configuration#redis_server, which is then read by
   # DeduplicationStore on redis access.
   #
-  # Usually started via <tt>bin/beetle configuration_client</tt>.
+  # Usually started via <tt>beetle configuration_client</tt> command.
   class RedisConfigurationClient < Beetle::Handler
     include Logging
 
@@ -46,7 +47,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationServerMessageHandler
-    # when pong message from RedisConfigurationServer is received
+    # when "pong" message from RedisConfigurationServer is received
     def ping(payload)
       token = payload["token"]
       logger.info "Received ping message with token #{token}"
@@ -54,7 +55,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationServerMessageHandler
-    # when invalidate message from RedisConfigurationServer is received
+    # when "invalidate" message from RedisConfigurationServer is received
     def invalidate(payload)
       token = payload["token"]
       logger.info "Received invalidate message with token #{token}"
@@ -62,7 +63,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationServerMessageHandler
-    # when reconfigure message from RedisConfigurationServer is received
+    # when "reconfigure"" message from RedisConfigurationServer is received
     def reconfigure(payload)
       host = payload["host"]
       port = payload["port"]
@@ -72,14 +73,6 @@ module Beetle
     end
 
     private
-
-    class RedisConfigurationServerMessageHandler < Beetle::Handler
-      cattr_accessor :delegate_messages_to
-
-      def process
-        self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
-      end
-    end
 
     def beetle_client
       @beetle_client ||= build_beetle_client
@@ -158,6 +151,14 @@ module Beetle
 
     def redis_instances
       @redis_instances ||= @redis_server_strings.map{|s| Redis.from_server_string(s)}
+    end
+  end
+
+  class RedisConfigurationServerMessageHandler < Beetle::Handler #:nodoc:
+    cattr_accessor :delegate_messages_to
+
+    def process
+      self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
     end
   end
 end

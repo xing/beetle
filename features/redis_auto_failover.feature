@@ -56,8 +56,8 @@ Feature: Redis auto failover
     And redis server "redis-1" is down
     And redis server "redis-2" is down
     And the retry timeout for the redis master check is reached
-    Then the redis master of "rc-client-1" should be undefined
-    And the redis master of "rc-client-2" should be undefined
+    Then the redis master of "rc-client-1" should be "redis-1"
+    And the redis master of "rc-client-2" should be "redis-1"
     And a system notification for no slave available to become new master should be sent
 
   Scenario: Redis configuration client joins while no redis master available
