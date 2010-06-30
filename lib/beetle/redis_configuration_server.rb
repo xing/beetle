@@ -23,7 +23,7 @@ module Beetle
     # redis_server_strings is an array of host:port strings,
     # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
     #
-    # One of them must be a redis master.
+    # Exactly one of them must be a redis master.
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @client_ids = Set.new(Beetle.config.redis_configuration_client_ids.split(","))
@@ -41,6 +41,9 @@ module Beetle
     # Start watching redis
     def start
       logger.info "RedisConfigurationServer Starting"
+      logger.info "Redis servers : #{@redis_server_strings.join(',')}"
+      logger.info "AMQP servers  : #{Beetle.config.servers}"
+      logger.info "Client ids    : #{Beetle.config.redis_configuration_client_ids}"
       beetle_client.listen do
         redis_master_watcher.watch
       end
@@ -123,7 +126,9 @@ module Beetle
     end
 
     def initial_redis_master
-      # TODO what if no initial master available?
+      # TODO
+      # * what if no initial master available?
+      # * what if more than one master? (reuse auto-detection of client?)
       all_available_redis.find{|redis| redis.master? }
     end
 
