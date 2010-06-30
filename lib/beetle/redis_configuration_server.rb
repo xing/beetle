@@ -10,7 +10,7 @@ module Beetle
   # do not use the old master anymore before making a switch, to prevent
   # inconsistent data.
   #
-  # Usually started via <tt>bin/beetle configuration_server</tt>.
+  # Usually started via <tt>beetle configuration_server</tt> command.
   class RedisConfigurationServer
     include Logging
 
@@ -47,7 +47,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationClientMessageHandler
-    # when pong message from a RedisConfigurationClient is received
+    # when "pong" message from a RedisConfigurationClient is received
     def pong(payload)
       id = payload["id"]
       token = payload["token"]
@@ -62,7 +62,7 @@ module Beetle
     end
 
     # Method called from RedisConfigurationClientMessageHandler
-    # when client_invalidated message from a RedisConfigurationClient is received
+    # when "client_invalidated" message from a RedisConfigurationClient is received
     def client_invalidated(payload)
       id = payload["id"]
       token = payload["token"]
@@ -192,18 +192,23 @@ module Beetle
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
 
         new_redis_master.master!
-        logger.info "Publishing reconfigure message with new host '#{new_redis_master.host}' port '#{new_redis_master.port}'"
-        beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
+        publish_master(new_redis_master)
         @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
         @new_redis_master = nil
 
         redis_master_watcher.redis = redis_master
       else
-        msg = "Redis master could not be switched, no slave available to become new master"
+        msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+        publish_master(redis_master)
       end
       redis_master_watcher.continue
+    end
+
+    def publish_master(promoted_server)
+      logger.info "Publishing reconfigure message with host '#{promoted_server.host}' port '#{promoted_server.port}'"
+      beetle_client.publish(:reconfigure, {:host => promoted_server.host, :port => promoted_server.port}.to_json)
     end
 
     class RedisConfigurationClientMessageHandler < Beetle::Handler
@@ -218,7 +223,7 @@ module Beetle
       end
     end
 
-    class RedisWatcher
+    class RedisWatcher #:nodoc:
       attr_accessor :redis
 
       def initialize(redis, configuration_server, logger)
@@ -237,17 +242,21 @@ module Beetle
       end
 
       def watch
-        @watch_timer ||= EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
-          if @redis
-            @logger.debug "Checking availability of redis '#{@redis.server}'"
-            unless @redis.available?
-              if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
-                @retries = 0
-                @configuration_server.redis_unavailable
+        @watch_timer ||= begin
+          @logger.info "Start watching #{@redis.server} every #{Beetle.config.redis_configuration_master_retry_timeout} seconds" if @redis
+          EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
+            if @redis
+              @logger.debug "Checking availability of redis '#{@redis.server}'"
+              unless @redis.available?
+                @logger.warn "Redis server #{@redis.server} not available! (Retries left: #{Beetle.config.redis_configuration_master_retries - (@retries + 1)})"
+                if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
+                  @retries = 0
+                  @configuration_server.redis_unavailable
+                end
               end
             end
-          end
-        }
+          }
+        end
         @paused = false
       end
       alias continue watch
