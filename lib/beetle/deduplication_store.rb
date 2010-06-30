@@ -119,7 +119,7 @@ module Beetle
       rescue Exception => e
         Beetle::reraise_expectation_errors!
         logger.error "Beetle: redis connection error '#{e}'"
-        if (tries+=1) < 120
+        if (tries+=1) < Beetle.config.redis_operation_retries
           sleep 1
           logger.info "Beetle: retrying redis operation"
           retry
