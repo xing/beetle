@@ -28,6 +28,10 @@ module Beetle
           Beetle.config.redis_configuration_master_retry_timeout = val
         end
 
+        opts.on("--amqp-servers LIST", String, "AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)") do |val|
+          Beetle.config.servers = val
+        end
+
         dir_mode = nil
         dir = nil
         opts.on("--pid-dir DIR", String, "Write pid and log to DIR") do |val|
