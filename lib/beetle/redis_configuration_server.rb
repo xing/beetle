@@ -242,17 +242,21 @@ module Beetle
       end
 
       def watch
-        @watch_timer ||= EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
-          if @redis
-            @logger.debug "Checking availability of redis '#{@redis.server}'"
-            unless @redis.available?
-              if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
-                @retries = 0
-                @configuration_server.redis_unavailable
+        @watch_timer ||= begin
+          @logger.info "Start watching #{@redis.server} every #{Beetle.config.redis_configuration_master_retry_timeout} seconds" if @redis
+          EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
+            if @redis
+              @logger.debug "Checking availability of redis '#{@redis.server}'"
+              unless @redis.available?
+                @logger.warn "Redis server #{@redis.server} not available! (Retries left: #{Beetle.config.redis_configuration_master_retries - (@retries + 1)})"
+                if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
+                  @retries = 0
+                  @configuration_server.redis_unavailable
+                end
               end
             end
-          end
-        }
+          }
+        end
         @paused = false
       end
       alias continue watch
