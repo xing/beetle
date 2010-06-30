@@ -192,21 +192,26 @@ module Beetle
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
 
         new_redis_master.master!
-        logger.info "Publishing reconfigure message with new host '#{new_redis_master.host}' port '#{new_redis_master.port}'"
-        beetle_client.publish(:reconfigure, {:host => new_redis_master.host, :port => new_redis_master.port}.to_json)
+        publish_master(new_redis_master)
         @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
         @new_redis_master = nil
 
         redis_master_watcher.redis = redis_master
       else
-        msg = "Redis master could not be switched, no slave available to become new master"
+        msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+        publish_master(redis_master)
       end
       redis_master_watcher.continue
     end
 
-    class RedisConfigurationClientMessageHandler < Beetle::Handler #:nodoc:
+    def publish_master(promoted_server)
+      logger.info "Publishing reconfigure message with host '#{promoted_server.host}' port '#{promoted_server.port}'"
+      beetle_client.publish(:reconfigure, {:host => promoted_server.host, :port => promoted_server.port}.to_json)
+    end
+
+    class RedisConfigurationClientMessageHandler < Beetle::Handler
       cattr_accessor :configuration_server
 
       delegate :pong, :client_invalidated, :to => :@@configuration_server
