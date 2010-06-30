@@ -115,7 +115,7 @@ module Beetle
     end
 
     def redis_master_watcher
-      @redis_master_watcher ||= RedisWatcher.new(redis_master, self, logger)
+      @redis_master_watcher ||= RedisWatcher.new(redis_master, self)
     end
 
     def redis_master
@@ -224,18 +224,19 @@ module Beetle
     end
 
     class RedisWatcher #:nodoc:
+      include Logging
+
       attr_accessor :redis
 
-      def initialize(redis, configuration_server, logger)
+      def initialize(redis, configuration_server)
         @redis = redis
         @configuration_server = configuration_server
-        @logger = logger
         @retries = 0
         @paused = true
       end
 
       def pause
-        @logger.info "Pause checking availability of redis '#{@redis.server}'"
+        logger.info "Pause checking availability of redis '#{@redis.server}'"
         @watch_timer.cancel if @watch_timer
         @watch_timer = nil
         @paused = true
@@ -243,12 +244,12 @@ module Beetle
 
       def watch
         @watch_timer ||= begin
-          @logger.info "Start watching #{@redis.server} every #{Beetle.config.redis_configuration_master_retry_timeout} seconds" if @redis
+          logger.info "Start watching #{@redis.server} every #{Beetle.config.redis_configuration_master_retry_timeout} seconds" if @redis
           EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
             if @redis
-              @logger.debug "Checking availability of redis '#{@redis.server}'"
+              logger.debug "Checking availability of redis '#{@redis.server}'"
               unless @redis.available?
-                @logger.warn "Redis server #{@redis.server} not available! (Retries left: #{Beetle.config.redis_configuration_master_retries - (@retries + 1)})"
+                logger.warn "Redis server #{@redis.server} not available! (Retries left: #{Beetle.config.redis_configuration_master_retries - (@retries + 1)})"
                 if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
                   @retries = 0
                   @configuration_server.redis_unavailable
