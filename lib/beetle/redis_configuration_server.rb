@@ -238,6 +238,8 @@ module Beetle
         @configuration_server = configuration_server
         @retries = 0
         @paused = true
+        @master_retry_timeout = Beetle.config.redis_configuration_master_retry_timeout
+        @master_retries = Beetle.config.redis_configuration_master_retries
       end
 
       def pause
@@ -248,21 +250,11 @@ module Beetle
       end
 
       def watch
-        @watch_timer ||= begin
-          logger.info "Start watching #{@redis.server} every #{Beetle.config.redis_configuration_master_retry_timeout} seconds" if @redis
-          EventMachine::add_periodic_timer(Beetle.config.redis_configuration_master_retry_timeout) {
-            if @redis
-              logger.debug "Checking availability of redis '#{@redis.server}'"
-              unless @redis.available?
-                logger.warn "Redis server #{@redis.server} not available! (Retries left: #{Beetle.config.redis_configuration_master_retries - (@retries + 1)})"
-                if (@retries+=1) >= Beetle.config.redis_configuration_master_retries
-                  @retries = 0
-                  @configuration_server.redis_unavailable
-                end
-              end
-            end
-          }
-        end
+        @watch_timer ||=
+          begin
+            logger.info "Start watching #{@redis.server} every #{@master_retry_timeout} seconds" if @redis
+            EventMachine::add_periodic_timer(@master_retry_timeout) { check_master_availability }
+          end
         @paused = false
       end
       alias continue watch
@@ -270,6 +262,20 @@ module Beetle
       def paused?
         @paused
       end
+
+      private
+      def check_master_availability
+        return unless @redis
+        logger.debug "Checking availability of redis '#{@redis.server}'"
+        unless @redis.available?
+          logger.warn "Redis server #{@redis.server} not available! (Retries left: #{@master_retries - (@retries + 1)})"
+          if (@retries+=1) >= @master_retries
+            @retries = 0
+            @configuration_server.redis_unavailable
+          end
+        end
+      end
+
     end
   end
 end
