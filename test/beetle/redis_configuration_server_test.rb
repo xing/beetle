@@ -30,6 +30,7 @@ module Beetle
       @server = RedisConfigurationServer.new
       @server.stubs(:redis_master).returns(stub('redis stub', :server => 'stubbed_server', :available? => false))
       @server.send(:beetle_client).stubs(:listen).yields
+      @server.send(:beetle_client).stubs(:publish)
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
     end
