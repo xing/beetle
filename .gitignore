@@ -2,7 +2,6 @@
 .bundle
 .DS_Store
 .rvmrc
-doc
 erl_crash.dump
 pkg
 site
