@@ -38,7 +38,14 @@ Given /^redis server "([^\"]*)" is down$/ do |redis_name|
 end
 
 Given /^the retry timeout for the redis master check is reached$/ do
-  sleep 10
+  basetime = Time.now
+  i = 0
+  while (i <= 10.0) do
+    break if TestDaemons::RedisConfigurationClient.instances.values.all? {|instance| File.mtime(instance.redis_master_file) > basetime rescue false}
+    i += 0.1
+    sleep(0.1)
+  end
+  sleep 1 # give it time to switch because the modified mtime might be because of the initial invalidation and not the switch
 end
 
 Given /^a beetle handler using the redis-master file from "([^\"]*)" exists$/ do |redis_configuration_client_name|
@@ -73,7 +80,7 @@ Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redi
     expected_role = true and break if TestDaemons::Redis[redis_name].__send__ "#{role}?"
     sleep 1
   end
-  raise "#{redis_name} is not a #{role}" unless expected_role
+  assert expected_role, "#{redis_name} is not a #{role}"
 end
 
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
@@ -84,7 +91,7 @@ Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configura
     master = true and break if TestDaemons::Redis[redis_name].ip_with_port == server_info
     sleep 1
   end
-  raise "#{redis_name} is not master of #{redis_configuration_client_name}" unless master
+  assert master, "#{redis_name} is not master of #{redis_configuration_client_name}"
 end
 
 Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|

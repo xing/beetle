@@ -2,7 +2,7 @@ require 'daemon_controller'
 
 module TestDaemons
   class RedisConfigurationClient
-
+    cattr_reader :instances
     @@next_daemon_id = 0
     @@instances = {}
 
@@ -41,8 +41,6 @@ module TestDaemons
          :start_timeout => 5
       )
     end
-    
-    private
     
     def redis_master_file
       "#{tmp_path}/redis-master-#{@name}"
