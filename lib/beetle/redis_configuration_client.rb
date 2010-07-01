@@ -65,13 +65,11 @@ module Beetle
     # Method called from RedisConfigurationServerMessageHandler
     # when "reconfigure"" message from RedisConfigurationServer is received
     def reconfigure(payload)
-      host = payload["host"]
-      port = payload["port"]
-      logger.warn "Received reconfigure message with host '#{host}' port '#{port}'"
-      server = "#{host}:#{port}"
+      server = payload["server"]
+      logger.info "Received reconfigure message with server '#{server}'"
       unless server == read_redis_master_file
         write_redis_master_file(server)
-        @redis_master = Redis.new(:host => host, :port => port)
+        @redis_master = Redis.from_server_string(server)
       end
     end
 

@@ -19,6 +19,8 @@ Feature: Redis auto failover
     And the redis master of "rc-client-2" should be "redis-2"
     And the redis master of the beetle handler should be "redis-2"
     And a system notification for switching from "redis-1" to "redis-2" should be sent
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
 
   Scenario: Available slave is not slave of current master
     Given a redis server "redis-3" exists as master
