@@ -93,9 +93,10 @@ module Beetle
       end
     end
 
-    def publish_master(master)
-      logger.info "Publishing reconfigure message with host '#{master.host}' port '#{master.port}'"
-      beetle_client.publish(:reconfigure, {:host => master.host, :port => master.port}.to_json)
+    # Method called from RedisWatcher to initiate master_file update on client machines
+    def redis_available
+      publish_master(redis_master)
+      configure_slaves(redis_master)
     end
 
     private
@@ -153,6 +154,10 @@ module Beetle
       all_available_redis.select{|redis| redis.slave_of?(redis_master.host, redis_master.port) }
     end
 
+    def other_redis_masters(master)
+      all_available_redis.reject{|r| r.server == master.server || r.slave?}
+    end
+
     def redeem_token(token)
       valid_token = token == @current_token
       logger.info "Ignored message (token was '#{token.inspect}', but expected '#{@current_token.inspect}')" unless valid_token
@@ -203,7 +208,7 @@ module Beetle
 
         new_redis_master.master!
         publish_master(new_redis_master)
-        @redis_master = Redis.new(:host => new_redis_master.host, :port => new_redis_master.port)
+        @redis_master = Redis.from_server_string(new_redis_master.server)
         @new_redis_master = nil
 
         redis_master_watcher.redis = redis_master
@@ -214,6 +219,18 @@ module Beetle
         publish_master(redis_master)
       end
       redis_master_watcher.continue
+    end
+
+    def publish_master(master)
+      logger.info "Publishing reconfigure message with server '#{master.server}'"
+      beetle_client.publish(:reconfigure, {:server => master.server}.to_json)
+    end
+
+    def configure_slaves(master)
+      other_redis_masters(master).each do |r|
+        logger.info "Reconfiguríng '#{r.server}' as a slave of '#{master.server}'"
+        r.slave_of!(master.host, master.port)
+      end
     end
 
     class RedisConfigurationClientMessageHandler < Beetle::Handler
@@ -268,7 +285,7 @@ module Beetle
         return unless @redis
         logger.debug "Checking availability of redis '#{@redis.server}'"
         if @redis.available?
-          @configuration_server.publish_master(@redis)
+          @configuration_server.redis_available
         else
           logger.warn "Redis server #{@redis.server} not available! (Retries left: #{@master_retries - (@retries + 1)})"
           if (@retries+=1) >= @master_retries
