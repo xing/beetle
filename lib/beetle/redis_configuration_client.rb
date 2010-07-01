@@ -68,8 +68,11 @@ module Beetle
       host = payload["host"]
       port = payload["port"]
       logger.warn "Received reconfigure message with host '#{host}' port '#{port}'"
-      write_redis_master_file("#{host}:#{port}")
-      @redis_master = Redis.new(:host => host, :port => port)
+      server = "#{host}:#{port}"
+      unless server == read_redis_master_file
+        write_redis_master_file(server)
+        @redis_master = Redis.new(:host => host, :port => port)
+      end
     end
 
     private
@@ -121,6 +124,10 @@ module Beetle
     def clear_redis_master_file
       logger.warn "Clearing redis master file '#{master_file}'"
       write_redis_master_file("")
+    end
+
+    def read_redis_master_file
+      File.read(master_file).chomp
     end
 
     def write_redis_master_file(redis_server_string)
