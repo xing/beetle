@@ -93,6 +93,11 @@ module Beetle
       end
     end
 
+    def publish_master(master)
+      logger.info "Publishing reconfigure message with host '#{master.host}' port '#{master.port}'"
+      beetle_client.publish(:reconfigure, {:host => master.host, :port => master.port}.to_json)
+    end
+
     private
 
     def beetle_client
@@ -211,11 +216,6 @@ module Beetle
       redis_master_watcher.continue
     end
 
-    def publish_master(promoted_server)
-      logger.info "Publishing reconfigure message with host '#{promoted_server.host}' port '#{promoted_server.port}'"
-      beetle_client.publish(:reconfigure, {:host => promoted_server.host, :port => promoted_server.port}.to_json)
-    end
-
     class RedisConfigurationClientMessageHandler < Beetle::Handler
       cattr_accessor :configuration_server
 
@@ -267,7 +267,9 @@ module Beetle
       def check_master_availability
         return unless @redis
         logger.debug "Checking availability of redis '#{@redis.server}'"
-        unless @redis.available?
+        if @redis.available?
+          @configuration_server.publish_master(@redis)
+        else
           logger.warn "Redis server #{@redis.server} not available! (Retries left: #{@master_retries - (@retries + 1)})"
           if (@retries+=1) >= @master_retries
             @retries = 0
