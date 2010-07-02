@@ -126,34 +126,32 @@ module Beetle
     end
 
     def redis_master
-      @redis_master ||= initial_redis_master
+      # TODO what to do if auto-detection failed?
+      @redis_master ||= auto_detect_master
     end
-
-    def initial_redis_master
-      # TODO
-      # * what if no initial master available?
-      # * what if more than one master? (reuse auto-detection of client?)
-      all_available_redis.find{|redis| redis.master? }
+    
+    def auto_detect_master
+      RedisConfigurationAutoDetection.new(redis_instances).master
     end
 
     def all_available_redis
-      all_redis.select{|redis| redis.available? }
+      redis_instances.select{|redis| redis.available? }
     end
 
-    def all_redis
-      @all_redis ||= @redis_server_strings.map{|r| Redis.from_server_string(r) }
+    def redis_instances
+      @redis_instances ||= @redis_server_strings.map{|r| Redis.from_server_string(r) }
     end
 
-    def new_redis_master
-      @new_redis_master ||= redis_slaves.first
+    def detect_new_redis_master
+      redis_slaves_of_master.first
     end
 
-    def redis_slaves
-      all_available_redis.select{|redis| redis.slave_of?(redis_master.host, redis_master.port) }
+    def redis_slaves_of_master
+      redis_instances.select{|redis| redis.server != redis_master.server && redis.slave_of?(redis_master.host, redis_master.port) }
     end
 
     def other_redis_masters(master)
-      all_available_redis.reject{|r| r.server == master.server || r.slave?}
+      all_available_redis.reject{|r| r.server == master.server || r.slave? }
     end
 
     def redeem_token(token)
@@ -199,15 +197,15 @@ module Beetle
     end
 
     def switch_master
-      if new_redis_master
+      if new_redis_master = detect_new_redis_master
+        new_redis_master.master!
+        publish_master(new_redis_master)
+
         msg = "Redis master switched from '#{@redis_master.server}' to '#{new_redis_master.server}'"
         logger.warn(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
 
-        new_redis_master.master!
-        publish_master(new_redis_master)
         @redis_master = Redis.from_server_string(new_redis_master.server)
-        @new_redis_master = nil
 
         redis_master_watcher.redis = redis_master
       else

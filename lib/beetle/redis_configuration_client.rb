@@ -40,7 +40,7 @@ module Beetle
     def start
       logger.info "RedisConfigurationClient Starting (#{id})"
       clear_redis_master_file
-      auto_configure
+      @redis_master = auto_detect_master
       write_redis_master_file(@redis_master.server) if @redis_master
       logger.info "Listening"
       beetle_client.listen
@@ -116,6 +116,10 @@ module Beetle
       @redis_master = nil
       beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
+    
+    def auto_detect_master
+      RedisConfigurationAutoDetection.new(redis_instances).master
+    end
 
     def clear_redis_master_file
       logger.warn "Clearing redis master file '#{master_file}'"
@@ -128,32 +132,15 @@ module Beetle
 
     def write_redis_master_file(redis_server_string)
       logger.warn "Writing '#{redis_server_string}' to redis master file '#{master_file}'"
-      File.open(master_file, "w"){|f| f.puts redis_server_string}
+      File.open(master_file, "w"){|f| f.puts redis_server_string }
     end
 
     def master_file
       Beetle.config.redis_server
     end
 
-    # auto configure redis master
-    def auto_configure
-      if single_master_reachable? || master_and_slave_reachable?
-        @redis_master = redis_instances.find{|r| r.role == "master"}
-      end
-    end
-
-    # whether we have a master slave configuration
-    def single_master_reachable?
-      redis_instances.size == 1 && redis_instances.first.master?
-    end
-
-    # can we access both master and slave
-    def master_and_slave_reachable?
-      redis_instances.map(&:role).sort == %w(master slave)
-    end
-
     def redis_instances
-      @redis_instances ||= @redis_server_strings.map{|s| Redis.from_server_string(s)}
+      @redis_instances ||= @redis_server_strings.map{|s| Redis.from_server_string(s) }
     end
   end
 
