@@ -80,8 +80,7 @@ module Beetle
     end
 
     def build_beetle_client
-      beetle_client = Beetle::Client.new
-      beetle_client.configure :exchange => :system, :auto_delete => true do |config|
+      Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
         config.message :ping
         config.queue   internal_queue_name(:ping), :key => "ping"
         config.message :pong
@@ -95,7 +94,6 @@ module Beetle
         config.handler(internal_queue_name(:invalidate),  RedisConfigurationServerMessageHandler)
         config.handler(internal_queue_name(:reconfigure), RedisConfigurationServerMessageHandler)
       end
-      beetle_client
     end
 
     def internal_queue_name(prefix)

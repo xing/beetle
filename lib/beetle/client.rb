@@ -145,10 +145,10 @@ module Beetle
 
     # this is a convenience method to configure exchanges, queues, messages and handlers
     # with a common set of options. allows one to call all register methods without the
-    # register_ prefix.
+    # register_ prefix. returns self.
     #
     # Example:
-    #  client.configure :exchange => :foobar do |config|
+    #  client = Beetle.client.new.configure :exchange => :foobar do |config|
     #    config.queue :q1, :key => "foo"
     #    config.queue :q2, :key => "bar"
     #    config.message :foo
@@ -158,6 +158,7 @@ module Beetle
     #  end
     def configure(options={}) #:yields: config
       yield Configurator.new(self, options)
+      self
     end
 
     # publishes a message. the given options hash is merged with options given on message registration.
