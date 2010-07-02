@@ -106,8 +106,7 @@ module Beetle
     end
 
     def build_beetle_client
-      beetle_client = Beetle::Client.new
-      beetle_client.configure :exchange => :system, :auto_delete => true do |config|
+      Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
         config.message :client_invalidated
         config.queue   :client_invalidated
         config.message :pong
@@ -120,7 +119,6 @@ module Beetle
         config.handler(:pong,               RedisConfigurationClientMessageHandler)
         config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
       end
-      beetle_client
     end
 
     def redis_master_watcher
@@ -228,7 +226,7 @@ module Beetle
 
     def configure_slaves(master)
       other_redis_masters(master).each do |r|
-        logger.info "Reconfiguríng '#{r.server}' as a slave of '#{master.server}'"
+        logger.info "Reconfiguring '#{r.server}' as a slave of '#{master.server}'"
         r.slave_of!(master.host, master.port)
       end
     end
