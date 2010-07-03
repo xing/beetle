@@ -23,9 +23,9 @@ class Redis #:nodoc:
       role == "slave"
     end
 
-    def slave_of?(master_host, master_port)
-      return false unless slave?
-      info["master_host"] == master_host && info["master_port"] == master_port.to_s
+    def slave_of?(host, port)
+      return false unless info = self.info
+      info["role"] == "slave" && info["master_host"] == host && info["master_port"] == port.to_s
     end
   end
 
