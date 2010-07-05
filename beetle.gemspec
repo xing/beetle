@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{beetle}
-  s.version = "0.2.0.beta7"
+  s.version = "0.2.0.beta8"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
-  s.date = %q{2010-07-01}
+  s.date = %q{2010-07-05}
   s.default_executable = %q{beetle}
   s.description = %q{A highly available, reliable messaging infrastructure}
   s.email = %q{developers@xing.com}
@@ -63,10 +63,12 @@ Gem::Specification.new do |s|
      "lib/beetle/message.rb",
      "lib/beetle/publisher.rb",
      "lib/beetle/r_c.rb",
+     "lib/beetle/redis_configuration_auto_detection.rb",
      "lib/beetle/redis_configuration_client.rb",
      "lib/beetle/redis_configuration_server.rb",
      "lib/beetle/redis_ext.rb",
      "lib/beetle/subscriber.rb",
+     "script/console",
      "script/start_rabbit",
      "test/beetle.yml",
      "test/beetle/base_test.rb",
