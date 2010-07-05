@@ -202,8 +202,8 @@ module Beetle
       publisher.stop
     end
 
-    # traces all messages received on all queues. useful for debugging message flow.
-    def trace(&block)
+    # traces messages without consuming them. useful for debugging message flow.
+    def trace(messages=self.messages.keys, &block)
       queues.each do |name, opts|
         opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(name)
       end
@@ -214,7 +214,7 @@ module Beetle
         puts "MSGID: #{msg.msg_id}"
         puts "DATA: #{msg.data}"
       end
-      subscriber.listen(messages.keys, &block)
+      listen(messages, &block)
     end
 
     # evaluate the ruby files matching the given +glob+ pattern in the context of the client instance.
