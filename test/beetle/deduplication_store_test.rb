@@ -4,7 +4,7 @@ module Beetle
 
   class RedisAssumptionsTest < Test::Unit::TestCase
     def setup
-      @r = DeduplicationStore.new(Client.new).redis
+      @r = DeduplicationStore.new.redis
       @r.flushdb
     end
 
@@ -26,7 +26,7 @@ module Beetle
   class RedisServerStringTest < Test::Unit::TestCase
     def setup
       @original_redis_server = Beetle.config.redis_server
-      @store = DeduplicationStore.new(Client.new)
+      @store = DeduplicationStore.new
       @server_string = "my_test_host_from_file:9999"
       Beetle.config.redis_server = @server_string
     end
@@ -43,7 +43,7 @@ module Beetle
   class RedisServerFileTest < Test::Unit::TestCase
     def setup
       @original_redis_server = Beetle.config.redis_server
-      @store = DeduplicationStore.new(Client.new)
+      @store = DeduplicationStore.new
       @server_string = "my_test_host_from_file:6379"
       Beetle.config.redis_server = redis_test_master_file(@server_string)
     end
@@ -75,7 +75,7 @@ module Beetle
 
   class RedisFailoverTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new(Client.new)
+      @store = DeduplicationStore.new
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
