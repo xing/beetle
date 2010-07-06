@@ -35,7 +35,7 @@ module Beetle
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
-      check_availability
+      update_redis_server_info
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
@@ -87,7 +87,7 @@ module Beetle
 
     # Method called from RedisWatcher when watched redis becomes unavailable
     def master_unavailable
-      msg = "Redis master '#{redis_master.server}' not available (#{@redis_servers.inspect})"
+      msg = "Redis master '#{redis_master.server}' not available (#{@redis_server_info.inspect})"
       redis_master_watcher.pause
       logger.warn(msg)
       beetle_client.publish(:system_notification, {"message" => msg}.to_json)
@@ -99,14 +99,20 @@ module Beetle
       end
     end
 
-    # Method called from RedisWatcher to initiate master_file update on client machines
+    # Method called from RedisWatcher when watched redis is available
     def master_available
       publish_master(redis_master)
       configure_slaves(redis_master)
     end
 
     def master_available?
-      @redis_servers["master"].include?(redis_master)
+      @redis_server_info["master"].include?(redis_master)
+    end
+    
+    def update_redis_server_info
+      logger.debug "Updating redis server info"
+      @redis_server_info = Hash.new {|h,k| h[k]= []}
+      redis_instances.each {|r| @redis_server_info[r.role] << r}
     end
 
     private
@@ -148,22 +154,16 @@ module Beetle
       @redis_instances ||= @redis_server_strings.map{|r| Redis.from_server_string(r, :timeout => 3) }
     end
 
-    def check_availability
-      logger.debug "Checking availability of redis servers"
-      @redis_servers = Hash.new {|h,k| h[k]= []}
-      redis_instances.each {|r| @redis_servers[r.role] << r}
-    end
-
     def detect_new_redis_master
       redis_slaves_of_master.first
     end
 
     def redis_slaves_of_master
-      @redis_servers["slave"].select{|r| r.slave_of?(redis_master.host, redis_master.port)}
+      @redis_server_info["slave"].select{|r| r.slave_of?(redis_master.host, redis_master.port)}
     end
 
     def other_redis_masters(master)
-      @redis_servers["master"].reject{|r| r.server == master.server}
+      @redis_server_info["master"].reject{|r| r.server == master.server}
     end
 
     def redeem_token(token)
@@ -286,7 +286,7 @@ module Beetle
 
       private
       def check_availability
-        @configuration_server.__send__ :check_availability
+        @configuration_server.update_redis_server_info
         if @configuration_server.master_available?
           @configuration_server.master_available
         else
