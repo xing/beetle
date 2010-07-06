@@ -40,19 +40,19 @@ module Beetle
       @server.start
       assert !@server.paused?
       
-      @server.redis_unavailable
+      @server.master_unavailable
       assert @server.paused?
     end
   
     test "should setup an invalidation timeout" do
       EM::Timer.expects(:new).yields
       @server.expects(:cancel_invalidation)
-      @server.redis_unavailable
+      @server.master_unavailable
     end
     
     test "should continue watching after the invalidation timeout has expired" do
       EM::Timer.expects(:new).yields
-      @server.redis_unavailable
+      @server.master_unavailable
       assert !@server.paused?
     end
   end

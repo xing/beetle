@@ -21,6 +21,9 @@ module Beetle
     # The current token used to detect correct message order
     attr_reader :current_token
 
+    # Redis servers by role
+    attr_reader :redis_servers
+
     # redis_server_strings is an array of host:port strings,
     # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
     #
@@ -31,6 +34,7 @@ module Beetle
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
+      check_availability
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
@@ -81,8 +85,8 @@ module Beetle
     end
 
     # Method called from RedisWatcher when watched redis becomes unavailable
-    def redis_unavailable
-      msg = "Redis master '#{redis_master.server}' not available"
+    def master_unavailable
+      msg = "Redis master '#{redis_master.server}' not available (#{@redis_servers.inspect})"
       redis_master_watcher.pause
       logger.warn(msg)
       beetle_client.publish(:system_notification, {"message" => msg}.to_json)
@@ -95,9 +99,13 @@ module Beetle
     end
 
     # Method called from RedisWatcher to initiate master_file update on client machines
-    def redis_available
+    def master_available
       publish_master(redis_master)
       configure_slaves(redis_master)
+    end
+
+    def master_available?
+      @redis_servers["master"].include?(redis_master)
     end
 
     private
@@ -123,7 +131,7 @@ module Beetle
     end
 
     def redis_master_watcher
-      @redis_master_watcher ||= RedisWatcher.new(redis_master, self)
+      @redis_master_watcher ||= RedisWatcher.new(self)
     end
 
     def redis_master
@@ -135,12 +143,14 @@ module Beetle
       auto_detect_master
     end
 
-    def all_available_redis
-      redis_instances.select{|redis| redis.available? }
+    def redis_instances
+      @redis_instances ||= @redis_server_strings.map{|r| Redis.from_server_string(r, :timeout => 3) }
     end
 
-    def redis_instances
-      @redis_instances ||= @redis_server_strings.map{|r| Redis.from_server_string(r) }
+    def check_availability
+      logger.debug "Checking availability of redis servers"
+      @redis_servers = Hash.new {|h,k| h[k]= []}
+      redis_instances.each {|r| @redis_servers[r.role] << r}
     end
 
     def detect_new_redis_master
@@ -148,11 +158,11 @@ module Beetle
     end
 
     def redis_slaves_of_master
-      redis_instances.select{|redis| redis.server != redis_master.server && redis.slave_of?(redis_master.host, redis_master.port) }
+      @redis_servers["slave"].select{|r| r.slave_of?(redis_master.host, redis_master.port)}
     end
 
     def other_redis_masters(master)
-      all_available_redis.reject{|r| r.server == master.server || r.slave? }
+      @redis_servers["master"].reject{|r| r.server == master.server}
     end
 
     def redeem_token(token)
@@ -206,9 +216,7 @@ module Beetle
         logger.warn(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
 
-        @redis_master = Redis.from_server_string(new_redis_master.server)
-
-        redis_master_watcher.redis = redis_master
+        @redis_master = new_redis_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
@@ -245,10 +253,7 @@ module Beetle
     class RedisWatcher #:nodoc:
       include Logging
 
-      attr_accessor :redis
-
-      def initialize(redis, configuration_server)
-        @redis = redis
+      def initialize(configuration_server)
         @configuration_server = configuration_server
         @retries = 0
         @paused = true
@@ -258,7 +263,7 @@ module Beetle
       end
 
       def pause
-        logger.info "Pause checking availability of redis '#{@redis.server}'"
+        logger.info "Pause checking availability of redis servers"
         @watch_timer.cancel if @watch_timer
         @watch_timer = nil
         @paused = true
@@ -267,8 +272,8 @@ module Beetle
       def watch
         @watch_timer ||=
           begin
-            logger.info "Start watching #{@redis.server} every #{@master_retry_timeout} seconds" if @redis
-            EventMachine::add_periodic_timer(@master_retry_timeout) { check_master_availability }
+            logger.info "Start watching redis servers every #{@master_retry_timeout} seconds"
+            EventMachine::add_periodic_timer(@master_retry_timeout) { check_availability }
           end
         @paused = false
       end
@@ -279,16 +284,15 @@ module Beetle
       end
 
       private
-      def check_master_availability
-        return unless @redis
-        logger.debug "Checking availability of redis '#{@redis.server}'"
-        if @redis.available?
-          @configuration_server.redis_available
+      def check_availability
+        @configuration_server.__send__ :check_availability
+        if @configuration_server.master_available?
+          @configuration_server.master_available
         else
-          logger.warn "Redis server #{@redis.server} not available! (Retries left: #{@master_retries - (@retries + 1)})"
+          logger.warn "Redis master not available! (Retries left: #{@master_retries - (@retries + 1)})"
           if (@retries+=1) >= @master_retries
             @retries = 0
-            @configuration_server.redis_unavailable
+            @configuration_server.master_unavailable
           end
         end
       end
