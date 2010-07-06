@@ -21,7 +21,7 @@ module Beetle
 
     # get the Redis instance
     def redis
-      redis_master_source = File.exists?(@config.redis_server) ? "master_file" : "server_string"
+      redis_master_source = @config.redis_server =~ /^\S+\:\d+$/ ? "server_string" : "master_file"
       _eigenclass_.class_eval <<-EVALS, __FILE__, __LINE__
         def redis
           redis_master_from_#{redis_master_source}
@@ -109,14 +109,14 @@ module Beetle
 
     # performs redis operations by yielding a passed in block, waiting for a new master to
     # show up on the network if the operation throws an exception. if a new master doesn't
-    # appear after 120 seconds, we raise an exception.
+      # appear after 180 tries, we raise an exception.
     def with_failover #:nodoc:
       tries = 0
       begin
         yield
       rescue Exception => e
         Beetle::reraise_expectation_errors!
-        logger.error "Beetle: redis connection error '#{e}' for server #{redis.server rescue ''} (#{e.backtrace[0]})"
+        logger.error "Beetle: redis connection error #{e} #{@config.redis_server} (#{e.backtrace[0]})"
         if (tries+=1) < @config.redis_operation_retries
           sleep 1
           logger.info "Beetle: retrying redis operation"
@@ -134,6 +134,8 @@ module Beetle
     def redis_master_from_master_file
       set_current_redis_master_from_master_file if redis_master_file_changed?
       @current_master
+    rescue Errno::ENOENT
+      nil
     end
 
     def redis_master_file_changed?
