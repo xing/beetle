@@ -22,14 +22,6 @@ Feature: Redis auto failover
     Given a redis server "redis-1" exists as master
     Then the role of redis server "redis-1" should be "slave"
 
-  Scenario: Available slave is not slave of current master
-    Given a redis server "redis-3" exists as master
-    And a redis server "redis-4" exists as slave of "redis-3"
-    And a redis configuration server using redis servers "redis-1,redis-4,redis-2" with clients "" exists
-    And redis server "redis-1" is down
-    And the retry timeout for the redis master check is reached
-    Then the role of redis server "redis-2" should be "master"
-
   Scenario: Redis master only temporarily down (no switch necessary)
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
