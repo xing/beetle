@@ -56,4 +56,22 @@ module Beetle
       assert !@server.paused?
     end
   end
+  
+  class RedisConfigurationServerInitialConfigurationTest < Test::Unit::TestCase
+    def setup
+      Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
+      EM::Timer.stubs(:new).returns(true)
+      EventMachine.stubs(:add_periodic_timer).yields
+      @server = RedisConfigurationServer.new
+      @server.send(:beetle_client).stubs(:listen).yields
+      @server.send(:beetle_client).stubs(:publish)
+    end
+    
+    test "autoconfiguration should succeed if a valid slave/master pair can be found" do
+      redis_master = stub("redis master", :server => 'stubbed_master:0', :available? => true, :master? => true)
+      redis_slave  = stub("redis slave",  :server => 'stubbed_slave:0',  :available? => true, :master? => false)
+      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
+      assert_equal redis_master, @server.send(:determine_initial_redis_master)
+    end
+  end
 end

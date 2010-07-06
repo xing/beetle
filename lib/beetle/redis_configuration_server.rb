@@ -127,10 +127,10 @@ module Beetle
 
     def redis_master
       # TODO what to do if auto-detection failed?
-      @redis_master ||= auto_detect_master
+      @redis_master ||= determine_initial_redis_master
     end
 
-    def auto_detect_master
+    def determine_initial_redis_master
       RedisConfigurationAutoDetection.new(redis_instances).master
     end
 
