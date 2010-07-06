@@ -15,6 +15,8 @@ module Beetle
   # Usually started via <tt>beetle configuration_client</tt> command.
   class RedisConfigurationClient < Beetle::Handler
     include Logging
+    include RedisMasterFile
+    include RedisConfigurationAutoDetection
 
     # Set a custom unique id for this instance
     #
@@ -115,28 +117,6 @@ module Beetle
       clear_redis_master_file
       @redis_master = nil
       beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
-    end
-
-    def auto_detect_master
-      RedisConfigurationAutoDetection.new(redis_instances).master
-    end
-
-    def clear_redis_master_file
-      logger.warn "Clearing redis master file '#{master_file}'"
-      write_redis_master_file("")
-    end
-
-    def read_redis_master_file
-      File.read(master_file).chomp
-    end
-
-    def write_redis_master_file(redis_server_string)
-      logger.warn "Writing '#{redis_server_string}' to redis master file '#{master_file}'"
-      File.open(master_file, "w"){|f| f.puts redis_server_string }
-    end
-
-    def master_file
-      beetle_client.config.redis_server
     end
 
     def redis_instances
