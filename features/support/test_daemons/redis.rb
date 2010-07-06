@@ -93,7 +93,7 @@ module TestDaemons
       redis.slave?
     end
 
-    # TODO: The retry logic must be moved into RedisConfigurationServer
+    # TODO: Move to redis_ext
     def slave_of(master_port)
       tries = 0
       begin

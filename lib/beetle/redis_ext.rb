@@ -2,7 +2,7 @@
 class Redis #:nodoc:
   def self.from_server_string(server_string, options = {})
     host, port = server_string.split(':')
-    options = ({:host => host, :port => port}).update(options)
+    options = {:host => host, :port => port}.update(options)
     new(options)
   end
 
@@ -18,7 +18,7 @@ class Redis #:nodoc:
     end
 
     def role
-      info_with_rescue["role"] || ""
+      info_with_rescue["role"] || "unknown"
     end
 
     def master?
