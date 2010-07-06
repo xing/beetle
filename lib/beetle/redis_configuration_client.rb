@@ -3,9 +3,9 @@ module Beetle
   # redis failover solution
   #
   # An instances of RedisConfigurationClient lives on every server that
-  # hosts beetle consumers (worker server). 
+  # hosts beetle consumers (worker server).
   # A RedisConfigurationClient is responsible for determining an initial
-  # redis master and reacting to redis master switches initiated by the 
+  # redis master and reacting to redis master switches initiated by the
   # RedisConfigurationServer.
   #
   # It will write the current redis master host:port string to a file
@@ -116,7 +116,7 @@ module Beetle
       @redis_master = nil
       beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
-    
+
     def auto_detect_master
       RedisConfigurationAutoDetection.new(redis_instances).master
     end
@@ -136,7 +136,7 @@ module Beetle
     end
 
     def master_file
-      Beetle.config.redis_server
+      beetle_client.config.redis_server
     end
 
     def redis_instances

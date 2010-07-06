@@ -26,7 +26,7 @@ module Beetle
     # Exactly one of them must be a redis master.
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
-      @client_ids = Set.new(Beetle.config.redis_configuration_client_ids.split(","))
+      @client_ids = Set.new(beetle_client.config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
@@ -42,8 +42,8 @@ module Beetle
     def start
       logger.info "RedisConfigurationServer Starting"
       logger.info "Redis servers : #{@redis_server_strings.join(',')}"
-      logger.info "AMQP servers  : #{Beetle.config.servers}"
-      logger.info "Client ids    : #{Beetle.config.redis_configuration_client_ids}"
+      logger.info "AMQP servers  : #{beetle_client.config.servers}"
+      logger.info "Client ids    : #{beetle_client.config.redis_configuration_client_ids}"
       beetle_client.listen do
         redis_master_watcher.watch
       end
@@ -129,7 +129,7 @@ module Beetle
       # TODO what to do if auto-detection failed?
       @redis_master ||= auto_detect_master
     end
-    
+
     def auto_detect_master
       RedisConfigurationAutoDetection.new(redis_instances).master
     end
@@ -169,13 +169,13 @@ module Beetle
     def check_all_clients_available
       generate_new_token
       beetle_client.publish(:ping, {"token" => @current_token}.to_json)
-      @available_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
+      @available_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def invalidate_current_master
       generate_new_token
       beetle_client.publish(:invalidate, {"token" => @current_token}.to_json)
-      @invalidate_timer = EM::Timer.new(Beetle.config.redis_configuration_client_timeout) { cancel_invalidation }
+      @invalidate_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def cancel_invalidation
@@ -251,8 +251,9 @@ module Beetle
         @configuration_server = configuration_server
         @retries = 0
         @paused = true
-        @master_retry_timeout = Beetle.config.redis_configuration_master_retry_timeout
-        @master_retries = Beetle.config.redis_configuration_master_retries
+        beetle_client = configuration_server.__send__(:beetle_client)
+        @master_retry_timeout = beetle_client.config.redis_configuration_master_retry_timeout
+        @master_retries = beetle_client.config.redis_configuration_master_retries
       end
 
       def pause

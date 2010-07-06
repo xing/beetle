@@ -66,7 +66,7 @@ module Beetle
 
   class KeyManagementTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -152,7 +152,7 @@ module Beetle
   class AckingTest < Test::Unit::TestCase
 
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -225,7 +225,7 @@ module Beetle
 
   class FreshMessageTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -260,7 +260,7 @@ module Beetle
 
   class SimpleMessageTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
       @store.expects(:redis).never
     end
@@ -294,7 +294,7 @@ module Beetle
 
   class HandlerCrashTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -367,7 +367,7 @@ module Beetle
 
   class SeenMessageTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -505,7 +505,7 @@ module Beetle
 
   class ProcessingTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -573,7 +573,7 @@ module Beetle
 
   class HandlerTimeoutTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
@@ -601,7 +601,7 @@ module Beetle
 
   class SettingsTest < Test::Unit::TestCase
     def setup
-      @store = DeduplicationStore.new
+      @store = DeduplicationStore.new(Client.new)
       @store.flushdb
     end
 
