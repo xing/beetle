@@ -79,13 +79,11 @@ module Beetle
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
-      redis1 = stub()
-      redis2 = stub()
+      redis1 = stub("redis 1")
+      redis2 = stub("redis 2")
       s = sequence("redis accesses")
       @store.expects(:redis).returns(redis1).in_sequence(s)
       redis1.expects(:get).with("foo:x").raises("disconnected").in_sequence(s)
-      @store.expects(:redis).returns(redis1).in_sequence(s)
-      redis1.expects(:server).returns("goofy").in_sequence(s)
       @store.expects(:redis).returns(redis2).in_sequence(s)
       redis2.expects(:get).with("foo:x").returns("42").in_sequence(s)
       assert_equal("42", @store.get("foo", "x"))

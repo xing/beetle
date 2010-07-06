@@ -14,6 +14,7 @@ module Beetle
   class RedisConfigurationServer
     include Logging
     include RedisConfigurationAutoDetection
+    include RedisMasterFile
 
     # The current redis master
     attr_reader :redis_master
@@ -140,7 +141,7 @@ module Beetle
     end
 
     def determine_initial_redis_master
-      auto_detect_master
+      auto_detect_master || redis_master_from_master_file
     end
 
     def redis_instances

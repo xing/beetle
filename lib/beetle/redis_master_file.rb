@@ -1,5 +1,14 @@
 module Beetle
   module RedisMasterFile
+    private
+    def redis_master_from_master_file
+      if server = read_redis_master_file
+        Redis.from_server_string(server)
+      else
+        nil
+      end
+    end
+
     def clear_redis_master_file
       logger.warn "Clearing redis master file '#{master_file}'"
       write_redis_master_file("")
