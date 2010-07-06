@@ -116,7 +116,7 @@ module Beetle
         yield
       rescue Exception => e
         Beetle::reraise_expectation_errors!
-        logger.error "Beetle: redis connection error '#{e}' for server #{redis.server rescue ''}"
+        logger.error "Beetle: redis connection error '#{e}' for server #{redis.server rescue ''} (#{e.backtrace[0]})"
         if (tries+=1) < @client.config.redis_operation_retries
           sleep 1
           logger.info "Beetle: retrying redis operation"
