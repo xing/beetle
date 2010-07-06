@@ -50,7 +50,7 @@ module Beetle
       @queues = {}
       @messages = {}
       @bindings = {}
-      @deduplication_store = DeduplicationStore.new(self, config.redis_db)
+      @deduplication_store = DeduplicationStore.new(self)
     end
 
     # register an exchange with the given _name_ and a set of _options_:

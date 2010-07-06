@@ -13,9 +13,8 @@ module Beetle
   class DeduplicationStore
     include Logging
 
-    def initialize(client, db = 4)
+    def initialize(client)
       @client = client
-      @db = db
       @current_master = nil
       @last_time_master_file_changed = nil
     end
@@ -129,7 +128,7 @@ module Beetle
     end
 
     def redis_master_from_server_string
-      @current_master ||= Redis.from_server_string(@client.config.redis_server, :db => @db)
+      @current_master ||= Redis.from_server_string(@client.config.redis_server, :db => @client.config.redis_db)
     end
 
     def redis_master_from_master_file
@@ -144,7 +143,7 @@ module Beetle
     def set_current_redis_master_from_master_file
       @last_time_master_file_changed = File.mtime(@client.config.redis_server)
       server_string = read_master_file
-      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @db) : nil
+      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @client.config.redis_db) : nil
     end
 
     def read_master_file
