@@ -14,6 +14,10 @@ After do
   cleanup_test_env
 end
 
+at_exit do
+  cleanup_test_env
+end
+
 def cleanup_test_env
   TestDaemons::RedisConfigurationClient.stop_all
   TestDaemons::RedisConfigurationServer.stop
