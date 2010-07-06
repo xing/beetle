@@ -30,12 +30,3 @@ def redis_stub(name, opts = {})
   opts = {'host' => default_host, 'port' => default_port, 'server' => "#{default_host}:#{default_port}"}.update(opts)
   stub(name, opts)
 end
-
-def stub_redis_configuration_server_class
-  Beetle::RedisConfigurationServer.active_master = nil
-  dumb_client = Beetle::Client.new
-  dumb_client.stubs(:publish)
-  dumb_client.stubs(:subscribe)
-  Beetle::RedisConfigurationServer.client = dumb_client
-  Beetle::RedisConfigurationServer.client.deduplication_store.redis_instances = []
-end
