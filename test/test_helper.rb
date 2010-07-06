@@ -39,7 +39,3 @@ def stub_redis_configuration_server_class
   Beetle::RedisConfigurationServer.client = dumb_client
   Beetle::RedisConfigurationServer.client.deduplication_store.redis_instances = []
 end
-
-def add_alive_server(server)
-  Beetle::RedisConfigurationServer.give_master({'server_name' => server})
-end
