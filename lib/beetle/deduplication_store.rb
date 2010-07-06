@@ -13,15 +13,15 @@ module Beetle
   class DeduplicationStore
     include Logging
 
-    def initialize(client)
-      @client = client
+    def initialize(config = Beetle.config)
+      @config = config
       @current_master = nil
       @last_time_master_file_changed = nil
     end
 
     # get the Redis instance
     def redis
-      redis_master_source = File.exists?(@client.config.redis_server) ? "master_file" : "server_string"
+      redis_master_source = File.exists?(@config.redis_server) ? "master_file" : "server_string"
       _eigenclass_.class_eval <<-EVALS, __FILE__, __LINE__
         def redis
           redis_master_from_#{redis_master_source}
@@ -51,7 +51,7 @@ module Beetle
     # garbage collect keys in Redis (always assume the worst!)
     def garbage_collect_keys(now = Time.now.to_i)
       keys = redis.keys("msgid:*:expires")
-      threshold = now + @client.config.gc_threshold
+      threshold = now + @config.gc_threshold
       keys.each do |key|
         expires_at = redis.get key
         if expires_at && expires_at.to_i < threshold
@@ -117,7 +117,7 @@ module Beetle
       rescue Exception => e
         Beetle::reraise_expectation_errors!
         logger.error "Beetle: redis connection error '#{e}' for server #{redis.server rescue ''} (#{e.backtrace[0]})"
-        if (tries+=1) < @client.config.redis_operation_retries
+        if (tries+=1) < @config.redis_operation_retries
           sleep 1
           logger.info "Beetle: retrying redis operation"
           retry
@@ -128,7 +128,7 @@ module Beetle
     end
 
     def redis_master_from_server_string
-      @current_master ||= Redis.from_server_string(@client.config.redis_server, :db => @client.config.redis_db)
+      @current_master ||= Redis.from_server_string(@config.redis_server, :db => @config.redis_db)
     end
 
     def redis_master_from_master_file
@@ -137,17 +137,17 @@ module Beetle
     end
 
     def redis_master_file_changed?
-      @last_time_master_file_changed != File.mtime(@client.config.redis_server)
+      @last_time_master_file_changed != File.mtime(@config.redis_server)
     end
 
     def set_current_redis_master_from_master_file
-      @last_time_master_file_changed = File.mtime(@client.config.redis_server)
+      @last_time_master_file_changed = File.mtime(@config.redis_server)
       server_string = read_master_file
-      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @client.config.redis_db) : nil
+      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db) : nil
     end
 
     def read_master_file
-      File.read(@client.config.redis_server).chomp
+      File.read(@config.redis_server).chomp
     end
 
     def _eigenclass_
