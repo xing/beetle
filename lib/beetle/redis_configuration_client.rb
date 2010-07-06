@@ -32,7 +32,7 @@ module Beetle
     def initialize(redis_server_strings = [])
       @redis_server_strings = redis_server_strings
       @current_token = nil
-      RedisConfigurationServerMessageHandler.delegate_messages_to = self
+      RedisConfigurationServerMessageHandler.configuration_client = self
     end
 
     # Start determining initial redis master and reacting
@@ -145,10 +145,10 @@ module Beetle
   end
 
   class RedisConfigurationServerMessageHandler < Beetle::Handler #:nodoc:
-    cattr_accessor :delegate_messages_to
+    cattr_accessor :configuration_client
 
     def process
-      self.class.delegate_messages_to.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
+      self.class.configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
     end
   end
 end
