@@ -36,6 +36,8 @@ module Beetle
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
       update_redis_server_info
+      determine_initial_redis_master
+      # TODO what to do if auto-detection failed?
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
 
@@ -108,7 +110,7 @@ module Beetle
     def master_available?
       @redis_server_info["master"].include?(redis_master)
     end
-    
+
     def update_redis_server_info
       logger.debug "Updating redis server info"
       @redis_server_info = Hash.new {|h,k| h[k]= []}
@@ -141,13 +143,9 @@ module Beetle
       @redis_master_watcher ||= RedisWatcher.new(self)
     end
 
-    def redis_master
-      # TODO what to do if auto-detection failed?
-      @redis_master ||= determine_initial_redis_master
-    end
-
     def determine_initial_redis_master
-      auto_detect_master || redis_master_from_master_file
+      @redis_master = auto_detect_master || redis_master_from_master_file
+      logger.error "failed to determine initial master" unless @redis_master
     end
 
     def redis_instances
