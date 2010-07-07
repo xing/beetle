@@ -76,6 +76,7 @@ module Beetle
   class RedisFailoverTest < Test::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
+      Beetle.config.expects(:redis_operation_retries).returns(1)
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do
@@ -93,7 +94,7 @@ module Beetle
       redis1 = stub()
       @store.stubs(:redis).returns(redis1)
       redis1.stubs(:get).with("foo:x").raises("disconnected")
-      @store.expects(:sleep).times(Beetle.config.redis_operation_retries-1)
+      @store.stubs(:sleep)
       assert_raises(NoRedisMaster) { @store.get("foo", "x") }
     end
   end
