@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.email              = "developers@xing.com"
   s.executables        = ["beetle"]
   s.extra_rdoc_files   = ["README.rdoc"]
-  s.files              = Dir['{ext,lib}/**/*.rb'] << 'beetle.gemspec'
+  s.files              = Dir['{examples,ext,lib}/**/*.rb'] + %w(beetle.gemspec examples/README.rdoc)
   s.extensions         = 'ext/mkrf_conf.rb'
   s.homepage           = "http://xing.github.com/beetle/"
   s.rdoc_options       = ["--charset=UTF-8"]
