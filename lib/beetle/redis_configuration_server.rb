@@ -148,8 +148,24 @@ module Beetle
     end
 
     def determine_initial_redis_master
-      @redis_master = auto_detect_master || redis_master_from_master_file
-      logger.error "failed to determine initial master" unless @redis_master
+      if @redis_master = auto_detect_master
+        write_redis_master_file(@redis_master.server)
+        return
+      end
+      master_from_file = redis_master_from_master_file
+      if @redis_server_info["master"] == [master_from_file]
+        @redis_master = master_from_file
+      elsif @redis_server_info["slave"].include?(master_from_file)
+        master_unavailable
+      elsif @redis_server_info["master"].include?(master_from_file)
+        @redis_master = master_from_file
+      elsif @redis_server_info["unknown"].include?(master_from_file)
+        master_unavailable
+      elsif @redis_server_info["unknown"].size == redis_instances.size
+        raise NoRedisMaster.new("failed to determine initial redis master")
+      elsif master_from_file.blank?
+        raise RedisMasterFileEmpty.new("failed to determine initial redis master")
+      end 
     end
 
     def redis_instances
