@@ -32,6 +32,10 @@ module Beetle
           Beetle.config.servers = val
         end
 
+        opts.on("--config-file PATH", String, "Path to an external yaml config file") do |val|
+          Beetle.config.config_file = val
+        end
+
         dir_mode = nil
         dir = nil
         opts.on("--pid-dir DIR", String, "Write pid and log to DIR") do |val|
