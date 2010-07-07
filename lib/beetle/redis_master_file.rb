@@ -2,11 +2,8 @@ module Beetle
   module RedisMasterFile
     private
     def redis_master_from_master_file
-      if server = read_redis_master_file
-        Redis.from_server_string(server)
-      else
-        nil
-      end
+      server = read_redis_master_file
+      redis_instances.find{|r| r.server == server }
     end
 
     def clear_redis_master_file
