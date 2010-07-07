@@ -57,34 +57,118 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerInitialConfigurationTest < Test::Unit::TestCase
+  class RedisConfigurationServerInitialRedisMasterDeterminationTest < Test::Unit::TestCase
     def setup
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
-      client = Client.new(Configuration.new)
-      client.stubs(:listen).yields
-      client.stubs(:publish)
-      client.config.redis_server = "stubbed_master:0"
-      client.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
+      @client = Client.new(Configuration.new)
+      @client.stubs(:listen).yields
+      @client.stubs(:publish)
+      @client.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
-      @server.stubs(:beetle_client).returns(client)
+      @server.stubs(:beetle_client).returns(@client)
     end
 
-    test "autoconfiguration should succeed if a valid slave/master pair can be found" do
-      redis_master = stub("redis master", :server => 'stubbed_master:0', :available? => true, :master? => true, :slave? => false)
-      redis_slave  = stub("redis slave",  :server => 'stubbed_slave:0',  :available? => true, :master? => false, :slave? => true)
+    test "should use redis master if auto-detection works because master-slave pair available" do
+      redis_master = build_master_redis_stub
+      redis_slave  = build_slave_redis_stub
       @server.stubs(:redis_instances).returns([redis_master, redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+
+      @server.expects(:write_redis_master_file).with(redis_master.server)
       @server.send(:determine_initial_redis_master)
       assert_equal redis_master, @server.redis_master
     end
 
-    test "autoconfiguration should fallback to read the master file if a valid slave/master pair can't be found" do
-      redis_master = stub("redis master", :server => 'stubbed_master:0', :available? => true, :master? => true)
-      redis_slave  = stub("redis slave",  :server => 'stubbed_slave:0',  :available? => true, :master? => true)
+    test "should use redis master if auto-detection fails but master in file is the only master" do
+      redis_master = build_master_redis_stub
+      redis_slave  = build_slave_redis_stub
       @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.expects(:redis_master_from_master_file)
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+
+      @server.send(:determine_initial_redis_master)
+      assert_equal redis_master, @server.redis_master
+    end
+
+    test "should start master switch if auto-detection fails and master in file is slave" do
+      redis_slave  = build_slave_redis_stub
+      @server.stubs(:redis_instances).returns([redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_slave))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns(redis_slave)
+
+      @server.expects(:master_unavailable)
       @server.send(:determine_initial_redis_master)
     end
 
+    test "should use redis master if auto-detection fails but master in file is one of the masters" do
+      redis_master  = build_master_redis_stub
+      redis_master2 = build_master_redis_stub
+      @server.stubs(:redis_instances).returns([redis_master, redis_master2])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_master2))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+
+      @server.send(:determine_initial_redis_master)
+      assert_equal redis_master, @server.redis_master
+    end
+
+    test "should start master switch if auto-detection fails and master in file is not available" do
+      redis_master = build_unknown_redis_stub
+      redis_slave  = build_slave_redis_stub
+      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+      
+      @server.expects(:master_unavailable)
+      @server.send(:determine_initial_redis_master)
+    end
+
+    test "should raise an exception if auto-detection fails and no redis available" do
+      redis_master = build_unknown_redis_stub
+      redis_slave  = build_unknown_redis_stub
+      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns("")
+
+      assert_raises Beetle::NoRedisMaster do
+        @server.send(:determine_initial_redis_master)
+      end
+    end
+
+    test "should raise an exception if auto-detection fails and file is blank" do
+      redis_master = build_master_redis_stub
+      redis_slave  = build_slave_redis_stub
+      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.expects(:auto_detect_master).returns(nil)
+      @server.stubs(:redis_master_from_master_file).returns("")
+
+      assert_raises Beetle::RedisMasterFileEmpty do
+        @server.send(:determine_initial_redis_master)
+      end
+    end
+
+    private
+
+    def build_master_redis_stub
+      stub("redis master", :server => "stubbed_master:0", :available? => true, :master? => true, :slave? => false, :role => "master")
+    end
+
+    def build_slave_redis_stub
+      stub("redis slave", :server => "stubbed_slave:0",  :available? => true, :master? => false, :slave? => true, :role => "slave")
+    end
+    
+    def build_unknown_redis_stub
+      stub("redis unknown", :server => "stubbed_unknown:0",  :available? => false, :master? => false, :slave? => false, :role => "unknown")
+    end
+    
+    def build_redis_server_info(*redis_instances)
+      redis_instances.inject({"master" => [], "slave" => [], "unknown" => []}){|memo, redis| memo[redis.role] << redis; memo }
+    end
   end
 end
