@@ -111,13 +111,13 @@ module Beetle
     # show up on the network if the operation throws an exception. if a new master doesn't
       # appear after 180 tries, we raise an exception.
     def with_failover #:nodoc:
-      tries = 0
+      end_time = Time.now.to_i + @config.redis_operation_retries
       begin
         yield
       rescue Exception => e
         Beetle::reraise_expectation_errors!
         logger.error "Beetle: redis connection error #{e} #{@config.redis_server} (#{e.backtrace[0]})"
-        if (tries+=1) < @config.redis_operation_retries
+        if Time.now.to_i < end_time
           sleep 1
           logger.info "Beetle: retrying redis operation"
           retry
