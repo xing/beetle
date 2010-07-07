@@ -35,8 +35,6 @@ module Beetle
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
-      update_redis_server_info
-      determine_initial_redis_master
       # TODO what to do if auto-detection failed?
       RedisConfigurationClientMessageHandler.configuration_server = self
     end
@@ -48,10 +46,9 @@ module Beetle
 
     # Start watching redis
     def start
-      logger.info "RedisConfigurationServer Starting"
-      logger.info "Redis servers : #{@redis_server_strings.join(',')}"
-      logger.info "AMQP servers  : #{beetle_client.config.servers}"
-      logger.info "Client ids    : #{beetle_client.config.redis_configuration_client_ids}"
+      update_redis_server_info
+      determine_initial_redis_master
+      log_start
       beetle_client.listen do
         redis_master_watcher.watch
       end
@@ -118,6 +115,13 @@ module Beetle
     end
 
     private
+
+    def log_start
+      logger.info "RedisConfigurationServer Starting"
+      logger.info "Redis servers : #{@redis_server_strings.join(',')}"
+      logger.info "AMQP servers  : #{beetle_client.config.servers}"
+      logger.info "Client ids    : #{beetle_client.config.redis_configuration_client_ids}"
+    end
 
     def beetle_client
       @beetle_client ||= build_beetle_client
