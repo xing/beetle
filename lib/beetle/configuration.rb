@@ -1,3 +1,5 @@
+require 'erb'
+
 module Beetle
   class Configuration
     # default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
