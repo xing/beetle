@@ -28,14 +28,15 @@ module Beetle
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
-      @server.stubs(:redis_master).returns(stub('redis stub', :server => 'stubbed_server', :available? => false))
+      @server.instance_variable_set(:@redis_master, stub('redis stub', :server => 'stubbed_server', :available? => false))
       @server.send(:beetle_client).stubs(:listen).yields
       @server.send(:beetle_client).stubs(:publish)
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
     end
 
-    test "should pause watching of the redis server" do
+    test "should pause watching of the redis master when it becomes unavailable" do
+      @server.expects(:determine_initial_redis_master)
       EM.stubs(:add_periodic_timer).returns(stub("timer", :cancel => true))
       @server.start
       assert !@server.paused?
@@ -70,10 +71,11 @@ module Beetle
     end
 
     test "autoconfiguration should succeed if a valid slave/master pair can be found" do
-      redis_master = stub("redis master", :server => 'stubbed_master:0', :available? => true, :master? => true)
-      redis_slave  = stub("redis slave",  :server => 'stubbed_slave:0',  :available? => true, :master? => false)
+      redis_master = stub("redis master", :server => 'stubbed_master:0', :available? => true, :master? => true, :slave? => false)
+      redis_slave  = stub("redis slave",  :server => 'stubbed_slave:0',  :available? => true, :master? => false, :slave? => true)
       @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      assert_equal redis_master, @server.send(:determine_initial_redis_master)
+      @server.send(:determine_initial_redis_master)
+      assert_equal redis_master, @server.redis_master
     end
 
     test "autoconfiguration should fallback to read the master file if a valid slave/master pair can't be found" do
