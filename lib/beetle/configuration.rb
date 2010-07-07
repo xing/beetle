@@ -34,6 +34,9 @@ module Beetle
     # the password to use when connectiong to the AMQP servers (defaults to <tt>"guest"</tt>)
     attr_accessor :password
 
+    # external config file (defaults to <tt>/etc/beetle/beetle.yml</tt>)
+    attr_reader :config_file
+
     def initialize #:nodoc:
       self.logger = begin
         logger = Logger.new(STDOUT)
@@ -57,6 +60,25 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+
+      self.config_file = "/etc/beetle/beetle.yml"
+    end
+
+    # setting the external config file will load it on assignment
+    def config_file=(file_name) #:nodoc:
+      @config_file = file_name
+      load_config if File.exist?(config_file)
+    end
+
+    private
+    def load_config
+      hash = YAML::load(ERB.new(IO.read(config_file)).result)
+      hash.each do |key, value|
+        send("#{key}=", value)
+      end
+    rescue Exception
+      logger.error "Error loading beetle config file '#{config_file}': #{$!}"
+      raise
     end
   end
 end
