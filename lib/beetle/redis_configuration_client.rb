@@ -26,7 +26,7 @@ module Beetle
 
     # Unique id for this instance (defaults to the hostname)
     def id
-      @id || `hostname`.chomp
+      @id ||= `hostname`.chomp
     end
 
     def initialize
