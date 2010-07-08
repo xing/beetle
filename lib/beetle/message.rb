@@ -16,7 +16,7 @@ module Beetle
     DEFAULT_TTL = 1.day
     # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
-    DEFAULT_HANDLER_TIMEOUT = 300.seconds
+    DEFAULT_HANDLER_TIMEOUT = 600.seconds
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     # how many seconds we should wait before retrying handler execution
