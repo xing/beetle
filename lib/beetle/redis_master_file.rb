@@ -25,7 +25,7 @@ module Beetle
     end
 
     def master_file
-      beetle_client.config.redis_server
+      config.redis_server
     end
   end
 end

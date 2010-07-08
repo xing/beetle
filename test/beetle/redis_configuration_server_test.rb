@@ -29,8 +29,8 @@ module Beetle
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
       @server.instance_variable_set(:@redis_master, stub('redis stub', :server => 'stubbed_server', :available? => false))
-      @server.send(:beetle_client).stubs(:listen).yields
-      @server.send(:beetle_client).stubs(:publish)
+      @server.beetle.stubs(:listen).yields
+      @server.beetle.stubs(:publish)
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
     end
@@ -66,7 +66,7 @@ module Beetle
       @client.stubs(:publish)
       @client.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
-      @server.stubs(:beetle_client).returns(@client)
+      @server.stubs(:beetle).returns(@client)
       @server.stubs(:write_redis_master_file)
       @redis_master  = build_master_redis_stub
       @redis_slave   = build_slave_redis_stub

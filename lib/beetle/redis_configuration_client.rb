@@ -42,7 +42,7 @@ module Beetle
       @redis_master = auto_detect_master
       write_redis_master_file(@redis_master.server) if @redis_master
       logger.info "Listening"
-      beetle_client.listen
+      beetle.listen
     end
 
     # Method called from RedisConfigurationServerMessageHandler
@@ -74,13 +74,17 @@ module Beetle
       end
     end
 
-    private
-
-    def beetle_client
-      @beetle_client ||= build_beetle_client
+    def beetle
+      @beetle ||= build_beetle
     end
 
-    def build_beetle_client
+    def config
+      beetle.config
+    end
+
+    private
+
+    def build_beetle
       Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
         config.message :ping
         config.queue   internal_queue_name(:ping), :key => "ping"
@@ -109,17 +113,17 @@ module Beetle
     end
 
     def pong!
-      beetle_client.publish(:pong, {"id" => id, "token" => @current_token}.to_json)
+      beetle.publish(:pong, {"id" => id, "token" => @current_token}.to_json)
     end
 
     def invalidate!
       clear_redis_master_file
       @redis_master = nil
-      beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
+      beetle.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
 
     def redis_instances
-      @redis_instances ||= beetle_client.config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
+      @redis_instances ||= config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
     end
   end
 
