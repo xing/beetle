@@ -21,7 +21,7 @@ Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode =>
       payload = ActiveSupport::JSON.decode(message.data)
       text = payload["message"]
       puts "Writing message to #{system_notification_log_file_path}: #{text}"
-      File.open(system_notification_log_file_path, "a") do |f|
+      File.open(system_notification_log_file_path, "a+") do |f|
         f << text
       end
     end
