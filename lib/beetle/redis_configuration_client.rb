@@ -29,10 +29,7 @@ module Beetle
       @id || `hostname`.chomp
     end
 
-    # redis_server_strings is an array of host:port strings,
-    # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
-    def initialize(redis_server_strings = [])
-      @redis_server_strings = redis_server_strings
+    def initialize
       @current_token = nil
       RedisConfigurationServerMessageHandler.configuration_client = self
     end
@@ -120,7 +117,7 @@ module Beetle
     end
 
     def redis_instances
-      @redis_instances ||= @redis_server_strings.map{|s| Redis.from_server_string(s) }
+      @redis_instances ||= beetle_client.config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
     end
   end
 

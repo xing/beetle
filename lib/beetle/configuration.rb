@@ -10,6 +10,9 @@ module Beetle
     # either a string like <tt>"localhost:6379"</tt> (default) or a file that contains the string.
     # use a file if you are using a beetle configuration_client process to update it for automatic redis failover.
     attr_accessor :redis_server
+    # list over redis servers available for master/slave switching
+    # an array of host:port strings, e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
+    attr_accessor :redis_server_list
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
 
@@ -50,6 +53,7 @@ module Beetle
 
       self.gc_threshold = 3.days
       self.redis_server = "localhost:6379"
+      self.redis_server_list = []
       self.redis_db = 4
       self.redis_operation_retries = 180
 

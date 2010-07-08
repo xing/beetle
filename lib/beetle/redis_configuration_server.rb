@@ -25,12 +25,7 @@ module Beetle
     # Redis servers by role
     attr_reader :redis_servers
 
-    # redis_server_strings is an array of host:port strings,
-    # e.g. ["192.168.1.2:6379", "192.168.1.3:6379"]
-    #
-    # Exactly one of them must be a redis master.
-    def initialize(redis_server_strings = [])
-      @redis_server_strings = redis_server_strings
+    def initialize
       @client_ids = Set.new(beetle_client.config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
@@ -118,7 +113,7 @@ module Beetle
 
     def log_start
       logger.info "RedisConfigurationServer Starting"
-      logger.info "Redis servers : #{@redis_server_strings.join(',')}"
+      logger.info "Redis servers : #{beetle_client.config.redis_server_list.join(',')}"
       logger.info "AMQP servers  : #{beetle_client.config.servers}"
       logger.info "Client ids    : #{beetle_client.config.redis_configuration_client_ids}"
     end
@@ -169,7 +164,7 @@ module Beetle
     end
 
     def redis_instances
-      @redis_instances ||= @redis_server_strings.map{|r| Redis.from_server_string(r, :timeout => 3) }
+      @redis_instances ||= beetle_client.config.redis_server_list.map{|r| Redis.from_server_string(r, :timeout => 3) }
     end
 
     def detect_new_redis_master
