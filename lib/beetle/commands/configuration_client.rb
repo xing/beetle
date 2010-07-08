@@ -15,9 +15,8 @@ module Beetle
         opts.separator ""
         opts.separator "client options:"
 
-        redis_server_strings = []
         opts.on("--redis-servers LIST", Array, "Required for start command (e.g. 192.168.0.1:6379,192.168.0.2:6379)") do |val|
-          redis_server_strings = val
+          Beetle.config.redis_server_list = val
         end
 
         opts.on("--redis-master-file FILE", String, "Write redis master server string to FILE") do |val|
@@ -55,13 +54,13 @@ module Beetle
 
         opts.parse!(app_options)
 
-        if command =~ /start|run/ && redis_server_strings.empty?
+        if command =~ /start|run/ && Beetle.config.redis_server_list.empty?
           puts opts
           exit
         end
 
         Daemons.run_proc("redis_configuration_client", :multiple => true, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
-          client = Beetle::RedisConfigurationClient.new(redis_server_strings)
+          client = Beetle::RedisConfigurationClient.new
           client.id = client_id if client_id
           client.start
         end
