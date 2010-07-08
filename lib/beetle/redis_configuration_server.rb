@@ -23,10 +23,10 @@ module Beetle
     attr_reader :current_token
 
     # Redis servers by role
-    attr_reader :redis_servers
+    attr_reader :redis_server_info
 
     def initialize
-      @client_ids = Set.new(beetle_client.config.redis_configuration_client_ids.split(","))
+      @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
@@ -44,7 +44,7 @@ module Beetle
       update_redis_server_info
       determine_initial_redis_master
       log_start
-      beetle_client.listen do
+      beetle.listen do
         redis_master_watcher.watch
       end
     end
@@ -84,7 +84,7 @@ module Beetle
       msg = "Redis master '#{redis_master.server}' not available"
       redis_master_watcher.pause
       logger.warn(msg)
-      beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+      beetle.publish(:system_notification, {"message" => msg}.to_json)
 
       if @client_ids.empty?
         switch_master
@@ -109,20 +109,24 @@ module Beetle
       redis_instances.each {|r| @redis_server_info[r.role] << r}
     end
 
+    def beetle
+      @beetle ||= build_beetle
+    end
+
+    def config
+      beetle.config
+    end
+
     private
 
     def log_start
       logger.info "RedisConfigurationServer Starting"
-      logger.info "Redis servers : #{beetle_client.config.redis_server_list.join(',')}"
-      logger.info "AMQP servers  : #{beetle_client.config.servers}"
-      logger.info "Client ids    : #{beetle_client.config.redis_configuration_client_ids}"
+      logger.info "Redis servers : #{config.redis_server_list.join(',')}"
+      logger.info "AMQP servers  : #{config.servers}"
+      logger.info "Client ids    : #{config.redis_configuration_client_ids}"
     end
 
-    def beetle_client
-      @beetle_client ||= build_beetle_client
-    end
-
-    def build_beetle_client
+    def build_beetle
       Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
         config.message :client_invalidated
         config.queue   :client_invalidated
@@ -150,7 +154,7 @@ module Beetle
           master_unavailable
         elsif @redis_server_info["unknown"].size == redis_instances.size
           raise NoRedisMaster.new("failed to determine initial redis master")
-        end 
+        end
       else
         write_redis_master_file(@redis_master.server) if @redis_master = auto_detect_master
       end
@@ -159,7 +163,7 @@ module Beetle
     end
 
     def redis_instances
-      @redis_instances ||= beetle_client.config.redis_server_list.map{|r| Redis.from_server_string(r, :timeout => 3) }
+      @redis_instances ||= config.redis_server_list.map{|r| Redis.from_server_string(r, :timeout => 3) }
     end
 
     def detect_new_redis_master
@@ -188,14 +192,14 @@ module Beetle
 
     def check_all_clients_available
       generate_new_token
-      beetle_client.publish(:ping, payload_with_current_token)
-      @available_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
+      beetle.publish(:ping, payload_with_current_token)
+      @available_timer = EM::Timer.new(config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def invalidate_current_master
       generate_new_token
-      beetle_client.publish(:invalidate, payload_with_current_token)
-      @invalidate_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
+      beetle.publish(:invalidate, payload_with_current_token)
+      @invalidate_timer = EM::Timer.new(config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def cancel_invalidation
@@ -207,7 +211,7 @@ module Beetle
     def generate_new_token
       @current_token += 1
     end
-    
+
     def payload_with_current_token(message = {})
       message["token"] = @current_token
       message.to_json
@@ -225,14 +229,14 @@ module Beetle
       if new_redis_master = detect_new_redis_master
         msg = "Setting redis master to '#{new_redis_master.server}' (was '#{@redis_master.server}')"
         logger.warn(msg)
-        beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+        beetle.publish(:system_notification, {"message" => msg}.to_json)
 
         new_redis_master.master!
         @redis_master = new_redis_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
-        beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+        beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
 
       publish_master(@redis_master)
@@ -241,7 +245,7 @@ module Beetle
 
     def publish_master(master)
       logger.info "Publishing reconfigure message with server '#{master.server}'"
-      beetle_client.publish(:reconfigure, payload_with_current_token({"server" => master.server}))
+      beetle.publish(:reconfigure, payload_with_current_token({"server" => master.server}))
     end
 
     def configure_slaves(master)
@@ -270,9 +274,8 @@ module Beetle
         @configuration_server = configuration_server
         @retries = 0
         @paused = true
-        beetle_client = configuration_server.__send__(:beetle_client)
-        @master_retry_timeout = beetle_client.config.redis_configuration_master_retry_timeout
-        @master_retries = beetle_client.config.redis_configuration_master_retries
+        @master_retry_timeout = configuration_server.config.redis_configuration_master_retry_timeout
+        @master_retries = configuration_server.config.redis_configuration_master_retries
       end
 
       def pause
