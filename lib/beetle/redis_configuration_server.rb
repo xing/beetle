@@ -188,13 +188,13 @@ module Beetle
 
     def check_all_clients_available
       generate_new_token
-      beetle_client.publish(:ping, {"token" => @current_token}.to_json)
+      beetle_client.publish(:ping, payload_with_current_token)
       @available_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def invalidate_current_master
       generate_new_token
-      beetle_client.publish(:invalidate, {"token" => @current_token}.to_json)
+      beetle_client.publish(:invalidate, payload_with_current_token)
       @invalidate_timer = EM::Timer.new(beetle_client.config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
@@ -206,6 +206,11 @@ module Beetle
 
     def generate_new_token
       @current_token += 1
+    end
+    
+    def payload_with_current_token(message = {})
+      message["token"] = @current_token
+      message.to_json
     end
 
     def all_client_pong_ids_received?
@@ -236,7 +241,7 @@ module Beetle
 
     def publish_master(master)
       logger.info "Publishing reconfigure message with server '#{master.server}'"
-      beetle_client.publish(:reconfigure, {:server => master.server}.to_json)
+      beetle_client.publish(:reconfigure, payload_with_current_token({"server" => master.server}))
     end
 
     def configure_slaves(master)
