@@ -81,7 +81,7 @@ module Beetle
 
     # Method called from RedisWatcher when watched redis becomes unavailable
     def master_unavailable
-      msg = "Redis master '#{redis_master.server}' not available (#{@redis_server_info.inspect})"
+      msg = "Redis master '#{redis_master.server}' not available"
       redis_master_watcher.pause
       logger.warn(msg)
       beetle_client.publish(:system_notification, {"message" => msg}.to_json)
@@ -218,12 +218,12 @@ module Beetle
 
     def switch_master
       if new_redis_master = detect_new_redis_master
-        new_redis_master.master!
-        @redis_master = new_redis_master
-
-        msg = "Redis master set to '#{new_redis_master.server}' (was '#{@redis_master.server}')"
+        msg = "Setting redis master to '#{new_redis_master.server}' (was '#{@redis_master.server}')"
         logger.warn(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
+
+        new_redis_master.master!
+        @redis_master = new_redis_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
