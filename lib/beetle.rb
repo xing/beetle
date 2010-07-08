@@ -17,8 +17,6 @@ module Beetle
   class UnknownQueue < Error; end
   # raised when no redis master server can be found
   class NoRedisMaster < Error; end
-  # raised when redis master file should contain a redis master
-  class RedisMasterFileEmpty < Error; end
   # raised when two redis master servers are found
   class TwoRedisMasters < Error; end
 

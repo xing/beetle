@@ -143,24 +143,19 @@ module Beetle
     end
 
     def determine_initial_redis_master
-      if @redis_master = auto_detect_master
-        write_redis_master_file(@redis_master.server)
-        return
+      if master_file_exists? && @redis_master = redis_master_from_master_file
+        if @redis_server_info["slave"].include?(@redis_master)
+          master_unavailable
+        elsif @redis_server_info["unknown"].include?(@redis_master)
+          master_unavailable
+        elsif @redis_server_info["unknown"].size == redis_instances.size
+          raise NoRedisMaster.new("failed to determine initial redis master")
+        end 
+      else
+        write_redis_master_file(@redis_master.server) if @redis_master = auto_detect_master
       end
-      master_from_file = redis_master_from_master_file
-      if @redis_server_info["master"] == [master_from_file]
-        @redis_master = master_from_file
-      elsif @redis_server_info["slave"].include?(master_from_file)
-        master_unavailable
-      elsif @redis_server_info["master"].include?(master_from_file)
-        @redis_master = master_from_file
-      elsif @redis_server_info["unknown"].include?(master_from_file)
-        master_unavailable
-      elsif @redis_server_info["unknown"].size == redis_instances.size
-        raise NoRedisMaster.new("failed to determine initial redis master")
-      elsif master_from_file.blank?
-        raise RedisMasterFileEmpty.new("failed to determine initial redis master")
-      end 
+      raise NoRedisMaster.new unless @redis_master
+      @redis_master
     end
 
     def redis_instances
@@ -168,7 +163,7 @@ module Beetle
     end
 
     def detect_new_redis_master
-      redis_slaves_of_master.first
+      @redis_server_info["unknown"].include?(@redis_master) ? redis_slaves_of_master.first : @redis_master
     end
 
     def redis_slaves_of_master
@@ -224,19 +219,18 @@ module Beetle
     def switch_master
       if new_redis_master = detect_new_redis_master
         new_redis_master.master!
-        publish_master(new_redis_master)
+        @redis_master = new_redis_master
 
-        msg = "Redis master switched from '#{@redis_master.server}' to '#{new_redis_master.server}'"
+        msg = "Redis master set to '#{new_redis_master.server}' (was '#{@redis_master.server}')"
         logger.warn(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
-
-        @redis_master = new_redis_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
         beetle_client.publish(:system_notification, {"message" => msg}.to_json)
-        publish_master(redis_master)
       end
+
+      publish_master(@redis_master)
       redis_master_watcher.continue
     end
 
