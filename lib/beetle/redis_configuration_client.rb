@@ -37,10 +37,11 @@ module Beetle
     # Start determining initial redis master and reacting
     # to failover related messages sent by RedisConfigurationServer
     def start
+      touch_master_file
       logger.info "RedisConfigurationClient Starting (#{id})"
-      clear_redis_master_file
-      @redis_master = auto_detect_master
-      write_redis_master_file(@redis_master.server) if @redis_master
+      unless redis_master_from_master_file.try(:master?)
+        clear_redis_master_file
+      end
       logger.info "Listening"
       beetle_client.listen
     end
@@ -70,7 +71,6 @@ module Beetle
       return unless redeem_token(token)
       unless server == read_redis_master_file
         write_redis_master_file(server)
-        @redis_master = Redis.from_server_string(server)
       end
     end
 
@@ -114,7 +114,6 @@ module Beetle
 
     def invalidate!
       clear_redis_master_file
-      @redis_master = nil
       beetle_client.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
 

@@ -1,8 +1,14 @@
+require 'fileutils'
+
 module Beetle
   module RedisMasterFile
     private
     def master_file_exists?
       File.exist?(master_file)
+    end
+
+    def touch_master_file
+      FileUtils.touch(master_file)
     end
 
     def redis_master_from_master_file
