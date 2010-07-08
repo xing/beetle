@@ -1,6 +1,10 @@
 module Beetle
   module RedisMasterFile
     private
+    def master_file_exists?
+      File.exist?(master_file)
+    end
+
     def redis_master_from_master_file
       server = read_redis_master_file
       redis_instances.find{|r| r.server == server }
