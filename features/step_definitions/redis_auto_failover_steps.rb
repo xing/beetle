@@ -114,8 +114,8 @@ Then /^a system notification for "([^\"]*)" not being available should be sent$/
 end
 
 Then /^a system notification for switching from "([^\"]*)" to "([^\"]*)" should be sent$/ do |old_redis_master_name, new_redis_master_name|
-  text = "Redis master switched from '#{TestDaemons::Redis[old_redis_master_name].ip_with_port}' to '#{TestDaemons::Redis[new_redis_master_name].ip_with_port}'"
-  assert_match /#{text}/, File.read(system_notification_log_path)
+  text = "Setting redis master to '#{TestDaemons::Redis[new_redis_master_name].ip_with_port}' (was '#{TestDaemons::Redis[old_redis_master_name].ip_with_port}')"
+  assert_match /#{Regexp.escape(text)}/, File.read(system_notification_log_path)
 end
 
 Then /^a system notification for no slave available to become new master should be sent$/ do
