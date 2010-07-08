@@ -3,6 +3,7 @@ task :generate do
   system("jekyll")
 end
 
+desc "auto generate the site"
 task :autogen do
   system("jekyll --auto")
 end

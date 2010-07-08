@@ -61,11 +61,17 @@ the [messsage handler logic][message_handlers].
 
 ***Isn't the Redis server a single point of failure?***
 
-Yes. But the impact of an irrecoverable failure on a Redis server machine is much smaller
+This depends on how you configure the system. Obviously, if only one redis server is
+configured (not recommended), it will be a single point of failure. However, the
+impact of an irrecoverable failure on a Redis server machine would still be much smaller
 than the impact of a irrecoverable broker failure in a single message broker system.
 
-Nevertheless, it's a weakness of the current system and we're thinking of ways to
-eliminate it.
+For master/slave configurations, we have developed a system of communicating monitoring
+processes, distributed across all machines which need to run message handler logic
+(workers). This system will automatically promote a redis slave to master role in case the
+master machine dies or becomes unavailable to all worker machines. Please refer to the
+[redis auto failover document][redis_auto_failover] for details.
+
 
 ***How should I configure Redis?***
 
@@ -77,3 +83,4 @@ with the fsync always strategy.
 
 
 [message_handlers]: /beetle/message_handlers.html
+[redis_auto_failover]: http://github.com/xing/beetle/blob/redis_failover/REDIS_AUTO_FAILOVER.rdoc

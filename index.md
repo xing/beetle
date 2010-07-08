@@ -27,9 +27,10 @@ any problems. We've since used it to successfully parallelize and speed up a num
 background tasks (e.g. SOLR indexing), to offload work from our web applications and
 change our architecture to be more event driven in general.
 
-We've reached an implemntation state where Beetle can now be used by other
-projects. However, we cannot promise at the moment that the API is completely stable in
-all its aspects.
+The first version of beetle was released April 2010. Since then, we've been working part
+time on automating the failover process for the deduplication store, which is now
+available as a deployment option.
+
 
 ### Architectural Overview
 
@@ -53,7 +54,7 @@ deduplication store:
 * N-1 messages servers can crash or be taken down without losing the ability to process
   messages (as long as the last server doesn’t crash, of course)
 * If the deduplication store master crashes, the consumers will wait for it to come back
-  online (or for the slave to be promoted to a master role by an administrator)
+  online (or for the slave to be promoted to a master by the redis failover system)
 * If a consumer dies during message processing (e.g. due to a OOM kill), the message will
   be reprocessed later (if the consumer has been configured for retrying failed message
   handlers)
