@@ -49,7 +49,7 @@ module Beetle
     # when "pong" message from RedisConfigurationServer is received
     def ping(payload)
       token = payload["token"]
-      logger.info "Received ping message with token #{token}"
+      logger.info "Received ping message with token '#{token}'"
       pong! if redeem_token(token)
     end
 
@@ -57,7 +57,7 @@ module Beetle
     # when "invalidate" message from RedisConfigurationServer is received
     def invalidate(payload)
       token = payload["token"]
-      logger.info "Received invalidate message with token #{token}"
+      logger.info "Received invalidate message with token '#{token}'"
       invalidate! if redeem_token(token)
     end
 
@@ -65,7 +65,9 @@ module Beetle
     # when "reconfigure"" message from RedisConfigurationServer is received
     def reconfigure(payload)
       server = payload["server"]
-      logger.info "Received reconfigure message with server '#{server}'"
+      token = payload["token"]
+      logger.info "Received reconfigure message with server '#{server}' and token '#{token}'"
+      return unless redeem_token(token)
       unless server == read_redis_master_file
         write_redis_master_file(server)
         @redis_master = Redis.from_server_string(server)
