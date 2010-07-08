@@ -67,71 +67,67 @@ module Beetle
       @client.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
       @server.stubs(:beetle_client).returns(@client)
+      @redis_master  = build_master_redis_stub
+      @redis_slave   = build_slave_redis_stub
     end
 
-    test "should use redis master if auto-detection works because master-slave pair available" do
-      redis_master = build_master_redis_stub
-      redis_slave  = build_slave_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
 
-      @server.expects(:write_redis_master_file).with(redis_master.server)
+    test "should use redis master if auto-detection works because master-slave pair available" do
+      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
+
+      @server.expects(:write_redis_master_file).with(@redis_master.server)
       @server.send(:determine_initial_redis_master)
-      assert_equal redis_master, @server.redis_master
+      assert_equal @redis_master, @server.redis_master
     end
 
     test "should use redis master if auto-detection fails but master in file is the only master" do
-      redis_master = build_master_redis_stub
-      redis_slave  = build_slave_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
       @server.expects(:auto_detect_master).returns(nil)
-      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+      @server.stubs(:redis_master_from_master_file).returns(@redis_master)
 
       @server.send(:determine_initial_redis_master)
-      assert_equal redis_master, @server.redis_master
+      assert_equal @redis_master, @server.redis_master
     end
 
     test "should start master switch if auto-detection fails and master in file is slave" do
-      redis_slave  = build_slave_redis_stub
-      @server.stubs(:redis_instances).returns([redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_slave))
+      @server.stubs(:redis_instances).returns([@redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_slave))
       @server.expects(:auto_detect_master).returns(nil)
-      @server.stubs(:redis_master_from_master_file).returns(redis_slave)
+      @server.stubs(:redis_master_from_master_file).returns(@redis_slave)
 
       @server.expects(:master_unavailable)
       @server.send(:determine_initial_redis_master)
     end
 
     test "should use redis master if auto-detection fails but master in file is one of the masters" do
-      redis_master  = build_master_redis_stub
       redis_master2 = build_master_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_master2])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_master2))
+      @server.stubs(:redis_instances).returns([@redis_master, redis_master2])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, redis_master2))
       @server.expects(:auto_detect_master).returns(nil)
-      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+      @server.stubs(:redis_master_from_master_file).returns(@redis_master)
 
       @server.send(:determine_initial_redis_master)
-      assert_equal redis_master, @server.redis_master
+      assert_equal @redis_master, @server.redis_master
     end
 
     test "should start master switch if auto-detection fails and master in file is not available" do
-      redis_master = build_unknown_redis_stub
-      redis_slave  = build_slave_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      not_available_redis_master = build_unknown_redis_stub
+      @server.stubs(:redis_instances).returns([not_available_redis_master, @redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(not_available_redis_master, @redis_slave))
       @server.expects(:auto_detect_master).returns(nil)
-      @server.stubs(:redis_master_from_master_file).returns(redis_master)
+      @server.stubs(:redis_master_from_master_file).returns(not_available_redis_master)
       
       @server.expects(:master_unavailable)
       @server.send(:determine_initial_redis_master)
     end
 
     test "should raise an exception if auto-detection fails and no redis available" do
-      redis_master = build_unknown_redis_stub
-      redis_slave  = build_unknown_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      not_available_redis_master = build_unknown_redis_stub
+      not_available_redis_slave  = build_unknown_redis_stub
+      @server.stubs(:redis_instances).returns([not_available_redis_master, not_available_redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(not_available_redis_master, not_available_redis_slave))
       @server.expects(:auto_detect_master).returns(nil)
       @server.stubs(:redis_master_from_master_file).returns("")
 
@@ -141,10 +137,8 @@ module Beetle
     end
 
     test "should raise an exception if auto-detection fails and file is blank" do
-      redis_master = build_master_redis_stub
-      redis_slave  = build_slave_redis_stub
-      @server.stubs(:redis_instances).returns([redis_master, redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(redis_master, redis_slave))
+      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
+      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
       @server.expects(:auto_detect_master).returns(nil)
       @server.stubs(:redis_master_from_master_file).returns("")
 
