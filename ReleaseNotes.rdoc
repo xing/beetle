@@ -3,7 +3,7 @@
 == Version 0.2
 
 This version adds support for automatic redis deduplication store failover (see separate
-file link:REDIS_AUTO_FAILOVER.rdoc).
+file REDIS_AUTO_FAILOVER.rdoc).
 
 === User visible changes
 
