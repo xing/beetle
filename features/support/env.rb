@@ -6,7 +6,6 @@ require 'test/unit/assertions'
 World(Test::Unit::Assertions)
 
 Before do
-  cleanup_test_env
   `ruby features/support/system_notification_logger start`
 end
 
