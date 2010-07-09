@@ -4,7 +4,7 @@ module Beetle
   class RedisConfigurationClientTest < Test::Unit::TestCase
     def setup
       @client = RedisConfigurationClient.new
-      @client.stubs(:beetle_client).returns(stub(:listen => nil))
+      @client.stubs(:beetle).returns(stub(:listen => nil))
       @client.stubs(:touch_master_file)
     end
 
