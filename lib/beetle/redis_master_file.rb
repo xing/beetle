@@ -7,10 +7,6 @@ module Beetle
       File.exist?(master_file)
     end
 
-    def touch_master_file
-      FileUtils.touch(master_file)
-    end
-
     def redis_master_from_master_file
       server = read_redis_master_file
       redis_instances.find{|r| r.server == server }
@@ -32,6 +28,12 @@ module Beetle
 
     def master_file
       config.redis_server
+    end
+
+    def verify_redis_master_file_string
+      if master_file =~ /^[0-9a-z.]+:[0-9]+$/
+        raise ConfigurationError.new("To use the redis failover, redis_server config option must point to a file")
+      end
     end
   end
 end

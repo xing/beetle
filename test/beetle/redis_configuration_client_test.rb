@@ -7,13 +7,7 @@ module Beetle
       @client = RedisConfigurationClient.new
       @client.stubs(:beetle).returns(stub(:listen => nil, :config => Beetle.config))
       @client.stubs(:touch_master_file)
-    end
-
-    test "should exit when started with less than two redis configured" do
-      Beetle.config.redis_server_list = []
-      assert_raise Beetle::ConfigurationError do
-        @client.start
-      end
+      @client.stubs(:verify_redis_master_file_string)
     end
 
     test "should ignore outdated invalidate messages" do

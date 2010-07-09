@@ -46,6 +46,7 @@ module Beetle
       Beetle.config.redis_server_list = ["redis:0", "redis:1"]
       @server = RedisConfigurationServer.new
       @server.instance_variable_set(:@redis_master, stub('redis stub', :server => 'stubbed_server', :available? => false))
+      @server.stubs(:verify_redis_master_file_string)
       @server.beetle.stubs(:listen).yields
       @server.beetle.stubs(:publish)
       EM::Timer.stubs(:new).returns(true)
