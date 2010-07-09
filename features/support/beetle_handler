@@ -16,16 +16,17 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
 
   opts.parse!(ARGV - ["start", "--"])
 
-  Beetle.config.servers = "localhost:5672, localhost:5673" # rabbitmq
+  Beetle.config.servers = "localhost:5672" # rabbitmq
 
   # set Beetle log level to info, less noisy than debug
   Beetle.config.logger.level = Logger::INFO
 
-  client = Beetle::Client.new
-  client.register_queue(:echo)
-  client.purge(:echo)
-  client.register_message(:echo)
-  client.register_handler(:echo) {|message| client.deduplication_store.redis.server rescue "no redis master"}
-  puts "Started beetle handler"
-  client.listen
+  client = Beetle::Client.new.configure :auto_delete => true do |config|
+    config.queue(:echo)
+    config.message(:echo)
+    config.handler(:echo) {|message| client.deduplication_store.redis.server rescue "no redis master"}
+  end
+  client.listen do
+    puts "Started beetle handler"
+  end
 end
