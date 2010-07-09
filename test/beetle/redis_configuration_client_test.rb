@@ -3,9 +3,17 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Beetle
   class RedisConfigurationClientTest < Test::Unit::TestCase
     def setup
+      Beetle.config.redis_server_list = ["redis:0", "redis:1"]
       @client = RedisConfigurationClient.new
-      @client.stubs(:beetle).returns(stub(:listen => nil))
+      @client.stubs(:beetle).returns(stub(:listen => nil, :config => Beetle.config))
       @client.stubs(:touch_master_file)
+    end
+
+    test "should exit when started with less than two redis configured" do
+      Beetle.config.redis_server_list = []
+      assert_raise Beetle::ConfigurationError do
+        @client.start
+      end
     end
 
     test "should ignore outdated invalidate messages" do

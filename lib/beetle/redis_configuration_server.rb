@@ -13,6 +13,7 @@ module Beetle
   # Usually started via <tt>beetle configuration_server</tt> command.
   class RedisConfigurationServer
     include Logging
+    include RedisConfigurationCheck
     include RedisConfigurationAutoDetection
     include RedisMasterFile
 
@@ -40,6 +41,7 @@ module Beetle
 
     # Start watching redis
     def start
+      check_redis_configuration
       update_redis_server_info
       determine_initial_redis_master
       log_start

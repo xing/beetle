@@ -15,8 +15,8 @@ module Beetle
   # Usually started via <tt>beetle configuration_client</tt> command.
   class RedisConfigurationClient
     include Logging
+    include RedisConfigurationCheck
     include RedisMasterFile
-    include RedisConfigurationAutoDetection
 
     # Set a custom unique id for this instance
     #
@@ -37,6 +37,7 @@ module Beetle
     # Start determining initial redis master and reacting
     # to failover related messages sent by RedisConfigurationServer
     def start
+      check_redis_configuration
       touch_master_file
       logger.info "RedisConfigurationClient Starting (#{id})"
       unless redis_master_from_master_file.try(:master?)
