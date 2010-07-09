@@ -31,7 +31,7 @@ module Beetle
 
     def initialize
       @current_token = nil
-      RedisConfigurationServerMessageHandler.configuration_client = self
+      MessageHandler.configuration_client = self
     end
 
     # Start determining initial redis master and reacting
@@ -95,9 +95,16 @@ module Beetle
         config.message :reconfigure
         config.queue   internal_queue_name(:reconfigure), :key => "reconfigure"
 
-        config.handler(internal_queue_name(:ping),        RedisConfigurationServerMessageHandler)
-        config.handler(internal_queue_name(:invalidate),  RedisConfigurationServerMessageHandler)
-        config.handler(internal_queue_name(:reconfigure), RedisConfigurationServerMessageHandler)
+        config.handler(internal_queue_name(:ping),        MessageHandler)
+        config.handler(internal_queue_name(:invalidate),  MessageHandler)
+        config.handler(internal_queue_name(:reconfigure), MessageHandler)
+      end
+    end
+
+    class MessageHandler < Beetle::Handler
+      cattr_accessor :configuration_client
+      def process
+        @@configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
       end
     end
 
@@ -124,13 +131,7 @@ module Beetle
     def redis_instances
       @redis_instances ||= config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
     end
+
   end
 
-  class RedisConfigurationServerMessageHandler < Beetle::Handler #:nodoc:
-    cattr_accessor :configuration_client
-
-    def process
-      self.class.configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
-    end
-  end
 end

@@ -31,7 +31,7 @@ module Beetle
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
       # TODO what to do if auto-detection failed?
-      RedisConfigurationClientMessageHandler.configuration_server = self
+      MessageHandler.configuration_server = self
     end
 
     # Test if redis is currently being watched
@@ -137,8 +137,15 @@ module Beetle
         config.message :reconfigure
         config.message :system_notification
 
-        config.handler(:pong,               RedisConfigurationClientMessageHandler)
-        config.handler(:client_invalidated, RedisConfigurationClientMessageHandler)
+        config.handler(:pong,               MessageHandler)
+        config.handler(:client_invalidated, MessageHandler)
+      end
+    end
+
+    class MessageHandler < Beetle::Handler
+      cattr_accessor :configuration_server
+      def process
+        @@configuration_server.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
       end
     end
 
@@ -252,18 +259,6 @@ module Beetle
       other_redis_masters(master).each do |r|
         logger.info "Reconfiguring '#{r.server}' as a slave of '#{master.server}'"
         r.slave_of!(master.host, master.port)
-      end
-    end
-
-    class RedisConfigurationClientMessageHandler < Beetle::Handler
-      cattr_accessor :configuration_server
-
-      delegate :pong, :client_invalidated, :to => :@@configuration_server
-
-      def process
-        method_name = message.header.routing_key
-        payload = ActiveSupport::JSON.decode(message.data)
-        send(method_name, payload)
       end
     end
 
