@@ -3,9 +3,9 @@
 == Version 0.2
 
 This version adds support for automatic redis deduplication store failover (see separate
-file REDIS_FAILOVER.rdoc)
+file REDIS_AUTO_FAILOVER.rdoc).
 
-== User visible changes
+=== User visible changes
 
 * it's possible to register auto deleted queues and exchanges
 * Beetle::Client#configure returns self in order to simplify client setup
@@ -15,6 +15,16 @@ file REDIS_FAILOVER.rdoc)
   file (Beetle::Configuration#config_file)
 * the config value redis_server specifies either a single server or a file path (used
   by the automatic redis failover logic)
+
+=== Fugs Bixed
+
+* handle active_support seconds notation for handler timeouts correctly
+* error handler was erroneously called for expired messages
+
+=== Gem Dependency Changes
+
+* redis needs to be either version 1.0.7 or a version greater than 2.0.1 (2.0.0 does not
+  work)
 
 == Version 0.1
 
