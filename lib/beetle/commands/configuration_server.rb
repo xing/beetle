@@ -23,6 +23,10 @@ module Beetle
           Beetle.config.redis_configuration_client_ids = val
         end
 
+        opts.on("--redis-master-file FILE", String, "Write redis master server string to FILE") do |val|
+          Beetle.config.redis_server = val
+        end
+
         opts.on("--redis-retry-timeout SEC", Integer, "Number of seconds to wait between master checks") do |val|
           Beetle.config.redis_configuration_master_retry_timeout = val
         end
