@@ -1,5 +1,3 @@
-require 'fileutils'
-
 module Beetle
   module RedisMasterFile
     private
