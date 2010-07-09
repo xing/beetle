@@ -1,0 +1,7 @@
+= Release Notes
+
+== Version 0.2
+  Support for automatoc redis deduplication store failover
+
+== Version 0.1
+  Initial Release

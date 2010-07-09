@@ -18,7 +18,7 @@ More information can be found on the {project website}[http://xing.github.com/be
 === Configuration
     # configure machines
 
-    Beetle.config do |c|
+    Beetle.config do |config|
       config.servers = "broker1:5672, broker2:5672"
       config.redis_server = "redis1:6379"
     end
@@ -41,7 +41,19 @@ More information can be found on the {project website}[http://xing.github.com/be
 === Subscribing
     b.listen
 
-:include: examples/README.rdoc
+=== Examples
+
+Beetle ships with a number of {example scripts}[http://github.com/xing/beetle/tree/master/examples/].
+
+The top level Rakefile comes with targets to start several RabbitMQ and redis instances
+locally. Make sure the corresponding binaries are in your search path. Open four new shell
+windows and execute the following commands:
+
+    rake rabbit:start1
+    rake rabbit:start2
+    rake redis:start1
+    rake redis:start2
+
 
 == Prerequisites
 
