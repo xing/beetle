@@ -30,7 +30,6 @@ module Beetle
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
-      # TODO what to do if auto-detection failed?
       MessageDispatcher.configuration_server = self
     end
 
@@ -305,7 +304,6 @@ module Beetle
           end
         end
       end
-
     end
   end
 end

@@ -7,7 +7,7 @@ module Beetle
       @server = RedisConfigurationServer.new
       EventMachine.stubs(:add_timer).yields
     end
-    
+
     test "should initialize the current token for messages to not reuse old tokens" do
       sleep 0.1
       later_server = RedisConfigurationServer.new
@@ -158,7 +158,7 @@ module Beetle
       @server.instance_variable_set(:@redis_server_info, build_redis_server_info(not_available_redis_master, @redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(not_available_redis_master)
-      
+
       @server.expects(:master_unavailable)
       @server.send(:determine_initial_redis_master)
     end
@@ -186,11 +186,11 @@ module Beetle
     def build_slave_redis_stub
       stub("redis slave", :server => "stubbed_slave:0",  :available? => true, :master? => false, :slave? => true, :role => "slave")
     end
-    
+
     def build_unknown_redis_stub
       stub("redis unknown", :server => "stubbed_unknown:0",  :available? => false, :master? => false, :slave? => false, :role => "unknown")
     end
-    
+
     def build_redis_server_info(*redis_instances)
       redis_instances.inject({"master" => [], "slave" => [], "unknown" => []}){|memo, redis| memo[redis.role] << redis; memo }
     end
