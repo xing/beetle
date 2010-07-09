@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.0.beta8"
+  s.version = "0.2.0.rc1"
 
   s.required_rubygems_version = ">= 1.3.1"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   s.post_install_message = <<-INFO
   *********************************************************************************************
 
-    If you're running a ruby version < 1.9 we silently installed the SystemTimer gem for you. 
+    If you're running a ruby version < 1.9 we silently installed the SystemTimer gem for you.
     See: http://ph7spot.com/musings/system-timer
 
   *********************************************************************************************
