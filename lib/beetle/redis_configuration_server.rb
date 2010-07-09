@@ -13,7 +13,6 @@ module Beetle
   # Usually started via <tt>beetle configuration_server</tt> command.
   class RedisConfigurationServer
     include Logging
-    include RedisConfigurationCheck
     include RedisConfigurationAutoDetection
     include RedisMasterFile
 
@@ -41,6 +40,7 @@ module Beetle
 
     # Start watching redis
     def start
+      verify_redis_master_file_string
       check_redis_configuration
       update_redis_server_info
       determine_initial_redis_master
@@ -118,8 +118,12 @@ module Beetle
 
     private
 
+    def check_redis_configuration
+      raise ConfigurationError.new("Redis failover needs two or more redis servers") if config.redis_server_list.size < 2
+    end
+
     def log_start
-      logger.info "RedisConfigurationServer Starting"
+      logger.info "RedisConfigurationServer starting"
       logger.info "Redis servers : #{config.redis_server_list.join(',')}"
       logger.info "AMQP servers  : #{config.servers}"
       logger.info "Client ids    : #{config.redis_configuration_client_ids}"

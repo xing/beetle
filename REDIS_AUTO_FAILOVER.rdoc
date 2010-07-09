@@ -67,27 +67,31 @@ file.
 * the RCS waits for *all* RCCs to acknowledge the invalidation
 * the RCS promotes the former redis-slave to become the new redis-master (by sending SLAVEOF no one)
 * the RCS sends a "reconfigure" message containing the new redis-master to every RCC
-* the RCCs write the new redis-master to their redis master configuration file
+* the RCCs write the new redis-master to their redis master file
+
+=== Configuration
+
+See Beetle::Configuration for setting redis configuration server and client options.
+
+Please note:
+Beetle::Configuration#redis_server must be a file path (not a redis host:port string) to use the redis failover.
+The RCS and RCCs store the current redis master in that file, and the handlers read from it.
 
 == How to use it
 
 This example uses two worker servers, identified by rcc-1 and rcc-2.
 
-=== Configuration
-
-See Beetle::Configuration for setting redis configuration server options.
-
 === On one server
 
 Start the Redis Configuration Server:
 
-  beetle configuration_server start -- --redis-servers redis-master:6379,redis-slave:6379 --client-ids rcc-1,rcc-2
+  beetle configuration_server start -- --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
 
 Get help for starting/stopping the server:
 
   beetle configuration_server -h
 
-Get help for client options:
+Get help for server options:
 
   beetle configuration_server start -- -h
 
@@ -97,11 +101,11 @@ Start the Redis Configuration Client:
 
 On first worker server:
 
-  beetle configuration_client start -- --redis-servers redis-master:6379,redis-slave:6379 --client-id rcc-1
+  beetle configuration_client start -- --client-id rcc-1
 
 On second worker server:
 
-  beetle configuration_client start -- --redis-servers redis-master:6379,redis-slave:6379 --client-id rcc-2
+  beetle configuration_client start -- --client-id rcc-2
 
 Get help for starting/stopping the client:
 

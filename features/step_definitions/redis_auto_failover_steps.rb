@@ -30,7 +30,7 @@ Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" e
   redis_servers = redis_names.split(",").map do |redis_name|
     TestDaemons::Redis[redis_name].ip_with_port
   end
-  TestDaemons::RedisConfigurationClient.find_or_initialize_by_name(redis_configuration_client_name, redis_servers).start
+  TestDaemons::RedisConfigurationClient[redis_configuration_client_name].start
 end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|

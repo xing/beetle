@@ -15,7 +15,6 @@ module Beetle
   # Usually started via <tt>beetle configuration_client</tt> command.
   class RedisConfigurationClient
     include Logging
-    include RedisConfigurationCheck
     include RedisMasterFile
 
     # Set a custom unique id for this instance
@@ -37,9 +36,8 @@ module Beetle
     # Start determining initial redis master and reacting
     # to failover related messages sent by RedisConfigurationServer
     def start
-      check_redis_configuration
-      touch_master_file
-      logger.info "RedisConfigurationClient Starting (#{id})"
+      verify_redis_master_file_string
+      logger.info "RedisConfigurationClient starting (client id: #{id})"
       unless redis_master_from_master_file.try(:master?)
         clear_redis_master_file
       end
@@ -81,6 +79,16 @@ module Beetle
     end
 
     private
+
+    def redis_master_from_master_file
+      @redis_master_from_master_file ||= begin
+        if master_file_exists? && r = read_redis_master_file
+          Redis.from_server_string(r, :timeout => 3)
+        else
+          nil
+        end
+      end
+    end
 
     def build_beetle
       Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
@@ -124,10 +132,6 @@ module Beetle
     def invalidate!
       clear_redis_master_file
       beetle.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
-    end
-
-    def redis_instances
-      @redis_instances ||= config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
     end
   end
 end

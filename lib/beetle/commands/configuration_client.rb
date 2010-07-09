@@ -15,16 +15,12 @@ module Beetle
         opts.separator ""
         opts.separator "client options:"
 
-        opts.on("--redis-servers LIST", Array, "Required for start command (e.g. 192.168.0.1:6379,192.168.0.2:6379)") do |val|
-          Beetle.config.redis_server_list = val
-        end
-
         opts.on("--redis-master-file FILE", String, "Write redis master server string to FILE") do |val|
           Beetle.config.redis_server = val
         end
 
         client_id = nil
-        opts.on("--id ID", "--client-id ID", String, "Set custom unique client id (default is #{RedisConfigurationClient.new.id})") do |val|
+        opts.on("--id ID", "--client-id ID", String, "Set unique client id (default is #{RedisConfigurationClient.new.id})") do |val|
           client_id = val
         end
 
@@ -53,11 +49,6 @@ module Beetle
         end
 
         opts.parse!(app_options)
-
-        if command =~ /start|run/ && Beetle.config.redis_server_list.empty?
-          puts opts
-          exit
-        end
 
         Daemons.run_proc("redis_configuration_client", :multiple => true, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           client = Beetle::RedisConfigurationClient.new
