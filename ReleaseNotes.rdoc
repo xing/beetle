@@ -1,7 +1,21 @@
 = Release Notes
 
 == Version 0.2
-  Support for automatoc redis deduplication store failover
+
+This version adds support for automatic redis deduplication store failover (see separate
+file REDIS_FAILOVER.rdoc)
+
+== User visible changes
+
+* it's possible to register auto deleted queues and exchanges
+* Beetle::Client#configure returns self in order to simplify client setup
+* it's possible to trace specific messages (see Beetle::Client#trace)
+* default message handler timeout is 10 minutes
+* system wide configuration values can be specfied via a yml formatted configuration
+  file (Beetle::Configuration#config_file)
+* the config value redis_server specifies either a single server or a file path (used
+  by the automatic redis failover logic)
 
 == Version 0.1
-  Initial Release
+
+Initial Release
