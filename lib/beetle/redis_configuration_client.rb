@@ -13,7 +13,7 @@ module Beetle
   # DeduplicationStore on redis access.
   #
   # Usually started via <tt>beetle configuration_client</tt> command.
-  class RedisConfigurationClient < Beetle::Handler
+  class RedisConfigurationClient
     include Logging
     include RedisMasterFile
     include RedisConfigurationAutoDetection
