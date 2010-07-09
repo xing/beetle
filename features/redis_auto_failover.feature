@@ -55,6 +55,13 @@ Feature: Redis auto failover
   Scenario: Redis configuration client starts while no redis master available
     Given redis server "redis-1" is down
     And redis server "redis-2" is down
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And the retry timeout for the redis master determination is reached
+    Then the redis master of "rc-client-1" should be undefined
+
+  Scenario: Redis configuration client starts while no redis master available but master file exists
+    Given redis server "redis-1" is down
+    And redis server "redis-2" is down
     And an old redis master file for "rc-client-1" with master "redis-1" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And the retry timeout for the redis master determination is reached
@@ -62,11 +69,23 @@ Feature: Redis auto failover
 
   Scenario: Redis configuration client starts while both redis servers are master
     Given redis server "redis-2" is master
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    Then the redis master of "rc-client-1" should be undefined
+
+  Scenario: Redis configuration client starts while both redis servers are master but master file exists
+    Given redis server "redis-2" is master
     And an old redis master file for "rc-client-1" with master "redis-1" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     Then the redis master of "rc-client-1" should be "redis-1"
 
-  Scenario: Redis configuration client starts while no redis server is master
+  Scenario: Redis configuration client starts while both redis servers are slave
+    Given a redis server "redis-3" exists as master
+    And redis server "redis-1" is slave of "redis-3"
+    And redis server "redis-2" is slave of "redis-3"
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    Then the redis master of "rc-client-1" should be undefined
+
+  Scenario: Redis configuration client starts while both redis servers are slave but master file exists
     Given a redis server "redis-3" exists as master
     And redis server "redis-1" is slave of "redis-3"
     And redis server "redis-2" is slave of "redis-3"
@@ -75,7 +94,12 @@ Feature: Redis auto failover
     Then the redis master of "rc-client-1" should be undefined
 
   Scenario: Redis configuration client starts while there is a redis master but no slave
-    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1" exists
     Given redis server "redis-2" is down
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    Then the redis master of "rc-client-1" should be undefined
+
+  Scenario: Redis configuration client starts while there is a redis master but no slave but master file exists
+    Given redis server "redis-2" is down
+    And an old redis master file for "rc-client-1" with master "redis-1" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     Then the redis master of "rc-client-1" should be "redis-1"
