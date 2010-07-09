@@ -86,17 +86,26 @@ end
 Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
   master_file = redis_master_file(redis_configuration_client_name)
   master = false
+  server_info = nil
   10.times do
-    server_info = File.read(master_file).chomp
+    server_info = File.read(master_file).chomp if File.exist?(master_file)
     master = true and break if TestDaemons::Redis[redis_name].ip_with_port == server_info
     sleep 1
   end
-  assert master, "#{redis_name} is not master of #{redis_configuration_client_name}"
+  assert master, "#{redis_name} is not master of #{redis_configuration_client_name}, master file content: #{server_info.inspect}"
 end
 
 Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
   master_file = redis_master_file(redis_configuration_client_name)
-  assert_equal "", File.read(master_file).chomp
+  empty = false
+  server_info = nil
+  10.times do
+    server_info = File.read(master_file).chomp if File.exist?(master_file)
+    empty = server_info == ""
+    break if empty
+    sleep 1
+  end
+  assert empty, "master file is not empty: #{server_info}"
 end
 
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
