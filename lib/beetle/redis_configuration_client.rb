@@ -31,7 +31,7 @@ module Beetle
 
     def initialize
       @current_token = nil
-      MessageHandler.configuration_client = self
+      MessageDispatcher.configuration_client = self
     end
 
     # Start determining initial redis master and reacting
@@ -46,24 +46,21 @@ module Beetle
       beetle.listen
     end
 
-    # Method called from RedisConfigurationServerMessageHandler
-    # when "pong" message from RedisConfigurationServer is received
+    # called by the message dispatcher when a "pong" message from RedisConfigurationServer is received
     def ping(payload)
       token = payload["token"]
       logger.info "Received ping message with token '#{token}'"
       pong! if redeem_token(token)
     end
 
-    # Method called from RedisConfigurationServerMessageHandler
-    # when "invalidate" message from RedisConfigurationServer is received
+    # called by the message dispatcher when a "invalidate" message from RedisConfigurationServer is received
     def invalidate(payload)
       token = payload["token"]
       logger.info "Received invalidate message with token '#{token}'"
       invalidate! if redeem_token(token)
     end
 
-    # Method called from RedisConfigurationServerMessageHandler
-    # when "reconfigure"" message from RedisConfigurationServer is received
+    # called by the message dispatcher when a "reconfigure"" message from RedisConfigurationServer is received
     def reconfigure(payload)
       server = payload["server"]
       token = payload["token"]
@@ -95,13 +92,13 @@ module Beetle
         config.message :reconfigure
         config.queue   internal_queue_name(:reconfigure), :key => "reconfigure"
 
-        config.handler(internal_queue_name(:ping),        MessageHandler)
-        config.handler(internal_queue_name(:invalidate),  MessageHandler)
-        config.handler(internal_queue_name(:reconfigure), MessageHandler)
+        config.handler(internal_queue_name(:ping),        MessageDispatcher)
+        config.handler(internal_queue_name(:invalidate),  MessageDispatcher)
+        config.handler(internal_queue_name(:reconfigure), MessageDispatcher)
       end
     end
 
-    class MessageHandler < Beetle::Handler
+    class MessageDispatcher < Beetle::Handler
       cattr_accessor :configuration_client
       def process
         @@configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
