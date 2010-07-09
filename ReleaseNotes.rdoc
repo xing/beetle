@@ -11,7 +11,7 @@ file REDIS_AUTO_FAILOVER.rdoc).
 * Beetle::Client#configure returns self in order to simplify client setup
 * it's possible to trace specific messages (see Beetle::Client#trace)
 * default message handler timeout is 10 minutes
-* system wide configuration values can be specfied via a yml formatted configuration
+* system wide configuration values can be specified via a yml formatted configuration
   file (Beetle::Configuration#config_file)
 * the config value redis_server specifies either a single server or a file path (used
   by the automatic redis failover logic)
