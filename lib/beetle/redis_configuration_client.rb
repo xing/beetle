@@ -128,7 +128,5 @@ module Beetle
     def redis_instances
       @redis_instances ||= config.redis_server_list.map{|s| Redis.from_server_string(s, :timeout => 3) }
     end
-
   end
-
 end
