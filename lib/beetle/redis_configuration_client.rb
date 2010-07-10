@@ -81,13 +81,14 @@ module Beetle
     private
 
     def redis_master_from_master_file
-      @redis_master_from_master_file ||= begin
-        if master_file_exists? && r = read_redis_master_file
-          Redis.from_server_string(r, :timeout => 3)
-        else
-          nil
+      @redis_master_from_master_file ||=
+        begin
+          if master_file_exists? && r = read_redis_master_file
+            Redis.from_server_string(r, :timeout => 3)
+          else
+            nil
+          end
         end
-      end
     end
 
     def build_beetle
@@ -114,8 +115,8 @@ module Beetle
       end
     end
 
-    def internal_queue_name(prefix)
-      "#{prefix}-#{id}"
+    def internal_queue_name(queue_name)
+      "#{queue_name}-#{id}"
     end
 
     def redeem_token(token)
