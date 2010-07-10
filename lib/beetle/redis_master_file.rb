@@ -11,7 +11,6 @@ module Beetle
     end
 
     def clear_redis_master_file
-      logger.warn "Clearing redis master file '#{master_file}'"
       write_redis_master_file("")
     end
 
