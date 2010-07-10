@@ -66,6 +66,12 @@ module Beetle
       2.times { @store.redis }
     end
 
+    test "should return nil if the master file doesn't exist" do
+      Beetle.config.redis_server = "/tmp/__i_don_not_exist__.txt"
+      assert_equal nil, @store.redis_master_from_master_file
+    end
+
+    private
     def redis_test_master_file(server_string)
       path = File.expand_path("../../../tmp/redis-master-for-unit-tests", __FILE__)
       File.open(path, "w"){|f| f.puts server_string}
