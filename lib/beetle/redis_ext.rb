@@ -54,6 +54,11 @@ if Redis::VERSION >= "2.0.3"
     def slave_of!(host, port)
       slaveof(host, port)
     end
+
+    # Redis 2 tries to establish a connection on inspect. this is evil!
+    def inspect
+      super
+    end
   end
 
   class Redis::Client #:nodoc:
