@@ -168,8 +168,7 @@ module Beetle
       else
         write_redis_master_file(@redis_master.server) if @redis_master = auto_detect_master
       end
-      raise NoRedisMaster.new unless @redis_master
-      @redis_master
+      @redis_master or raise NoRedisMaster.new("failed to determine initial redis master")
     end
 
     def redis_instances
