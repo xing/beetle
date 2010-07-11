@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Beetle
   class RedisConfigurationClientTest < Test::Unit::TestCase
     def setup
-      Beetle.config.redis_server_list = ["redis:0", "redis:1"]
+      Beetle.config.redis_servers = "redis:0,redis:1"
       @client = RedisConfigurationClient.new
       Client.any_instance.stubs(:listen)
       @client.stubs(:touch_master_file)

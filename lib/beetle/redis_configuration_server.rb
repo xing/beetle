@@ -119,12 +119,12 @@ module Beetle
     private
 
     def check_redis_configuration
-      raise ConfigurationError.new("Redis failover needs two or more redis servers") if config.redis_server_list.size < 2
+      raise ConfigurationError.new("Redis failover needs two or more redis servers") if redis_instances.size < 2
     end
 
     def log_start
       logger.info "RedisConfigurationServer starting"
-      logger.info "Redis servers : #{config.redis_server_list.join(',')}"
+      logger.info "Redis servers : #{config.redis_servers}"
       logger.info "AMQP servers  : #{config.servers}"
       logger.info "Client ids    : #{config.redis_configuration_client_ids}"
     end
@@ -172,7 +172,7 @@ module Beetle
     end
 
     def redis_instances
-      @redis_instances ||= config.redis_server_list.map{|r| Redis.from_server_string(r, :timeout => 3) }
+      @redis_instances ||= config.redis_servers.split(/ *, */).map{|s| Redis.from_server_string(s, :timeout => 3)}
     end
 
     def detect_new_redis_master

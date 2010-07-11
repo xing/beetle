@@ -9,7 +9,7 @@ module Beetle
     end
 
     test "should exit when started with less than two redis configured" do
-      Beetle.config.redis_server_list = []
+      Beetle.config.redis_servers = ""
       assert_raise Beetle::ConfigurationError do
         @server.start
       end
@@ -64,7 +64,7 @@ module Beetle
   class RedisConfigurationServerInvalidationTest < Test::Unit::TestCase
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
-      Beetle.config.redis_server_list = ["redis:0", "redis:1"]
+      Beetle.config.redis_servers = "redis:0,redis:1"
       @server = RedisConfigurationServer.new
       @server.instance_variable_set(:@redis_master, stub('redis stub', :server => 'stubbed_server', :available? => false))
       @server.stubs(:verify_redis_master_file_string)

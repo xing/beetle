@@ -16,7 +16,7 @@ module Beetle
         opts.separator "server options:"
 
         opts.on("--redis-servers LIST", Array, "Required for start command (e.g. 192.168.0.1:6379,192.168.0.2:6379)") do |val|
-          Beetle.config.redis_server_list = val
+          Beetle.config.redis_servers = val.join(",")
         end
 
         opts.on("--client-ids LIST", "Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)") do |val|
@@ -52,7 +52,7 @@ module Beetle
 
         opts.parse!(app_options)
 
-        if command =~ /start|run/ && Beetle.config.redis_server_list.empty?
+        if command =~ /start|run/ && Beetle.config.redis_servers.blank?
           puts opts
           exit
         end
