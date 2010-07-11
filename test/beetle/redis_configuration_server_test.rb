@@ -54,7 +54,7 @@ module Beetle
       other_master = Redis.new(:port => 6380)
       other_master.expects(:slave_of!).with(redis.host, redis.port)
       @server.stubs(:redis_master).returns(redis)
-      @server.instance_variable_set(:@redis_server_info, {"master" => [redis, other_master], "slave" => [], "unknown" => []})
+      @server.redis.instance_variable_set(:@server_info, {"master" => [redis, other_master], "slave" => [], "unknown" => []})
       payload = @server.send(:payload_with_current_token, {"server" => redis.server})
       @server.beetle.expects(:publish).with(:reconfigure, payload)
       @server.master_available
@@ -161,11 +161,10 @@ module Beetle
       @server.stubs(:write_redis_master_file)
       @redis_master  = build_master_redis_stub
       @redis_slave   = build_slave_redis_stub
+      @server.instance_variable_set(:@redis, build_redis_server_info(@redis_master, @redis_slave))
     end
 
     test "should not try to auto-detect if the master file contains a server string" do
-      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:read_redis_master_file).returns("foobar:0000")
 
@@ -176,8 +175,6 @@ module Beetle
 
     test "should try to auto-detect if the master file is empty" do
       @server.expects(:master_file_exists?).returns(true)
-      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
       @server.stubs(:read_redis_master_file).returns("")
 
       @server.expects(:auto_detect_master).returns(@redis_master)
@@ -186,8 +183,6 @@ module Beetle
 
     test "should try to auto-detect if the master file is not present" do
       @server.expects(:master_file_exists?).returns(false)
-      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
 
       @server.expects(:auto_detect_master).returns(@redis_master)
       @server.send(:determine_initial_redis_master)
@@ -195,8 +190,6 @@ module Beetle
 
     test "should use redis master from successful auto-detection" do
       @server.expects(:master_file_exists?).returns(false)
-      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
 
       @server.expects(:write_redis_master_file).with(@redis_master.server)
       @server.send(:determine_initial_redis_master)
@@ -204,8 +197,6 @@ module Beetle
     end
 
     test "should use redis master if master in file is the only master" do
-      @server.stubs(:redis_instances).returns([@redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, @redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(@redis_master)
 
@@ -214,8 +205,7 @@ module Beetle
     end
 
     test "should start master switch if master in file is slave" do
-      @server.stubs(:redis_instances).returns([@redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_slave))
+      @server.instance_variable_set(:@redis, build_redis_server_info(@redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(@redis_slave)
 
@@ -225,8 +215,7 @@ module Beetle
 
     test "should use master from master file if multiple masters are available" do
       redis_master2 = build_master_redis_stub
-      @server.stubs(:redis_instances).returns([@redis_master, redis_master2])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_master, redis_master2))
+      @server.instance_variable_set(:@redis, build_redis_server_info(@redis_master, redis_master2))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(@redis_master)
 
@@ -236,8 +225,7 @@ module Beetle
 
     test "should start master switch if master in file is not available" do
       not_available_redis_master = build_unknown_redis_stub
-      @server.stubs(:redis_instances).returns([not_available_redis_master, @redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(not_available_redis_master, @redis_slave))
+      @server.instance_variable_set(:@redis, build_redis_server_info(not_available_redis_master, @redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(not_available_redis_master)
 
@@ -248,8 +236,7 @@ module Beetle
     test "should raise an exception if both master file and auto-detection fails" do
       not_available_redis_master = build_unknown_redis_stub
       not_available_redis_slave  = build_unknown_redis_stub
-      @server.stubs(:redis_instances).returns([not_available_redis_master, not_available_redis_slave])
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(not_available_redis_master, not_available_redis_slave))
+      @server.instance_variable_set(:@redis, build_redis_server_info(not_available_redis_master, not_available_redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.expects(:read_redis_master_file).returns("")
       @server.expects(:auto_detect_master).returns(nil)
@@ -263,7 +250,7 @@ module Beetle
       not_available_redis_master = build_unknown_redis_stub
       @redis_slave.expects(:slave_of?).returns(true)
       @server.instance_variable_set(:@redis_master, not_available_redis_master)
-      @server.instance_variable_set(:@redis_server_info, build_redis_server_info(@redis_slave, not_available_redis_master))
+      @server.instance_variable_set(:@redis, build_redis_server_info(@redis_slave, not_available_redis_master))
       assert_equal @redis_slave, @server.send(:detect_new_redis_master)
     end
 
@@ -282,7 +269,10 @@ module Beetle
     end
 
     def build_redis_server_info(*redis_instances)
-      redis_instances.inject({"master" => [], "slave" => [], "unknown" => []}){|memo, redis| memo[redis.role] << redis; memo }
+      info = RedisServerInfo.new(Beetle.config, :timeout => 1)
+      info.instance_variable_set :@instances, redis_instances
+      redis_instances.each{|redis| info.send("#{redis.role}s") << redis }
+      info
     end
   end
 end

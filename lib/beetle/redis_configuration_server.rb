@@ -22,9 +22,6 @@ module Beetle
     # The current token used to detect correct message order
     attr_reader :current_token
 
-    # Redis servers by role
-    attr_reader :redis_server_info
-
     def initialize
       @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
@@ -33,21 +30,34 @@ module Beetle
       MessageDispatcher.configuration_server = self
     end
 
-    # Test if redis is currently being watched
-    def paused?
-      redis_master_watcher.paused?
+    # Redis system status information
+    def redis
+      @redis ||= RedisServerInfo.new(config, :timeout => 3)
+    end
+
+    def beetle
+      @beetle ||= build_beetle
+    end
+
+    def config
+      beetle.config
     end
 
     # Start watching redis
     def start
       verify_redis_master_file_string
       check_redis_configuration
-      update_redis_server_info
+      redis.refresh
       determine_initial_redis_master
       log_start
       beetle.listen do
         redis_master_watcher.watch
       end
+    end
+
+    # Test if redis is currently being watched
+    def paused?
+      redis_master_watcher.paused?
     end
 
     # called by the message dispatcher when a "pong" message from a RedisConfigurationClient is received
@@ -99,27 +109,13 @@ module Beetle
     end
 
     def master_available?
-      @redis_server_info["master"].include?(redis_master)
-    end
-
-    def update_redis_server_info
-      logger.debug "Updating redis server info"
-      @redis_server_info = Hash.new {|h,k| h[k]= []}
-      redis_instances.each {|r| @redis_server_info[r.role] << r}
-    end
-
-    def beetle
-      @beetle ||= build_beetle
-    end
-
-    def config
-      beetle.config
+      redis.masters.include?(redis_master)
     end
 
     private
 
     def check_redis_configuration
-      raise ConfigurationError.new("Redis failover needs two or more redis servers") if redis_instances.size < 2
+      raise ConfigurationError.new("Redis failover needs two or more redis servers") if redis.instances.size < 2
     end
 
     def log_start
@@ -158,11 +154,11 @@ module Beetle
 
     def determine_initial_redis_master
       if master_file_exists? && @redis_master = redis_master_from_master_file
-        if @redis_server_info["slave"].include?(@redis_master)
+        if redis.slaves.include?(@redis_master)
           master_unavailable
-        elsif @redis_server_info["unknown"].include?(@redis_master)
+        elsif redis.unknowns.include?(@redis_master)
           master_unavailable
-        elsif @redis_server_info["unknown"].size == redis_instances.size
+        elsif redis.unknowns.size == redis.instances.size
           raise NoRedisMaster.new("failed to determine initial redis master")
         end
       else
@@ -171,20 +167,8 @@ module Beetle
       @redis_master or raise NoRedisMaster.new("failed to determine initial redis master")
     end
 
-    def redis_instances
-      @redis_instances ||= config.redis_servers.split(/ *, */).map{|s| Redis.from_server_string(s, :timeout => 3)}
-    end
-
     def detect_new_redis_master
-      @redis_server_info["unknown"].include?(@redis_master) ? redis_slaves_of_master.first : @redis_master
-    end
-
-    def redis_slaves_of_master
-      @redis_server_info["slave"].select{|r| r.slave_of?(redis_master.host, redis_master.port)}
-    end
-
-    def other_redis_masters(master)
-      @redis_server_info["master"].reject{|r| r.server == master.server}
+      redis.unknowns.include?(redis_master) ? redis.slaves_of(redis_master).first : redis_master
     end
 
     def redeem_token(token)
@@ -258,7 +242,7 @@ module Beetle
     end
 
     def configure_slaves(master)
-      other_redis_masters(master).each do |r|
+      (redis.masters-[master]).each do |r|
         logger.info "Reconfiguring '#{r.server}' as a slave of '#{master.server}'"
         r.slave_of!(master.host, master.port)
       end
@@ -298,7 +282,7 @@ module Beetle
 
       private
       def check_availability
-        @configuration_server.update_redis_server_info
+        @configuration_server.redis.refresh
         if @configuration_server.master_available?
           @configuration_server.master_available
         else
