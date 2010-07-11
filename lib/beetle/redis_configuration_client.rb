@@ -23,6 +23,9 @@ module Beetle
     # for a redis failover to work.
     attr_writer :id
 
+    # the current redis master
+    attr_reader :current_master
+
     # Unique id for this instance (defaults to the hostname)
     def id
       @id ||= `hostname`.chomp
@@ -38,7 +41,7 @@ module Beetle
     def start
       verify_redis_master_file_string
       logger.info "RedisConfigurationClient starting (client id: #{id})"
-      unless redis_master_from_master_file.try(:master?)
+      unless (@current_master = redis_master_from_master_file).try(:master?)
         clear_redis_master_file
       end
       logger.info "Listening"
@@ -49,14 +52,14 @@ module Beetle
     def ping(payload)
       token = payload["token"]
       logger.info "Received ping message with token '#{token}'"
-      pong! if redeem_token(token)
+      pong! if redeem_token(token) && !current_master.try(:master?)
     end
 
     # called by the message dispatcher when a "invalidate" message from RedisConfigurationServer is received
     def invalidate(payload)
       token = payload["token"]
       logger.info "Received invalidate message with token '#{token}'"
-      invalidate! if redeem_token(token)
+      invalidate! if redeem_token(token) && !current_master.try(:master?)
     end
 
     # called by the message dispatcher when a "reconfigure"" message from RedisConfigurationServer is received
@@ -131,6 +134,7 @@ module Beetle
     end
 
     def invalidate!
+      @current_master = nil
       clear_redis_master_file
       beetle.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end

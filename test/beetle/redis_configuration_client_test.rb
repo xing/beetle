@@ -40,6 +40,18 @@ module Beetle
       @client.invalidate(old_payload)
     end
 
+    test "should ignore invalidate messages when current master is still a master" do
+      @client.instance_variable_set :@current_master, stub(:master? => true)
+      @client.expects(:invalidate!).never
+      @client.invalidate("token" => 1)
+    end
+
+    test "should ignore ping messages when current master is still a master" do
+      @client.instance_variable_set :@current_master, stub(:master? => true)
+      @client.expects(:pong!).never
+      @client.ping("token" => 1)
+    end
+
     test "should ignore outdated reconfigure messages" do
       new_payload = {"token" => 2, "server" => "master:2"}
       old_payload = {"token" => 1, "server" => "master:1"}
