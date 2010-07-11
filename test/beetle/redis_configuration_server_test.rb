@@ -57,7 +57,7 @@ module Beetle
       @server.redis.instance_variable_set(:@server_info, {"master" => [redis, other_master], "slave" => [], "unknown" => []})
       payload = @server.send(:payload_with_current_token, {"server" => redis.server})
       @server.beetle.expects(:publish).with(:reconfigure, payload)
-      @server.master_available
+      @server.master_available!
     end
   end
 
@@ -79,19 +79,19 @@ module Beetle
       EM.stubs(:add_periodic_timer).returns(stub("timer", :cancel => true))
       @server.start
       assert !@server.paused?
-      @server.master_unavailable
+      @server.master_unavailable!
       assert @server.paused?
     end
 
     test "should setup an invalidation timeout" do
       EM::Timer.expects(:new).yields
       @server.expects(:cancel_invalidation)
-      @server.master_unavailable
+      @server.master_unavailable!
     end
 
     test "should continue watching after the invalidation timeout has expired" do
       EM::Timer.expects(:new).yields
-      @server.master_unavailable
+      @server.master_unavailable!
       assert !@server.paused?
     end
 
@@ -114,7 +114,7 @@ module Beetle
     test "should switch the current master immediately if there are no clients" do
       @server.instance_variable_set :@client_ids, Set.new
       @server.expects(:switch_master)
-      @server.master_unavailable
+      @server.master_unavailable!
     end
 
     test "switching the master should turn the new master candidate into a master" do
@@ -135,13 +135,13 @@ module Beetle
 
     test "checking the availability of redis servers should publish the available servers as long as the master is available" do
       @server.expects(:master_available?).returns(true)
-      @server.expects(:master_available)
+      @server.expects(:master_available!)
       @server.send(:redis_master_watcher).send(:check_availability)
     end
 
     test "checking the availability of redis servers should call master_unavailable after trying the specified number of times" do
       @server.stubs(:master_available?).returns(false)
-      @server.expects(:master_unavailable)
+      @server.expects(:master_unavailable!)
       watcher = @server.send(:redis_master_watcher)
       watcher.instance_variable_set :@master_retries, 0
       watcher.send(:check_availability)
@@ -209,7 +209,7 @@ module Beetle
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(@redis_slave)
 
-      @server.expects(:master_unavailable)
+      @server.expects(:master_unavailable!)
       @server.send(:determine_initial_redis_master)
     end
 
@@ -229,7 +229,7 @@ module Beetle
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:redis_master_from_master_file).returns(not_available_redis_master)
 
-      @server.expects(:master_unavailable)
+      @server.expects(:master_unavailable!)
       @server.send(:determine_initial_redis_master)
     end
 
