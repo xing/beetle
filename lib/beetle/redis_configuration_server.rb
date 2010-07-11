@@ -88,8 +88,8 @@ module Beetle
       end
     end
 
-    # Method called from RedisWatcher when watched redis becomes unavailable
-    def master_unavailable
+    # called from RedisWatcher when watched redis becomes unavailable
+    def master_unavailable!
       msg = "Redis master '#{redis_master.server}' not available"
       redis_master_watcher.pause
       logger.warn(msg)
@@ -102,8 +102,8 @@ module Beetle
       end
     end
 
-    # Method called from RedisWatcher when watched redis is available
-    def master_available
+    # called from RedisWatcher when watched redis is available
+    def master_available!
       publish_master(redis_master)
       configure_slaves(redis_master)
     end
@@ -155,9 +155,9 @@ module Beetle
     def determine_initial_redis_master
       if master_file_exists? && @redis_master = redis_master_from_master_file
         if redis.slaves.include?(@redis_master)
-          master_unavailable
+          master_unavailable!
         elsif redis.unknowns.include?(@redis_master)
-          master_unavailable
+          master_unavailable!
         elsif redis.unknowns.size == redis.instances.size
           raise NoRedisMaster.new("failed to determine initial redis master")
         end
@@ -284,12 +284,12 @@ module Beetle
       def check_availability
         @configuration_server.redis.refresh
         if @configuration_server.master_available?
-          @configuration_server.master_available
+          @configuration_server.master_available!
         else
           logger.warn "Redis master not available! (Retries left: #{@master_retries - (@retries + 1)})"
           if (@retries+=1) >= @master_retries
             @retries = 0
-            @configuration_server.master_unavailable
+            @configuration_server.master_unavailable!
           end
         end
       end
