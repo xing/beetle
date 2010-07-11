@@ -82,7 +82,7 @@ module Beetle
   class RedisFailoverTest < Test::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
-      Beetle.config.expects(:redis_operation_retries).returns(1)
+      Beetle.config.expects(:redis_failover_timeout).returns(1)
     end
 
     test "a redis operation protected with a redis failover block should succeed if it can find a new master" do

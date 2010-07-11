@@ -109,9 +109,9 @@ module Beetle
 
     # performs redis operations by yielding a passed in block, waiting for a new master to
     # show up on the network if the operation throws an exception. if a new master doesn't
-      # appear after 180 tries, we raise an exception.
+    # appear after the configured timeout interval, we raise an exception.
     def with_failover #:nodoc:
-      end_time = Time.now.to_i + @config.redis_operation_retries
+      end_time = Time.now.to_i + @config.redis_failover_timeout.to_i
       begin
         yield
       rescue Exception => e
