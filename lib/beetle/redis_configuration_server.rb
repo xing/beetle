@@ -120,9 +120,10 @@ module Beetle
 
     def log_start
       logger.info "RedisConfigurationServer starting"
-      logger.info "Redis servers : #{config.redis_servers}"
       logger.info "AMQP servers  : #{config.servers}"
       logger.info "Client ids    : #{config.redis_configuration_client_ids}"
+      logger.info "Redis servers : #{config.redis_servers}"
+      logger.info "Redis master  : #{current_master.server}"
     end
 
     def build_beetle
