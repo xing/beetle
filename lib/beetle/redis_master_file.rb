@@ -6,8 +6,7 @@ module Beetle
     end
 
     def redis_master_from_master_file
-      server = read_redis_master_file
-      redis_instances.find{|r| r.server == server }
+      redis.find(read_redis_master_file)
     end
 
     def clear_redis_master_file
