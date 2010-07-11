@@ -41,9 +41,8 @@ module Beetle
     def start
       verify_redis_master_file_string
       logger.info "RedisConfigurationClient starting (client id: #{id})"
-      unless (@current_master = redis_master_from_master_file).try(:master?)
-        clear_redis_master_file
-      end
+      determine_initial_master
+      clear_redis_master_file unless current_master.try(:master?)
       logger.info "Listening"
       beetle.listen
     end
@@ -69,6 +68,7 @@ module Beetle
       logger.info "Received reconfigure message with server '#{server}' and token '#{token}'"
       return unless redeem_token(token)
       unless server == read_redis_master_file
+        new_master!(server)
         write_redis_master_file(server)
       end
     end
@@ -83,15 +83,14 @@ module Beetle
 
     private
 
-    def redis_master_from_master_file
-      @redis_master_from_master_file ||=
-        begin
-          if master_file_exists? && r = read_redis_master_file
-            Redis.from_server_string(r, :timeout => 3)
-          else
-            nil
-          end
-        end
+    def determine_initial_master
+      if master_file_exists? && server = read_redis_master_file
+        new_master!(server)
+      end
+    end
+
+    def new_master!(server)
+      @current_master = Redis.from_server_string(server, :timeout => 3)
     end
 
     def build_beetle

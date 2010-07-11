@@ -89,15 +89,19 @@ module Beetle
       dispatcher.send(:process)
     end
 
-    test "redis_master_from_master_file should return nil if there is no file" do
+    test "determine_initial_master should return nil if there is no file" do
       @client.expects(:master_file_exists?).returns(false)
-      assert_nil @client.send(:redis_master_from_master_file)
+      assert_nil @client.send(:determine_initial_master)
+      assert_nil @client.current_master
     end
 
-    test "redis_master_from_master_file should instantiate a new reds if there is a file with content" do
+    test "determine_initial_master should instantiate a new redis if there is a file with content" do
       @client.expects(:master_file_exists?).returns(true)
       @client.expects(:read_redis_master_file).returns("localhost:6379")
-      assert_equal "master", @client.send(:redis_master_from_master_file).role
+      master = @client.send(:determine_initial_master)
+      assert_equal "master", master.role
+      assert_equal master, @client.current_master
     end
+
   end
 end
