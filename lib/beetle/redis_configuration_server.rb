@@ -17,7 +17,7 @@ module Beetle
     include RedisMasterFile
 
     # The current redis master
-    attr_reader :redis_master
+    attr_reader :current_master
 
     # The current token used to detect correct message order
     attr_reader :current_token
@@ -48,16 +48,16 @@ module Beetle
       verify_redis_master_file_string
       check_redis_configuration
       redis.refresh
-      determine_initial_redis_master
+      determine_initial_master
       log_start
       beetle.listen do
-        redis_master_watcher.watch
+        master_watcher.watch
       end
     end
 
     # Test if redis is currently being watched
     def paused?
-      redis_master_watcher.paused?
+      master_watcher.paused?
     end
 
     # called by the message dispatcher when a "pong" message from a RedisConfigurationClient is received
@@ -90,8 +90,8 @@ module Beetle
 
     # called from RedisWatcher when watched redis becomes unavailable
     def master_unavailable!
-      msg = "Redis master '#{redis_master.server}' not available"
-      redis_master_watcher.pause
+      msg = "Redis master '#{current_master.server}' not available"
+      master_watcher.pause
       logger.warn(msg)
       beetle.publish(:system_notification, {"message" => msg}.to_json)
 
@@ -104,12 +104,12 @@ module Beetle
 
     # called from RedisWatcher when watched redis is available
     def master_available!
-      publish_master(redis_master)
-      configure_slaves(redis_master)
+      publish_master(current_master)
+      configure_slaves(current_master)
     end
 
     def master_available?
-      redis.masters.include?(redis_master)
+      redis.masters.include?(current_master)
     end
 
     private
@@ -148,27 +148,27 @@ module Beetle
       end
     end
 
-    def redis_master_watcher
-      @redis_master_watcher ||= RedisWatcher.new(self)
+    def master_watcher
+      @master_watcher ||= RedisWatcher.new(self)
     end
 
-    def determine_initial_redis_master
-      if master_file_exists? && @redis_master = redis_master_from_master_file
-        if redis.slaves.include?(@redis_master)
+    def determine_initial_master
+      if master_file_exists? && @current_master = redis_master_from_master_file
+        if redis.slaves.include?(current_master)
           master_unavailable!
-        elsif redis.unknowns.include?(@redis_master)
+        elsif redis.unknowns.include?(current_master)
           master_unavailable!
         elsif redis.unknowns.size == redis.instances.size
           raise NoRedisMaster.new("failed to determine initial redis master")
         end
       else
-        write_redis_master_file(@redis_master.server) if @redis_master = auto_detect_master
+        write_redis_master_file(current_master.server) if @current_master = auto_detect_master
       end
-      @redis_master or raise NoRedisMaster.new("failed to determine initial redis master")
+      current_master or raise NoRedisMaster.new("failed to determine initial redis master")
     end
 
-    def detect_new_redis_master
-      redis.unknowns.include?(redis_master) ? redis.slaves_of(redis_master).first : redis_master
+    def detect_new_master
+      redis.unknowns.include?(current_master) ? redis.slaves_of(current_master).first : current_master
     end
 
     def redeem_token(token)
@@ -198,7 +198,7 @@ module Beetle
     def cancel_invalidation
       logger.warn "Redis master invalidation cancelled: 'pong' received from '#{@client_pong_ids_received.to_a.join(',')}', 'client_invalidated' received from '#{@client_invalidated_ids_received.to_a.join(',')}'"
       generate_new_token
-      redis_master_watcher.continue
+      master_watcher.continue
     end
 
     def generate_new_token
@@ -219,21 +219,21 @@ module Beetle
     end
 
     def switch_master
-      if new_redis_master = detect_new_redis_master
-        msg = "Setting redis master to '#{new_redis_master.server}' (was '#{@redis_master.server}')"
+      if new_master = detect_new_master
+        msg = "Setting redis master to '#{new_master.server}' (was '#{current_master.server}')"
         logger.warn(msg)
         beetle.publish(:system_notification, {"message" => msg}.to_json)
 
-        new_redis_master.master!
-        @redis_master = new_redis_master
+        new_master.master!
+        @current_master = new_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error(msg)
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
 
-      publish_master(@redis_master)
-      redis_master_watcher.continue
+      publish_master(current_master)
+      master_watcher.continue
     end
 
     def publish_master(master)
