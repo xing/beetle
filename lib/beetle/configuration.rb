@@ -61,7 +61,7 @@ module Beetle
 
       self.redis_configuration_master_retries = 3
       self.redis_configuration_master_retry_timeout = 10.seconds
-      self.redis_configuration_client_timeout = 1.seconds
+      self.redis_configuration_client_timeout = 5.seconds
       self.redis_configuration_client_ids = ""
 
       self.servers = "localhost:5672"
