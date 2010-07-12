@@ -120,7 +120,7 @@ module Beetle
     test "switching the master should turn the new master candidate into a master" do
       new_master = stub(:master! => nil, :server => "jo:6379")
       @server.beetle.expects(:publish).with(:system_notification, anything)
-      @server.expects(:detect_new_master).returns(new_master)
+      @server.expects(:determine_new_master).returns(new_master)
       @server.send :switch_master
       assert_equal new_master, @server.current_master
     end
@@ -128,7 +128,7 @@ module Beetle
     test "switching the master should resort to the old master if no candidate can be found" do
       old_master = @server.current_master
       @server.beetle.expects(:publish).with(:system_notification, anything)
-      @server.expects(:detect_new_master).returns(nil)
+      @server.expects(:determine_new_master).returns(nil)
       @server.send :switch_master
       assert_equal old_master, @server.current_master
     end
@@ -251,7 +251,7 @@ module Beetle
       @redis_slave.expects(:slave_of?).returns(true)
       @server.instance_variable_set(:@current_master, not_available_redis_master)
       @server.instance_variable_set(:@redis, build_redis_server_info(@redis_slave, not_available_redis_master))
-      assert_equal @redis_slave, @server.send(:detect_new_master)
+      assert_equal @redis_slave, @server.send(:determine_new_master)
     end
 
     private

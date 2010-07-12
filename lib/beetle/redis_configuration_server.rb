@@ -158,7 +158,7 @@ module Beetle
       current_master or raise NoRedisMaster.new("failed to determine initial redis master")
     end
 
-    def detect_new_master
+    def determine_new_master
       redis.unknowns.include?(current_master) ? redis.slaves_of(current_master).first : current_master
     end
 
@@ -210,7 +210,7 @@ module Beetle
     end
 
     def switch_master
-      if new_master = detect_new_master
+      if new_master = determine_new_master
         msg = "Setting redis master to '#{new_master.server}' (was '#{current_master.server}')"
         logger.warn(msg)
         beetle.publish(:system_notification, {"message" => msg}.to_json)
