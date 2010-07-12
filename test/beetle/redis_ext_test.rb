@@ -4,7 +4,7 @@ module Beetle
 
   class NonExistentRedisTest < Test::Unit::TestCase
     def setup
-      @r = Redis.new(:host => "localhost", :port => 6380)
+      @r = Redis.new(:host => "localhost", :port => 6390)
     end
 
     test "should return an empty hash for the info_with_rescue call" do
@@ -31,13 +31,13 @@ module Beetle
 
   class AddedRedisMethodsTest < Test::Unit::TestCase
     def setup
-      @r = Redis.new(:host => "localhost", :port => 6380)
+      @r = Redis.new(:host => "localhost", :port => 6390)
     end
 
     test "should return the host, port and server string" do
       assert_equal "localhost", @r.host
-      assert_equal 6380, @r.port
-      assert_equal "localhost:6380", @r.server
+      assert_equal 6390, @r.port
+      assert_equal "localhost:6390", @r.server
     end
 
     test "should stop slavery" do
@@ -61,13 +61,13 @@ module Beetle
 
   class RedisTimeoutTest < Test::Unit::TestCase
     test "should use Redis::Timer if timeout is greater 0" do
-      r = Redis.new(:host => "localhost", :port => 6380, :timeout => 1)
+      r = Redis.new(:host => "localhost", :port => 6390, :timeout => 1)
       Redis::Timer.expects(:timeout).with(1).raises(Timeout::Error)
       assert_equal({}, r.info_with_rescue)
     end
 
     test "should not use Redis::Timer if timeout 0" do
-      r = Redis.new(:host => "localhost", :port => 6380, :timeout => 0)
+      r = Redis.new(:host => "localhost", :port => 6390, :timeout => 0)
       Redis::Timer.expects(:timeout).never
       assert_equal({}, r.info_with_rescue)
     end
