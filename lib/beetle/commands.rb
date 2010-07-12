@@ -3,9 +3,10 @@ require 'active_support'
 
 module Beetle
   module Commands
+    # invokes given command by instantiating an appropriate command class
     def self.execute(command)
       if commands.include? command
-        require File.expand_path("../commands/#{command}", __FILE__)        
+        require File.expand_path("../commands/#{command}", __FILE__)
         "Beetle::Commands::#{command.classify}".constantize.execute
       else
         # me no likez no frikin heredocs
@@ -17,7 +18,7 @@ module Beetle
         exit 1
       end
     end
-    
+
     private
     def self.commands
       commands_dir = File.expand_path('../commands', __FILE__)

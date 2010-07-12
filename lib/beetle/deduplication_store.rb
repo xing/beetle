@@ -61,12 +61,12 @@ module Beetle
       end
     end
 
-    # unconditionally store a key <tt>value></tt> with given <tt>suffix</tt> for given <tt>msg_id</tt>.
+    # unconditionally store a (key,value) pair with given <tt>suffix</tt> for given <tt>msg_id</tt>.
     def set(msg_id, suffix, value)
       with_failover { redis.set(key(msg_id, suffix), value) }
     end
 
-    # store a key <tt>value></tt> with given <tt>suffix</tt> for given <tt>msg_id</tt> if it doesn't exists yet.
+    # store a (key,value) pair with given <tt>suffix</tt> for given <tt>msg_id</tt> if it doesn't exists yet.
     def setnx(msg_id, suffix, value)
       with_failover { redis.setnx(key(msg_id, suffix), value) }
     end
@@ -127,10 +127,12 @@ module Beetle
       end
     end
 
+    # set current redis master instance (as specified in the Beetle::Configuration)
     def redis_master_from_server_string
       @current_master ||= Redis.from_server_string(@config.redis_server, :db => @config.redis_db)
     end
 
+    # set current redis master from master file
     def redis_master_from_master_file
       set_current_redis_master_from_master_file if redis_master_file_changed?
       @current_master
@@ -138,21 +140,24 @@ module Beetle
       nil
     end
 
+    # redis master file changed outside the running process?
     def redis_master_file_changed?
       @last_time_master_file_changed != File.mtime(@config.redis_server)
     end
 
+    # set current redis master from server:port string contained in the redis master file
     def set_current_redis_master_from_master_file
       @last_time_master_file_changed = File.mtime(@config.redis_server)
       server_string = read_master_file
       @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db) : nil
     end
 
+    # server:port string from the redis master file
     def read_master_file
       File.read(@config.redis_server).chomp
     end
 
-    def _eigenclass_
+    def _eigenclass_ #:nodoc:
       class << self; self; end
     end
   end

@@ -6,7 +6,7 @@ class Redis #:nodoc:
     new(options)
   end
 
-  module RoleSupport
+  module RoleSupport #:nodoc:
     def info_with_rescue
       info
     rescue Exception

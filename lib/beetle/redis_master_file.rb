@@ -1,5 +1,5 @@
 module Beetle
-  module RedisMasterFile
+  module RedisMasterFile #:nodoc:
     private
     def master_file_exists?
       File.exist?(master_file)

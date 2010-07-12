@@ -21,7 +21,7 @@ module Beetle
     # The current token used to detect correct message order
     attr_reader :current_token
 
-    def initialize
+    def initialize #:nodoc:
       @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
@@ -29,16 +29,17 @@ module Beetle
       MessageDispatcher.configuration_server = self
     end
 
-    # Redis system status information
+    # Redis system status information (an instance of class RedisServerInfo) 
     def redis
       @redis ||= RedisServerInfo.new(config, :timeout => 3)
     end
 
+    # Beetle::Client instance for communication with the RedisConfigurationServer
     def beetle
       @beetle ||= build_beetle
     end
 
-    def config
+    def config #:nodoc:
       beetle.config
     end
 
@@ -107,6 +108,7 @@ module Beetle
       configure_slaves(current_master)
     end
 
+    # check whether the current master is still online and still a master
     def master_available?
       redis.masters.include?(current_master)
     end
@@ -238,7 +240,6 @@ module Beetle
         r.slave_of!(master.host, master.port)
       end
     end
-
 
     # Periodically checks a redis server for availability
     class RedisWatcher #:nodoc:

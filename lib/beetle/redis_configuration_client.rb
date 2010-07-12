@@ -2,28 +2,25 @@ module Beetle
   # A RedisConfigurationClient is the subordinate part of beetle's
   # redis failover solution
   #
-  # An instances of RedisConfigurationClient lives on every server that
-  # hosts beetle consumers (worker server).
-  # A RedisConfigurationClient is responsible for determining an initial
-  # redis master and reacting to redis master switches initiated by the
-  # RedisConfigurationServer.
+  # An instance of RedisConfigurationClient lives on every server that
+  # hosts message consumers (worker server).
   #
-  # It will write the current redis master host:port string to a file
-  # specified via Configuration#redis_server, which is then read by
-  # DeduplicationStore on redis access.
+  # It is responsible for determining an initial redis master and reacting to redis master
+  # switches initiated by the RedisConfigurationServer.
+  #
+  # It will write the current redis master host:port string to a file specified via a
+  # Configuration, which is then read by DeduplicationStore on redis access.
   #
   # Usually started via <tt>beetle configuration_client</tt> command.
   class RedisConfigurationClient
     include Logging
     include RedisMasterFile
 
-    # Set a custom unique id for this instance
-    #
-    # Must match an entry in Configuration#redis_configuration_client_ids
-    # for a redis failover to work.
+    # Set a custom unique id for this instance. Must match an entry in
+    # Configuration#redis_configuration_client_ids.
     attr_writer :id
 
-    # the current redis master
+    # The current redis master
     attr_reader :current_master
 
     # Unique id for this instance (defaults to the hostname)
@@ -31,13 +28,13 @@ module Beetle
       @id ||= `hostname`.chomp
     end
 
-    def initialize
+    def initialize #:nodoc:
       @current_token = nil
       MessageDispatcher.configuration_client = self
     end
 
-    # Start determining initial redis master and reacting
-    # to failover related messages sent by RedisConfigurationServer
+    # determinines the initial redis master (if possible), then enters a messaging event
+    # loop, reacting to failover related messages sent by RedisConfigurationServer.
     def start
       verify_redis_master_file_string
       logger.info "RedisConfigurationClient starting (client id: #{id})"
@@ -73,11 +70,12 @@ module Beetle
       end
     end
 
+    # Beetle::Client instance for communication with the RedisConfigurationServer
     def beetle
       @beetle ||= build_beetle
     end
 
-    def config
+    def config #:nodoc:
       beetle.config
     end
 
