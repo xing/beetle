@@ -255,7 +255,7 @@ module Beetle
         @configuration_server = configuration_server
         @retries = 0
         @paused = true
-        @master_retry_timeout = configuration_server.config.redis_configuration_master_retry_timeout
+        @master_retry_interval = configuration_server.config.redis_configuration_master_retry_interval
         @master_retries = configuration_server.config.redis_configuration_master_retries
       end
 
@@ -269,8 +269,8 @@ module Beetle
       def watch
         @watch_timer ||=
           begin
-            logger.info "Start watching redis servers every #{@master_retry_timeout} seconds"
-            EventMachine::add_periodic_timer(@master_retry_timeout) { check_availability }
+            logger.info "Start watching redis servers every #{@master_retry_interval} seconds"
+            EventMachine::add_periodic_timer(@master_retry_interval) { check_availability }
           end
         @paused = false
       end
