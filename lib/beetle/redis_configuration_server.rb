@@ -158,8 +158,6 @@ module Beetle
           master_unavailable!
         elsif redis.unknowns.include?(current_master)
           master_unavailable!
-        elsif redis.unknowns.size == redis.instances.size
-          raise NoRedisMaster.new("failed to determine initial redis master")
         end
       else
         write_redis_master_file(current_master.server) if @current_master = redis.auto_detect_master
