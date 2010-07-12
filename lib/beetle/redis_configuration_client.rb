@@ -110,13 +110,6 @@ module Beetle
       end
     end
 
-    class MessageDispatcher < Beetle::Handler
-      cattr_accessor :configuration_client
-      def process
-        @@configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
-      end
-    end
-
     def internal_queue_name(queue_name)
       "#{queue_name}-#{id}"
     end
@@ -136,6 +129,15 @@ module Beetle
       @current_master = nil
       clear_redis_master_file
       beetle.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
+    end
+
+
+    # Dispatches messages from the queue to methods in RedisConfigurationClient
+    class MessageDispatcher < Beetle::Handler #:nodoc:
+      cattr_accessor :configuration_client
+      def process
+        @@configuration_client.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
+      end
     end
   end
 end

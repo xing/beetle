@@ -141,13 +141,6 @@ module Beetle
       end
     end
 
-    class MessageDispatcher < Beetle::Handler
-      cattr_accessor :configuration_server
-      def process
-        @@configuration_server.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
-      end
-    end
-
     def master_watcher
       @master_watcher ||= RedisWatcher.new(self)
     end
@@ -246,6 +239,8 @@ module Beetle
       end
     end
 
+
+    # Periodically checks a redis server for availability
     class RedisWatcher #:nodoc:
       include Logging
 
@@ -279,6 +274,7 @@ module Beetle
       end
 
       private
+
       def check_availability
         @configuration_server.redis.refresh
         if @configuration_server.master_available?
@@ -290,6 +286,14 @@ module Beetle
             @configuration_server.master_unavailable!
           end
         end
+      end
+    end
+
+    # Dispatches messages from the queue to methods in RedisConfigurationServer
+    class MessageDispatcher < Beetle::Handler #:nodoc:
+      cattr_accessor :configuration_server
+      def process
+        @@configuration_server.__send__(message.header.routing_key, ActiveSupport::JSON.decode(message.data))
       end
     end
   end
