@@ -98,9 +98,9 @@ On the publisher side, publishing a message will ensure that the exchange
 it will be sent to, and each of the queues bound to the exchange, will be
 created on demand. On the subscriber side, exchanges, queues, bindings and
 queue subscriptions will be created when the application calls the <a
-href="Client.html#M000053">listen</a> method. An application can decide to
+href="Client.html#M000067">listen</a> method. An application can decide to
 subscribe to only a subset of the configured queues by passing a list of
-queue names to the <a href="Client.html#M000053">listen</a> method.
+queue names to the <a href="Client.html#M000067">listen</a> method.
 </p>
 <p>
 The net effect of this strategy is that producers and consumers can be
@@ -117,22 +117,21 @@ accidentally started before the corresponding consumers.
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000049">configure</a>&nbsp;&nbsp;
-      <a href="#M000053">listen</a>&nbsp;&nbsp;
-      <a href="#M000057">load</a>&nbsp;&nbsp;
-      <a href="#M000058">logger</a>&nbsp;&nbsp;
-      <a href="#M000043">new</a>&nbsp;&nbsp;
-      <a href="#M000050">publish</a>&nbsp;&nbsp;
-      <a href="#M000052">purge</a>&nbsp;&nbsp;
-      <a href="#M000046">register_binding</a>&nbsp;&nbsp;
-      <a href="#M000044">register_exchange</a>&nbsp;&nbsp;
-      <a href="#M000048">register_handler</a>&nbsp;&nbsp;
-      <a href="#M000047">register_message</a>&nbsp;&nbsp;
-      <a href="#M000045">register_queue</a>&nbsp;&nbsp;
-      <a href="#M000051">rpc</a>&nbsp;&nbsp;
-      <a href="#M000054">stop_listening</a>&nbsp;&nbsp;
-      <a href="#M000055">stop_publishing</a>&nbsp;&nbsp;
-      <a href="#M000056">trace</a>&nbsp;&nbsp;
+      <a href="#M000063">configure</a>&nbsp;&nbsp;
+      <a href="#M000067">listen</a>&nbsp;&nbsp;
+      <a href="#M000071">load</a>&nbsp;&nbsp;
+      <a href="#M000057">new</a>&nbsp;&nbsp;
+      <a href="#M000064">publish</a>&nbsp;&nbsp;
+      <a href="#M000066">purge</a>&nbsp;&nbsp;
+      <a href="#M000060">register_binding</a>&nbsp;&nbsp;
+      <a href="#M000058">register_exchange</a>&nbsp;&nbsp;
+      <a href="#M000062">register_handler</a>&nbsp;&nbsp;
+      <a href="#M000061">register_message</a>&nbsp;&nbsp;
+      <a href="#M000059">register_queue</a>&nbsp;&nbsp;
+      <a href="#M000065">rpc</a>&nbsp;&nbsp;
+      <a href="#M000068">stop_listening</a>&nbsp;&nbsp;
+      <a href="#M000069">stop_publishing</a>&nbsp;&nbsp;
+      <a href="#M000070">trace</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -140,6 +139,13 @@ accidentally started before the corresponding consumers.
 
 
     <!-- if includes -->
+    <div id="includes">
+      <h3 class="section-bar">Included Modules</h3>
+
+      <div id="includes-list">
+        <span class="include-name"><a href="Logging.html">Logging</a></span>
+      </div>
+    </div>
 
     <div id="section">
 
@@ -157,6 +163,14 @@ accidentally started before the corresponding consumers.
           <td class="context-item-value">&nbsp;[R]&nbsp;</td>
           <td class="context-item-desc">
 an options hash for the configured queue bindings
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">config</td>
+          <td class="context-item-value">&nbsp;[R]&nbsp;</td>
+          <td class="context-item-desc">
+accessor for the beetle configuration
 
 </td>
         </tr>
@@ -210,11 +224,11 @@ the AMQP servers available for publishing
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000043" class="method-detail">
-        <a name="M000043"></a>
+      <div id="method-M000057" class="method-detail">
+        <a name="M000057"></a>
 
         <div class="method-heading">
-          <a href="#M000043" class="method-signature">
+          <a href="#M000057" class="method-signature">
           <span class="method-name">new</span><span class="method-args">(config = Beetle.config)</span>
           </a>
         </div>
@@ -225,18 +239,19 @@ create a fresh <a href="Client.html">Client</a> instance from a given
 configuration object
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000043-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000043-source">
+            onclick="toggleCode('M000057-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000057-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 41</span>
-41:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">config</span> = <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>)
-42:       <span class="ruby-ivar">@servers</span> = <span class="ruby-identifier">config</span>.<span class="ruby-identifier">servers</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp re">/ *, */</span>)
-43:       <span class="ruby-ivar">@exchanges</span> = {}
-44:       <span class="ruby-ivar">@queues</span> = {}
-45:       <span class="ruby-ivar">@messages</span> = {}
-46:       <span class="ruby-ivar">@bindings</span> = {}
-47:       <span class="ruby-ivar">@deduplication_store</span> = <span class="ruby-constant">DeduplicationStore</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">config</span>.<span class="ruby-identifier">redis_hosts</span>, <span class="ruby-identifier">config</span>.<span class="ruby-identifier">redis_db</span>)
-48:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 46</span>
+46:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">config</span> = <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>)
+47:       <span class="ruby-ivar">@config</span>  = <span class="ruby-identifier">config</span>
+48:       <span class="ruby-ivar">@servers</span> = <span class="ruby-identifier">config</span>.<span class="ruby-identifier">servers</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp re">/ *, */</span>)
+49:       <span class="ruby-ivar">@exchanges</span> = {}
+50:       <span class="ruby-ivar">@queues</span> = {}
+51:       <span class="ruby-ivar">@messages</span> = {}
+52:       <span class="ruby-ivar">@bindings</span> = {}
+53:       <span class="ruby-ivar">@deduplication_store</span> = <span class="ruby-constant">DeduplicationStore</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">config</span>)
+54:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -244,26 +259,27 @@ configuration object
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000049" class="method-detail">
-        <a name="M000049"></a>
+      <div id="method-M000063" class="method-detail">
+        <a name="M000063"></a>
 
         <div class="method-heading">
-          <a href="#M000049" class="method-signature">
+          <a href="#M000063" class="method-signature">
           <span class="method-name">configure</span><span class="method-args">(options={}) {|config| ...}</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-this is a convenience method to <a href="Client.html#M000049">configure</a>
+this is a convenience method to <a href="Client.html#M000063">configure</a>
 exchanges, queues, messages and handlers with a common set of options.
 allows one to call all register methods without the register_ prefix.
+returns self.
 </p>
 <p>
 Example:
 </p>
 <pre>
- client.configure :exchange =&gt; :foobar do |config|
+ client = Beetle.client.new.configure :exchange =&gt; :foobar do |config|
    config.queue :q1, :key =&gt; &quot;foo&quot;
    config.queue :q2, :key =&gt; &quot;bar&quot;
    config.message :foo
@@ -273,23 +289,24 @@ Example:
  end
 </pre>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000049-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000049-source">
+            onclick="toggleCode('M000063-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000063-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 153</span>
-153:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">configure</span>(<span class="ruby-identifier">options</span>={}) <span class="ruby-comment cmt">#:yields: config</span>
-154:       <span class="ruby-keyword kw">yield</span> <span class="ruby-constant">Configurator</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword kw">self</span>, <span class="ruby-identifier">options</span>)
-155:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 159</span>
+159:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">configure</span>(<span class="ruby-identifier">options</span>={}) <span class="ruby-comment cmt">#:yields: config</span>
+160:       <span class="ruby-keyword kw">yield</span> <span class="ruby-constant">Configurator</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword kw">self</span>, <span class="ruby-identifier">options</span>)
+161:       <span class="ruby-keyword kw">self</span>
+162:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000053" class="method-detail">
-        <a name="M000053"></a>
+      <div id="method-M000067" class="method-detail">
+        <a name="M000067"></a>
 
         <div class="method-heading">
-          <a href="#M000053" class="method-signature">
+          <a href="#M000067" class="method-signature">
           <span class="method-name">listen</span><span class="method-args">(messages=self.messages.keys, &amp;block)</span>
           </a>
         </div>
@@ -300,25 +317,25 @@ start listening to a list of messages (default to all registered messages).
 runs the given block before entering the eventmachine loop.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000053-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000053-source">
+            onclick="toggleCode('M000067-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000067-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 182</span>
-182:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>=<span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">keys</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-183:       <span class="ruby-identifier">messages</span> = <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">:to_s</span>)
-184:       <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">each</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{m}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">m</span>)}
-185:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-186:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 189</span>
+189:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>=<span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">keys</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+190:       <span class="ruby-identifier">messages</span> = <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">:to_s</span>)
+191:       <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">each</span>{<span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{m}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">m</span>)}
+192:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+193:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000057" class="method-detail">
-        <a name="M000057"></a>
+      <div id="method-M000071" class="method-detail">
+        <a name="M000071"></a>
 
         <div class="method-heading">
-          <a href="#M000057" class="method-signature">
+          <a href="#M000071" class="method-signature">
           <span class="method-name">load</span><span class="method-args">(glob)</span>
           </a>
         </div>
@@ -329,52 +346,26 @@ evaluate the ruby files matching the given <tt>glob</tt> pattern in the
 context of the client instance.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000057-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000057-source">
+            onclick="toggleCode('M000071-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000071-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 214</span>
-214:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">load</span>(<span class="ruby-identifier">glob</span>)
-215:       <span class="ruby-identifier">b</span> = <span class="ruby-identifier">binding</span>
-216:       <span class="ruby-constant">Dir</span>[<span class="ruby-identifier">glob</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">f</span><span class="ruby-operator">|</span>
-217:         <span class="ruby-identifier">eval</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">read</span>(<span class="ruby-identifier">f</span>), <span class="ruby-identifier">b</span>, <span class="ruby-identifier">f</span>)
-218:       <span class="ruby-keyword kw">end</span>
-219:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 221</span>
+221:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">load</span>(<span class="ruby-identifier">glob</span>)
+222:       <span class="ruby-identifier">b</span> = <span class="ruby-identifier">binding</span>
+223:       <span class="ruby-constant">Dir</span>[<span class="ruby-identifier">glob</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">f</span><span class="ruby-operator">|</span>
+224:         <span class="ruby-identifier">eval</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">read</span>(<span class="ruby-identifier">f</span>), <span class="ruby-identifier">b</span>, <span class="ruby-identifier">f</span>)
+225:       <span class="ruby-keyword kw">end</span>
+226:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000058" class="method-detail">
-        <a name="M000058"></a>
+      <div id="method-M000064" class="method-detail">
+        <a name="M000064"></a>
 
         <div class="method-heading">
-          <a href="#M000058" class="method-signature">
-          <span class="method-name">logger</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-returns the configured Logger instance
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000058-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000058-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 222</span>
-222:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">logger</span>
-223:       <span class="ruby-ivar">@logger</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
-224:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000050" class="method-detail">
-        <a name="M000050"></a>
-
-        <div class="method-heading">
-          <a href="#M000050" class="method-signature">
+          <a href="#M000064" class="method-signature">
           <span class="method-name">publish</span><span class="method-args">(message_name, data=nil, opts={})</span>
           </a>
         </div>
@@ -385,25 +376,25 @@ publishes a message. the given options hash is merged with options given on
 message registration.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000050-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000050-source">
+            onclick="toggleCode('M000064-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000064-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 158</span>
-158:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">publish</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={})
-159:       <span class="ruby-identifier">message_name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
-160:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{message_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">message_name</span>)
-161:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">publish</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>, <span class="ruby-identifier">opts</span>)
-162:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 165</span>
+165:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">publish</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={})
+166:       <span class="ruby-identifier">message_name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
+167:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{message_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">message_name</span>)
+168:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">publish</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>, <span class="ruby-identifier">opts</span>)
+169:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000052" class="method-detail">
-        <a name="M000052"></a>
+      <div id="method-M000066" class="method-detail">
+        <a name="M000066"></a>
 
         <div class="method-heading">
-          <a href="#M000052" class="method-signature">
+          <a href="#M000066" class="method-signature">
           <span class="method-name">purge</span><span class="method-args">(queue_name)</span>
           </a>
         </div>
@@ -413,25 +404,25 @@ message registration.
 purges the given queue on all configured servers
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000052-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000052-source">
+            onclick="toggleCode('M000066-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000066-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 174</span>
-174:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">purge</span>(<span class="ruby-identifier">queue_name</span>)
-175:       <span class="ruby-identifier">queue_name</span> = <span class="ruby-identifier">queue_name</span>.<span class="ruby-identifier">to_s</span>
-176:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownQueue</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown queue #{queue_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">queue_name</span>)
-177:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">purge</span>(<span class="ruby-identifier">queue_name</span>)
-178:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 181</span>
+181:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">purge</span>(<span class="ruby-identifier">queue_name</span>)
+182:       <span class="ruby-identifier">queue_name</span> = <span class="ruby-identifier">queue_name</span>.<span class="ruby-identifier">to_s</span>
+183:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownQueue</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown queue #{queue_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">queue_name</span>)
+184:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">purge</span>(<span class="ruby-identifier">queue_name</span>)
+185:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000046" class="method-detail">
-        <a name="M000046"></a>
+      <div id="method-M000060" class="method-detail">
+        <a name="M000060"></a>
 
         <div class="method-heading">
-          <a href="#M000046" class="method-signature">
+          <a href="#M000060" class="method-signature">
           <span class="method-name">register_binding</span><span class="method-args">(queue_name, options={})</span>
           </a>
         </div>
@@ -455,30 +446,30 @@ automatically registers the specified exchange if it hasn&#8216;t been
 registered yet
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000046-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000046-source">
+            onclick="toggleCode('M000060-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000060-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 87</span>
-87:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_binding</span>(<span class="ruby-identifier">queue_name</span>, <span class="ruby-identifier">options</span>={})
-88:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">queue_name</span>.<span class="ruby-identifier">to_s</span>
-89:       <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>
-90:       <span class="ruby-identifier">exchange</span> = (<span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">name</span>).<span class="ruby-identifier">to_s</span>
-91:       <span class="ruby-identifier">key</span> = (<span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:key</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">name</span>).<span class="ruby-identifier">to_s</span>
-92:       (<span class="ruby-identifier">bindings</span>[<span class="ruby-identifier">name</span>] <span class="ruby-operator">||=</span> []) <span class="ruby-operator">&lt;&lt;</span> {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exchange</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">key</span>}
-93:       <span class="ruby-identifier">register_exchange</span>(<span class="ruby-identifier">exchange</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">exchanges</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">exchange</span>)
-94:       <span class="ruby-identifier">queues</span> = (<span class="ruby-identifier">exchanges</span>[<span class="ruby-identifier">exchange</span>][<span class="ruby-identifier">:queues</span>] <span class="ruby-operator">||=</span> [])
-95:       <span class="ruby-identifier">queues</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">name</span> <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
-96:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 93</span>
+ 93:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_binding</span>(<span class="ruby-identifier">queue_name</span>, <span class="ruby-identifier">options</span>={})
+ 94:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">queue_name</span>.<span class="ruby-identifier">to_s</span>
+ 95:       <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>
+ 96:       <span class="ruby-identifier">exchange</span> = (<span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">name</span>).<span class="ruby-identifier">to_s</span>
+ 97:       <span class="ruby-identifier">key</span> = (<span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:key</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">name</span>).<span class="ruby-identifier">to_s</span>
+ 98:       (<span class="ruby-identifier">bindings</span>[<span class="ruby-identifier">name</span>] <span class="ruby-operator">||=</span> []) <span class="ruby-operator">&lt;&lt;</span> {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exchange</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">key</span>}
+ 99:       <span class="ruby-identifier">register_exchange</span>(<span class="ruby-identifier">exchange</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">exchanges</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">exchange</span>)
+100:       <span class="ruby-identifier">queues</span> = (<span class="ruby-identifier">exchanges</span>[<span class="ruby-identifier">exchange</span>][<span class="ruby-identifier">:queues</span>] <span class="ruby-operator">||=</span> [])
+101:       <span class="ruby-identifier">queues</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">name</span> <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
+102:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000044" class="method-detail">
-        <a name="M000044"></a>
+      <div id="method-M000058" class="method-detail">
+        <a name="M000058"></a>
 
         <div class="method-heading">
-          <a href="#M000044" class="method-signature">
+          <a href="#M000058" class="method-signature">
           <span class="method-name">register_exchange</span><span class="method-args">(name, options={})</span>
           </a>
         </div>
@@ -499,25 +490,25 @@ ensure that exchanges are never deleted
 </dd>
 </dl>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000044-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000044-source">
+            onclick="toggleCode('M000058-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000058-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 56</span>
-56:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_exchange</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>={})
-57:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
-58:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;exchange #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">exchanges</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
-59:       <span class="ruby-identifier">exchanges</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">:type</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">:topic</span>, <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>)
-60:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 62</span>
+62:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_exchange</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>={})
+63:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
+64:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;exchange #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">exchanges</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
+65:       <span class="ruby-identifier">exchanges</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">:type</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">:topic</span>, <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>)
+66:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000048" class="method-detail">
-        <a name="M000048"></a>
+      <div id="method-M000062" class="method-detail">
+        <a name="M000062"></a>
 
         <div class="method-heading">
-          <a href="#M000048" class="method-signature">
+          <a href="#M000062" class="method-signature">
           <span class="method-name">register_handler</span><span class="method-args">(queues, *args, &amp;block)</span>
           </a>
         </div>
@@ -546,28 +537,28 @@ For details on handler classes see class <a
 href="Handler.html">Beetle::Handler</a>
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000048-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000048-source">
+            onclick="toggleCode('M000062-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000062-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 131</span>
-131:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-132:       <span class="ruby-identifier">queues</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">queues</span>).<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">:to_s</span>)
-133:       <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">each</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">q</span><span class="ruby-operator">|</span> <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownQueue</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">q</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">q</span>)}
-134:       <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">args</span>.<span class="ruby-identifier">last</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">pop</span> <span class="ruby-operator">:</span> {}
-135:       <span class="ruby-identifier">handler</span> = <span class="ruby-identifier">args</span>.<span class="ruby-identifier">shift</span>
-136:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;too many arguments for handler registration&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">empty?</span>
-137:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>, <span class="ruby-identifier">opts</span>, <span class="ruby-identifier">handler</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-138:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 137</span>
+137:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+138:       <span class="ruby-identifier">queues</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">queues</span>).<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">:to_s</span>)
+139:       <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">each</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">q</span><span class="ruby-operator">|</span> <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownQueue</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">q</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">q</span>)}
+140:       <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">args</span>.<span class="ruby-identifier">last</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">pop</span> <span class="ruby-operator">:</span> {}
+141:       <span class="ruby-identifier">handler</span> = <span class="ruby-identifier">args</span>.<span class="ruby-identifier">shift</span>
+142:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value str">&quot;too many arguments for handler registration&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">empty?</span>
+143:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>, <span class="ruby-identifier">opts</span>, <span class="ruby-identifier">handler</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+144:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000047" class="method-detail">
-        <a name="M000047"></a>
+      <div id="method-M000061" class="method-detail">
+        <a name="M000061"></a>
 
         <div class="method-heading">
-          <a href="#M000047" class="method-signature">
+          <a href="#M000061" class="method-signature">
           <span class="method-name">register_message</span><span class="method-args">(message_name, options={})</span>
           </a>
         </div>
@@ -592,28 +583,28 @@ false)
 </dd>
 </dl>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000047-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000047-source">
+            onclick="toggleCode('M000061-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000061-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 107</span>
-107:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_message</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">options</span>={})
-108:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
-109:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;message #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
-110:       <span class="ruby-identifier">opts</span> = {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>}.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>)
-111:       <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:persistent</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>
-112:       <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>] = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>].<span class="ruby-identifier">to_s</span>
-113:       <span class="ruby-identifier">messages</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">opts</span>
-114:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 113</span>
+113:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_message</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">options</span>={})
+114:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
+115:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;message #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
+116:       <span class="ruby-identifier">opts</span> = {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>}.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>)
+117:       <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:persistent</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>
+118:       <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>] = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:exchange</span>].<span class="ruby-identifier">to_s</span>
+119:       <span class="ruby-identifier">messages</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">opts</span>
+120:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000045" class="method-detail">
-        <a name="M000045"></a>
+      <div id="method-M000059" class="method-detail">
+        <a name="M000059"></a>
 
         <div class="method-heading">
-          <a href="#M000045" class="method-signature">
+          <a href="#M000059" class="method-signature">
           <span class="method-name">register_queue</span><span class="method-args">(name, options={})</span>
           </a>
         </div>
@@ -637,30 +628,30 @@ automatically registers the specified exchange if it hasn&#8216;t been
 registered yet
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000045-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000045-source">
+            onclick="toggleCode('M000059-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000059-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 69</span>
-69:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_queue</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>={})
-70:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
-71:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;queue #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
-72:       <span class="ruby-identifier">opts</span> = {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>}.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>)
-73:       <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:passive</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:exclusive</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:auto_delete</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:amqp_name</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>
-74:       <span class="ruby-identifier">exchange</span> = <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">:exchange</span>).<span class="ruby-identifier">to_s</span>
-75:       <span class="ruby-identifier">key</span> = <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">:key</span>)
-76:       <span class="ruby-identifier">queues</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">opts</span>
-77:       <span class="ruby-identifier">register_binding</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exchange</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">key</span>)
-78:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 75</span>
+75:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">register_queue</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>={})
+76:       <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
+77:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ConfigurationError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;queue #{name} already configured&quot;</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">name</span>)
+78:       <span class="ruby-identifier">opts</span> = {<span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">:auto_delete</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>}.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>)
+79:       <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:passive</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:exclusive</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:amqp_name</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">name</span>
+80:       <span class="ruby-identifier">exchange</span> = <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">:exchange</span>).<span class="ruby-identifier">to_s</span>
+81:       <span class="ruby-identifier">key</span> = <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">:key</span>)
+82:       <span class="ruby-identifier">queues</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">opts</span>
+83:       <span class="ruby-identifier">register_binding</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">:exchange</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exchange</span>, <span class="ruby-identifier">:key</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">key</span>)
+84:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000051" class="method-detail">
-        <a name="M000051"></a>
+      <div id="method-M000065" class="method-detail">
+        <a name="M000065"></a>
 
         <div class="method-heading">
-          <a href="#M000051" class="method-signature">
+          <a href="#M000065" class="method-signature">
           <span class="method-name">rpc</span><span class="method-args">(message_name, data=nil, opts={})</span>
           </a>
         </div>
@@ -675,25 +666,25 @@ unexpected behavior can ensue if the message gets routed to more than one
 recipient, so be careful.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000051-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000051-source">
+            onclick="toggleCode('M000065-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000065-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 167</span>
-167:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">rpc</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={})
-168:       <span class="ruby-identifier">message_name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
-169:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{message_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">message_name</span>)
-170:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">rpc</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>, <span class="ruby-identifier">opts</span>)
-171:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 174</span>
+174:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">rpc</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={})
+175:       <span class="ruby-identifier">message_name</span> = <span class="ruby-identifier">message_name</span>.<span class="ruby-identifier">to_s</span>
+176:       <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownMessage</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;unknown message #{message_name}&quot;</span>) <span class="ruby-keyword kw">unless</span> <span class="ruby-identifier">messages</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">message_name</span>)
+177:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">rpc</span>(<span class="ruby-identifier">message_name</span>, <span class="ruby-identifier">data</span>, <span class="ruby-identifier">opts</span>)
+178:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000054" class="method-detail">
-        <a name="M000054"></a>
+      <div id="method-M000068" class="method-detail">
+        <a name="M000068"></a>
 
         <div class="method-heading">
-          <a href="#M000054" class="method-signature">
+          <a href="#M000068" class="method-signature">
           <span class="method-name">stop_listening</span><span class="method-args">()</span>
           </a>
         </div>
@@ -703,23 +694,23 @@ recipient, so be careful.
 stops the eventmachine loop
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000054-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000054-source">
+            onclick="toggleCode('M000068-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000068-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 189</span>
-189:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">stop_listening</span>
-190:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">stop!</span>
-191:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 196</span>
+196:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">stop_listening</span>
+197:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">stop!</span>
+198:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000055" class="method-detail">
-        <a name="M000055"></a>
+      <div id="method-M000069" class="method-detail">
+        <a name="M000069"></a>
 
         <div class="method-heading">
-          <a href="#M000055" class="method-signature">
+          <a href="#M000069" class="method-signature">
           <span class="method-name">stop_publishing</span><span class="method-args">()</span>
           </a>
         </div>
@@ -730,50 +721,49 @@ disconnects the publisher from all servers it&#8216;s currently connected
 to
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000055-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000055-source">
+            onclick="toggleCode('M000069-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000069-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 194</span>
-194:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">stop_publishing</span>
-195:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">stop</span>
-196:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 201</span>
+201:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">stop_publishing</span>
+202:       <span class="ruby-identifier">publisher</span>.<span class="ruby-identifier">stop</span>
+203:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000056" class="method-detail">
-        <a name="M000056"></a>
+      <div id="method-M000070" class="method-detail">
+        <a name="M000070"></a>
 
         <div class="method-heading">
-          <a href="#M000056" class="method-signature">
-          <span class="method-name">trace</span><span class="method-args">(&amp;block)</span>
+          <a href="#M000070" class="method-signature">
+          <span class="method-name">trace</span><span class="method-args">(messages=self.messages.keys, &amp;block)</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-traces all messages received on all queues. useful for debugging message
-flow.
+traces messages without consuming them. useful for debugging message flow.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000056-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000056-source">
+            onclick="toggleCode('M000070-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000070-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 199</span>
-199:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">trace</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-200:       <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">opts</span><span class="ruby-operator">|</span>
-201:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:auto_delete</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:amqp_name</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">queue_name_for_tracing</span>(<span class="ruby-identifier">name</span>)
-202:       <span class="ruby-keyword kw">end</span>
-203:       <span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>.<span class="ruby-identifier">keys</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">msg</span><span class="ruby-operator">|</span>
-204:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;-----===== new message =====-----&quot;</span>
-205:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;SERVER: #{msg.server}&quot;</span>
-206:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;HEADER: #{msg.header.inspect}&quot;</span>
-207:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;MSGID: #{msg.msg_id}&quot;</span>
-208:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;DATA: #{msg.data}&quot;</span>
+     <span class="ruby-comment cmt"># File lib/beetle/client.rb, line 206</span>
+206:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">trace</span>(<span class="ruby-identifier">messages</span>=<span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">keys</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+207:       <span class="ruby-identifier">queues</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">opts</span><span class="ruby-operator">|</span>
+208:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">merge!</span> <span class="ruby-identifier">:durable</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">false</span>, <span class="ruby-identifier">:auto_delete</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:amqp_name</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">queue_name_for_tracing</span>(<span class="ruby-identifier">name</span>)
 209:       <span class="ruby-keyword kw">end</span>
-210:       <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>.<span class="ruby-identifier">keys</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-211:     <span class="ruby-keyword kw">end</span>
+210:       <span class="ruby-identifier">register_handler</span>(<span class="ruby-identifier">queues</span>.<span class="ruby-identifier">keys</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">msg</span><span class="ruby-operator">|</span>
+211:         <span class="ruby-identifier">puts</span> <span class="ruby-value str">&quot;-----===== new message =====-----&quot;</span>
+212:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;SERVER: #{msg.server}&quot;</span>
+213:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;HEADER: #{msg.header.inspect}&quot;</span>
+214:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;MSGID: #{msg.msg_id}&quot;</span>
+215:         <span class="ruby-identifier">puts</span> <span class="ruby-node">&quot;DATA: #{msg.data}&quot;</span>
+216:       <span class="ruby-keyword kw">end</span>
+217:       <span class="ruby-identifier">listen</span>(<span class="ruby-identifier">messages</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+218:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>

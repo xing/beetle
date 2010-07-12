@@ -5,7 +5,7 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <title>Class: Beetle::Base</title>
+  <title>Module: Beetle::Logging</title>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
   <meta http-equiv="Content-Script-Type" content="text/javascript" />
   <link rel="stylesheet" href="../.././rdoc-style.css" type="text/css" media="screen" />
@@ -49,25 +49,19 @@
     <div id="classHeader">
         <table class="header-table">
         <tr class="top-aligned-row">
-          <td><strong>Class</strong></td>
-          <td class="class-name-in-header">Beetle::Base</td>
+          <td><strong>Module</strong></td>
+          <td class="class-name-in-header">Beetle::Logging</td>
         </tr>
         <tr class="top-aligned-row">
             <td><strong>In:</strong></td>
             <td>
-                <a href="../../files/lib/beetle/base_rb.html">
-                lib/beetle/base.rb
+                <a href="../../files/lib/beetle/logging_rb.html">
+                lib/beetle/logging.rb
                 </a>
         <br />
             </td>
         </tr>
 
-        <tr class="top-aligned-row">
-            <td><strong>Parent:</strong></td>
-            <td>
-                Object
-            </td>
-        </tr>
         </table>
     </div>
   <!-- banner header -->
@@ -78,29 +72,22 @@
 
   <div id="contextContent">
 
-    <div id="description">
-      <p>
-Abstract base class shared by <a href="Publisher.html">Publisher</a> and <a
-href="Subscriber.html">Subscriber</a>
-</p>
-
-    </div>
 
 
    </div>
 
+    <div id="method-list">
+      <h3 class="section-bar">Methods</h3>
+
+      <div class="name-list">
+      <a href="#M000002">logger</a>&nbsp;&nbsp;
+      </div>
+    </div>
 
   </div>
 
 
     <!-- if includes -->
-    <div id="includes">
-      <h3 class="section-bar">Included Modules</h3>
-
-      <div id="includes-list">
-        <span class="include-name"><a href="Logging.html">Logging</a></span>
-      </div>
-    </div>
 
     <div id="section">
 
@@ -112,6 +99,34 @@ href="Subscriber.html">Subscriber</a>
 
 
     <!-- if method_list -->
+    <div id="methods">
+      <h3 class="section-bar">Public Instance methods</h3>
+
+      <div id="method-M000002" class="method-detail">
+        <a name="M000002"></a>
+
+        <div class="method-heading">
+          <a href="#M000002" class="method-signature">
+          <span class="method-name">logger</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000002-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000002-source">
+<pre>
+   <span class="ruby-comment cmt"># File lib/beetle/logging.rb, line 3</span>
+3:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">logger</span>
+4:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
+5:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+
+    </div>
 
 
   </div>

@@ -100,6 +100,14 @@
       <div class="name-list">
         <table>
         <tr class="top-aligned-row context-row">
+          <td class="context-item-name">config_file</td>
+          <td class="context-item-value">&nbsp;[R]&nbsp;</td>
+          <td class="context-item-desc">
+external config file (defaults to <tt>no file</tt>)
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
           <td class="context-item-name">gc_threshold</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
@@ -120,7 +128,47 @@ default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
           <td class="context-item-name">password</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the password to use when connectiong to the AMQP servers
+the password to use when connectiong to the AMQP servers (defaults to
+<tt>&quot;guest&quot;</tt>)
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_configuration_client_ids</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc">
+the redis configuration client ids living on the worker machines taking
+part in the redis failover, separated by comma (defaults to
+<tt>&quot;&quot;</tt>)
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_configuration_client_timeout</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc">
+number of seconds the redis configuration server waits for answers from
+clients (defaults to <tt>5</tt>)
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_configuration_master_retries</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc"><pre>
+ redis configuration server options
+</pre>
+
+how often should the redis configuration server try to reach the redis
+master before nominating a new one (defaults to <tt>3</tt>)
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_configuration_master_retry_interval</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc">
+number of seconds to wait between retries (defaults to <tt>10</tt>)
 
 </td>
         </tr>
@@ -134,11 +182,33 @@ to <tt>4</tt>)
 </td>
         </tr>
         <tr class="top-aligned-row context-row">
-          <td class="context-item-name">redis_hosts</td>
+          <td class="context-item-name">redis_failover_timeout</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the machines where the deduplication store lives (defaults to
-<tt>&quot;localhost:6379&quot;</tt>)
+how long we should repeatedly retry a redis operation before giving up,
+with a one second sleep between retries (defaults to <tt>180.seconds</tt>).
+this value needs to be somewehere between the maximum time it takes to
+auto-switch redis and the smallest handler timeout.
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_server</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc">
+the redis server to use for deduplication either a string like
+<tt>&quot;localhost:6379&quot;</tt> (default) or a file that contains the
+string. use a file if you are using a beetle configuration_client process
+to update it for automatic redis failover.
+
+</td>
+        </tr>
+        <tr class="top-aligned-row context-row">
+          <td class="context-item-name">redis_servers</td>
+          <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
+          <td class="context-item-desc">
+comma separated list of redis servers available for master/slave switching
+e.g. &quot;192.168.1.2:6379,192.168.1.3:6379&quot;
 
 </td>
         </tr>
@@ -155,7 +225,8 @@ list of amqp servers to use (defaults to
           <td class="context-item-name">user</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the AMQP user to use when connecting to the AMQP servers
+the AMQP user to use when connecting to the AMQP servers (defaults to
+<tt>&quot;guest&quot;</tt>)
 
 </td>
         </tr>
@@ -163,7 +234,8 @@ the AMQP user to use when connecting to the AMQP servers
           <td class="context-item-name">vhost</td>
           <td class="context-item-value">&nbsp;[RW]&nbsp;</td>
           <td class="context-item-desc">
-the virtual host to use on the AMQP servers
+the virtual host to use on the AMQP servers (defaults to
+<tt>&quot;/&quot;</tt>)
 
 </td>
         </tr>

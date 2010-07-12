@@ -56,7 +56,7 @@
     </tr>
     <tr class="top-aligned-row">
       <td><strong>Last Update:</strong></td>
-      <td>Wed Apr 14 09:43:30 +0200 2010</td>
+      <td>Fri Jul 09 15:41:30 +0200 2010</td>
     </tr>
     </table>
   </div>
@@ -99,9 +99,9 @@ href="http://xing.github.com/beetle">project website</a>.
 <pre>
     # configure machines
 
-    Beetle.config do |c|
+    Beetle.config do |config|
       config.servers = &quot;broker1:5672, broker2:5672&quot;
-      config.redis_hosts = &quot;redis1:6379, redis2:6379&quot;
+      config.redis_server = &quot;redis1:6379&quot;
     end
 
     # instantiate a beetle client
@@ -142,10 +142,6 @@ commands:
     rake redis:start1
     rake redis:start2
 </pre>
-<p>
-After running the redis_failover.rb script you will need to restart both
-redis servers.
-</p>
 <h2>Prerequisites</h2>
 <p>
 To set up a redundant messaging system you will need
@@ -196,8 +192,9 @@ For development, you&#8216;ll need
 <h2>Authors</h2>
 <p>
 <a href="http://github.com/skaes">Stefan Kaes</a>, <a
-href="http://github.com/paukul">Pascal Friederich</a> and <a
-href="http://github.com/dudemeister">Ali Jelveh</a>.
+href="http://github.com/paukul">Pascal Friederich</a>, <a
+href="http://github.com/dudemeister">Ali Jelveh</a> and <a
+href="http://github.com/boosty">Sebastian Roebke</a>.
 </p>
 <p>
 You cand find out more about our work on our <a

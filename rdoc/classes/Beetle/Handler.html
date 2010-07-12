@@ -87,9 +87,9 @@ purposes.
 </p>
 <p>
 Most applications will define <a href="Handler.html">Handler</a> subclasses
-and override the <a href="Handler.html#M000061">process</a>, <a
-href="Handler.html#M000062">error</a> and <a
-href="Handler.html#M000063">failure</a> methods.
+and override the <a href="Handler.html#M000089">process</a>, <a
+href="Handler.html#M000090">error</a> and <a
+href="Handler.html#M000091">failure</a> methods.
 </p>
 
     </div>
@@ -101,13 +101,12 @@ href="Handler.html#M000063">failure</a> methods.
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000060">call</a>&nbsp;&nbsp;
-      <a href="#M000062">error</a>&nbsp;&nbsp;
-      <a href="#M000063">failure</a>&nbsp;&nbsp;
-      <a href="#M000059">initialize</a>&nbsp;&nbsp;
-      <a href="#M000065">logger</a>&nbsp;&nbsp;
-      <a href="#M000064">logger</a>&nbsp;&nbsp;
-      <a href="#M000061">process</a>&nbsp;&nbsp;
+      <a href="#M000088">call</a>&nbsp;&nbsp;
+      <a href="#M000090">error</a>&nbsp;&nbsp;
+      <a href="#M000091">failure</a>&nbsp;&nbsp;
+      <a href="#M000087">initialize</a>&nbsp;&nbsp;
+      <a href="#M000092">logger</a>&nbsp;&nbsp;
+      <a href="#M000089">process</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -115,6 +114,13 @@ href="Handler.html#M000063">failure</a> methods.
 
 
     <!-- if includes -->
+    <div id="includes">
+      <h3 class="section-bar">Included Modules</h3>
+
+      <div id="includes-list">
+        <span class="include-name"><a href="Logging.html">Logging</a></span>
+      </div>
+    </div>
 
     <div id="section">
 
@@ -146,11 +152,11 @@ be created
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000065" class="method-detail">
-        <a name="M000065"></a>
+      <div id="method-M000092" class="method-detail">
+        <a name="M000092"></a>
 
         <div class="method-heading">
-          <a href="#M000065" class="method-signature">
+          <a href="#M000092" class="method-signature">
           <span class="method-name">logger</span><span class="method-args">()</span>
           </a>
         </div>
@@ -158,16 +164,16 @@ be created
         <div class="method-description">
           <p>
 returns the configured <a href="../Beetle.html">Beetle</a> <a
-href="Handler.html#M000064">logger</a>
+href="Handler.html#M000092">logger</a>
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000065-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000065-source">
+            onclick="toggleCode('M000092-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000092-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 90</span>
-90:     <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">logger</span>
-91:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
-92:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 87</span>
+87:     <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">logger</span>
+88:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
+89:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -175,11 +181,11 @@ href="Handler.html#M000064">logger</a>
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000060" class="method-detail">
-        <a name="M000060"></a>
+      <div id="method-M000088" class="method-detail">
+        <a name="M000088"></a>
 
         <div class="method-heading">
-          <a href="#M000060" class="method-signature">
+          <a href="#M000088" class="method-signature">
           <span class="method-name">call</span><span class="method-args">(message)</span>
           </a>
         </div>
@@ -190,33 +196,33 @@ called when a message should be processed. if the message was caused by an
 RPC, the return value will be sent back to the caller. calls the
 initialized processor proc if a processor proc was specified when creating
 the <a href="Handler.html">Handler</a> instance. calls method <a
-href="Handler.html#M000061">process</a> if no proc was given. make sure to
-<a href="Handler.html#M000060">call</a> super if you override this method
+href="Handler.html#M000089">process</a> if no proc was given. make sure to
+<a href="Handler.html#M000088">call</a> super if you override this method
 in a subclass.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000060-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000060-source">
+            onclick="toggleCode('M000088-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000088-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 34</span>
-34:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">call</span>(<span class="ruby-identifier">message</span>)
-35:       <span class="ruby-ivar">@message</span> = <span class="ruby-identifier">message</span>
-36:       <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@processor</span>
-37:         <span class="ruby-ivar">@processor</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">message</span>)
-38:       <span class="ruby-keyword kw">else</span>
-39:         <span class="ruby-identifier">process</span>
-40:       <span class="ruby-keyword kw">end</span>
-41:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 36</span>
+36:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">call</span>(<span class="ruby-identifier">message</span>)
+37:       <span class="ruby-ivar">@message</span> = <span class="ruby-identifier">message</span>
+38:       <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@processor</span>
+39:         <span class="ruby-ivar">@processor</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">message</span>)
+40:       <span class="ruby-keyword kw">else</span>
+41:         <span class="ruby-identifier">process</span>
+42:       <span class="ruby-keyword kw">end</span>
+43:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000062" class="method-detail">
-        <a name="M000062"></a>
+      <div id="method-M000090" class="method-detail">
+        <a name="M000090"></a>
 
         <div class="method-heading">
-          <a href="#M000062" class="method-signature">
+          <a href="#M000090" class="method-signature">
           <span class="method-name">error</span><span class="method-args">(exception)</span>
           </a>
         </div>
@@ -224,27 +230,27 @@ in a subclass.
         <div class="method-description">
           <p>
 called when handler execution raised an exception and no <a
-href="Handler.html#M000062">error</a> callback was specified when the
+href="Handler.html#M000090">error</a> callback was specified when the
 handler instance was created
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000062-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000062-source">
+            onclick="toggleCode('M000090-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000090-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 73</span>
-73:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">error</span>(<span class="ruby-identifier">exception</span>)
-74:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Beetle: handler execution raised an exception: #{exception}&quot;</span>
-75:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 75</span>
+75:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">error</span>(<span class="ruby-identifier">exception</span>)
+76:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Beetle: handler execution raised an exception: #{exception}&quot;</span>
+77:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000063" class="method-detail">
-        <a name="M000063"></a>
+      <div id="method-M000091" class="method-detail">
+        <a name="M000091"></a>
 
         <div class="method-heading">
-          <a href="#M000063" class="method-signature">
+          <a href="#M000091" class="method-signature">
           <span class="method-name">failure</span><span class="method-args">(result)</span>
           </a>
         </div>
@@ -253,54 +259,27 @@ handler instance was created
           <p>
 called when message processing has finally failed (i.e., the number of
 allowed handler execution attempts or the number of allowed exceptions has
-been reached) and no <a href="Handler.html#M000063">failure</a> callback
+been reached) and no <a href="Handler.html#M000091">failure</a> callback
 was specified when this handler instance was created.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000063-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000063-source">
+            onclick="toggleCode('M000091-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000091-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 80</span>
-80:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">failure</span>(<span class="ruby-identifier">result</span>)
-81:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-value str">&quot;Beetle: handler has finally failed&quot;</span>
-82:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 82</span>
+82:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">failure</span>(<span class="ruby-identifier">result</span>)
+83:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-value str">&quot;Beetle: handler has finally failed&quot;</span>
+84:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000064" class="method-detail">
-        <a name="M000064"></a>
+      <div id="method-M000089" class="method-detail">
+        <a name="M000089"></a>
 
         <div class="method-heading">
-          <a href="#M000064" class="method-signature">
-          <span class="method-name">logger</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-returns the configured <a href="../Beetle.html">Beetle</a> <a
-href="Handler.html#M000064">logger</a>
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000064-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000064-source">
-<pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 85</span>
-85:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">logger</span>
-86:       <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>
-87:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000061" class="method-detail">
-        <a name="M000061"></a>
-
-        <div class="method-heading">
-          <a href="#M000061" class="method-signature">
+          <a href="#M000089" class="method-signature">
           <span class="method-name">process</span><span class="method-args">()</span>
           </a>
         </div>
@@ -311,13 +290,13 @@ called for message processing if no processor was specfied when the handler
 instance was created
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000061-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000061-source">
+            onclick="toggleCode('M000089-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000089-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 45</span>
-45:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">process</span>
-46:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-node">&quot;Beetle: received message #{message.inspect}&quot;</span>
-47:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 47</span>
+47:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">process</span>
+48:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-node">&quot;Beetle: received message #{message.inspect}&quot;</span>
+49:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -325,30 +304,30 @@ instance was created
 
       <h3 class="section-bar">Protected Instance methods</h3>
 
-      <div id="method-M000059" class="method-detail">
-        <a name="M000059"></a>
+      <div id="method-M000087" class="method-detail">
+        <a name="M000087"></a>
 
         <div class="method-heading">
-          <a href="#M000059" class="method-signature">
+          <a href="#M000087" class="method-signature">
           <span class="method-name">initialize</span><span class="method-args">(processor=nil, opts={})</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-optionally capture processor, <a href="Handler.html#M000062">error</a> and
-<a href="Handler.html#M000063">failure</a> callbacks
+optionally capture processor, <a href="Handler.html#M000090">error</a> and
+<a href="Handler.html#M000091">failure</a> callbacks
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000059-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000059-source">
+            onclick="toggleCode('M000087-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000087-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 23</span>
-23:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">processor</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={}) <span class="ruby-comment cmt">#:notnew:</span>
-24:       <span class="ruby-ivar">@processor</span> = <span class="ruby-identifier">processor</span>
-25:       <span class="ruby-ivar">@error_callback</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:errback</span>]
-26:       <span class="ruby-ivar">@failure_callback</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:failback</span>]
-27:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/handler.rb, line 25</span>
+25:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">processor</span>=<span class="ruby-keyword kw">nil</span>, <span class="ruby-identifier">opts</span>={}) <span class="ruby-comment cmt">#:notnew:</span>
+26:       <span class="ruby-ivar">@processor</span> = <span class="ruby-identifier">processor</span>
+27:       <span class="ruby-ivar">@error_callback</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:errback</span>]
+28:       <span class="ruby-ivar">@failure_callback</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-identifier">:failback</span>]
+29:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>

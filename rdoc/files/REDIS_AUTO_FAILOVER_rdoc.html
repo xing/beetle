@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>File: REDIS_AUTO_FAILOVER.rdoc</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+  <div id="fileHeader">
+    <h1>REDIS_AUTO_FAILOVER.rdoc</h1>
+    <table class="header-table">
+    <tr class="top-aligned-row">
+      <td><strong>Path:</strong></td>
+      <td>REDIS_AUTO_FAILOVER.rdoc
+      </td>
+    </tr>
+    <tr class="top-aligned-row">
+      <td><strong>Last Update:</strong></td>
+      <td>Mon Jul 12 14:11:27 +0200 2010</td>
+    </tr>
+    </table>
+  </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <h1>Automatic Redis Failover for <a href="../classes/Beetle.html">Beetle</a></h1>
+<h2>Introduction</h2>
+<p>
+Redis is used as the persistence layer in the AMQP message deduplication
+process. Because it is such a critical piece in our infrastructure, it is
+essential that a failure of this service is as unlikely as possible. As our
+AMQP workers are working in a highly distributed manner, all accessing the
+same Redis server, a automatic failover to another Redis server has to be
+very defensive and ensure that every worker in the system will switch to
+the new server at the same time. If the new server would not get accepted
+from every worker, a switch would not be possible. This ensures that even
+in the case of a partitioned network it is impossible that two different
+workers use two different Redis servers for message deduplication.
+</p>
+<h2>Our goals</h2>
+<ul>
+<li>opt-in, no need to use the redis-failover solution
+
+</li>
+<li>no single point of failure
+
+</li>
+<li>automatic switch in case of redis-master failure
+
+</li>
+<li>switch should not cause inconsistent data on the redis servers
+
+</li>
+<li>workers should be able to determine the current redis-master without asking
+another process (as long as the redis servers are working)
+
+</li>
+</ul>
+<h2>How it works</h2>
+<p>
+To ensure consistency, a service (the Redis Configuration Server - RCS) is
+constantly checking the availability and configuration of the currently
+configured Redis master server. If this service detects that the Redis
+master is no longer available, it tries to find an alternative server (one
+of the slaves) which could be promoted to be the new Redis master.
+</p>
+<p>
+On every worker server runs another daemon, the Redis Configuration Client
+(RCC) which listens to messages sent by the RCS.
+</p>
+<p>
+If the RCS finds another potential Redis Master, it sends out a message to
+see if all known RCCs are still available (once again to eliminate the risk
+of a partitioned network) and if they agree to the master switch.
+</p>
+<p>
+If all RCCs have answered to that message, the RCS sends out a message
+which tells the RCCs to invalidate the current master.
+</p>
+<p>
+This happens by deleting the contents of a special file which is used by
+the workers to store the current Redis master (the content of that file is
+the hostname:port of the currently active Redis master). By doing that, it
+is ensured that no operations are done to the old Redis master server
+anymore, because the AMQP workers check this file&#8216;s mtime and reads
+its contents in case that the file changed, before every Redis operation.
+When the file has been emptied, the RCCs respond to the
+&quot;invalidate&quot; message of the RCS. When all RCCs have responded,
+the RCS knows for sure that it is safe to switch the Redis master now. It
+sends a &quot;reconfigure&quot; message with the new Redis master
+hostname:port to the RCCs, which then write that value into their redis
+master file.
+</p>
+<p>
+Additionally, the RCS sends reconfigure messages with the current Redis
+master periodically, to allow new RCCs to pick up the current master. Plus
+it turns all other redis servers into slaves of the current master.
+</p>
+<h3>Prerequisites</h3>
+<ul>
+<li>one redis-configuration-server process (&quot;RCS&quot;, on one server),
+one redis-configuration-client process (&quot;RCC&quot;) on every worker
+server
+
+</li>
+<li>the RCS knows about all possible RCCs using a list of client ids
+
+</li>
+<li>the RCS and RCCs exchange messages via a &quot;system queue&quot;
+
+</li>
+</ul>
+<h3>Flow of actions</h3>
+<ul>
+<li>on startup, an RCC can consult its redis master file to determine the
+current master without the help of the RCS by checking that it&#8216;s
+still a master (or wait for the periodic reconfigure message with the
+current master from the RCS)
+
+</li>
+<li>when the RCS finds the master to be down, it will retry a couple of times
+before starting a reconfiguration round
+
+</li>
+<li>the RCS sends all RCCs a &quot;ping&quot; message to check if every client
+is there and able to to answer
+
+</li>
+<li>the RCCs acknowledge via a &quot;pong&quot; message if they can confirm the
+current master to be unavailable
+
+</li>
+<li>the RCS waits for <b>all</b> RCCs to reply via pong
+
+</li>
+<li>the RCS tells all RCCs to stop using the master by sending an
+&quot;invalidate&quot; message
+
+</li>
+<li>the RCCs acknowledge via an &quot;invalidated&quot; message if they can
+still confirm the current master to be unavailable
+
+</li>
+<li>the RCS waits for <b>all</b> RCCs to acknowledge the invalidation
+
+</li>
+<li>the RCS promotes the former slave to become the new master (by sending
+SLAVEOF no one)
+
+</li>
+<li>the RCS sends a &quot;reconfigure&quot; message containing the new master
+to every RCC
+
+</li>
+<li>the RCCs write the new master to their redis master file
+
+</li>
+</ul>
+<h3>Configuration</h3>
+<p>
+See <a
+href="../classes/Beetle/Configuration.html">Beetle::Configuration</a> for
+setting redis configuration server and client options.
+</p>
+<p>
+Please note: Beetle::Configuration#redis_server must be a file path (not a
+redis host:port string) to use the redis failover. The RCS and RCCs store
+the current redis master in that file, and the handlers read from it.
+</p>
+<h2>How to use it</h2>
+<p>
+This example uses two worker servers, identified by rcc-1 and rcc-2.
+</p>
+<p>
+Please note: All command line options can also be given as a yaml
+configuration file via the &#8212;config-file option.
+</p>
+<h3>On one server</h3>
+<p>
+Start the Redis Configuration Server:
+</p>
+<pre>
+  beetle configuration_server start -- --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
+</pre>
+<p>
+Get help for starting/stopping the server:
+</p>
+<pre>
+  beetle configuration_server -h
+</pre>
+<p>
+Get help for server options:
+</p>
+<pre>
+  beetle configuration_server start -- -h
+</pre>
+<h3>On every worker server</h3>
+<p>
+Start the Redis Configuration Client:
+</p>
+<p>
+On first worker server:
+</p>
+<pre>
+  beetle configuration_client start -- --client-id rcc-1
+</pre>
+<p>
+On second worker server:
+</p>
+<pre>
+  beetle configuration_client start -- --client-id rcc-2
+</pre>
+<p>
+Get help for starting/stopping the client:
+</p>
+<pre>
+  beetle configuration_client -h
+</pre>
+<p>
+Get help for client options:
+</p>
+<pre>
+  beetle configuration_client start -- -h
+</pre>
+
+    </div>
+
+
+   </div>
+
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>

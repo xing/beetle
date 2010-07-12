@@ -96,29 +96,29 @@ it should retry executing the message handler after a handler has crashed
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-      <a href="#M000024">ack!</a>&nbsp;&nbsp;
-      <a href="#M000021">aquire_mutex!</a>&nbsp;&nbsp;
-      <a href="#M000015">attempts</a>&nbsp;&nbsp;
-      <a href="#M000017">attempts_limit_reached?</a>&nbsp;&nbsp;
-      <a href="#M000012">completed!</a>&nbsp;&nbsp;
-      <a href="#M000011">completed?</a>&nbsp;&nbsp;
-      <a href="#M000013">delayed?</a>&nbsp;&nbsp;
-      <a href="#M000022">delete_mutex!</a>&nbsp;&nbsp;
-      <a href="#M000019">exceptions_limit_reached?</a>&nbsp;&nbsp;
-      <a href="#M000004">expired?</a>&nbsp;&nbsp;
-      <a href="#M000005">generate_uuid</a>&nbsp;&nbsp;
-      <a href="#M000018">increment_exception_count!</a>&nbsp;&nbsp;
-      <a href="#M000016">increment_execution_attempts!</a>&nbsp;&nbsp;
-      <a href="#M000020">key_exists?</a>&nbsp;&nbsp;
-      <a href="#M000003">msg_id</a>&nbsp;&nbsp;
-      <a href="#M000002">new</a>&nbsp;&nbsp;
-      <a href="#M000023">process</a>&nbsp;&nbsp;
-      <a href="#M000006">redundant?</a>&nbsp;&nbsp;
-      <a href="#M000014">set_delay!</a>&nbsp;&nbsp;
-      <a href="#M000008">set_timeout!</a>&nbsp;&nbsp;
-      <a href="#M000007">simple?</a>&nbsp;&nbsp;
-      <a href="#M000010">timed_out!</a>&nbsp;&nbsp;
-      <a href="#M000009">timed_out?</a>&nbsp;&nbsp;
+      <a href="#M000028">ack!</a>&nbsp;&nbsp;
+      <a href="#M000025">aquire_mutex!</a>&nbsp;&nbsp;
+      <a href="#M000019">attempts</a>&nbsp;&nbsp;
+      <a href="#M000021">attempts_limit_reached?</a>&nbsp;&nbsp;
+      <a href="#M000016">completed!</a>&nbsp;&nbsp;
+      <a href="#M000015">completed?</a>&nbsp;&nbsp;
+      <a href="#M000017">delayed?</a>&nbsp;&nbsp;
+      <a href="#M000026">delete_mutex!</a>&nbsp;&nbsp;
+      <a href="#M000023">exceptions_limit_reached?</a>&nbsp;&nbsp;
+      <a href="#M000008">expired?</a>&nbsp;&nbsp;
+      <a href="#M000009">generate_uuid</a>&nbsp;&nbsp;
+      <a href="#M000022">increment_exception_count!</a>&nbsp;&nbsp;
+      <a href="#M000020">increment_execution_attempts!</a>&nbsp;&nbsp;
+      <a href="#M000024">key_exists?</a>&nbsp;&nbsp;
+      <a href="#M000007">msg_id</a>&nbsp;&nbsp;
+      <a href="#M000006">new</a>&nbsp;&nbsp;
+      <a href="#M000027">process</a>&nbsp;&nbsp;
+      <a href="#M000010">redundant?</a>&nbsp;&nbsp;
+      <a href="#M000018">set_delay!</a>&nbsp;&nbsp;
+      <a href="#M000012">set_timeout!</a>&nbsp;&nbsp;
+      <a href="#M000011">simple?</a>&nbsp;&nbsp;
+      <a href="#M000014">timed_out!</a>&nbsp;&nbsp;
+      <a href="#M000013">timed_out?</a>&nbsp;&nbsp;
       </div>
     </div>
 
@@ -126,6 +126,13 @@ it should retry executing the message handler after a handler has crashed
 
 
     <!-- if includes -->
+    <div id="includes">
+      <h3 class="section-bar">Included Modules</h3>
+
+      <div id="includes-list">
+        <span class="include-name"><a href="Logging.html">Logging</a></span>
+      </div>
+    </div>
 
     <div id="section">
 
@@ -168,7 +175,7 @@ default lifetime of messages
         <tr class="top-aligned-row context-row">
           <td class="context-item-name">DEFAULT_HANDLER_TIMEOUT</td>
           <td>=</td>
-          <td class="context-item-value">300.seconds</td>
+          <td class="context-item-value">600.seconds</td>
           <td width="3em">&nbsp;</td>
           <td class="context-item-desc">
 forcefully abort a running handler after this many seconds. can be
@@ -339,11 +346,11 @@ the uuid of the message
     <div id="methods">
       <h3 class="section-bar">Public Class methods</h3>
 
-      <div id="method-M000005" class="method-detail">
-        <a name="M000005"></a>
+      <div id="method-M000009" class="method-detail">
+        <a name="M000009"></a>
 
         <div class="method-heading">
-          <a href="#M000005" class="method-signature">
+          <a href="#M000009" class="method-signature">
           <span class="method-name">generate_uuid</span><span class="method-args">()</span>
           </a>
         </div>
@@ -353,40 +360,40 @@ the uuid of the message
 generate uuid for publishing
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000005-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000005-source">
+            onclick="toggleCode('M000009-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000009-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 118</span>
-118:     <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">generate_uuid</span>
-119:       <span class="ruby-constant">UUID4R</span><span class="ruby-operator">::</span><span class="ruby-identifier">uuid</span>(<span class="ruby-value">1</span>)
-120:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 120</span>
+120:     <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">generate_uuid</span>
+121:       <span class="ruby-constant">UUID4R</span><span class="ruby-operator">::</span><span class="ruby-identifier">uuid</span>(<span class="ruby-value">1</span>)
+122:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000002" class="method-detail">
-        <a name="M000002"></a>
+      <div id="method-M000006" class="method-detail">
+        <a name="M000006"></a>
 
         <div class="method-heading">
-          <a href="#M000002" class="method-signature">
+          <a href="#M000006" class="method-signature">
           <span class="method-name">new</span><span class="method-args">(queue, header, body, opts = {})</span>
           </a>
         </div>
       
         <div class="method-description">
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000002-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000002-source">
+            onclick="toggleCode('M000006-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000006-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 54</span>
-54:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">queue</span>, <span class="ruby-identifier">header</span>, <span class="ruby-identifier">body</span>, <span class="ruby-identifier">opts</span> = {})
-55:       <span class="ruby-ivar">@queue</span>  = <span class="ruby-identifier">queue</span>
-56:       <span class="ruby-ivar">@header</span> = <span class="ruby-identifier">header</span>
-57:       <span class="ruby-ivar">@data</span>   = <span class="ruby-identifier">body</span>
-58:       <span class="ruby-identifier">setup</span>(<span class="ruby-identifier">opts</span>)
-59:       <span class="ruby-identifier">decode</span>
-60:     <span class="ruby-keyword kw">end</span>
+    <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 56</span>
+56:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">queue</span>, <span class="ruby-identifier">header</span>, <span class="ruby-identifier">body</span>, <span class="ruby-identifier">opts</span> = {})
+57:       <span class="ruby-ivar">@queue</span>  = <span class="ruby-identifier">queue</span>
+58:       <span class="ruby-ivar">@header</span> = <span class="ruby-identifier">header</span>
+59:       <span class="ruby-ivar">@data</span>   = <span class="ruby-identifier">body</span>
+60:       <span class="ruby-identifier">setup</span>(<span class="ruby-identifier">opts</span>)
+61:       <span class="ruby-identifier">decode</span>
+62:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -394,11 +401,11 @@ generate uuid for publishing
 
       <h3 class="section-bar">Public Instance methods</h3>
 
-      <div id="method-M000021" class="method-detail">
-        <a name="M000021"></a>
+      <div id="method-M000025" class="method-detail">
+        <a name="M000025"></a>
 
         <div class="method-heading">
-          <a href="#M000021" class="method-signature">
+          <a href="#M000025" class="method-signature">
           <span class="method-name">aquire_mutex!</span><span class="method-args">()</span>
           </a>
         </div>
@@ -409,177 +416,18 @@ aquire execution mutex before we run the handler (and delete it if we
 can&#8216;t aquire it).
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000021-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000021-source">
+            onclick="toggleCode('M000025-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000025-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 204</span>
-204:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">aquire_mutex!</span>
-205:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">mutex</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:mutex</span>, <span class="ruby-identifier">now</span>)
-206:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: aquired mutex: #{msg_id}&quot;</span>
-207:       <span class="ruby-keyword kw">else</span>
-208:         <span class="ruby-identifier">delete_mutex!</span>
-209:       <span class="ruby-keyword kw">end</span>
-210:       <span class="ruby-identifier">mutex</span>
-211:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000015" class="method-detail">
-        <a name="M000015"></a>
-
-        <div class="method-heading">
-          <a href="#M000015" class="method-signature">
-          <span class="method-name">attempts</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-how many times we already tried running the handler
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000015-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000015-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 169</span>
-169:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">attempts</span>
-170:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>).<span class="ruby-identifier">to_i</span>
-171:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000017" class="method-detail">
-        <a name="M000017"></a>
-
-        <div class="method-heading">
-          <a href="#M000017" class="method-signature">
-          <span class="method-name">attempts_limit_reached?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-whether we have already tried running the handler as often as specified
-when the handler was registered
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000017-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000017-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 179</span>
-179:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">attempts_limit_reached?</span>
-180:       (<span class="ruby-identifier">limit</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">limit</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">attempts_limit</span>
-181:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000012" class="method-detail">
-        <a name="M000012"></a>
-
-        <div class="method-heading">
-          <a href="#M000012" class="method-signature">
-          <span class="method-name">completed!</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-mark message handling complete in the deduplication store
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000012-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000012-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 153</span>
-153:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">completed!</span>
-154:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span>, <span class="ruby-value str">&quot;completed&quot;</span>)
-155:       <span class="ruby-identifier">timed_out!</span>
-156:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000011" class="method-detail">
-        <a name="M000011"></a>
-
-        <div class="method-heading">
-          <a href="#M000011" class="method-signature">
-          <span class="method-name">completed?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-message handling <a href="Message.html#M000011">completed?</a>
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000011-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000011-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 148</span>
-148:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">completed?</span>
-149:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span>) <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;completed&quot;</span>
-150:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000013" class="method-detail">
-        <a name="M000013"></a>
-
-        <div class="method-heading">
-          <a href="#M000013" class="method-signature">
-          <span class="method-name">delayed?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-whether we should wait before running the handler
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000013-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000013-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 159</span>
-159:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">delayed?</span>
-160:       (<span class="ruby-identifier">t</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:delay</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">now</span>
-161:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000022" class="method-detail">
-        <a name="M000022"></a>
-
-        <div class="method-heading">
-          <a href="#M000022" class="method-signature">
-          <span class="method-name">delete_mutex!</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-delete execution mutex
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000022-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000022-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 214</span>
-214:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">delete_mutex!</span>
-215:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:mutex</span>)
-216:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: deleted mutex: #{msg_id}&quot;</span>
-217:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 206</span>
+206:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">aquire_mutex!</span>
+207:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">mutex</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">setnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:mutex</span>, <span class="ruby-identifier">now</span>)
+208:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: aquired mutex: #{msg_id}&quot;</span>
+209:       <span class="ruby-keyword kw">else</span>
+210:         <span class="ruby-identifier">delete_mutex!</span>
+211:       <span class="ruby-keyword kw">end</span>
+212:       <span class="ruby-identifier">mutex</span>
+213:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -590,76 +438,49 @@ delete execution mutex
 
         <div class="method-heading">
           <a href="#M000019" class="method-signature">
-          <span class="method-name">exceptions_limit_reached?</span><span class="method-args">()</span>
+          <span class="method-name">attempts</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-whether the number of exceptions has exceeded the limit set when the
-handler was registered
+how many times we already tried running the handler
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000019-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000019-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 189</span>
-189:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">exceptions_limit_reached?</span>
-190:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:exceptions</span>).<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exceptions_limit</span>
-191:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 171</span>
+171:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">attempts</span>
+172:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>).<span class="ruby-identifier">to_i</span>
+173:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000004" class="method-detail">
-        <a name="M000004"></a>
+      <div id="method-M000021" class="method-detail">
+        <a name="M000021"></a>
 
         <div class="method-heading">
-          <a href="#M000004" class="method-signature">
-          <span class="method-name">expired?</span><span class="method-args">()</span>
+          <a href="#M000021" class="method-signature">
+          <span class="method-name">attempts_limit_reached?</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-a message has expired if the header expiration timestamp is msaller than
-the current time
+whether we have already tried running the handler as often as specified
+when the handler was registered
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000004-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000004-source">
+            onclick="toggleCode('M000021-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000021-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 113</span>
-113:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">expired?</span>
-114:       <span class="ruby-ivar">@expires_at</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">now</span>
-115:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000018" class="method-detail">
-        <a name="M000018"></a>
-
-        <div class="method-heading">
-          <a href="#M000018" class="method-signature">
-          <span class="method-name">increment_exception_count!</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-increment number of exception occurences in the deduplication store
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000018-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000018-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 184</span>
-184:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">increment_exception_count!</span>
-185:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:exceptions</span>)
-186:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 181</span>
+181:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">attempts_limit_reached?</span>
+182:       (<span class="ruby-identifier">limit</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">limit</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-identifier">attempts_limit</span>
+183:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -670,22 +491,182 @@ increment number of exception occurences in the deduplication store
 
         <div class="method-heading">
           <a href="#M000016" class="method-signature">
-          <span class="method-name">increment_execution_attempts!</span><span class="method-args">()</span>
+          <span class="method-name">completed!</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-record the fact that we are trying to run the handler
+mark message handling complete in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000016-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000016-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 174</span>
-174:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">increment_execution_attempts!</span>
-175:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>)
-176:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 155</span>
+155:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">completed!</span>
+156:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span>, <span class="ruby-value str">&quot;completed&quot;</span>)
+157:       <span class="ruby-identifier">timed_out!</span>
+158:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000015" class="method-detail">
+        <a name="M000015"></a>
+
+        <div class="method-heading">
+          <a href="#M000015" class="method-signature">
+          <span class="method-name">completed?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+message handling <a href="Message.html#M000015">completed?</a>
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000015-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000015-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 150</span>
+150:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">completed?</span>
+151:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span>) <span class="ruby-operator">==</span> <span class="ruby-value str">&quot;completed&quot;</span>
+152:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000017" class="method-detail">
+        <a name="M000017"></a>
+
+        <div class="method-heading">
+          <a href="#M000017" class="method-signature">
+          <span class="method-name">delayed?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+whether we should wait before running the handler
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000017-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000017-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 161</span>
+161:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">delayed?</span>
+162:       (<span class="ruby-identifier">t</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:delay</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">now</span>
+163:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000026" class="method-detail">
+        <a name="M000026"></a>
+
+        <div class="method-heading">
+          <a href="#M000026" class="method-signature">
+          <span class="method-name">delete_mutex!</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+delete execution mutex
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000026-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000026-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 216</span>
+216:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">delete_mutex!</span>
+217:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:mutex</span>)
+218:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: deleted mutex: #{msg_id}&quot;</span>
+219:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000023" class="method-detail">
+        <a name="M000023"></a>
+
+        <div class="method-heading">
+          <a href="#M000023" class="method-signature">
+          <span class="method-name">exceptions_limit_reached?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+whether the number of exceptions has exceeded the limit set when the
+handler was registered
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000023-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000023-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 191</span>
+191:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">exceptions_limit_reached?</span>
+192:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:exceptions</span>).<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">exceptions_limit</span>
+193:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000008" class="method-detail">
+        <a name="M000008"></a>
+
+        <div class="method-heading">
+          <a href="#M000008" class="method-signature">
+          <span class="method-name">expired?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+a message has expired if the header expiration timestamp is msaller than
+the current time
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000008-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000008-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 115</span>
+115:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">expired?</span>
+116:       <span class="ruby-ivar">@expires_at</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">now</span>
+117:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000022" class="method-detail">
+        <a name="M000022"></a>
+
+        <div class="method-heading">
+          <a href="#M000022" class="method-signature">
+          <span class="method-name">increment_exception_count!</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+increment number of exception occurences in the deduplication store
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000022-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000022-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 186</span>
+186:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">increment_exception_count!</span>
+187:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:exceptions</span>)
+188:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -696,6 +677,32 @@ record the fact that we are trying to run the handler
 
         <div class="method-heading">
           <a href="#M000020" class="method-signature">
+          <span class="method-name">increment_execution_attempts!</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+record the fact that we are trying to run the handler
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000020-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000020-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 176</span>
+176:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">increment_execution_attempts!</span>
+177:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:attempts</span>)
+178:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000024" class="method-detail">
+        <a name="M000024"></a>
+
+        <div class="method-heading">
+          <a href="#M000024" class="method-signature">
           <span class="method-name">key_exists?</span><span class="method-args">()</span>
           </a>
         </div>
@@ -707,160 +714,17 @@ have we already seen this message? if not, set the status to
 deduplication store.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000020-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000020-source">
+            onclick="toggleCode('M000024-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000024-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 195</span>
-195:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">key_exists?</span>
-196:       <span class="ruby-identifier">old_message</span> = <span class="ruby-value">0</span> <span class="ruby-operator">==</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span> =<span class="ruby-operator">&gt;</span><span class="ruby-value str">&quot;incomplete&quot;</span>, <span class="ruby-identifier">:expires</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-ivar">@expires_at</span>)
-197:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">old_message</span>
-198:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: received duplicate message: #{msg_id} on queue: #{@queue}&quot;</span>
-199:       <span class="ruby-keyword kw">end</span>
-200:       <span class="ruby-identifier">old_message</span>
-201:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000003" class="method-detail">
-        <a name="M000003"></a>
-
-        <div class="method-heading">
-          <a href="#M000003" class="method-signature">
-          <span class="method-name">msg_id</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-unique message id. used to form various keys in the deduplication store.
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000003-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000003-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 98</span>
- 98:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msg_id</span>
- 99:       <span class="ruby-ivar">@msg_id</span> <span class="ruby-operator">||=</span> <span class="ruby-node">&quot;msgid:#{queue}:#{uuid}&quot;</span>
-100:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000023" class="method-detail">
-        <a name="M000023"></a>
-
-        <div class="method-heading">
-          <a href="#M000023" class="method-signature">
-          <span class="method-name">process</span><span class="method-args">(handler)</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-<a href="Message.html#M000023">process</a> this message and do not allow
-any exception to escape to the caller
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000023-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000023-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 220</span>
-220:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">process</span>(<span class="ruby-identifier">handler</span>)
-221:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: processing message #{msg_id}&quot;</span>
-222:       <span class="ruby-identifier">result</span> = <span class="ruby-keyword kw">nil</span>
-223:       <span class="ruby-keyword kw">begin</span>
-224:         <span class="ruby-identifier">result</span> = <span class="ruby-identifier">process_internal</span>(<span class="ruby-identifier">handler</span>)
-225:         <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">process_exception</span>(<span class="ruby-ivar">@exception</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@exception</span>
-226:         <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">process_failure</span>(<span class="ruby-identifier">result</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">result</span>.<span class="ruby-identifier">failure?</span>
-227:       <span class="ruby-keyword kw">rescue</span> <span class="ruby-constant">Exception</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">e</span>
-228:         <span class="ruby-constant">Beetle</span><span class="ruby-operator">::</span><span class="ruby-identifier">reraise_expectation_errors!</span>
-229:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">warn</span> <span class="ruby-node">&quot;Beetle: exception '#{e}' during processing of message #{msg_id}&quot;</span>
-230:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">warn</span> <span class="ruby-node">&quot;Beetle: backtrace: #{e.backtrace.join(&quot;\n&quot;)}&quot;</span>
-231:         <span class="ruby-identifier">result</span> = <span class="ruby-constant">RC</span><span class="ruby-operator">::</span><span class="ruby-constant">InternalError</span>
-232:       <span class="ruby-keyword kw">end</span>
-233:       <span class="ruby-identifier">result</span>
-234:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000006" class="method-detail">
-        <a name="M000006"></a>
-
-        <div class="method-heading">
-          <a href="#M000006" class="method-signature">
-          <span class="method-name">redundant?</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-whether the publisher has tried sending this message to two servers
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000006-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000006-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 123</span>
-123:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redundant?</span>
-124:       <span class="ruby-ivar">@flags</span> <span class="ruby-operator">&amp;</span> <span class="ruby-constant">FLAG_REDUNDANT</span> <span class="ruby-operator">==</span> <span class="ruby-constant">FLAG_REDUNDANT</span>
-125:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000014" class="method-detail">
-        <a name="M000014"></a>
-
-        <div class="method-heading">
-          <a href="#M000014" class="method-signature">
-          <span class="method-name">set_delay!</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-store delay value in the deduplication store
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000014-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000014-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 164</span>
-164:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set_delay!</span>
-165:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:delay</span>, <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">delay</span>)
-166:     <span class="ruby-keyword kw">end</span>
-</pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="method-M000008" class="method-detail">
-        <a name="M000008"></a>
-
-        <div class="method-heading">
-          <a href="#M000008" class="method-signature">
-          <span class="method-name">set_timeout!</span><span class="method-args">()</span>
-          </a>
-        </div>
-      
-        <div class="method-description">
-          <p>
-store handler timeout timestamp in the deduplication store
-</p>
-          <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000008-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000008-source">
-<pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 133</span>
-133:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set_timeout!</span>
-134:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>, <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">timeout</span>)
-135:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 197</span>
+197:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">key_exists?</span>
+198:       <span class="ruby-identifier">old_message</span> = <span class="ruby-value">0</span> <span class="ruby-operator">==</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">msetnx</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:status</span> =<span class="ruby-operator">&gt;</span><span class="ruby-value str">&quot;incomplete&quot;</span>, <span class="ruby-identifier">:expires</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-ivar">@expires_at</span>, <span class="ruby-identifier">:timeout</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">timeout</span>)
+199:       <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">old_message</span>
+200:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: received duplicate message: #{msg_id} on queue: #{@queue}&quot;</span>
+201:       <span class="ruby-keyword kw">end</span>
+202:       <span class="ruby-identifier">old_message</span>
+203:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -871,23 +735,61 @@ store handler timeout timestamp in the deduplication store
 
         <div class="method-heading">
           <a href="#M000007" class="method-signature">
-          <span class="method-name">simple?</span><span class="method-args">()</span>
+          <span class="method-name">msg_id</span><span class="method-args">()</span>
           </a>
         </div>
       
         <div class="method-description">
           <p>
-whether this is a message we can <a href="Message.html#M000023">process</a>
-without accessing the deduplication store
+unique message id. used to form various keys in the deduplication store.
 </p>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('M000007-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000007-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 128</span>
-128:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">simple?</span>
-129:       <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">attempts_limit</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
-130:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 100</span>
+100:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">msg_id</span>
+101:       <span class="ruby-ivar">@msg_id</span> <span class="ruby-operator">||=</span> <span class="ruby-node">&quot;msgid:#{queue}:#{uuid}&quot;</span>
+102:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000027" class="method-detail">
+        <a name="M000027"></a>
+
+        <div class="method-heading">
+          <a href="#M000027" class="method-signature">
+          <span class="method-name">process</span><span class="method-args">(handler)</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+<a href="Message.html#M000027">process</a> this message and do not allow
+any exception to escape to the caller
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000027-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000027-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 222</span>
+222:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">process</span>(<span class="ruby-identifier">handler</span>)
+223:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: processing message #{msg_id}&quot;</span>
+224:       <span class="ruby-identifier">result</span> = <span class="ruby-keyword kw">nil</span>
+225:       <span class="ruby-keyword kw">begin</span>
+226:         <span class="ruby-identifier">result</span> = <span class="ruby-identifier">process_internal</span>(<span class="ruby-identifier">handler</span>)
+227:         <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">process_exception</span>(<span class="ruby-ivar">@exception</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-ivar">@exception</span>
+228:         <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">process_failure</span>(<span class="ruby-identifier">result</span>) <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">result</span>.<span class="ruby-identifier">failure?</span>
+229:       <span class="ruby-keyword kw">rescue</span> <span class="ruby-constant">Exception</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">e</span>
+230:         <span class="ruby-constant">Beetle</span><span class="ruby-operator">::</span><span class="ruby-identifier">reraise_expectation_errors!</span>
+231:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">warn</span> <span class="ruby-node">&quot;Beetle: exception '#{e}' during processing of message #{msg_id}&quot;</span>
+232:         <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">warn</span> <span class="ruby-node">&quot;Beetle: backtrace: #{e.backtrace.join(&quot;\n&quot;)}&quot;</span>
+233:         <span class="ruby-identifier">result</span> = <span class="ruby-constant">RC</span><span class="ruby-operator">::</span><span class="ruby-constant">InternalError</span>
+234:       <span class="ruby-keyword kw">end</span>
+235:       <span class="ruby-identifier">result</span>
+236:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -898,6 +800,111 @@ without accessing the deduplication store
 
         <div class="method-heading">
           <a href="#M000010" class="method-signature">
+          <span class="method-name">redundant?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+whether the publisher has tried sending this message to two servers
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000010-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000010-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 125</span>
+125:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">redundant?</span>
+126:       <span class="ruby-ivar">@flags</span> <span class="ruby-operator">&amp;</span> <span class="ruby-constant">FLAG_REDUNDANT</span> <span class="ruby-operator">==</span> <span class="ruby-constant">FLAG_REDUNDANT</span>
+127:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000018" class="method-detail">
+        <a name="M000018"></a>
+
+        <div class="method-heading">
+          <a href="#M000018" class="method-signature">
+          <span class="method-name">set_delay!</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+store delay value in the deduplication store
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000018-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000018-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 166</span>
+166:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set_delay!</span>
+167:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:delay</span>, <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">delay</span>)
+168:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000012" class="method-detail">
+        <a name="M000012"></a>
+
+        <div class="method-heading">
+          <a href="#M000012" class="method-signature">
+          <span class="method-name">set_timeout!</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+store handler timeout timestamp in the deduplication store
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000012-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000012-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 135</span>
+135:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">set_timeout!</span>
+136:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>, <span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">timeout</span>)
+137:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000011" class="method-detail">
+        <a name="M000011"></a>
+
+        <div class="method-heading">
+          <a href="#M000011" class="method-signature">
+          <span class="method-name">simple?</span><span class="method-args">()</span>
+          </a>
+        </div>
+      
+        <div class="method-description">
+          <p>
+whether this is a message we can <a href="Message.html#M000027">process</a>
+without accessing the deduplication store
+</p>
+          <p><a class="source-toggle" href="#"
+            onclick="toggleCode('M000011-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000011-source">
+<pre>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 130</span>
+130:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">simple?</span>
+131:       <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">attempts_limit</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
+132:     <span class="ruby-keyword kw">end</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <div id="method-M000014" class="method-detail">
+        <a name="M000014"></a>
+
+        <div class="method-heading">
+          <a href="#M000014" class="method-signature">
           <span class="method-name">timed_out!</span><span class="method-args">()</span>
           </a>
         </div>
@@ -907,23 +914,23 @@ without accessing the deduplication store
 reset handler timeout in the deduplication store
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000010-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000010-source">
+            onclick="toggleCode('M000014-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000014-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 143</span>
-143:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">timed_out!</span>
-144:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>, <span class="ruby-value">0</span>)
-145:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 145</span>
+145:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">timed_out!</span>
+146:       <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">set</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>, <span class="ruby-value">0</span>)
+147:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
       </div>
 
-      <div id="method-M000009" class="method-detail">
-        <a name="M000009"></a>
+      <div id="method-M000013" class="method-detail">
+        <a name="M000013"></a>
 
         <div class="method-heading">
-          <a href="#M000009" class="method-signature">
+          <a href="#M000013" class="method-signature">
           <span class="method-name">timed_out?</span><span class="method-args">()</span>
           </a>
         </div>
@@ -933,13 +940,13 @@ reset handler timeout in the deduplication store
 handler timed out?
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000009-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000009-source">
+            onclick="toggleCode('M000013-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000013-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 138</span>
-138:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">timed_out?</span>
-139:       (<span class="ruby-identifier">t</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">now</span>
-140:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 140</span>
+140:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">timed_out?</span>
+141:       (<span class="ruby-identifier">t</span> = <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">get</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:timeout</span>)) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">t</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">now</span>
+142:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
@@ -947,11 +954,11 @@ handler timed out?
 
       <h3 class="section-bar">Private Instance methods</h3>
 
-      <div id="method-M000024" class="method-detail">
-        <a name="M000024"></a>
+      <div id="method-M000028" class="method-detail">
+        <a name="M000028"></a>
 
         <div class="method-heading">
-          <a href="#M000024" class="method-signature">
+          <a href="#M000028" class="method-signature">
           <span class="method-name">ack!</span><span class="method-args">()</span>
           </a>
         </div>
@@ -960,22 +967,22 @@ handler timed out?
           <p>
 ack the message for rabbit. deletes all keys associated with this message
 in the deduplication store if we are sure this is the last message with the
-given <a href="Message.html#M000003">msg_id</a>.
+given <a href="Message.html#M000007">msg_id</a>.
 </p>
           <p><a class="source-toggle" href="#"
-            onclick="toggleCode('M000024-source');return false;">[Source]</a></p>
-          <div class="method-source-code" id="M000024-source">
+            onclick="toggleCode('M000028-source');return false;">[Source]</a></p>
+          <div class="method-source-code" id="M000028-source">
 <pre>
-     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 326</span>
-326:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">ack!</span>
-327:       <span class="ruby-comment cmt">#:doc:</span>
-328:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: ack! for message #{msg_id}&quot;</span>
-329:       <span class="ruby-identifier">header</span>.<span class="ruby-identifier">ack</span>
-330:       <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">simple?</span> <span class="ruby-comment cmt"># simple messages don't use the deduplication store</span>
-331:       <span class="ruby-keyword kw">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:ack_count</span>) <span class="ruby-operator">==</span> <span class="ruby-value">2</span>
-332:         <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
-333:       <span class="ruby-keyword kw">end</span>
-334:     <span class="ruby-keyword kw">end</span>
+     <span class="ruby-comment cmt"># File lib/beetle/message.rb, line 319</span>
+319:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">ack!</span>
+320:       <span class="ruby-comment cmt">#:doc:</span>
+321:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;Beetle: ack! for message #{msg_id}&quot;</span>
+322:       <span class="ruby-identifier">header</span>.<span class="ruby-identifier">ack</span>
+323:       <span class="ruby-keyword kw">return</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">simple?</span> <span class="ruby-comment cmt"># simple messages don't use the deduplication store</span>
+324:       <span class="ruby-keyword kw">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">redundant?</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">incr</span>(<span class="ruby-identifier">msg_id</span>, <span class="ruby-identifier">:ack_count</span>) <span class="ruby-operator">==</span> <span class="ruby-value">2</span>
+325:         <span class="ruby-ivar">@store</span>.<span class="ruby-identifier">del_keys</span>(<span class="ruby-identifier">msg_id</span>)
+326:       <span class="ruby-keyword kw">end</span>
+327:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
