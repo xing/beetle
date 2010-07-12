@@ -168,7 +168,7 @@ module Beetle
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:read_redis_master_file).returns("foobar:0000")
 
-      @server.expects(:auto_detect_master).never
+      @server.redis.expects(:auto_detect_master).never
       @server.expects(:redis_master_from_master_file).returns(@redis_master)
       @server.send(:determine_initial_master)
     end
@@ -177,14 +177,14 @@ module Beetle
       @server.expects(:master_file_exists?).returns(true)
       @server.stubs(:read_redis_master_file).returns("")
 
-      @server.expects(:auto_detect_master).returns(@redis_master)
+      @server.redis.expects(:auto_detect_master).returns(@redis_master)
       @server.send(:determine_initial_master)
     end
 
     test "should try to auto-detect if the master file is not present" do
       @server.expects(:master_file_exists?).returns(false)
 
-      @server.expects(:auto_detect_master).returns(@redis_master)
+      @server.redis.expects(:auto_detect_master).returns(@redis_master)
       @server.send(:determine_initial_master)
     end
 
@@ -239,7 +239,7 @@ module Beetle
       @server.instance_variable_set(:@redis, build_redis_server_info(not_available_redis_master, not_available_redis_slave))
       @server.expects(:master_file_exists?).returns(true)
       @server.expects(:read_redis_master_file).returns("")
-      @server.expects(:auto_detect_master).returns(nil)
+      @server.redis.expects(:auto_detect_master).returns(nil)
 
       assert_raises Beetle::NoRedisMaster do
         @server.send(:determine_initial_master)

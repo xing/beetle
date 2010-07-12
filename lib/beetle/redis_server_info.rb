@@ -38,7 +38,16 @@ module Beetle
       slaves.select{|r| r.slave_of?(master.host, master.port)}
     end
 
+    def auto_detect_master
+      return nil unless master_and_slaves_reachable?
+      masters.first
+    end
+
     private
+
+    def master_and_slaves_reachable?
+      masters.size == 1 && slaves.size == instances.size - 1
+    end
 
     def reset
       @server_info = Hash.new {|h,k| h[k]= []}

@@ -13,7 +13,6 @@ module Beetle
   # Usually started via <tt>beetle configuration_server</tt> command.
   class RedisConfigurationServer
     include Logging
-    include RedisConfigurationAutoDetection
     include RedisMasterFile
 
     # The current redis master
@@ -163,7 +162,7 @@ module Beetle
           raise NoRedisMaster.new("failed to determine initial redis master")
         end
       else
-        write_redis_master_file(current_master.server) if @current_master = auto_detect_master
+        write_redis_master_file(current_master.server) if @current_master = redis.auto_detect_master
       end
       current_master or raise NoRedisMaster.new("failed to determine initial redis master")
     end
