@@ -26,7 +26,7 @@ module Beetle
     # how often should the redis configuration server try to reach the redis master before nominating a new one (defaults to <tt>3</tt>)
     attr_accessor :redis_configuration_master_retries
     # number of seconds to wait between retries (defaults to <tt>10</tt>)
-    attr_accessor :redis_configuration_master_retry_timeout
+    attr_accessor :redis_configuration_master_retry_interval
     # number of seconds the redis configuration server waits for answers from clients (defaults to <tt>5</tt>)
     attr_accessor :redis_configuration_client_timeout
     # the redis configuration client ids living on the worker machines taking part in the redis failover, separated by comma (defaults to <tt>""</tt>)
@@ -60,7 +60,7 @@ module Beetle
       self.redis_failover_timeout = 180.seconds
 
       self.redis_configuration_master_retries = 3
-      self.redis_configuration_master_retry_timeout = 10.seconds
+      self.redis_configuration_master_retry_interval = 10.seconds
       self.redis_configuration_client_timeout = 5.seconds
       self.redis_configuration_client_ids = ""
 
