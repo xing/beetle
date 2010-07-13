@@ -75,8 +75,8 @@ module Beetle
     def register_queue(name, options={})
       name = name.to_s
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name, :key => name, :auto_delete => false}.merge!(options.symbolize_keys)
-      opts.merge! :durable => true, :passive => false, :exclusive => false, :amqp_name => name
+      opts = {:exchange => name, :key => name, :auto_delete => false, :amqp_name => name}.merge!(options.symbolize_keys)
+      opts.merge! :durable => true, :passive => false, :exclusive => false
       exchange = opts.delete(:exchange).to_s
       key = opts.delete(:key)
       queues[name] = opts
@@ -205,7 +205,7 @@ module Beetle
     # traces messages without consuming them. useful for debugging message flow.
     def trace(messages=self.messages.keys, &block)
       queues.each do |name, opts|
-        opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(name)
+        opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(opts[:amqp_name])
       end
       register_handler(queues.keys) do |msg|
         puts "-----===== new message =====-----"

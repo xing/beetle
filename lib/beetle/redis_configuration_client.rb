@@ -92,24 +92,19 @@ module Beetle
     end
 
     def build_beetle
-      Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
+      system = Beetle.config.system_name
+      Beetle::Client.new.configure :exchange => system, :auto_delete => true do |config|
         config.message :ping
-        config.queue   internal_queue_name(:ping), :key => "ping"
+        config.queue   :ping, :amqp_name => "#{system}_ping_#{id}"
         config.message :pong
         config.message :invalidate
-        config.queue   internal_queue_name(:invalidate), :key => "invalidate"
+        config.queue   :invalidate, :amqp_name => "#{system}_invalidate_#{id}"
         config.message :client_invalidated
         config.message :reconfigure
-        config.queue   internal_queue_name(:reconfigure), :key => "reconfigure"
+        config.queue   :reconfigure, :amqp_name => "#{system}_reconfigure_#{id}"
 
-        config.handler(internal_queue_name(:ping),        MessageDispatcher)
-        config.handler(internal_queue_name(:invalidate),  MessageDispatcher)
-        config.handler(internal_queue_name(:reconfigure), MessageDispatcher)
+        config.handler [:ping, :invalidate, :reconfigure], MessageDispatcher
       end
-    end
-
-    def internal_queue_name(queue_name)
-      "#{queue_name}-#{id}"
     end
 
     def redeem_token(token)
