@@ -48,7 +48,7 @@ module Beetle
     def ping(payload)
       token = payload["token"]
       logger.info "Received ping message with token '#{token}'"
-      pong! if redeem_token(token) && !current_master.try(:master?)
+      pong! if redeem_token(token)
     end
 
     # called by the message dispatcher when a "invalidate" message from RedisConfigurationServer is received
