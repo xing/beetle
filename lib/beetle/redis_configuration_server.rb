@@ -128,18 +128,18 @@ module Beetle
     end
 
     def build_beetle
-      Beetle::Client.new.configure :exchange => :system, :auto_delete => true do |config|
+      system = Beetle.config.system_name
+      Beetle::Client.new.configure :exchange => system, :auto_delete => true do |config|
         config.message :client_invalidated
-        config.queue   :client_invalidated
+        config.queue   :client_invalidated, :amqp_name => "#{system}_client_invalidated"
         config.message :pong
-        config.queue   :pong
+        config.queue   :pong, :amqp_name => "#{system}_pong"
         config.message :ping
         config.message :invalidate
         config.message :reconfigure
         config.message :system_notification
 
-        config.handler(:pong,               MessageDispatcher)
-        config.handler(:client_invalidated, MessageDispatcher)
+        config.handler [:pong, :client_invalidated], MessageDispatcher
       end
     end
 

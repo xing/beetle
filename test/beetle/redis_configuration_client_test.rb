@@ -69,10 +69,6 @@ module Beetle
       @client.start
     end
 
-    test "internal queue names should be suffixed with the client id" do
-      assert_equal "q-#{@client.id}", @client.send(:internal_queue_name, "q")
-    end
-
     test "the dispatcher should just forward messages to the client" do
       dispatcher_class = RedisConfigurationClient.class_eval "MessageDispatcher"
       dispatcher_class.configuration_client = @client

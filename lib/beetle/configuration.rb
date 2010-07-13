@@ -2,6 +2,8 @@ require 'erb'
 
 module Beetle
   class Configuration
+    # system name (used for redis cluster partitioning) (defaults to <tt>system</tt>)
+    attr_accessor :system_name
     # default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
     attr_accessor :logger
     # number of seconds after which keys are removed form the message deduplication store (defaults to <tt>3.days</tt>)
@@ -45,6 +47,8 @@ module Beetle
     attr_reader :config_file
 
     def initialize #:nodoc:
+      self.system_name = "system"
+
       self.logger = begin
         logger = Logger.new(STDOUT)
         logger.formatter = Logger::Formatter.new
