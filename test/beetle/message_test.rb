@@ -4,6 +4,11 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Beetle
 
   class EncodingTest < Test::Unit::TestCase
+    test "an exception during decoding should be stored in the exception attribute" do
+      header = stub_everything("raising header")
+      m = Message.new("queue", header, 'foo')
+      assert_instance_of NoMethodError, m.exception
+    end
 
     test "a message should encode/decode the message format version correctly" do
       header = header_with_params({})
@@ -370,6 +375,16 @@ module Beetle
       @store = DeduplicationStore.new
       @store.flushdb
     end
+    
+    test "a message with an exception set should not be processed at all" do
+      header = {}
+      message = Message.new("somequeue", header, 'foo')
+      assert message.exception
+      
+      proc = mock("proc")
+      proc.expects(:call).never
+      assert_equal RC::DecodingError, message.__send__(:process_internal, proc)
+    end
 
     test "a completed existing message should be just acked and not run the handler" do
       header = header_with_params({})
@@ -379,7 +394,6 @@ module Beetle
       assert message.completed?
 
       proc = mock("proc")
-      s = sequence("s")
       header.expects(:ack)
       proc.expects(:call).never
       assert_equal RC::OK, message.__send__(:process_internal, proc)
@@ -394,7 +408,6 @@ module Beetle
       assert message.delayed?
 
       proc = mock("proc")
-      s = sequence("s")
       header.expects(:ack).never
       proc.expects(:call).never
       assert_equal RC::Delayed, message.__send__(:process_internal, proc)
@@ -412,7 +425,6 @@ module Beetle
       assert !message.timed_out?
 
       proc = mock("proc")
-      s = sequence("s")
       header.expects(:ack).never
       proc.expects(:call).never
       assert_equal RC::HandlerNotYetTimedOut, message.__send__(:process_internal, proc)

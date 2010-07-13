@@ -35,6 +35,7 @@ module Beetle
     rc :HandlerNotYetTimedOut, :recover
     rc :MutexLocked, :recover
     rc :InternalError, :recover
+    rc :DecodingError, :failure
 
   end
 end
