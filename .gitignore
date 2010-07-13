@@ -10,3 +10,4 @@ site
 test/coverage
 tmp
 *.gem
+coverage

@@ -79,6 +79,8 @@ module Beetle
       @format_version = headers[:format_version].to_i
       @flags = headers[:flags].to_i
       @expires_at = headers[:expires_at].to_i
+    rescue Exception => @exception
+      logger.error "Could not decode message. #{self.inspect}"
     end
 
     # build hash with options for the publisher
@@ -238,7 +240,9 @@ module Beetle
     private
 
     def process_internal(handler)
-      if expired?
+      if @exception
+        RC::DecodingError
+      elsif expired?
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
