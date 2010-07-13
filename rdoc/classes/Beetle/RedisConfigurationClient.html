@@ -284,7 +284,7 @@ received
 48:     <span class="ruby-keyword kw">def</span> <span class="ruby-identifier">ping</span>(<span class="ruby-identifier">payload</span>)
 49:       <span class="ruby-identifier">token</span> = <span class="ruby-identifier">payload</span>[<span class="ruby-value str">&quot;token&quot;</span>]
 50:       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">info</span> <span class="ruby-node">&quot;Received ping message with token '#{token}'&quot;</span>
-51:       <span class="ruby-identifier">pong!</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">redeem_token</span>(<span class="ruby-identifier">token</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">current_master</span>.<span class="ruby-identifier">try</span>(<span class="ruby-identifier">:master?</span>)
+51:       <span class="ruby-identifier">pong!</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">redeem_token</span>(<span class="ruby-identifier">token</span>)
 52:     <span class="ruby-keyword kw">end</span>
 </pre>
           </div>

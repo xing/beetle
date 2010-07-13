@@ -82,8 +82,20 @@
       <p>
 Command to start a <a
 href="../RedisConfigurationClient.html">RedisConfigurationClient</a>
-daemon. Use via <tt>beetle configuration_client</tt>
+daemon.
 </p>
+<pre>
+  Usage: beetle configuration_client  [options] -- [client options]
+
+  client options:
+          --redis-master-file FILE     Write redis master server string to FILE
+          --id, --client-id ID         Set unique client id (default is minastirith.local)
+          --amqp-servers LIST          AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)
+          --config-file PATH           Path to an external yaml config file
+          --pid-dir DIR                Write pid and log to DIR
+      -v, --verbose                    Set log level to DEBUG
+      -h, --help                       Show this message
+</pre>
 
     </div>
 
@@ -135,56 +147,56 @@ as a daemon
             onclick="toggleCode('M000005-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="M000005-source">
 <pre>
-    <span class="ruby-comment cmt"># File lib/beetle/commands/configuration_client.rb, line 11</span>
-11:       <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">execute</span>
-12:         <span class="ruby-identifier">command</span>, <span class="ruby-identifier">controller_options</span>, <span class="ruby-identifier">app_options</span> = <span class="ruby-constant">Daemons</span><span class="ruby-operator">::</span><span class="ruby-constant">Controller</span>.<span class="ruby-identifier">split_argv</span>(<span class="ruby-constant">ARGV</span>)
-13: 
-14:         <span class="ruby-identifier">opts</span> = <span class="ruby-constant">OptionParser</span>.<span class="ruby-identifier">new</span>
-15:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">banner</span> = <span class="ruby-node">&quot;Usage: beetle configuration_client #{command} [options] -- [client options]&quot;</span>
-16:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">separator</span> <span class="ruby-value str">&quot;&quot;</span>
-17:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">separator</span> <span class="ruby-value str">&quot;client options:&quot;</span>
-18: 
-19:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--redis-master-file FILE&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Write redis master server string to FILE&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-20:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">redis_server</span> = <span class="ruby-identifier">val</span>
-21:         <span class="ruby-keyword kw">end</span>
-22: 
-23:         <span class="ruby-identifier">client_id</span> = <span class="ruby-keyword kw">nil</span>
-24:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--id ID&quot;</span>, <span class="ruby-value str">&quot;--client-id ID&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-node">&quot;Set unique client id (default is #{RedisConfigurationClient.new.id})&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-25:           <span class="ruby-identifier">client_id</span> = <span class="ruby-identifier">val</span>
-26:         <span class="ruby-keyword kw">end</span>
-27: 
-28:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--amqp-servers LIST&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-29:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">servers</span> = <span class="ruby-identifier">val</span>
-30:         <span class="ruby-keyword kw">end</span>
-31: 
-32:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--config-file PATH&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Path to an external yaml config file&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-33:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">config_file</span> = <span class="ruby-identifier">val</span>
-34:         <span class="ruby-keyword kw">end</span>
-35: 
-36:         <span class="ruby-identifier">dir_mode</span> = <span class="ruby-keyword kw">nil</span>
-37:         <span class="ruby-identifier">dir</span> = <span class="ruby-keyword kw">nil</span>
-38:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--pid-dir DIR&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Write pid and log to DIR&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-39:           <span class="ruby-identifier">dir_mode</span> = <span class="ruby-identifier">:normal</span>
-40:           <span class="ruby-identifier">dir</span> = <span class="ruby-identifier">val</span>
+    <span class="ruby-comment cmt"># File lib/beetle/commands/configuration_client.rb, line 22</span>
+22:       <span class="ruby-keyword kw">def</span> <span class="ruby-keyword kw">self</span>.<span class="ruby-identifier">execute</span>
+23:         <span class="ruby-identifier">command</span>, <span class="ruby-identifier">controller_options</span>, <span class="ruby-identifier">app_options</span> = <span class="ruby-constant">Daemons</span><span class="ruby-operator">::</span><span class="ruby-constant">Controller</span>.<span class="ruby-identifier">split_argv</span>(<span class="ruby-constant">ARGV</span>)
+24: 
+25:         <span class="ruby-identifier">opts</span> = <span class="ruby-constant">OptionParser</span>.<span class="ruby-identifier">new</span>
+26:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">banner</span> = <span class="ruby-node">&quot;Usage: beetle configuration_client #{command} [options] -- [client options]&quot;</span>
+27:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">separator</span> <span class="ruby-value str">&quot;&quot;</span>
+28:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">separator</span> <span class="ruby-value str">&quot;client options:&quot;</span>
+29: 
+30:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--redis-master-file FILE&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Write redis master server string to FILE&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+31:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">redis_server</span> = <span class="ruby-identifier">val</span>
+32:         <span class="ruby-keyword kw">end</span>
+33: 
+34:         <span class="ruby-identifier">client_id</span> = <span class="ruby-keyword kw">nil</span>
+35:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--id ID&quot;</span>, <span class="ruby-value str">&quot;--client-id ID&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-node">&quot;Set unique client id (default is #{RedisConfigurationClient.new.id})&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+36:           <span class="ruby-identifier">client_id</span> = <span class="ruby-identifier">val</span>
+37:         <span class="ruby-keyword kw">end</span>
+38: 
+39:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--amqp-servers LIST&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+40:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">servers</span> = <span class="ruby-identifier">val</span>
 41:         <span class="ruby-keyword kw">end</span>
 42: 
-43:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;-v&quot;</span>, <span class="ruby-value str">&quot;--verbose&quot;</span>, <span class="ruby-value str">&quot;Set log level to DEBUG&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-44:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>.<span class="ruby-identifier">level</span> = <span class="ruby-constant">Logger</span><span class="ruby-operator">::</span><span class="ruby-constant">DEBUG</span>
+43:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--config-file PATH&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Path to an external yaml config file&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+44:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">config_file</span> = <span class="ruby-identifier">val</span>
 45:         <span class="ruby-keyword kw">end</span>
 46: 
-47:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on_tail</span>(<span class="ruby-value str">&quot;-h&quot;</span>, <span class="ruby-value str">&quot;--help&quot;</span>, <span class="ruby-value str">&quot;Show this message&quot;</span>) <span class="ruby-keyword kw">do</span>
-48:           <span class="ruby-identifier">puts</span> <span class="ruby-identifier">opts</span>
-49:           <span class="ruby-identifier">exit</span>
-50:         <span class="ruby-keyword kw">end</span>
-51: 
-52:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">parse!</span>(<span class="ruby-identifier">app_options</span>)
+47:         <span class="ruby-identifier">dir_mode</span> = <span class="ruby-keyword kw">nil</span>
+48:         <span class="ruby-identifier">dir</span> = <span class="ruby-keyword kw">nil</span>
+49:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;--pid-dir DIR&quot;</span>, <span class="ruby-constant">String</span>, <span class="ruby-value str">&quot;Write pid and log to DIR&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+50:           <span class="ruby-identifier">dir_mode</span> = <span class="ruby-identifier">:normal</span>
+51:           <span class="ruby-identifier">dir</span> = <span class="ruby-identifier">val</span>
+52:         <span class="ruby-keyword kw">end</span>
 53: 
-54:         <span class="ruby-constant">Daemons</span>.<span class="ruby-identifier">run_proc</span>(<span class="ruby-value str">&quot;redis_configuration_client&quot;</span>, <span class="ruby-identifier">:multiple</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:log_output</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:dir_mode</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">dir_mode</span>, <span class="ruby-identifier">:dir</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">dir</span>) <span class="ruby-keyword kw">do</span>
-55:           <span class="ruby-identifier">client</span> = <span class="ruby-constant">Beetle</span><span class="ruby-operator">::</span><span class="ruby-constant">RedisConfigurationClient</span>.<span class="ruby-identifier">new</span>
-56:           <span class="ruby-identifier">client</span>.<span class="ruby-identifier">id</span> = <span class="ruby-identifier">client_id</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">client_id</span>
-57:           <span class="ruby-identifier">client</span>.<span class="ruby-identifier">start</span>
-58:         <span class="ruby-keyword kw">end</span>
-59:       <span class="ruby-keyword kw">end</span>
+54:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on</span>(<span class="ruby-value str">&quot;-v&quot;</span>, <span class="ruby-value str">&quot;--verbose&quot;</span>, <span class="ruby-value str">&quot;Set log level to DEBUG&quot;</span>) <span class="ruby-keyword kw">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
+55:           <span class="ruby-constant">Beetle</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">logger</span>.<span class="ruby-identifier">level</span> = <span class="ruby-constant">Logger</span><span class="ruby-operator">::</span><span class="ruby-constant">DEBUG</span>
+56:         <span class="ruby-keyword kw">end</span>
+57: 
+58:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">on_tail</span>(<span class="ruby-value str">&quot;-h&quot;</span>, <span class="ruby-value str">&quot;--help&quot;</span>, <span class="ruby-value str">&quot;Show this message&quot;</span>) <span class="ruby-keyword kw">do</span>
+59:           <span class="ruby-identifier">puts</span> <span class="ruby-identifier">opts</span>
+60:           <span class="ruby-identifier">exit</span>
+61:         <span class="ruby-keyword kw">end</span>
+62: 
+63:         <span class="ruby-identifier">opts</span>.<span class="ruby-identifier">parse!</span>(<span class="ruby-identifier">app_options</span>)
+64: 
+65:         <span class="ruby-constant">Daemons</span>.<span class="ruby-identifier">run_proc</span>(<span class="ruby-value str">&quot;redis_configuration_client&quot;</span>, <span class="ruby-identifier">:multiple</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:log_output</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-keyword kw">true</span>, <span class="ruby-identifier">:dir_mode</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">dir_mode</span>, <span class="ruby-identifier">:dir</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">dir</span>) <span class="ruby-keyword kw">do</span>
+66:           <span class="ruby-identifier">client</span> = <span class="ruby-constant">Beetle</span><span class="ruby-operator">::</span><span class="ruby-constant">RedisConfigurationClient</span>.<span class="ruby-identifier">new</span>
+67:           <span class="ruby-identifier">client</span>.<span class="ruby-identifier">id</span> = <span class="ruby-identifier">client_id</span> <span class="ruby-keyword kw">if</span> <span class="ruby-identifier">client_id</span>
+68:           <span class="ruby-identifier">client</span>.<span class="ruby-identifier">start</span>
+69:         <span class="ruby-keyword kw">end</span>
+70:       <span class="ruby-keyword kw">end</span>
 </pre>
           </div>
         </div>
