@@ -15,10 +15,10 @@ module Beetle
     include Logging
     include RedisMasterFile
 
-    # The current redis master
+    # the current redis master
     attr_reader :current_master
 
-    # The current token used to detect correct message order
+    # the current token used to detect correct message order
     attr_reader :current_token
 
     def initialize #:nodoc:
@@ -29,7 +29,7 @@ module Beetle
       MessageDispatcher.configuration_server = self
     end
 
-    # Redis system status information (an instance of class RedisServerInfo) 
+    # Redis system status information (an instance of class RedisServerInfo)
     def redis
       @redis ||= RedisServerInfo.new(config, :timeout => 3)
     end
@@ -43,7 +43,7 @@ module Beetle
       beetle.config
     end
 
-    # Start watching redis
+    # start watching redis
     def start
       verify_redis_master_file_string
       check_redis_configuration
@@ -55,7 +55,7 @@ module Beetle
       end
     end
 
-    # Test if redis is currently being watched
+    # test if redis is currently being watched
     def paused?
       master_watcher.paused?
     end
