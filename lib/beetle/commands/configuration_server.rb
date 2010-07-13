@@ -5,7 +5,20 @@ require 'beetle'
 module Beetle
   module Commands
     # Command to start a RedisConfigurationServer daemon.
-    # Use via <tt>beetle configuration_server</tt>.
+    #
+    #   Usage: beetle configuration_server  [options] -- [server options]
+    #
+    #   server options:
+    #           --redis-servers LIST         Required for start command (e.g. 192.168.0.1:6379,192.168.0.2:6379)
+    #           --client-ids LIST            Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)
+    #           --redis-master-file FILE     Write redis master server string to FILE
+    #           --redis-retry-interval SEC   Number of seconds to wait between master checks
+    #           --amqp-servers LIST          AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)
+    #           --config-file PATH           Path to an external yaml config file
+    #           --pid-dir DIR                Write pid and log to DIR
+    #       -v, --verbose
+    #       -h, --help                       Show this message
+    #
     class ConfigurationServer
       # parses command line options and starts Beetle::RedisConfigurationServer as a daemon
       def self.execute
@@ -49,6 +62,11 @@ module Beetle
 
         opts.on("-v", "--verbose") do |val|
           Beetle.config.logger.level = Logger::DEBUG
+        end
+
+        opts.on_tail("-h", "--help", "Show this message") do
+          puts opts
+          exit
         end
 
         opts.parse!(app_options)
