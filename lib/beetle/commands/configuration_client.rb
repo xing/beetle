@@ -5,7 +5,18 @@ require 'beetle'
 module Beetle
   module Commands
     # Command to start a RedisConfigurationClient daemon.
-    # Use via <tt>beetle configuration_client</tt>
+    #
+    #   Usage: beetle configuration_client  [options] -- [client options]
+    #
+    #   client options:
+    #           --redis-master-file FILE     Write redis master server string to FILE
+    #           --id, --client-id ID         Set unique client id (default is minastirith.local)
+    #           --amqp-servers LIST          AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)
+    #           --config-file PATH           Path to an external yaml config file
+    #           --pid-dir DIR                Write pid and log to DIR
+    #       -v, --verbose                    Set log level to DEBUG
+    #       -h, --help                       Show this message
+    #
     class ConfigurationClient
       # parses command line options and starts Beetle::RedisConfigurationClient as a daemon
       def self.execute
