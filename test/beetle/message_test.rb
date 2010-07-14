@@ -375,14 +375,15 @@ module Beetle
       @store = DeduplicationStore.new
       @store.flushdb
     end
-    
-    test "a message with an exception set should not be processed at all" do
+
+    test "a message with an exception set should not be processed at all, but it should be acked" do
       header = {}
       message = Message.new("somequeue", header, 'foo')
       assert message.exception
-      
+
       proc = mock("proc")
       proc.expects(:call).never
+      message.expects(:ack!)
       assert_equal RC::DecodingError, message.__send__(:process_internal, proc)
     end
 

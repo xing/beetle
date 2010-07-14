@@ -241,6 +241,7 @@ module Beetle
 
     def process_internal(handler)
       if @exception
+        ack!
         RC::DecodingError
       elsif expired?
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
