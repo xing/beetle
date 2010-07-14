@@ -10,7 +10,7 @@ file REDIS_AUTO_FAILOVER.rdoc).
 * it's possible to register auto deleted queues and exchanges
 * Beetle::Client#configure returns self in order to simplify client setup
 * it's possible to trace specific messages (see Beetle::Client#trace)
-* default message handler timeout is 10 minutes
+* default message handler timeout is 10 minutes now
 * system wide configuration values can be specified via a yml formatted configuration
   file (Beetle::Configuration#config_file)
 * the config value redis_server specifies either a single server or a file path (used
@@ -20,11 +20,12 @@ file REDIS_AUTO_FAILOVER.rdoc).
 
 * handle active_support seconds notation for handler timeouts correctly
 * error handler was erroneously called for expired messages
+* subscribers would block when some non beetle process posts an undecodable message
 
 === Gem Dependency Changes
 
-* redis needs to be either version 1.0.7 or a version greater than 2.0.1 (2.0.0 does not
-  work)
+* redis needs to be at least version 2.0.3
+* we make use of the SystemTimer gem for ruby 1.8.7
 
 == Version 0.1
 
