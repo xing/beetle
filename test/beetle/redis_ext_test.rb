@@ -27,6 +27,10 @@ module Beetle
       assert !@r.slave?
       assert !@r.slave_of?("localhost", 6379)
     end
+
+    test "should not try toconnect to the redis server on inspect" do
+      assert_nothing_raised { @r.inspect }
+    end
   end
 
   class AddedRedisMethodsTest < Test::Unit::TestCase
@@ -41,20 +45,12 @@ module Beetle
     end
 
     test "should stop slavery" do
-      if Redis::VERSION < "2.0.0"
-        @r.expects(:slaveof).with("no one")
-      else
-        @r.expects(:slaveof).with("no", "one")
-      end
+      @r.expects(:slaveof).with("no", "one")
       @r.master!
     end
 
     test "should support slavery" do
-      if Redis::VERSION < "2.0.0"
-        @r.expects(:slaveof).with("localhost 6379")
-      else
-        @r.expects(:slaveof).with("localhost", 6379)
-      end
+      @r.expects(:slaveof).with("localhost", 6379)
       @r.slave_of!("localhost", 6379)
     end
   end
