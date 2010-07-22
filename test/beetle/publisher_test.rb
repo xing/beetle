@@ -284,7 +284,7 @@ module Beetle
       assert_kind_of Time, dead["localhost:2222"]
     end
 
-    test "recycle_dead_servers should move servers from the dead server hash to the servers list only if the have been markd dead for longer than 10 seconds" do
+    test "recycle_dead_servers should move servers from the dead server hash to the servers list only if they have been markd dead for longer than 10 seconds" do
       @pub.servers = ["a:1", "b:2"]
       @pub.send(:set_current_server, "a:1")
       @pub.send(:mark_server_dead)
@@ -299,6 +299,19 @@ module Beetle
       assert_equal({}, dead)
     end
 
+    test "recycle_dead_servers should recycle the server which has been dead for the longest time if all servers are dead " do
+      @pub.servers = ["a:1", "b:2"]
+      @pub.send(:set_current_server, "a:1")
+      @pub.send(:mark_server_dead)
+      @pub.send(:mark_server_dead)
+      assert_equal [], @pub.servers
+      dead = @pub.instance_variable_get("@dead_servers")
+      assert_equal ["a:1", "b:2"], dead.keys.sort
+      @pub.send(:recycle_dead_servers)
+      assert_equal ["b:2"], dead.keys
+      assert_equal ["a:1"], @pub.servers
+    end
+
     test "select_next_server should cycle through the list of all servers" do
       @pub.servers = ["a:1", "b:2"]
       @pub.send(:set_current_server, "a:1")
@@ -308,12 +321,13 @@ module Beetle
       assert_equal "a:1", @pub.server
     end
 
-    test "select_next_server should return 0 if there are no servers to publish to" do
+    test "select_next_server should log an error if there are no servers to publish to" do
       @pub.servers = []
       logger = mock('logger')
       logger.expects(:error).returns(true)
       @pub.expects(:logger).returns(logger)
-      assert_equal 0, @pub.send(:select_next_server)
+      @pub.expects(:set_current_server).never
+      @pub.send(:select_next_server)
     end
 
     test "stop should shut down all bunnies" do
