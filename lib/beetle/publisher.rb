@@ -132,10 +132,15 @@ module Beetle
       b
     end
 
+    # retry dead servers after ignoring them for 10.seconds
+    # if all servers are dead, retry the one which has been dead for the longest time
     def recycle_dead_servers
       recycle = []
       @dead_servers.each do |s, dead_since|
         recycle << s if dead_since < 10.seconds.ago
+      end
+      if recycle.empty? && @servers.empty?
+        recycle << @dead_servers.keys.sort_by{|k| @dead_servers[k]}.first
       end
       @servers.concat recycle
       recycle.each {|s| @dead_servers.delete(s)}
@@ -149,8 +154,11 @@ module Beetle
     end
 
     def select_next_server
-      return logger.error("Beetle: message could not be delivered - no server available") && 0 if @servers.empty?
-      set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
+      if @servers.empty?
+        logger.error("Beetle: no server available")
+      else
+        set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
+      end
     end
 
     def create_exchange!(name, opts)
