@@ -102,3 +102,8 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('REDIS_AUTO_FAILOVER.rdoc')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
+desc "build the beetle gem"
+task :build do
+  system("gem build beetle.gemspec")
+end
