@@ -58,10 +58,13 @@ deduplication store:
 * If a consumer dies during message processing (e.g. due to a OOM kill), the message will
   be reprocessed later (if the consumer has been configured for retrying failed message
   handlers)
+* If the redis master dies, the beetle redis failover system will promote the slave to
+  master role (and force the old master to become a slave when it comes back online)
 
 ### Where to go next
 
 * read our [first blog post][first_post]
+* read about the [redis failover][redis_failover]
 * read the [FAQ page][faq_section]
 * check out the [examples][examples]
 * read about the [API][api]
@@ -73,6 +76,7 @@ deduplication store:
 [amqp_gem]: http://github.com/tmm1/amqp
 [bunny_gem]: http://github.com/celldee/bunny
 [first_post]: /beetle/2010/04/14/introducing-beetle.html
+[redis_failover]: /beetle/2010/07/24/redis-failover.html
 [faq_section]: /beetle/faq.html
 [examples]: http://github.com/xing/beetle/tree/master/examples/
 [api]: /beetle/api.html
