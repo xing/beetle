@@ -40,6 +40,7 @@ Note that this places our solution into the CA space of the [CAP theorem][cap].
 * tolerate single machine failures without problems
 * switch doesn't cause inconsistent data on the redis servers
 * switch is only performed if all worker machines agree
+* opt-in, only use the redis failover solution if you need it
 
 ### How it works
 
@@ -82,9 +83,14 @@ master switch by sending a "SLAVEOF no one" command to the selected slave and a
 "reconfigure" message with the new Redis master to the RCCs, which then update the redis
 master file their machines, enabling the messaging workers to proceed with any pending
 redis operations.
+master switch by turning the selected slave into a master and sending a
+"reconfigure" message with the new Redis master to the RCCs, which then update their redis
+master file, enabling the messaging workers to proceed with any pending redis operations.
 
 If one of the above mentioned steps fail, the RCS proceeds by starting a new
 reconfiguration round, sending out a system failure notification message using Beetle.
+You can subscribe to these system failure notification messages with a custom worker,
+e.g. to send out emails to your operators.
 
 Additional information on the failover mechanism can be found in the
 [ruby documentation][rdoc].
