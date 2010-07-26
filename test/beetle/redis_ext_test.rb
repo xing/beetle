@@ -56,15 +56,9 @@ module Beetle
   end
 
   class RedisTimeoutTest < Test::Unit::TestCase
-    test "should use Redis::Timer if timeout is greater 0" do
+    test "should use a timer" do
       r = Redis.new(:host => "localhost", :port => 6390, :timeout => 1)
-      Redis::Timer.expects(:timeout).with(1).raises(Timeout::Error)
-      assert_equal({}, r.info_with_rescue)
-    end
-
-    test "should not use Redis::Timer if timeout 0" do
-      r = Redis.new(:host => "localhost", :port => 6390, :timeout => 0)
-      Redis::Timer.expects(:timeout).never
+      r.client.expects(:with_timeout).with(1).raises(Timeout::Error)
       assert_equal({}, r.info_with_rescue)
     end
   end

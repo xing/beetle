@@ -54,4 +54,5 @@ module Beetle
     end
   end
 
+  Timer = RUBY_VERSION < "1.9" ? SystemTimer : Timeout
 end

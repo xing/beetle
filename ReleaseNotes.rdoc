@@ -1,5 +1,15 @@
 = Release Notes
 
+== Version 0.2.2
+
+Patch release which upgrades to redis-rb 2.0.4. This enables us to drop our redis monkey
+patch which enabled connection timeouts for earlier redis versions. Note that earlier
+Beetle versions are not compatible with redis 2.0.4.
+
+== Version 0.2.1
+
+Improved error message when no rabbitmq broker is available.
+
 == Version 0.2
 
 This version adds support for automatic redis deduplication store failover (see separate

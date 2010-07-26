@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.specification_version = 3
   s.add_runtime_dependency("uuid4r",                [">= 0.1.1"])
   s.add_runtime_dependency("bunny",                 [">= 0.6.0"])
-  s.add_runtime_dependency("redis",                 [">= 2.0.3"])
+  s.add_runtime_dependency("redis",                 [">= 2.0.4"])
   s.add_runtime_dependency("amqp",                  [">= 0.6.7"])
   s.add_runtime_dependency("activesupport",         [">= 2.3.4"])
   s.add_runtime_dependency("daemons",               [">= 1.0.10"])

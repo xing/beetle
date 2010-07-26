@@ -51,29 +51,3 @@ class Redis #:nodoc:
     info["role"] == "slave" && info["master_host"] == host && info["master_port"] == port.to_s
   end
 end
-
-class Redis::Client #:nodoc:
-  protected
-  def connect_to(host, port)
-    if @timeout != 0 and Redis::Timer
-      begin
-        Redis::Timer.timeout(@timeout){ @sock = TCPSocket.new(host, port) }
-      rescue Timeout::Error
-        @sock = nil
-        raise Timeout::Error, "Timeout connecting to the server"
-      end
-    else
-      @sock = TCPSocket.new(host, port)
-    end
-
-    @sock.setsockopt Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1
-
-    # If the timeout is set we set the low level socket options in order
-    # to make sure a blocking read will return after the specified number
-    # of seconds. This hack is from memcached ruby client.
-    self.timeout = @timeout
-
-  rescue Errno::ECONNREFUSED
-    raise Errno::ECONNREFUSED, "Unable to connect to Redis on #{host}:#{port}"
-  end
-end
