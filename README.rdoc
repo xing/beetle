@@ -54,12 +54,11 @@ windows and execute the following commands:
     rake redis:start1
     rake redis:start2
 
-
 == Prerequisites
 
 To set up a redundant messaging system you will need
 * at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
-* at least one Redis server (better are two in a master/slave setup)
+* at least one {Redis}[http://github.com/antirez/redis] server (better are two in a master/slave setup)
 
 == Gem Dependencies
 
@@ -67,15 +66,17 @@ At runtime, Beetle will use
 * {uuid4r}[http://github.com/skaes/uuid4r]
   (which needs ossp-uuid)
 * {bunny}[http://github.com/celldee/bunny]
-* {redis-rb}[http://github.com/ezmobius/redis-rb]
-  (which needs {redis}[http://github.com/antirez/redis])
+* {redis}[http://github.com/ezmobius/redis-rb]
 * {amqp}[http://github.com/tmm1/amqp]
   (which is based on {eventmachine}[http://github.com/eventmachine/eventmachine])
+* {daemons}[http://daemons.rubyforge.org/]
 * activesupport
 
 For development, you'll need
-* mocha
-* rcov
+* {mocha}[http://github.com/floehopper/mocha]
+* {rcov}[http://github.com/relevance/rcov]
+* {cucumber}[http://github.com/aslakhellesoy/cucumber]
+* {daemon_controller}[http://github.com/FooBarWidget/daemon_controller]
 
 == Authors
 
