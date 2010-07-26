@@ -1,8 +1,11 @@
 require 'rake'
 require 'rake/testtask'
-require 'lib/beetle'
 require 'rcov/rcovtask'
 require 'cucumber/rake/task'
+
+# 1.8/1.9 compatible way of loading lib/beetle.rb
+$:.unshift 'lib'
+require 'beetle'
 
 namespace :test do
   namespace :coverage do
