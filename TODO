@@ -1,7 +1,0 @@
-- docs
-- example scripts
-- let handlers decide dynamically how long to wait for a retry
-- review log levels in all logger statements
-- optimize redis accesses:
-    - combine multiple redis accesses into one
-- ack redundant messages with attempts limit 1 immediately?
