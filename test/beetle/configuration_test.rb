@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require 'tempfile'
 
 module Beetle
   class ConfigurationTest < Test::Unit::TestCase
@@ -12,6 +11,20 @@ module Beetle
 
       config.config_file = "some/path/to/a/file"
       assert_equal new_value, config.gc_threshold
+    end
+    
+    test "should log to STDOUT if no log_file given" do
+      config = Configuration.new
+      Logger.expects(:new).with(STDOUT).returns(stub_everything)
+      config.logger
+    end
+
+    test "should log to file if log_file given" do
+      file = '/path/to/file'
+      config = Configuration.new
+      config.log_file = file
+      Logger.expects(:new).with(file).returns(stub_everything)
+      config.logger
     end
   end
 end

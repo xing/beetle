@@ -4,8 +4,10 @@ module Beetle
   class Configuration
     # system name (used for redis cluster partitioning) (defaults to <tt>system</tt>)
     attr_accessor :system_name
-    # default logger (defaults to <tt>Logger.new(STDOUT)</tt>)
+    # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
+    # defaults to <tt>STDOUT</tt>
+    attr_accessor :log_file
     # number of seconds after which keys are removed form the message deduplication store (defaults to <tt>3.days</tt>)
     attr_accessor :gc_threshold
     # the redis server to use for deduplication
@@ -49,14 +51,6 @@ module Beetle
     def initialize #:nodoc:
       self.system_name = "system"
 
-      self.logger = begin
-        logger = Logger.new(STDOUT)
-        logger.formatter = Logger::Formatter.new
-        logger.level = Logger::INFO
-        logger.datetime_format = "%Y-%m-%d %H:%M:%S"
-        logger
-      end
-
       self.gc_threshold = 3.days
       self.redis_server = "localhost:6379"
       self.redis_servers = ""
@@ -72,12 +66,24 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+
+      self.log_file = STDOUT
     end
 
     # setting the external config file will load it on assignment
     def config_file=(file_name) #:nodoc:
       @config_file = file_name
       load_config
+    end
+
+    def logger
+      @logger ||= begin
+        l = Logger.new(log_file)
+        l.formatter = Logger::Formatter.new
+        l.level = Logger::INFO
+        l.datetime_format = "%Y-%m-%d %H:%M:%S"
+        l
+      end
     end
 
     private

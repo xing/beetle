@@ -55,7 +55,7 @@ module Beetle
 
         dir_mode = nil
         dir = nil
-        opts.on("--pid-dir DIR", String, "Write pid and log to DIR") do |val|
+        opts.on("--pid-dir DIR", String, "Write pid and output to DIR") do |val|
           dir_mode = :normal
           dir = val
         end
