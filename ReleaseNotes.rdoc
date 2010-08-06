@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 0.2.4
+
+Log and send a system notification when pong message from unknown client received.
+
 == Version 0.2.2
 
 Patch release which upgrades to redis-rb 2.0.4. This enables us to drop our redis monkey
