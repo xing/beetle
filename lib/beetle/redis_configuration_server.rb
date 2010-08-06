@@ -64,6 +64,7 @@ module Beetle
     def pong(payload)
       id = payload["id"]
       token = payload["token"]
+      return unless validate_pong_client_id(id)
       logger.info "Received pong message from id '#{id}' with token '#{token}'"
       return unless redeem_token(token)
       @client_pong_ids_received << id
@@ -162,6 +163,15 @@ module Beetle
 
     def determine_new_master
       redis.unknowns.include?(current_master) ? redis.slaves_of(current_master).first : current_master
+    end
+
+    def validate_pong_client_id(client_id)
+      unless known_client = @client_ids.include?(client_id)
+        msg = "Received pong message from unknown client '#{client_id}'"
+        logger.error(msg)
+        beetle.publish(:system_notification, {"message" => msg}.to_json)
+      end
+      known_client
     end
 
     def redeem_token(token)

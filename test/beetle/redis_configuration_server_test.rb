@@ -275,4 +275,22 @@ module Beetle
       info
     end
   end
+
+  class RedisConfigurationServerSystemNotificationAndLoggingTest < Test::Unit::TestCase
+    def setup
+      Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
+      @server = RedisConfigurationServer.new
+      @server.stubs(:beetle).returns(stub(:publish))
+      @server.stubs(:logger).returns(stub)
+      EventMachine.stubs(:add_timer).yields
+    end
+
+    test "should log and send a system notification when pong message from unknown client received" do
+      payload = {"id" => "unknown-client", "token" => @server.current_token}
+      msg = "Received pong message from unknown client 'unknown-client'"
+      @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
+      @server.logger.expects(:error).with(msg)
+      @server.pong(payload)
+    end
+  end
 end
