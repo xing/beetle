@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.4"
+  s.version = "0.2.5"
 
   s.required_rubygems_version = ">= 1.3.1"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.summary            = "High Availability AMQP Messaging with Redundant Queues"
   s.email              = "developers@xing.com"
   s.executables        = ["beetle"]
-  s.extra_rdoc_files   = ["README.rdoc"]
-  s.files              = Dir['{examples,ext,lib}/**/*.rb'] + %w(beetle.gemspec examples/README.rdoc)
+  s.extra_rdoc_files   = Dir['**/*.rdoc'] + %w(MIT-LICENSE)
+  s.files              = Dir['{examples,ext,lib}/**/*.rb'] + Dir['{features,script}/**/*'] + %w(beetle.gemspec Rakefile)
   s.extensions         = 'ext/mkrf_conf.rb'
   s.homepage           = "http://xing.github.com/beetle/"
   s.rdoc_options       = ["--charset=UTF-8"]
