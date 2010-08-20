@@ -73,7 +73,9 @@ module Beetle
 
     private
     def redis_test_master_file(server_string)
-      path = File.expand_path("../../../tmp/redis-master-for-unit-tests", __FILE__)
+      tmp_dir = File.expand_path("../../../tmp", __FILE__)
+      Dir.mkdir(tmp_dir) unless File.exists?(tmp_dir)
+      path = tmp_dir + "/redis-master-for-unit-tests"
       File.open(path, "w"){|f| f.puts server_string}
       path
     end
