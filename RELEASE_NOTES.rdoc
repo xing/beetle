@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 0.2.5
+
+Added missing files to gem and rdoc
+
 == Version 0.2.4
 
 Log and send a system notification when pong message from unknown client received.
