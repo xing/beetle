@@ -3,9 +3,20 @@ require 'active_support'
 require 'active_support/testing/declarative'
 require 'test/unit'
 begin
-  require 'redgreen' unless ENV['TM_FILENAME'] 
+  require 'redgreen' unless ENV['TM_FILENAME']
 rescue MissingSourceFile
 end
+
+# we can remove this hack which is needed only for testing
+begin
+  require 'qrack/errors'
+rescue LoadError
+  module Qrack
+    class BufferOverflowError < StandardError; end
+    class InvalidTypeError < StandardError; end
+  end
+end
+
 require 'mocha'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 
