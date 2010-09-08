@@ -75,6 +75,17 @@ module Beetle
       end
     end
 
+    def client_started(payload)
+      id = payload["id"]
+      if client_id_valid?(id)
+        logger.info("Received client_started message from id #{id}")
+      else
+        msg = "Received client_started message from unknown id '#{id}'"
+        logger.error(msg)
+        beetle.publish(:system_notification, {"message" => msg}.to_json)
+      end
+    end
+
     # called by the message dispatcher when a "client_invalidated" message from a RedisConfigurationClient is received
     def client_invalidated(payload)
       id = payload["id"]
@@ -139,8 +150,10 @@ module Beetle
         config.message :invalidate
         config.message :reconfigure
         config.message :system_notification
+        config.message :client_started
+        config.queue   :client_started, :amqp_name => "#{system}_client_started"
 
-        config.handler [:pong, :client_invalidated], MessageDispatcher
+        config.handler [:pong, :client_invalidated, :client_started], MessageDispatcher
       end
     end
 
@@ -166,12 +179,16 @@ module Beetle
     end
 
     def validate_pong_client_id(client_id)
-      unless known_client = @client_ids.include?(client_id)
-        msg = "Received pong message from unknown client '#{client_id}'"
+      unless known_client = client_id_valid?(client_id)
+        msg = "Received pong message from unknown id '#{client_id}'"
         logger.error(msg)
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
       known_client
+    end
+    
+    def client_id_valid?(client_id)
+      @client_ids.include?(client_id)
     end
 
     def redeem_token(token)

@@ -10,6 +10,12 @@ module Beetle
       @client.stubs(:verify_redis_master_file_string)
     end
 
+    test "should send a client_started message when started" do
+      @client.stubs(:clear_redis_master_file)
+      @client.beetle.expects(:publish).with(:client_started, {:id => @client.id}.to_json)
+      @client.start
+    end
+
     test "config should return the beetle config" do
       assert_equal Beetle.config, @client.config
     end

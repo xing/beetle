@@ -287,10 +287,18 @@ module Beetle
 
     test "should log and send a system notification when pong message from unknown client received" do
       payload = {"id" => "unknown-client", "token" => @server.current_token}
-      msg = "Received pong message from unknown client 'unknown-client'"
+      msg = "Received pong message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
       @server.logger.expects(:error).with(msg)
       @server.pong(payload)
+    end
+
+    test "should warn about unknown clients when receiving client_started messages" do
+      payload = {"id" => "unknown-client"}
+      msg = "Received client_started message from unknown id 'unknown-client'"
+      @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
+      @server.logger.expects(:error).with(msg)
+      @server.client_started(payload)
     end
   end
 end
