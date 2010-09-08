@@ -1,5 +1,11 @@
 = Release Notes
 
+== Version 0.2.6
+
+* Set dependency on ActiveSupport to 2.3.x since it ain't compatible to version 3.x yet
+* Publishers catch a wider range (all?) of possible exceptions when publishing messages
+* Redis Configuration Servers detect and warn when unknown Redis Configuration Clients connect
+
 == Version 0.2.5
 
 Added missing files to gem and rdoc
