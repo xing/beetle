@@ -1,3 +1,4 @@
+$:.unshift(File.expand_path('..', __FILE__))
 require 'amqp'
 require 'mq'
 require 'bunny'
@@ -56,3 +57,5 @@ module Beetle
 
   Timer = RUBY_VERSION < "1.9" ? SystemTimer : Timeout
 end
+
+require 'ext/qrack/client'
