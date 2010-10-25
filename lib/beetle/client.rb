@@ -24,6 +24,9 @@ module Beetle
     # the AMQP servers available for publishing
     attr_reader :servers
 
+    # additional AMQP servers available for subscribing. useful for migration scenarios.
+    attr_reader :additional_subscription_servers
+
     # an options hash for the configured exchanges
     attr_reader :exchanges
 
@@ -46,6 +49,7 @@ module Beetle
     def initialize(config = Beetle.config)
       @config  = config
       @servers = config.servers.split(/ *, */)
+      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */)
       @exchanges = {}
       @queues = {}
       @messages = {}

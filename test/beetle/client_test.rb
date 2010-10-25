@@ -11,6 +11,10 @@ module Beetle
       assert_equal ["localhost:5672"], @client.servers
     end
 
+    test "should have no additional subscription servers" do
+      assert_equal [], @client.additional_subscription_servers
+    end
+
     test "should have no exchanges" do
       assert @client.exchanges.empty?
     end
