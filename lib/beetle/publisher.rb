@@ -10,12 +10,15 @@ module Beetle
     end
 
     # list of exceptions potentially raised by bunny
-    BUNNY_EXCEPTIONS = [
-      Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
-      Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
-      Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-      Errno::EHOSTUNREACH, Errno::ECONNRESET
-    ]
+    # these need to be lazy, because qrack exceptions are only defined after a connection has been established
+    def bunny_exceptions
+      [
+        Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
+        Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
+        Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
+        Errno::EHOSTUNREACH, Errno::ECONNRESET
+      ]
+    end
 
     def publish(message_name, data, opts={}) #:nodoc:
       opts = @client.messages[message_name].merge(opts.symbolize_keys)
@@ -41,7 +44,7 @@ module Beetle
         exchange(exchange_name).publish(data, opts)
         logger.debug "Beetle: message sent!"
         published = 1
-      rescue *BUNNY_EXCEPTIONS
+      rescue *bunny_exceptions
         stop!
         mark_server_dead
         tries -= 1
@@ -68,7 +71,7 @@ module Beetle
           exchange(exchange_name).publish(data, opts)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
-        rescue *BUNNY_EXCEPTIONS
+        rescue *bunny_exceptions
           stop!
           mark_server_dead
         end
@@ -109,7 +112,7 @@ module Beetle
           status = msg[:header].properties[:headers][:status]
         end
         logger.debug "Beetle: rpc complete!"
-      rescue *BUNNY_EXCEPTIONS
+      rescue *bunny_exceptions
         stop!
         mark_server_dead
         tries -= 1
