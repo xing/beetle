@@ -77,13 +77,14 @@ module Beetle
     end
 
     def logger
-      @logger ||= begin
-        l = Logger.new(log_file)
-        l.formatter = Logger::Formatter.new
-        l.level = Logger::INFO
-        l.datetime_format = "%Y-%m-%d %H:%M:%S"
-        l
-      end
+      @logger ||=
+        begin
+          l = Logger.new(log_file)
+          l.formatter = Logger::Formatter.new
+          l.level = Logger::INFO
+          l.datetime_format = "%Y-%m-%d %H:%M:%S"
+          l
+        end
     end
 
     private

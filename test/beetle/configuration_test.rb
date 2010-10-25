@@ -12,7 +12,7 @@ module Beetle
       config.config_file = "some/path/to/a/file"
       assert_equal new_value, config.gc_threshold
     end
-    
+
     test "should log to STDOUT if no log_file given" do
       config = Configuration.new
       Logger.expects(:new).with(STDOUT).returns(stub_everything)
