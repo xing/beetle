@@ -50,6 +50,7 @@ module Beetle
         tries -= 1
         retry if tries > 0
         logger.error "Beetle: message could not be delivered: #{message_name}"
+        raise NoMessageSent.new
       end
       published
     end
@@ -79,9 +80,11 @@ module Beetle
       case published.size
       when 0
         logger.error "Beetle: message could not be delivered: #{message_name}"
+        raise NoMessageSent.new
       when 1
         logger.warn "Beetle: failed to send message redundantly"
       end
+
       published.size
     end
 
