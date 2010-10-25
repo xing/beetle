@@ -37,6 +37,7 @@ module Beetle
     # loop, reacting to failover related messages sent by RedisConfigurationServer.
     def start
       verify_redis_master_file_string
+      client_started!
       logger.info "RedisConfigurationClient starting (client id: #{id})"
       determine_initial_master
       clear_redis_master_file unless current_master.try(:master?)
@@ -102,6 +103,7 @@ module Beetle
         config.message :client_invalidated
         config.message :reconfigure
         config.queue   :reconfigure, :amqp_name => "#{system}_reconfigure_#{id}"
+        config.message :client_started
 
         config.handler [:ping, :invalidate, :reconfigure], MessageDispatcher
       end
@@ -116,6 +118,10 @@ module Beetle
 
     def pong!
       beetle.publish(:pong, {"id" => id, "token" => @current_token}.to_json)
+    end
+
+    def client_started!
+      beetle.publish(:client_started, {"id" => id}.to_json)
     end
 
     def invalidate!
