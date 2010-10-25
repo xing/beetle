@@ -76,13 +76,16 @@ module Beetle
     end
 
     test "publishing should fail over to the next server" do
-      failover = sequence('failover')
-      @pub.expects(:select_next_server).in_sequence(failover)
-      e = mock("exchange")
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
-      @pub.expects(:stop!).in_sequence(failover)
-      @pub.expects(:mark_server_dead).in_sequence(failover)
+      @pub.servers << "localhost:3333"
+      raising_exchange = mock("raising exchange")
+      nice_exchange = mock("nice exchange")
+      @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(nice_exchange)
+
+      raising_exchange.expects(:publish).raises(Bunny::ConnectionError)
+      nice_exchange.expects(:publish)
+      @pub.expects(:set_current_server).twice
+      @pub.expects(:stop!).once
+      @pub.expects(:mark_server_dead).once
       @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
     end
 
@@ -114,7 +117,7 @@ module Beetle
       assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
     end
 
-    test "redundant publishing should return 0 if the message was published to no server" do
+    test "redundant publishing should raise an exception if the message was published to no server" do
       redundant = sequence("redundant")
       @pub.servers = ["someserver", "someotherserver"]
       @pub.server = "someserver"
@@ -125,7 +128,9 @@ module Beetle
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
 
-      assert_equal 0, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+      assert_raises Beetle::NoMessageSent do
+        @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+      end
     end
 
     test "redundant publishing should fallback to failover publishing if less than one server is available" do
