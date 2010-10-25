@@ -5,6 +5,7 @@ module Beetle
     # create a new subscriber instance
     def initialize(client, options = {}) #:nodoc:
       super
+      @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}

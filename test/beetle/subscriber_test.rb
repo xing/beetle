@@ -51,6 +51,19 @@ module Beetle
 
   end
 
+  class AdditionalSubscriptionServersTest < Test::Unit::TestCase
+    def setup
+      @config = Configuration.new
+      @config.additional_subscription_servers = "localhost:1234"
+      @client = Client.new(@config)
+      @sub = @client.send(:subscriber)
+    end
+
+    test "subscribers server list should contain addtional subcription hosts" do
+      assert_equal ["localhost:5672", "localhost:1234"], @sub.servers
+    end
+  end
+
   class SubscriberQueueManagementTest < Test::Unit::TestCase
     def setup
       @client = Client.new

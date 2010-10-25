@@ -38,6 +38,8 @@ module Beetle
 
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
+    # list of additional amqp servers to use for subscribers (defaults to <tt>""</tt>)
+    attr_accessor :additional_subscription_servers
     # the virtual host to use on the AMQP servers (defaults to <tt>"/"</tt>)
     attr_accessor :vhost
     # the AMQP user to use when connecting to the AMQP servers (defaults to <tt>"guest"</tt>)
@@ -63,6 +65,7 @@ module Beetle
       self.redis_configuration_client_ids = ""
 
       self.servers = "localhost:5672"
+      self.additional_subscription_servers = ""
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
