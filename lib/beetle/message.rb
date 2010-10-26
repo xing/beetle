@@ -80,6 +80,7 @@ module Beetle
       @flags = headers[:flags].to_i
       @expires_at = headers[:expires_at].to_i
     rescue Exception => @exception
+      Beetle::reraise_expectation_errors!
       logger.error "Could not decode message. #{self.inspect}"
     end
 

@@ -95,6 +95,8 @@ module Beetle
       redis1.expects(:get).with("foo:x").raises("disconnected").in_sequence(s)
       @store.expects(:redis).returns(redis2).in_sequence(s)
       redis2.expects(:get).with("foo:x").returns("42").in_sequence(s)
+      @store.logger.expects(:info)
+      @store.logger.expects(:error)
       assert_equal("42", @store.get("foo", "x"))
     end
 
@@ -103,6 +105,8 @@ module Beetle
       @store.stubs(:redis).returns(redis1)
       redis1.stubs(:get).with("foo:x").raises("disconnected")
       @store.stubs(:sleep)
+      @store.logger.stubs(:info)
+      @store.logger.stubs(:error)
       assert_raises(NoRedisMaster) { @store.get("foo", "x") }
     end
   end
