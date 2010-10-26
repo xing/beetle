@@ -65,6 +65,7 @@ module Beetle
 
     test "should clear redis master file if redis from master file is slave" do
       @client.stubs(:redis_master_from_master_file).returns(stub(:master? => false))
+      Beetle::Client.any_instance.stubs(:publish)
       @client.expects(:clear_redis_master_file)
       @client.expects(:client_started!)
       @client.start
@@ -72,6 +73,7 @@ module Beetle
 
     test "should clear redis master file if redis from master file is not available" do
       @client.stubs(:redis_master_from_master_file).returns(nil)
+      Beetle::Client.any_instance.stubs(:publish)
       @client.expects(:clear_redis_master_file)
       @client.expects(:client_started!)
       @client.start

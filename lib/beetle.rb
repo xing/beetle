@@ -18,6 +18,8 @@ module Beetle
   class UnknownQueue < Error; end
   # raised when no redis master server can be found
   class NoRedisMaster < Error; end
+  # raise when no message could be sent by the publisher
+  class NoMessageSent < Error; end
 
   # AMQP options for exchange creation
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]
