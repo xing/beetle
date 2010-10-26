@@ -31,9 +31,14 @@ module Beetle
       end
     end
 
-    # stops the eventmachine loop
+    # closes all AMQP connections and stops the eventmachine loop
     def stop! #:nodoc:
-      EM.stop_event_loop
+      if @amqp_connections.empty?
+        EM.stop_event_loop
+      else
+        server, connection = @amqp_connections.shift
+        connection.close { stop! }
+      end
     end
 
     # register handler for the given queues (see Client#register_handler)
