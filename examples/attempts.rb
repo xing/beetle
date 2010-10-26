@@ -14,15 +14,15 @@ require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 Beetle.config.logger.level = Logger::INFO
 
 # setup client
-client = Beetle::Client.new
-client.register_queue(:test)
-client.register_message(:test)
+$client = Beetle::Client.new
+$client.register_queue(:test)
+$client.register_message(:test)
 
 # purge the test queue
-client.purge(:test)
+$client.purge(:test)
 
 # empty the dedup store
-client.deduplication_store.flushdb
+$client.deduplication_store.flushdb
 
 # we're starting with 0 exceptions and expect our handler to process the message until the exception count has reached 10
 $exceptions = 0
@@ -32,33 +32,33 @@ $max_exceptions = 10
 # in this example we've not only overwritten the process method but also the
 # error and failure methods of the handler baseclass
 class Handler < Beetle::Handler
-  
+
   # called when the handler receives the message - fail everytime
   def process
     raise "failed #{$exceptions += 1} times"
   end
-  
+
   # called when handler process raised an exception
   def error(exception)
     logger.info "execution failed: #{exception}"
   end
-  
+
   # called when the handler has finally failed
   # we're stopping the event loop so this script stops after that
   def failure(result)
     super
-    EM.stop_event_loop
+    $client.stop_listening
   end
 end
 
 # register our handler to the message, configure it to our max_exceptions limit, we configure a delay of 0 to have it not wait before retrying
-client.register_handler(:test, Handler, :exceptions => $max_exceptions, :delay => 0)
+$client.register_handler(:test, Handler, :exceptions => $max_exceptions, :delay => 0)
 
 # publish a our test message
-client.publish(:test, "snafu")
+$client.publish(:test, "snafu")
 
 # and start our listening loop...
-client.listen
+$client.listen
 
 # error handling, if everything went right this shouldn't happen.
 if $exceptions != $max_exceptions + 1
