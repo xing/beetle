@@ -525,7 +525,7 @@ module Beetle
     test "processing a message catches internal exceptions risen by process_internal and returns an internal error" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :store => @store)
-      message.expects(:process_internal).raises(Exception.new)
+      message.expects(:process_internal).raises(Exception.new("this is expected"))
       handler = Handler.new
       handler.expects(:process_exception).never
       handler.expects(:process_failure).never

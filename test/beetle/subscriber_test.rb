@@ -156,7 +156,7 @@ module Beetle
 
     test "exceptions raised from message processing should be ignored" do
       header = header_with_params({})
-      Message.any_instance.expects(:process).raises(Exception.new)
+      Message.any_instance.expects(:process).raises(Exception.new("don't worry"))
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
@@ -227,12 +227,12 @@ module Beetle
       proc = lambda do |m|
         block_called = true
         assert_equal header, m.header
-        assert_equal "data", m.data
+        assert_equal "foo", m.data
         assert_equal server, m.server
       end
       @sub.register_handler("some_queue", &proc)
       q = mock("QUEUE")
-      q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, 'foo')
+      q.expects(:subscribe).with({:ack => true, :key => "#"}).yields(header, "foo")
       @sub.expects(:queues).returns({"some_queue" => q})
       @sub.send(:subscribe, "some_queue")
       assert block_called

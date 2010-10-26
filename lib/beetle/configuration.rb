@@ -97,6 +97,7 @@ module Beetle
         send("#{key}=", value)
       end
     rescue Exception
+      Beetle::reraise_expectation_errors!
       logger.error "Error loading beetle config file '#{config_file}': #{$!}"
       raise
     end
