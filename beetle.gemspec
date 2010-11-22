@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.9.3"
+  s.version = "0.2.9.4"
 
   s.required_rubygems_version = ">= 1.3.1"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.specification_version = 3
   s.add_runtime_dependency("uuid4r",                [">= 0.1.1"])
   s.add_runtime_dependency("bunny",                 ["= 0.6.0"])
-  s.add_runtime_dependency("bunny-ext",             ["= 0.6.1"])
+  s.add_runtime_dependency("bunny-ext",             [">= 0.6.2"])
   s.add_runtime_dependency("redis",                 ["= 2.0.4"])
   s.add_runtime_dependency("amqp",                  [">= 0.6.7"])
   s.add_runtime_dependency("activesupport",         ["~> 2.3.4"])
