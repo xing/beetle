@@ -111,9 +111,10 @@ end
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
   Beetle.config.servers = "localhost:5672" # rabbitmq
   Beetle.config.logger.level = Logger::INFO
-  client = Beetle::Client.new
-  client.register_queue(:echo)
-  client.register_message(:echo)
+  client = Beetle::Client.new.configure :auto_delete => true do |config|
+    config.queue(:echo)
+    config.message(:echo)
+  end
   assert_equal TestDaemons::Redis[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
 end
 
