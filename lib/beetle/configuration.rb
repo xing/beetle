@@ -47,6 +47,9 @@ module Beetle
     # the password to use when connectiong to the AMQP servers (defaults to <tt>"guest"</tt>)
     attr_accessor :password
 
+    # the socket timeout in seconds for message publishing (defaults to <tt>10.0</tt>)
+    attr_accessor :publishing_timeout
+
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
@@ -69,6 +72,8 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+
+      self.publishing_timeout = 5.0
 
       self.log_file = STDOUT
     end
