@@ -2,7 +2,7 @@ require 'rubygems'
 require 'fileutils'
 require 'erb'
 require 'redis'
-require 'lib/beetle/redis_ext'
+require File.expand_path('../../../../lib/beetle/redis_ext', __FILE__)
 require 'daemon_controller'
 
 module TestDaemons
