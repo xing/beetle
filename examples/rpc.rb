@@ -9,13 +9,13 @@ Beetle.config.servers = "localhost:5672, localhost:5673"
 
 client = Beetle::Client.new
 
-# register a durable queue named 'test'
-# this implicitly registers a durable topic exchange called 'test'
+# register a durable queue named 'echo'
+# this implicitly registers a durable topic exchange called 'echo'
 client.register_queue(:echo)
 client.register_message(:echo)
 
 if ARGV.include?("--server")
-  # register a handler for the test message, listing on queue "test"
+  # register a handler for the echo message, listing on queue "echo"
   # echoing all data sent to it
   client.register_handler(:echo) do |m|
     # send data back to publisher
