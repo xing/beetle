@@ -79,12 +79,12 @@ module Beetle
       @pub.servers << "localhost:3333"
       raising_exchange = mock("raising exchange")
       nice_exchange = mock("nice exchange")
-      @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(nice_exchange)
+      @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(raising_exchange).then.returns(nice_exchange)
 
-      raising_exchange.expects(:publish).raises(Bunny::ConnectionError)
+      raising_exchange.expects(:publish).raises(Bunny::ConnectionError).twice
       nice_exchange.expects(:publish)
       @pub.expects(:set_current_server).twice
-      @pub.expects(:stop!).once
+      @pub.expects(:stop!).twice
       @pub.expects(:mark_server_dead).once
       @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
     end
@@ -112,6 +112,8 @@ module Beetle
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).in_sequence(redundant)
 
       assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
@@ -123,6 +125,10 @@ module Beetle
       @pub.server = "someserver"
 
       e = mock("exchange")
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)

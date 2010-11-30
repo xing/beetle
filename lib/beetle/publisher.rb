@@ -33,12 +33,12 @@ module Beetle
     end
 
     def publish_with_failover(exchange_name, message_name, data, opts) #:nodoc:
-      tries = @servers.size
+      tries = @servers.size * 2
       logger.debug "Beetle: sending #{message_name}"
       published = 0
       opts = Message.publishing_options(opts)
       begin
-        select_next_server
+        select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}:#{opts[:message_id]} to #{@server}"
         exchange(exchange_name).publish(data, opts)
@@ -46,8 +46,11 @@ module Beetle
         published = 1
       rescue *bunny_exceptions
         stop!
-        mark_server_dead
         tries -= 1
+        # retry same server on receiving the first exception for it (might have been a normal restart)
+        # in this case you'll see either a broken pipe or a forced connection shutdown error
+        retry if tries.odd?
+        mark_server_dead
         retry if tries > 0
         logger.error "Beetle: message could not be delivered: #{message_name}"
         raise NoMessageSent.new
@@ -64,8 +67,9 @@ module Beetle
       opts = Message.publishing_options(opts)
       loop do
         break if published.size == 2 || @servers.empty? || published == @servers
+        tries = 0
+        select_next_server
         begin
-          select_next_server
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
@@ -74,6 +78,7 @@ module Beetle
           logger.debug "Beetle: message sent (#{published})!"
         rescue *bunny_exceptions
           stop!
+          retry if (tries += 1) == 1
           mark_server_dead
         end
       end
