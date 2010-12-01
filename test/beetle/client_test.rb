@@ -116,6 +116,19 @@ module Beetle
       assert_raises(ConfigurationError){ @client.register_message("some_message", opts) }
     end
 
+    test "registering a message should register a corresponding exchange if it hasn't been registered yet" do
+      opts = { "exchange" => "some_exchange" }
+      @client.register_message("some_message", opts)
+      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
+    end
+
+    test "registering a message should not fail if the exchange has already been registered" do
+      opts = { "exchange" => "some_exchange" }
+      @client.register_exchange("some_exchange")
+      @client.register_message("some_message", opts)
+      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
+    end
+
     test "should convert message name to a string when registering a message" do
       @client.register_message(:some_message)
       assert(@client.messages.include?("some_message"))
