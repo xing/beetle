@@ -300,5 +300,14 @@ module Beetle
       @server.logger.expects(:error).with(msg)
       @server.client_started(payload)
     end
+
+    test "should log an info about received client_started client_started messages" do
+      payload = {"id" => "known-client"}
+      msg = "Received client_started message from id 'known-client'"
+      @server.logger.expects(:info).with(msg)
+      @server.expects(:client_id_valid?).with('known-client').returns(true)
+      @server.client_started(payload)
+    end
+
   end
 end
