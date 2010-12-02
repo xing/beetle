@@ -44,7 +44,12 @@ module Beetle
       assert_equal 42, mqs[@sub.server]
     end
 
-    test "stop! should stop the event loop" do
+    test "stop! should close all amqp connections and then stop the event loop" do
+      connection1 = mock('con1')
+      connection1.expects(:close).yields
+      connection2 = mock('con2')
+      connection2.expects(:close).yields
+      @sub.instance_variable_set "@amqp_connections", [["server1", connection1], ["server2",connection2]]
       EM.expects(:stop_event_loop)
       @sub.send(:stop!)
     end

@@ -189,6 +189,27 @@ module Beetle
       @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).returns(1)
       assert_equal 1, @pub.publish("mama", @data)
     end
+
+    test "failover publishing should raise an exception if the message was published to no server" do
+      failover = sequence("failover")
+      @pub.servers = ["someserver", "someotherserver"]
+      @pub.server = "someserver"
+
+      e = mock("exchange")
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+
+      assert_raises Beetle::NoMessageSent do
+        @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
+      end
+    end
+
   end
 
   class PublisherQueueManagementTest < Test::Unit::TestCase

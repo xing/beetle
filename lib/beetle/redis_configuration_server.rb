@@ -78,7 +78,7 @@ module Beetle
     def client_started(payload)
       id = payload["id"]
       if client_id_valid?(id)
-        logger.info("Received client_started message from id #{id}")
+        logger.info("Received client_started message from id '#{id}'")
       else
         msg = "Received client_started message from unknown id '#{id}'"
         logger.error(msg)
