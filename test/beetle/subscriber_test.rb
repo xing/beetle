@@ -103,6 +103,10 @@ module Beetle
       @sub.send(:bind_queues, %W(x y))
     end
 
+    test "should not try to bind a queue for an exchange which has no queue" do
+      @client.register_message(:without_queue)
+      assert_equal [], @sub.send(:queues_for_exchanges, ["without_queue"])
+    end
   end
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase

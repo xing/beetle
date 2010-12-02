@@ -55,7 +55,7 @@ module Beetle
     end
 
     def queues_for_exchanges(exchanges)
-      @client.exchanges.slice(*exchanges).map{|_, opts| opts[:queues]}.flatten.uniq
+      @client.exchanges.slice(*exchanges).map{|_, opts| opts[:queues]}.flatten.compact.uniq
     end
 
     def create_exchanges(exchanges)
