@@ -44,8 +44,9 @@ module Beetle
         exchange(exchange_name).publish(data, opts)
         logger.debug "Beetle: message sent!"
         published = 1
-      rescue *bunny_exceptions
-        stop!
+      rescue *bunny_exceptions => e
+        stop!(e)
+        mark_server_dead
         tries -= 1
         # retry same server on receiving the first exception for it (might have been a normal restart)
         # in this case you'll see either a broken pipe or a forced connection shutdown error
@@ -76,8 +77,8 @@ module Beetle
           exchange(exchange_name).publish(data, opts)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
-        rescue *bunny_exceptions
-          stop!
+        rescue *bunny_exceptions => e
+          stop!(e)
           retry if (tries += 1) == 1
           mark_server_dead
         end
@@ -120,8 +121,8 @@ module Beetle
           status = msg[:header].properties[:headers][:status]
         end
         logger.debug "Beetle: rpc complete!"
-      rescue *bunny_exceptions
-        stop!
+      rescue *bunny_exceptions => e
+        stop!(e)
         mark_server_dead
         tries -= 1
         retry if tries > 0
@@ -200,10 +201,17 @@ module Beetle
       queue
     end
 
-    def stop!
+    def stop!(exception=nil)
       begin
-        bunny.stop
-      rescue Exception
+        Beetle::Timer.timeout(1) do
+          if exception
+            bunny.__send__ :close_socket
+          else
+            bunny.stop
+          end
+        end
+      rescue Exception => e
+        logger.error "Beetle: error closing down bunny #{e}"
         Beetle::reraise_expectation_errors!
       ensure
         @bunnies[@server] = nil
