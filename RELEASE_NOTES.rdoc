@@ -1,10 +1,15 @@
 = Release Notes
 
+== Version 0.2.9.7
+* use new bunny_ext gem and allow specification of global publishing timeouts
+* registering a message now automatically registers the corresponding exchange
+* don't try to bind queues for an exchange hich has no queue
+* ruby 1.9.2 compatibility fixes
+
 == Version 0.2.9
 
 * Beetle::Client now raises an exception when it fails to publish a message to at least 1 RabbitMQ server
 * Subscribers are now stopped cleanly to avoid 'closed abruptly' messages in the RabbitMQ server log
-* Added send and receive timeouts on the socket and use system_timer for ruby side timeouts
 
 == Version 0.2.6
 
