@@ -107,9 +107,9 @@ module Beetle
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
-          if result.recover?
+          if result.reject?
             sleep 1
-            mq(server).recover
+            header.reject(:requeue => true)
           elsif reply_to = header.properties[:reply_to]
             # require 'ruby-debug'
             # Debugger.start

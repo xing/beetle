@@ -4,7 +4,7 @@ module Beetle
     # message processing result return codes
     class ReturnCode
       def initialize(*args)
-        @recover = args.delete :recover
+        @reject = args.delete :reject
         @failure = args.delete :failure
         @name = args.first
       end
@@ -13,8 +13,8 @@ module Beetle
         @name.blank? ? super : "Beetle::RC::#{@name}"
       end
 
-      def recover?
-        @recover
+      def reject?
+        @reject
       end
 
       def failure?
@@ -30,11 +30,11 @@ module Beetle
     rc :Ancient
     rc :AttemptsLimitReached, :failure
     rc :ExceptionsLimitReached, :failure
-    rc :Delayed, :recover
-    rc :HandlerCrash, :recover
-    rc :HandlerNotYetTimedOut, :recover
-    rc :MutexLocked, :recover
-    rc :InternalError, :recover
+    rc :Delayed, :reject
+    rc :HandlerCrash, :reject
+    rc :HandlerNotYetTimedOut, :reject
+    rc :MutexLocked, :reject
+    rc :InternalError, :reject
     rc :DecodingError, :failure
 
   end

@@ -1,6 +1,13 @@
 = Release Notes
 
+== Version 0.2.9.8
+
+* since version 2.0, RabbitMQ supports Basic.reject(:requeue => true). we use it now too,
+  because it enhances performance of message processors
+
+
 == Version 0.2.9.7
+
 * use new bunny_ext gem and allow specification of global publishing timeouts
 * registering a message now automatically registers the corresponding exchange
 * don't try to bind queues for an exchange hich has no queue
