@@ -169,15 +169,13 @@ module Beetle
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
-    test "should call recover on the server when processing the handler returns true on recover?" do
+    test "should call reject on the message header when processing the handler returns true on recover?" do
       header = header_with_params({})
       result = mock("result")
-      result.expects(:recover?).returns(true)
+      result.expects(:reject?).returns(true)
       Message.any_instance.expects(:process).returns(result)
       @sub.expects(:sleep).with(1)
-      mq = mock("MQ")
-      mq.expects(:recover)
-      @sub.expects(:mq).with(@sub.server).returns(mq)
+      header.expects(:reject).with(:requeue => true)
       @callback.call(header, 'foo')
     end
 

@@ -543,7 +543,7 @@ module Beetle
       handler.expects(:process_failure).never
       result = message.process(handler)
       assert_equal RC::HandlerCrash, result
-      assert result.recover?
+      assert result.reject?
       assert !result.failure?
     end
 
@@ -561,7 +561,7 @@ module Beetle
       failback.expects(:call).once
       result = message.process(handler)
       assert_equal RC::AttemptsLimitReached, result
-      assert !result.recover?
+      assert !result.reject?
       assert result.failure?
     end
 
@@ -578,7 +578,7 @@ module Beetle
       failback.expects(:call).once
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
-      assert !result.recover?
+      assert !result.reject?
       assert result.failure?
     end
 
