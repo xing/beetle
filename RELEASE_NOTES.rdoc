@@ -3,7 +3,9 @@
 == Version 0.2.9.8
 
 * since version 2.0, RabbitMQ supports Basic.reject(:requeue => true). we use it now too,
-  because it enhances performance of message processors
+  because it enhances performance of message processors. this means of course, you can
+  only use beetle gem versions >= 0.2.9.8 if your rabbitmq brokers are at least version 2.0.
+* publishing timeout defaults to 0 to avoid extreme message loss in some cases
 
 
 == Version 0.2.9.7
