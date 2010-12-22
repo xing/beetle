@@ -1,6 +1,4 @@
 $:.unshift(File.expand_path('..', __FILE__))
-require 'amqp'
-require 'mq'
 require 'bunny-ext'
 require 'uuid4r'
 require 'active_support'
