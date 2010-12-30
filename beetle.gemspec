@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.9.9"
+  s.version = "0.2.9.10"
 
   s.required_rubygems_version = ">= 1.3.1"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
