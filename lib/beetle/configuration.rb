@@ -57,7 +57,7 @@ module Beetle
     def initialize #:nodoc:
       self.system_name = "system"
 
-      self.gc_threshold = 3.days
+      self.gc_threshold = 1.hour.to_i
       self.redis_server = "localhost:6379"
       self.redis_servers = ""
       self.redis_db = 4
