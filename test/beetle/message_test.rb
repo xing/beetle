@@ -89,7 +89,7 @@ module Beetle
       message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
-      @store.redis.expects(:del).with(@store.keys(message.msg_id))
+      @store.redis.expects(:del).with(*@store.keys(message.msg_id))
       @store.garbage_collect_keys(Time.now.to_i+1)
     end
 
