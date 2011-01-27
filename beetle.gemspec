@@ -1,7 +1,6 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.9.10"
-
+  s.version = "0.2.10"
   s.required_rubygems_version = ">= 1.3.1"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
   s.date               = Time.now.strftime('%Y-%m-%d')
@@ -11,8 +10,7 @@ Gem::Specification.new do |s|
   s.email              = "developers@xing.com"
   s.executables        = ["beetle"]
   s.extra_rdoc_files   = Dir['**/*.rdoc'] + %w(MIT-LICENSE)
-  s.files              = Dir['{examples,ext,lib}/**/*.rb'] + Dir['{features,script}/**/*'] + %w(beetle.gemspec Rakefile)
-  s.extensions         = 'ext/mkrf_conf.rb'
+  s.files              = Dir['{examples,lib}/**/*.rb'] + Dir['{features,script}/**/*'] + %w(beetle.gemspec Rakefile)
   s.homepage           = "http://xing.github.com/beetle/"
   s.rdoc_options       = ["--charset=UTF-8"]
   s.require_paths      = ["lib"]
@@ -22,7 +20,8 @@ Gem::Specification.new do |s|
   s.post_install_message = <<-INFO
   *********************************************************************************************
 
-    If you're running a ruby version < 1.9 we silently installed the SystemTimer gem for you.
+    Please install the SystemTimer gem if you're running a ruby version < 1.9:
+    `gem install SystemTimer -v '=1.2.1'`
     See: http://ph7spot.com/musings/system-timer
 
   *********************************************************************************************
