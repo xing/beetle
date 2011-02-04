@@ -40,7 +40,9 @@ def first_redis_configuration_client_pid
 end
 
 def system_notification_log_path
-  tmp_path + "/system_notifications.log"
+  log_path = tmp_path + "/system_notifications.log"
+  `touch #{log_path}` unless File.exists?(log_path)
+  log_path
 end
 
 def tmp_path

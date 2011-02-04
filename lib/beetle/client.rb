@@ -189,12 +189,17 @@ module Beetle
       publisher.purge(queue_name)
     end
 
-    # start listening to a list of messages (default to all registered messages).
+    # start listening to all registered queues. Calls #listen_queues internally
     # runs the given block before entering the eventmachine loop.
-    def listen(messages=self.messages.keys, &block)
-      messages = messages.map(&:to_s)
-      messages.each{|m| raise UnknownMessage.new("unknown message #{m}") unless self.messages.include?(m)}
-      subscriber.listen(messages, &block)
+    def listen(_deprecated_messages=nil, &block)
+      raise Error.new("Beetle::Client#listen no longer works with arguments. Please use #listen_queues(['queue1', 'queue2']) instead") if _deprecated_messages
+      listen_queues(&block)
+    end
+
+    # start listening to a list of queues (default to all registered queues).
+    # runs the given block before entering the eventmachine loop.
+    def listen_queues(queues=self.queues.keys, &block)
+      subscriber.listen_queues(queues, &block)
     end
 
     # stops the eventmachine loop
@@ -207,9 +212,9 @@ module Beetle
       publisher.stop
     end
 
-    # traces messages without consuming them. useful for debugging message flow.
-    def trace(messages=self.messages.keys, &block)
-      queues.each do |name, opts|
+    # traces queues without consuming them. useful for debugging message flow.
+    def trace(queues=self.queues, &block)
+      self.queues.each do |name, opts|
         opts.merge! :durable => false, :auto_delete => true, :amqp_name => queue_name_for_tracing(opts[:amqp_name])
       end
       register_handler(queues.keys) do |msg|
@@ -219,7 +224,7 @@ module Beetle
         puts "MSGID: #{msg.msg_id}"
         puts "DATA: #{msg.data}"
       end
-      listen(messages, &block)
+      listen_queues(queues, &block)
     end
 
     # evaluate the ruby files matching the given +glob+ pattern in the context of the client instance.
