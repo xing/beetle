@@ -255,18 +255,26 @@ module Beetle
 
     test "should delegate listening to the subscriber instance" do
       client = Client.new
-      client.register_queue(:a)
-      client.register_message(:a)
-      client.register_queue(:b)
-      client.register_message(:b)
-      client.send(:subscriber).expects(:listen).with(["a", "b"]).yields
-      x = 0
-      client.listen([:a, "b"]) { x = 5 }
-      assert_equal 5, x
+      client.register_queue("b_queue")
+      client.register_queue("a_queue")
+      client.send(:subscriber).expects(:listen_queues).with {|value| value.include?("a_queue") && value.include?("b_queue")}.yields
+      client.listen
     end
 
-    test "trying to listen to an unknown message should raise an exception" do
-      assert_raises(UnknownMessage) { Client.new.listen([:a])}
+    test "trying to listen to a message is no longer supported and should raise an exception" do
+      assert_raises(Error) { Client.new.listen([:a])}
+    end
+
+    test "should delegate listening to queues to the subscriber instance" do
+      client = Client.new
+      client.register_queue(:test)
+      client.send(:subscriber).expects(:listen_queues).with([:test]).yields
+      client.listen_queues([:test])
+    end
+
+    test "trying to listen to an unknown queue should raise an exception" do
+      client = Client.new
+      assert_raises(UnknownQueue) { Client.new.listen_queues([:foobar])}
     end
 
     test "should delegate stop_listening to the subscriber instance" do
@@ -308,7 +316,7 @@ module Beetle
       client.register_queue("test")
       sub = client.send(:subscriber)
       sub.expects(:register_handler).with(client.queues.keys, {}, nil).yields(stub_everything("message"))
-      sub.expects(:listen)
+      sub.expects(:listen_queues)
       client.stubs(:puts)
       client.trace
       test_queue_opts = client.queues["test"]

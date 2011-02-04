@@ -249,14 +249,16 @@ module Beetle
       assert_raises(Error){ @sub.send(:subscribe, "some_queue") }
     end
 
-    test "listening should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
-      @client.register_queue(:a)
-      @client.register_message(:a)
+    test "listeninging on queues should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
+      @client.register_exchange(:an_exchange)
+      @client.register_queue(:a_queue, :exchange => :an_exchange)
+      @client.register_message(:a_message, :key => "foo", :exchange => :an_exchange)
+
       EM.expects(:run).yields
-      @sub.expects(:create_exchanges).with(["a"])
-      @sub.expects(:bind_queues).with(["a"])
-      @sub.expects(:subscribe_queues).with(["a"])
-      @sub.listen(["a"]) {}
+      @sub.expects(:create_exchanges).with(["an_exchange"])
+      @sub.expects(:bind_queues).with(["a_queue"])
+      @sub.expects(:subscribe_queues).with(["a_queue"])
+      @sub.listen_queues(["a_queue"]) {}
     end
   end
 

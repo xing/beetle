@@ -53,7 +53,7 @@ module Beetle
       queues[name] ||=
         begin
           opts = @client.queues[name]
-          error("You are trying to bind a queue #{name} which is not configured!") unless opts
+          raise UnknownQueue.new("You are trying to bind a queue #{name} which is not configured!") unless opts
           logger.debug("Beetle: binding queue #{name} with internal name #{opts[:amqp_name]} on server #{@server}")
           queue_name = opts[:amqp_name]
           creation_options = opts.slice(*QUEUE_CREATION_KEYS)

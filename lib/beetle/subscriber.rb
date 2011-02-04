@@ -14,25 +14,24 @@ module Beetle
       @mqs = {}
     end
 
-    # the client calls this method to subscribe to all queues on all servers which have
-    # handlers registered for the given list of messages. this method does the following
-    # things:
+    # the client calls this method to subscribe to a list of queues.
+    # this method does the following things:
     #
-    # * creates all exchanges which have been registered for the given messages
-    # * creates and binds queues which have been registered for the exchanges
+    # * creates all exchanges which have been registered for the given queues
+    # * creates and binds each listed queue queues
     # * subscribes the handlers for all these queues
     #
     # yields before entering the eventmachine loop (if a block was given)
-    def listen(messages) #:nodoc:
+    def listen_queues(queues) #:nodoc:
       EM.run do
-        exchanges = exchanges_for_messages(messages)
+        exchanges = exchanges_for_queues(queues)
         create_exchanges(exchanges)
-        queues = queues_for_exchanges(exchanges)
         bind_queues(queues)
         subscribe_queues(queues)
         yield if block_given?
       end
     end
+
 
     # closes all AMQP connections and stops the eventmachine loop
     def stop! #:nodoc:
@@ -52,6 +51,10 @@ module Beetle
     end
 
     private
+
+    def exchanges_for_queues(queues)
+      @client.bindings.slice(*queues).map{|_, opts| opts.map{|opt| opt[:exchange]}}.flatten.uniq
+    end
 
     def exchanges_for_messages(messages)
       @client.messages.slice(*messages).map{|_, opts| opts[:exchange]}.uniq
