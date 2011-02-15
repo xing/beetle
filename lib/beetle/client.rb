@@ -66,7 +66,7 @@ module Beetle
     def register_exchange(name, options={})
       name = name.to_s
       raise ConfigurationError.new("exchange #{name} already configured") if exchanges.include?(name)
-      exchanges[name] = options.symbolize_keys.merge(:type => :topic, :durable => true)
+      exchanges[name] = options.symbolize_keys.merge(:type => :topic, :durable => true, :queues => [])
     end
 
     # register a durable, non passive, non auto_deleted queue with the given _name_ and an _options_ hash:
@@ -101,7 +101,7 @@ module Beetle
       key = (opts[:key] || name).to_s
       (bindings[name] ||= []) << {:exchange => exchange, :key => key}
       register_exchange(exchange) unless exchanges.include?(exchange)
-      queues = (exchanges[exchange][:queues] ||= [])
+      queues = exchanges[exchange][:queues]
       queues << name unless queues.include?(name)
     end
 
