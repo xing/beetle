@@ -290,7 +290,7 @@ module Beetle
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
       m = mock("Bunny")
-      m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true).returns(42)
+      m.expects(:exchange).with("some_exchange", :type => :topic, :durable => true, :queues => []).returns(42)
       @client.register_exchange("some_exchange", :type => :topic, :durable => true)
       @pub.expects(:bunny).returns(m)
       ex  = @pub.send(:exchange, "some_exchange")
