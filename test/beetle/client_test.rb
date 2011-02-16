@@ -40,7 +40,7 @@ module Beetle
     test "registering an exchange should store it in the configuration with symbolized option keys and force a topic queue and durability" do
       opts = {"durable" => false, "type" => "fanout"}
       @client.register_exchange("some_exchange", opts)
-      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
+      assert_equal({:durable => true, :type => :topic, :queues => []}, @client.exchanges["some_exchange"])
     end
 
     test "should convert exchange name to a string when registering an exchange" do
@@ -50,6 +50,12 @@ module Beetle
 
     test "registering an exchange should raise a configuration error if it is already configured" do
       @client.register_exchange("some_exchange")
+      assert_raises(ConfigurationError){ @client.register_exchange("some_exchange") }
+    end
+
+    test "registering an exchange should initialize the list of queues bound to it" do
+      @client.register_exchange("some_exchange")
+      assert_equal [], @client.exchanges["some_exchange"][:queues]
       assert_raises(ConfigurationError){ @client.register_exchange("some_exchange") }
     end
 
@@ -119,14 +125,14 @@ module Beetle
     test "registering a message should register a corresponding exchange if it hasn't been registered yet" do
       opts = { "exchange" => "some_exchange" }
       @client.register_message("some_message", opts)
-      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
+      assert_equal({:durable => true, :type => :topic, :queues => []}, @client.exchanges["some_exchange"])
     end
 
     test "registering a message should not fail if the exchange has already been registered" do
       opts = { "exchange" => "some_exchange" }
       @client.register_exchange("some_exchange")
       @client.register_message("some_message", opts)
-      assert_equal({:durable => true, :type => :topic}, @client.exchanges["some_exchange"])
+      assert_equal({:durable => true, :type => :topic, :queues => []}, @client.exchanges["some_exchange"])
     end
 
     test "should convert message name to a string when registering a message" do
