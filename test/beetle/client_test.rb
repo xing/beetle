@@ -326,5 +326,16 @@ module Beetle
       assert !test_queue_opts[:durable]
     end
 
+    test "limiting tracing to some queues" do
+      client = Client.new
+      client.register_queue("test")
+      client.register_queue("irrelevant")
+      sub = client.send(:subscriber)
+      sub.expects(:register_handler).with(["test"], {}, nil).yields(stub_everything("message"))
+      sub.expects(:listen_queues).with(["test"])
+      client.stubs(:puts)
+      client.trace(["test"])
+    end
+
   end
 end
