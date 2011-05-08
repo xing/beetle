@@ -52,11 +52,12 @@ module Beetle
       masters.first
     end
 
-    private
-
+    # check whether all redis servers are up and configured
     def master_and_slaves_reachable?
       masters.size == 1 && slaves.size == instances.size - 1
     end
+
+    private
 
     def reset
       @server_info = Hash.new {|h,k| h[k]= []}

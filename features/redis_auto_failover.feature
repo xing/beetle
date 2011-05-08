@@ -103,3 +103,7 @@ Feature: Redis auto failover
     And an old redis master file for "rc-client-1" with master "redis-1" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     Then the redis master of "rc-client-1" should be "redis-1"
+
+  Scenario: Redis configuation server should embed a http server
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    Then the redis configuration server should answer http requests

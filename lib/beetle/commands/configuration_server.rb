@@ -77,7 +77,12 @@ module Beetle
         end
 
         Daemons.run_proc("redis_configuration_server", :log_output => true, :dir_mode => dir_mode, :dir => dir) do
-          Beetle::RedisConfigurationServer.new.start
+          config_server =  Beetle::RedisConfigurationServer.new
+          Beetle::RedisConfigurationHttpServer.config_server = config_server
+          EM.run do
+            config_server.start
+            EM.start_server '0.0.0.0', 8080, Beetle::RedisConfigurationHttpServer
+          end
         end
       end
     end

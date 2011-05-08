@@ -132,3 +132,7 @@ Then /^a system notification for no slave available to become new master should 
   text = "Redis master could not be switched, no slave available to become new master"
   assert_match /#{text}/, File.readlines(system_notification_log_path).last
 end
+
+Then /^the redis configuration server should answer http requests$/ do
+  TestDaemons::RedisConfigurationServer.answers_http_requests?
+end

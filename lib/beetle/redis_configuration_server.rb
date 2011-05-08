@@ -21,6 +21,9 @@ module Beetle
     # the current token used to detect correct message order
     attr_reader :current_token
 
+    # the list of known client ids
+    attr_reader :client_ids
+
     def initialize #:nodoc:
       @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
       @current_token = (Time.now.to_f * 1000).to_i
@@ -125,6 +128,11 @@ module Beetle
       redis.masters.include?(current_master)
     end
 
+    # list of available redis slaves
+    def available_slaves
+      redis.slaves
+    end
+
     private
 
     def check_redis_configuration
@@ -186,7 +194,7 @@ module Beetle
       end
       known_client
     end
-    
+
     def client_id_valid?(client_id)
       @client_ids.include?(client_id)
     end
