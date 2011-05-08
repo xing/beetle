@@ -30,6 +30,8 @@ module Beetle
       case @http_request_uri
       when '/'
         server_status(response)
+      when '/master_switch'
+        master_switch(response)
       else
         not_found(response)
       end
@@ -43,6 +45,16 @@ Current redis master: #{config_server.current_master.server}
 Available redis slaves: #{config_server.available_slaves.map(&:server).join(', ')}
 Configured rcs clients: #{config_server.client_ids.to_a.join(', ')}
 EOF
+    end
+
+    def master_switch(response)
+      if config_server.switch_master!
+        response.status = 201
+        response.content = "Master switch initiated"
+      else
+        response.status = 412
+        response.content = "Could not initiate master switch"
+      end
     end
 
     def not_found(response)

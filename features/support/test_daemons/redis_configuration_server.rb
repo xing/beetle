@@ -56,5 +56,13 @@ module TestDaemons
     rescue
       false
     end
+
+    def self.force_master_switch
+      http = Net::HTTP.new('127.0.0.1', 8080)
+      response = http.post '/master_switch', ''
+      # $stderr.puts response.body
+      response.code == '201'
+    end
+
   end
 end

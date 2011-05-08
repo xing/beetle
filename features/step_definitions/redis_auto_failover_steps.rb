@@ -136,3 +136,9 @@ end
 Then /^the redis configuration server should answer http requests$/ do
   TestDaemons::RedisConfigurationServer.answers_http_requests?
 end
+
+Given /^a master switch is forced$/ do
+  TestDaemons::RedisConfigurationServer.force_master_switch
+  sleep 1
+  TestDaemons::RedisConfigurationServer.answers_http_requests?
+end

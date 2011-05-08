@@ -107,3 +107,18 @@ Feature: Redis auto failover
   Scenario: Redis configuation server should embed a http server
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     Then the redis configuration server should answer http requests
+
+  Scenario: Forced redis master switch
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And a master switch is forced
+    Then a system notification for "redis-1" not being available should be sent
+    And the role of redis server "redis-2" should be "master"
+    And the redis master of "rc-client-1" should be "redis-2"
+    And the redis master of "rc-client-2" should be "redis-2"
+    And the redis master of the beetle handler should be "redis-2"
+    And a system notification for switching from "redis-1" to "redis-2" should be sent
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
