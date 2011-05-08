@@ -133,16 +133,10 @@ module Beetle
       redis.slaves
     end
 
-    # force a master switch
-    # WARNING: shutting down the master should only be done if all clients are able to switch!
-    def switch_master!
+    # initiate a master switch unless the current master is available
+    def switch_master_unless_available
       redis.refresh
-      if redis.master_and_slaves_reachable?
-        master_watcher.pause
-        current_master.shutdown rescue Errno::ECONNREFUSED
-        redis.refresh
-        master_unavailable!
-      end
+      master_unavailable! unless master_available?
     end
 
     private

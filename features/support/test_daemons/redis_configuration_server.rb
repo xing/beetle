@@ -57,9 +57,9 @@ module TestDaemons
       false
     end
 
-    def self.force_master_switch
+    def self.switch_master_unless_available
       http = Net::HTTP.new('127.0.0.1', 8080)
-      response = http.post '/master_switch', ''
+      response = http.post '/switch_master_unless_available', ''
       # $stderr.puts response.body
       response.code == '201'
     end

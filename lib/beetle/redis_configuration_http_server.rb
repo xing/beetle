@@ -30,8 +30,8 @@ module Beetle
       case @http_request_uri
       when '/'
         server_status(response)
-      when '/master_switch'
-        master_switch(response)
+      when '/switch_master_unless_available'
+        switch_master_unless_available(response)
       else
         not_found(response)
       end
@@ -47,13 +47,13 @@ Configured rcs clients: #{config_server.client_ids.to_a.join(', ')}
 EOF
     end
 
-    def master_switch(response)
-      if config_server.switch_master!
+    def switch_master_unless_available(response)
+      if config_server.switch_master_unless_available
         response.status = 201
         response.content = "Master switch initiated"
       else
-        response.status = 412
-        response.content = "Could not initiate master switch"
+        response.status = 200
+        response.content = "No master switch necessary"
       end
     end
 

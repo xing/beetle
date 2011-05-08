@@ -113,7 +113,8 @@ Feature: Redis auto failover
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And a beetle handler using the redis-master file from "rc-client-1" exists
-    And a master switch is forced
+    And redis server "redis-1" is down
+    And an immediate master switch is performed
     Then a system notification for "redis-1" not being available should be sent
     And the role of redis server "redis-2" should be "master"
     And the redis master of "rc-client-1" should be "redis-2"
