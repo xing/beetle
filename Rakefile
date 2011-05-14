@@ -2,7 +2,6 @@ require 'rake'
 require 'rake/testtask'
 require 'rcov/rcovtask'
 require 'cucumber/rake/task'
-require 'active_support'
 
 # 1.8/1.9 compatible way of loading lib/beetle.rb
 $:.unshift 'lib'

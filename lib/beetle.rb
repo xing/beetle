@@ -3,6 +3,10 @@ require 'bunny-ext'
 require 'uuid4r'
 require 'active_support'
 require 'active_support/core_ext'
+require 'active_support/version'
+if ActiveSupport::VERSION::MAJOR == 3
+  require 'active_support/inflector/inflections'
+end
 require 'redis'
 
 module Beetle
