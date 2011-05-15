@@ -1,8 +1,9 @@
 require 'rubygems'
 require 'test/unit'
-require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require 'mocha'
 require 'active_support/testing/declarative'
+
+require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 
 begin
   require 'redgreen' unless ENV['TM_FILENAME']
