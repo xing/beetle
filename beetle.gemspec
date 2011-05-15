@@ -34,7 +34,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("redis",                 ["= 2.0.4"])
   s.add_runtime_dependency("amqp",                  ["~> 0.6.7"])
   s.add_runtime_dependency("activesupport",         [">= 2.3.4"])
-  s.add_runtime_dependency("i18n",                  [">= 0"])
   s.add_runtime_dependency("daemons",               [">= 1.0.10"])
   s.add_development_dependency("rake",              [">= 0.8.7"])
   s.add_development_dependency("mocha",             [">= 0"])
