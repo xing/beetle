@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name    = "beetle"
-  s.version = "0.2.12"
-  s.required_rubygems_version = ">= 1.3.1"
+  s.version = "0.2.13"
+  s.required_rubygems_version = ">= 1.3.7"
   s.authors            = ["Stefan Kaes", "Pascal Friederich", "Ali Jelveh", "Sebastian Roebke"]
   s.date               = Time.now.strftime('%Y-%m-%d')
   s.default_executable = "beetle"
