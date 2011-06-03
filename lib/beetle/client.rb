@@ -167,6 +167,7 @@ module Beetle
     end
 
     # publishes a message. the given options hash is merged with options given on message registration.
+    # WARNING: empty message bodies can lead to problems.
     def publish(message_name, data=nil, opts={})
       message_name = message_name.to_s
       raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
