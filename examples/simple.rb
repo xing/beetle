@@ -5,7 +5,7 @@
 #
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
-# start it with ruby multiple_exchanges.rb
+# start it with ruby simple.rb
 
 require "rubygems"
 require File.expand_path("../lib/beetle", File.dirname(__FILE__))
@@ -27,8 +27,8 @@ client.deduplication_store.flushdb
 # register our handler to the message, check out the message.rb for more stuff you can get from the message object
 client.register_handler(:test) {|message| puts "got message: #{message.data}"}
 
-# publish our message
-client.publish(:test, 'bam')
+# publish our message (NOTE: empty message bodies don't work, most likely due to bugs in bunny/amqp)
+puts client.publish(:test, 'bam')
 
 # start listening
 # this starts the event machine event loop using EM.run
