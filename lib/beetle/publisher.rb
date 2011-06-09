@@ -16,7 +16,7 @@ module Beetle
         Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
         Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
         Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-        Errno::EHOSTUNREACH, Errno::ECONNRESET
+        Errno::EHOSTUNREACH, Errno::ECONNRESET, Qrack::ConnectionTimeout
       ]
     end
 
