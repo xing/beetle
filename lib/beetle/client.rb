@@ -210,6 +210,18 @@ module Beetle
       publisher.stop
     end
 
+    # pause listening on a list of queues
+    def pause_listening(*queues)
+      queues = determine_queue_names(queues)
+      subscriber.pause_listening(queues)
+    end
+
+    # resume listening on a list of queues
+    def resume_listening(*queues)
+      queues = determine_queue_names(queues)
+      subscriber.resume_listening(queues)
+    end
+
     # traces queues without consuming them. useful for debugging message flow.
     def trace(queue_names=self.queues.keys, &block)
       queues_to_trace = self.queues.slice(*queue_names)

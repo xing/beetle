@@ -291,10 +291,34 @@ module Beetle
       assert_raises(UnknownQueue) { Client.new.listen_queues([:foobar])}
     end
 
+    test "trying to pause listening on an unknown queue should raise an exception" do
+      client = Client.new
+      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+    end
+
+    test "trying to resume listening on an unknown queue should raise an exception" do
+      client = Client.new
+      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+    end
+
     test "should delegate stop_listening to the subscriber instance" do
       client = Client.new
       client.send(:subscriber).expects(:stop!)
       client.stop_listening
+    end
+
+    test "should delegate pause_listening to the subscriber instance" do
+      client = Client.new
+      client.register_queue(:test)
+      client.send(:subscriber).expects(:pause_listening).with(%w(test))
+      client.pause_listening(:test)
+    end
+
+    test "should delegate resume_listening to the subscriber instance" do
+      client = Client.new
+      client.register_queue(:test)
+      client.send(:subscriber).expects(:resume_listening).with(%w(test))
+      client.resume_listening(:test)
     end
 
     test "should delegate handler registration to the subscriber instance" do

@@ -12,6 +12,7 @@ module Beetle
       @handlers = {}
       @amqp_connections = {}
       @mqs = {}
+      @subscriptions = {}
     end
 
     # the client calls this method to subscribe to a list of queues.
@@ -32,6 +33,17 @@ module Beetle
       end
     end
 
+    def pause_listening(queues)
+      each_server do
+        queues.each { |name| pause(name) if has_subscription?(name) }
+      end
+    end
+
+    def resume_listening(queues)
+      each_server do
+        queues.each { |name| resume(name) if has_subscription?(name) }
+      end
+    end
 
     # closes all AMQP connections and stops the eventmachine loop
     def stop! #:nodoc:
@@ -88,18 +100,39 @@ module Beetle
       @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
     end
 
+    def subscriptions(server=@server)
+      @subscriptions[server] ||= {}
+    end
+
+    def has_subscription?(name)
+      subscriptions.include?(name)
+    end
+
     def subscribe(queue_name)
       error("no handler for queue #{queue_name}") unless @handlers.include?(queue_name)
       opts, handler = @handlers[queue_name]
       queue_opts = @client.queues[queue_name][:amqp_name]
       amqp_queue_name = queue_opts
       callback = create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
+      keys = opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true)
       logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # on server #{@server}"
       begin
-        queues[queue_name].subscribe(opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true), &callback)
+        queues[queue_name].subscribe(keys, &callback)
+        subscriptions[queue_name] = [keys, callback]
       rescue MQ::Error
         error("Beetle: binding multiple handlers for the same queue isn't possible.")
       end
+    end
+
+    def pause(queue_name)
+      return unless queues[queue_name].subscribed?
+      queues[queue_name].unsubscribe
+    end
+
+    def resume(queue_name)
+      return if queues[queue_name].subscribed?
+      keys, callback = subscriptions[queue_name]
+      queues[queue_name].subscribe(keys, &callback)
     end
 
     def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
