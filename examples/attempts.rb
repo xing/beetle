@@ -47,7 +47,7 @@ class Handler < Beetle::Handler
   # we're stopping the event loop so this script stops after that
   def failure(result)
     super
-    $client.stop_listening
+    EM.add_timer(1){$client.stop_listening}
   end
 end
 
@@ -62,5 +62,5 @@ $client.listen
 
 # error handling, if everything went right this shouldn't happen.
 if $exceptions != $max_exceptions + 1
-  raise "something is fishy. Failed #{$exceptions} times"
+  raise "Something is fishy. Failed #{$exceptions} times"
 end
