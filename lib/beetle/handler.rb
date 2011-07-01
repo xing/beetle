@@ -11,13 +11,16 @@ module Beetle
     # the Message instance which caused the handler to be created
     attr_reader :message
 
-    def self.create(block_or_handler, opts={}) #:nodoc:
-      if block_or_handler.is_a? Handler
-        block_or_handler
-      elsif block_or_handler.is_a?(Class) && block_or_handler.ancestors.include?(Handler)
-        block_or_handler.new
+    def self.create(handler, opts={}) #:nodoc:
+      if handler.is_a? Handler
+        # a handler instance
+        handler
+      elsif handler.is_a?(Class) && handler.ancestors.include?(Handler)
+        # handler class
+        handler.new
       else
-        new(block_or_handler, opts)
+        # presumably something which responds to call
+        new(handler, opts)
       end
     end
 
