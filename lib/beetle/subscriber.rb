@@ -57,10 +57,6 @@ module Beetle
       @client.bindings.slice(*queues).map{|_, opts| opts.map{|opt| opt[:exchange]}}.flatten.uniq
     end
 
-    def exchanges_for_messages(messages)
-      @client.messages.slice(*messages).map{|_, opts| opts[:exchange]}.uniq
-    end
-
     def queues_for_exchanges(exchanges)
       @client.exchanges.slice(*exchanges).map{|_, opts| opts[:queues]}.flatten.compact.uniq
     end
