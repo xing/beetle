@@ -110,6 +110,7 @@ module Beetle
       server = @server
       lambda do |header, data|
         begin
+          # logger.debug "Beetle: received message"
           processor = Handler.create(handler, opts)
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
@@ -125,6 +126,7 @@ module Beetle
             exchange = MQ::Exchange.new(mq(server), :direct, "", :key => reply_to)
             exchange.publish(m.handler_result.to_s, :headers => {:status => status})
           end
+          # logger.debug "Beetle: processed message"
         rescue Exception
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
@@ -150,7 +152,7 @@ module Beetle
 
     def new_amqp_connection
       # FIXME: wtf, how to test that reconnection feature....
-      con = AMQP.connect(:host => current_host, :port => current_port,
+      con = AMQP.connect(:host => current_host, :port => current_port, :logging => false,
                          :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost)
       con.instance_variable_set("@on_disconnect", proc{ con.__send__(:reconnect) })
       con

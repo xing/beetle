@@ -27,7 +27,7 @@ module Beetle
       m = mock("dummy")
       expected_amqp_options = {
         :host => @sub.send(:current_host), :port => @sub.send(:current_port),
-        :user => "guest", :pass => "guest", :vhost => "/"
+        :user => "guest", :pass => "guest", :vhost => "/", :logging => false
       }
       AMQP.expects(:connect).with(expected_amqp_options).returns(m)
       # TODO: smarter way to test? what triggers the amqp_connection private method call?
