@@ -140,8 +140,7 @@ module Beetle
     # For details on handler classes see class Beetle::Handler
 
     def register_handler(queues, *args, &block)
-      queues = Array(queues).map(&:to_s)
-      queues.each {|q| raise UnknownQueue.new(q) unless self.queues.include?(q)}
+      queues = determine_queue_names(Array(queues))
       opts = args.last.is_a?(Hash) ? args.pop : {}
       handler = args.shift
       raise ArgumentError.new("too many arguments for handler registration") unless args.empty?
@@ -169,8 +168,7 @@ module Beetle
     # publishes a message. the given options hash is merged with options given on message registration.
     # WARNING: empty message bodies can lead to problems.
     def publish(message_name, data=nil, opts={})
-      message_name = message_name.to_s
-      raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
+      message_name = validated_message_name(message_name)
       publisher.publish(message_name, data, opts)
     end
 
@@ -178,16 +176,14 @@ module Beetle
     #
     # unexpected behavior can ensue if the message gets routed to more than one recipient, so be careful.
     def rpc(message_name, data=nil, opts={})
-      message_name = message_name.to_s
-      raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
+      message_name = validated_message_name(message_name)
       publisher.rpc(message_name, data, opts)
     end
 
-    # purges the given queue on all configured servers
-    def purge(queue_name)
-      queue_name = queue_name.to_s
-      raise UnknownQueue.new("unknown queue #{queue_name}") unless queues.include?(queue_name)
-      publisher.purge(queue_name)
+    # purges the given queues on all configured servers
+    def purge(*queues)
+      queues = determine_queue_names(queues)
+      publisher.purge(queues)
     end
 
     # start listening to all registered queues. Calls #listen_queues internally
@@ -199,7 +195,8 @@ module Beetle
 
     # start listening to a list of queues (default to all registered queues).
     # runs the given block before entering the eventmachine loop.
-    def listen_queues(queues=self.queues.keys, &block)
+    def listen_queues(*queues, &block)
+      queues = determine_queue_names(queues)
       subscriber.listen_queues(queues, &block)
     end
 
@@ -238,6 +235,26 @@ module Beetle
     end
 
     private
+
+    def determine_queue_names(queues)
+      if queues.empty?
+        self.queues.keys
+      else
+        queues.flatten.map{|q| validated_queue_name(q)}
+      end
+    end
+
+    def validated_queue_name(queue_name)
+      queue_name = queue_name.to_s
+      raise UnknownQueue.new("unknown queue #{queue_name}") unless queues.include?(queue_name)
+      queue_name
+    end
+
+    def validated_message_name(message_name)
+      message_name = message_name.to_s
+      raise UnknownMessage.new("unknown message #{message_name}") unless messages.include?(message_name)
+      message_name
+    end
 
     class Configurator #:nodoc:all
       def initialize(client, options={})
