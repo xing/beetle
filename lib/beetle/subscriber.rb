@@ -39,6 +39,7 @@ module Beetle
         EM.stop_event_loop
       else
         server, connection = @amqp_connections.shift
+        logger.debug "Beetle: closing connection to #{server}"
         connection.close { stop! }
       end
     end
