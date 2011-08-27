@@ -160,6 +160,9 @@ module Beetle
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
           logger.error "Beetle: internal error during message processing: #{$!}: #{$!.backtrace.join("\n")}"
+        ensure
+          # processing_completed swallows all exceptions, so we don't need to protect this call
+          processor.processing_completed
         end
       end
     end

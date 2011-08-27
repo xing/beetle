@@ -229,6 +229,8 @@ module Beetle
       @sub = client.send(:subscriber)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
+      # handler method 'processing_completed' should be called under all circumstances
+      @handler.expects(:processing_completed).once
       @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
     end
 
@@ -322,7 +324,7 @@ module Beetle
       assert_raises(Error){ @sub.send(:subscribe, "some_queue") }
     end
 
-    test "listeninging on queues should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
+    test "listening on queues should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
       @client.register_exchange(:an_exchange)
       @client.register_queue(:a_queue, :exchange => :an_exchange)
       @client.register_message(:a_message, :key => "foo", :exchange => :an_exchange)
