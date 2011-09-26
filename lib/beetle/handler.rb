@@ -49,6 +49,7 @@ module Beetle
     # was created
     def process
       logger.info "Beetle: received message #{message.inspect}"
+      send(routing_key, payload) if respond_to? routing_key
     end
 
     # should not be overriden in subclasses
@@ -102,6 +103,16 @@ module Beetle
     # returns the configured Beetle logger
     def self.logger
       Beetle.config.logger
+    end
+
+    # sets the given block as handler for the given keys
+    def self.handle *keys, &block
+      method_name, aliases = *keys
+      define_method method_name, &block
+
+      aliases.each do |key|
+        alias_method key, method_name
+      end if aliases
     end
 
   end
