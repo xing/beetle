@@ -1,10 +1,26 @@
 $:.unshift(File.expand_path('..', __FILE__))
 require 'bunny'
 require 'uuid4r'
+# require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
+require 'redis'
 require 'active_support'
 require 'active_support/core_ext'
-require 'redis'
 require 'set'
+Timer = if RUBY_VERSION < "1.9"
+          begin
+            require 'system_timer'
+            SystemTimer
+          rescue Exception => e
+            warn "WARNING: It's highly recommended to install the SystemTimer gem: `gem install SystemTimer -v '=1.2.1'` See: http://ph7spot.com/musings/system-timer" if RUBY_VERSION < "1.9"
+            require 'timeout'
+            Timeout
+          end
+        else
+          require 'timeout'
+          Timeout
+        end
+
+
 
 module Beetle
 
@@ -55,12 +71,5 @@ module Beetle
   else
     def self.reraise_expectation_errors! #:nodoc:
     end
-  end
-
-  Timer = begin
-    RUBY_VERSION < "1.9" ? SystemTimer : Timeout
-  rescue NameError
-    warn "WARNING: It's highly recommended to install the SystemTimer gem: `gem install SystemTimer -v '=1.2.1'` See: http://ph7spot.com/musings/system-timer" if RUBY_VERSION < "1.9"
-    Timeout
   end
 end
