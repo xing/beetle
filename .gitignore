@@ -8,6 +8,8 @@ erl_crash.dump
 pkg
 site
 test/coverage
-tmp
+tmp/*.output
+tmp/*.log
+tmp/*.lock
 *.gem
 coverage
