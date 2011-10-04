@@ -58,7 +58,7 @@ windows and execute the following commands:
 
 To set up a redundant messaging system you will need
 * at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
-* at least one {Redis}[http://github.com/antirez/redis] server (better are two in a master/slave setup)
+* at least one {Redis}[http://github.com/antirez/redis] server (better are two in a master/slave setup, see REDIS_AUTO_FAILOVER.rdoc)
 
 == Gem Dependencies
 
