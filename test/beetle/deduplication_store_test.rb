@@ -9,8 +9,8 @@ module Beetle
     end
 
     test "trying to delete a non existent key doesn't throw an error" do
-      assert !@r.del("hahahaha")
       assert !@r.exists("hahahaha")
+      assert_equal 0, @r.del("hahahaha")
     end
 
     test "msetnx returns 0 or 1" do
