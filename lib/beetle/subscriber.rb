@@ -199,7 +199,10 @@ module Beetle
         open_channel_and_subscribe(connection, settings)
       end
     rescue EventMachine::ConnectionError => e
-      logger.error "Beetle: connection error: #{e}"
+      # something serious went wrong, for example DNS lookup failure
+      # in this case, the on_tcp_connection_failure callback is never called automatically
+      logger.error "Beetle: connection failed: #{e.class}(#{e})"
+      settings[:on_tcp_connection_failure].call(settings)
     end
 
     def open_channel_and_subscribe(connection, settings)

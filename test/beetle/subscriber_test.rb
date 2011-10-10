@@ -337,24 +337,22 @@ module Beetle
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
+      @sub.send(:set_current_server, "mickey:42")
+      @settings = @sub.send(:connection_settings)
     end
 
     test "connection settings should use current host and port and specify connection failure callback" do
-      @sub.send(:set_current_server, "mickey:42")
-      settings = @sub.send(:connection_settings)
-      assert_equal "mickey", settings[:host]
-      assert_equal 42, settings[:port]
-      assert settings.has_key?(:on_tcp_connection_failure)
+      assert_equal "mickey", @settings[:host]
+      assert_equal 42, @settings[:port]
+      assert @settings.has_key?(:on_tcp_connection_failure)
     end
 
     test "tcp connection failure should try to connect again after 10 seconds" do
-      @sub.send(:set_current_server, "mickey:42")
-      settings = @sub.send(:connection_settings)
       cb = @sub.send(:on_tcp_connection_failure)
       EM::Timer.expects(:new).with(10).yields
-      @sub.expects(:connect_server).with(settings)
+      @sub.expects(:connect_server).with(@settings)
       @sub.logger.expects(:warn).with("Beetle: connection failed: mickey:42")
-      cb.call(settings)
+      cb.call(@settings)
     end
 
     test "tcp connection loss handler tries to reconnect" do
@@ -364,20 +362,23 @@ module Beetle
       @sub.send(:on_tcp_connection_loss, connection, {:host => "mickey", :port => 42})
     end
 
+    test "event machine connection error" do
+      connection = mock("connection")
+      AMQP.expects(:connect).raises(EventMachine::ConnectionError)
+      @settings[:on_tcp_connection_failure].expects(:call).with(@settings)
+      @sub.send(:connect_server, @settings)
+    end
+
     test "successfull connection to broker" do
-      @sub.send(:set_current_server, "mickey:42")
-      settings = @sub.send(:connection_settings)
       connection = mock("connection")
       connection.expects(:on_tcp_connection_loss)
-      @sub.expects(:open_channel_and_subscribe).with(connection, settings)
-      AMQP.expects(:connect).with(settings).yields(connection)
-      @sub.send(:connect_server, settings)
+      @sub.expects(:open_channel_and_subscribe).with(connection, @settings)
+      AMQP.expects(:connect).with(@settings).yields(connection)
+      @sub.send(:connect_server, @settings)
       assert_equal connection, @sub.instance_variable_get("@connections")["mickey:42"]
     end
 
     test "channel opening, exchange creation, queue bindings and subscription" do
-      @sub.send(:set_current_server, "mickey:42")
-      settings = @sub.send(:connection_settings)
       connection = mock("connection")
       channel = mock("channel")
       channel.expects(:prefetch).with(1)
@@ -386,7 +387,7 @@ module Beetle
       @sub.expects(:create_exchanges)
       @sub.expects(:bind_queues)
       @sub.expects(:subscribe_queues)
-      @sub.send(:open_channel_and_subscribe, connection, settings)
+      @sub.send(:open_channel_and_subscribe, connection, @settings)
       assert_equal channel, @sub.instance_variable_get("@channels")["mickey:42"]
     end
 
