@@ -8,40 +8,18 @@ module Beetle
     end
 
     test "initially there should be no amqp connections" do
-      assert_equal({}, @sub.instance_variable_get("@amqp_connections"))
+      assert_equal({}, @sub.instance_variable_get("@connections"))
     end
 
-    test "initially there should be no instances of MQ" do
-      assert_equal({}, @sub.instance_variable_get("@mqs"))
+    test "initially there should be no channels" do
+      assert_equal({}, @sub.instance_variable_get("@channels"))
     end
 
-    test "acccessing an amq_connection for a server which doesn't have one should create it and associate it with the server" do
-      @sub.expects(:new_amqp_connection).returns(42)
-      # TODO: smarter way to test? what triggers the amqp_connection private method call?
-      assert_equal 42, @sub.send(:amqp_connection)
-      connections = @sub.instance_variable_get("@amqp_connections")
-      assert_equal 42, connections[@sub.server]
-    end
-
-    test "new amqp connections should be created using current host and port" do
-      m = mock("dummy")
-      expected_amqp_options = {
-        :host => @sub.send(:current_host), :port => @sub.send(:current_port),
-        :user => "guest", :pass => "guest", :vhost => "/", :logging => false
-      }
-      AMQP.expects(:connect).with(expected_amqp_options).returns(m)
-      # TODO: smarter way to test? what triggers the amqp_connection private method call?
-      assert_equal m, @sub.send(:new_amqp_connection)
-    end
-
-    test "mq instances should be created for the current server if accessed" do
-      @sub.expects(:amqp_connection).returns(11)
-      mq_mock = mock('mq')
-      mq_mock.expects(:prefetch).with(1).returns(42)
-      MQ.expects(:new).with(11).returns(mq_mock)
-      assert_equal 42, @sub.send(:mq)
-      mqs = @sub.instance_variable_get("@mqs")
-      assert_equal 42, mqs[@sub.server]
+    test "channel should return the channel associated with the current server, if there is one" do
+      channel = mock("donald")
+      @sub.instance_variable_set("@channels", {"donald:1" => channel})
+      assert_nil @sub.send(:channel, "goofy:123")
+      assert_equal channel, @sub.send(:channel, "donald:1")
     end
 
     test "stop! should close all amqp connections and then stop the event loop" do
@@ -49,7 +27,7 @@ module Beetle
       connection1.expects(:close).yields
       connection2 = mock('con2')
       connection2.expects(:close).yields
-      @sub.instance_variable_set "@amqp_connections", [["server1", connection1], ["server2",connection2]]
+      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2",connection2]]
       EM.expects(:stop_event_loop)
       @sub.send(:stop!)
     end
@@ -156,31 +134,43 @@ module Beetle
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("MQ")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false).returns(q)
-      @sub.expects(:mq).returns(m)
+      @sub.expects(:channel).returns(m)
 
       @sub.send(:queue, "some_queue")
       assert_equal q, @sub.send(:queues)["some_queue"]
     end
 
-    test "binding queues should iterate over all servers" do
-      s = sequence("binding")
+    test "binding queues should bind all queues" do
       @client.register_queue(:x)
       @client.register_queue(:y)
       @client.register_handler(%w(x y)){}
-      @sub.servers = %w(a b)
-      @sub.expects(:set_current_server).with("a").in_sequence(s)
-      @sub.expects(:queue).with("x").in_sequence(s)
-      @sub.expects(:queue).with("y").in_sequence(s)
-      @sub.expects(:set_current_server).with("b").in_sequence(s)
-      @sub.expects(:queue).with("x").in_sequence(s)
-      @sub.expects(:queue).with("y").in_sequence(s)
+      @sub.expects(:queue).with("x")
+      @sub.expects(:queue).with("y")
       @sub.send(:bind_queues, %W(x y))
+    end
+
+    test "subscribing to queues should subscribe on all queues" do
+      @client.register_queue(:x)
+      @client.register_queue(:y)
+      @client.register_handler(%w(x y)){}
+      @sub.expects(:subscribe).with("x")
+      @sub.expects(:subscribe).with("y")
+      @sub.send(:subscribe_queues, %W(x y))
     end
 
     test "should not try to bind a queue for an exchange which has no queue" do
       @client.register_message(:without_queue)
       assert_equal [], @sub.send(:queues_for_exchanges, ["without_queue"])
     end
+
+    test "should not subscribe on a queue for which there is no handler" do
+      @client.register_queue(:x)
+      @client.register_queue(:y)
+      @client.register_handler(%w(y)){}
+      @sub.expects(:subscribe).with("y")
+      @sub.send(:subscribe_queues, %W(x y))
+    end
+
   end
 
   class SubscriberExchangeManagementTest < Test::Unit::TestCase
@@ -197,26 +187,20 @@ module Beetle
       @client.register_exchange("some_exchange", "type" => "topic", "durable" => true)
       m = mock("AMQP")
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
-      @sub.expects(:mq).returns(m)
+      @sub.expects(:channel).returns(m)
       ex = @sub.send(:exchange, "some_exchange")
       assert @sub.send(:exchanges).include?("some_exchange")
       ex2 = @sub.send(:exchange, "some_exchange")
       assert_equal ex2, ex
     end
 
-    test "should create exchanges for all exchanges passed to create_exchanges, for all servers" do
-      @sub.servers = %w(x y)
+    test "should create exchanges for all exchanges passed to create_exchanges for the current server" do
       @client.register_queue(:donald, :exchange => 'duck')
       @client.register_queue(:mickey)
       @client.register_queue(:mouse, :exchange => 'mickey')
 
-      exchange_creation = sequence("exchange creation")
-      @sub.expects(:set_current_server).with('x').in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("duck", anything).in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
-      @sub.expects(:set_current_server).with('y', anything).in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("duck", anything).in_sequence(exchange_creation)
-      @sub.expects(:create_exchange!).with("mickey", anything).in_sequence(exchange_creation)
+      @sub.expects(:create_exchange!).with("duck", anything)
+      @sub.expects(:create_exchange!).with("mickey", anything)
       @sub.send(:create_exchanges, %w(duck mickey))
     end
   end
@@ -240,7 +224,7 @@ module Beetle
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
-    test "should call reject on the message header when processing the handler returns true on recover?" do
+    test "should call reject on the message header when processing the handler returns true on reject?" do
       header = header_with_params({})
       result = mock("result")
       result.expects(:reject?).returns(true)
@@ -256,7 +240,7 @@ module Beetle
       Message.any_instance.expects(:process).returns(result)
       Message.any_instance.expects(:handler_result).returns("response-data")
       mq = mock("MQ")
-      @sub.expects(:mq).with(@sub.server).returns(mq)
+      @sub.expects(:channel).with(@sub.server).returns(mq)
       exchange = mock("exchange")
       exchange.expects(:publish).with("response-data", :routing_key => "tmp-queue", :headers => {:status => "OK"}, :persistent => false)
       AMQP::Exchange.expects(:new).with(mq, :direct, "").returns(exchange)
@@ -269,7 +253,7 @@ module Beetle
       Message.any_instance.expects(:process).returns(result)
       Message.any_instance.expects(:handler_result).returns(nil)
       mq = mock("MQ")
-      @sub.expects(:mq).with(@sub.server).returns(mq)
+      @sub.expects(:channel).with(@sub.server).returns(mq)
       exchange = mock("exchange")
       exchange.expects(:publish).with("", :routing_key => "tmp-queue", :headers => {:status => "FAILED"}, :persistent => false)
       AMQP::Exchange.expects(:new).with(mq, :direct, "").returns(exchange)
@@ -282,18 +266,6 @@ module Beetle
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
-    end
-
-    test "subscribe should create subscriptions on all queues for all servers" do
-      @sub.servers << "localhost:7777"
-      @client.register_message(:a)
-      @client.register_message(:b)
-      @client.register_queue(:a)
-      @client.register_queue(:b)
-      @client.register_handler(%W(a b)){}
-      @sub.expects(:subscribe).with("a").times(2)
-      @sub.expects(:subscribe).with("b").times(2)
-      @sub.send(:subscribe_queues, %W(a b))
     end
 
     test "subscribe should subscribe with a subscription callback created from the registered block and remember the subscription" do
@@ -324,16 +296,20 @@ module Beetle
       assert_raises(Error){ @sub.send(:subscribe, "some_queue") }
     end
 
-    test "listening on queues should use eventmachine. create exchanges. bind queues. install subscribers. and yield." do
+    test "listening on queues should use eventmachine, connect to each server, and yield" do
       @client.register_exchange(:an_exchange)
       @client.register_queue(:a_queue, :exchange => :an_exchange)
       @client.register_message(:a_message, :key => "foo", :exchange => :an_exchange)
+      @sub.servers << "localhost:7777"
 
+      @sub.expects(:connect_server).twice
       EM.expects(:run).yields
-      @sub.expects(:create_exchanges).with(["an_exchange"])
-      @sub.expects(:bind_queues).with(["a_queue"])
-      @sub.expects(:subscribe_queues).with(["a_queue"])
-      @sub.listen_queues(["a_queue"]) {}
+      # @sub.expects(:create_exchanges).with(["an_exchange"])
+      # @sub.expects(:bind_queues).with(["a_queue"])
+      # @sub.expects(:subscribe_queues).with(["a_queue"])
+      yielded = false
+      @sub.listen_queues(["a_queue"]) { yielded = true}
+      assert yielded
     end
   end
 
@@ -353,6 +329,65 @@ module Beetle
       opts, block = @sub.instance_variable_get("@handlers")["some_queue"]
       assert_equal({:ack => true}, opts)
       assert_equal 42, block.call(1)
+    end
+
+  end
+
+  class ConnectionTest < Test::Unit::TestCase
+    def setup
+      @client = Client.new
+      @sub = @client.send(:subscriber)
+    end
+
+    test "connection settings should use current host and port and specify connection failure callback" do
+      @sub.send(:set_current_server, "mickey:42")
+      settings = @sub.send(:connection_settings)
+      assert_equal "mickey", settings[:host]
+      assert_equal 42, settings[:port]
+      assert settings.has_key?(:on_tcp_connection_failure)
+    end
+
+    test "tcp connection failure should try to connect again after 10 seconds" do
+      @sub.send(:set_current_server, "mickey:42")
+      settings = @sub.send(:connection_settings)
+      cb = @sub.send(:on_tcp_connection_failure)
+      EM::Timer.expects(:new).with(10).yields
+      @sub.expects(:connect_server).with(settings)
+      @sub.logger.expects(:warn).with("Beetle: connection failed: mickey:42")
+      cb.call(settings)
+    end
+
+    test "tcp connection loss handler tries to reconnect" do
+      connection = mock("connection")
+      connection.expects(:reconnect).with(false, 10)
+      @sub.logger.expects(:warn).with("Beetle: lost connection: mickey:42. reconnecting.")
+      @sub.send(:on_tcp_connection_loss, connection, {:host => "mickey", :port => 42})
+    end
+
+    test "successfull connection to broker" do
+      @sub.send(:set_current_server, "mickey:42")
+      settings = @sub.send(:connection_settings)
+      connection = mock("connection")
+      connection.expects(:on_tcp_connection_loss)
+      @sub.expects(:open_channel_and_subscribe).with(connection, settings)
+      AMQP.expects(:connect).with(settings).yields(connection)
+      @sub.send(:connect_server, settings)
+      assert connection, @sub.instance_variable_get("@connections")["mickey:42"]
+    end
+
+    test "channel opening, exchange creation, queue bindings and subscription" do
+      @sub.send(:set_current_server, "mickey:42")
+      settings = @sub.send(:connection_settings)
+      connection = mock("connection")
+      channel = mock("channel")
+      channel.expects(:prefetch).with(1)
+      channel.expects(:auto_recovery=).with(true)
+      AMQP::Channel.expects(:new).with(connection).yields(channel)
+      @sub.expects(:create_exchanges)
+      @sub.expects(:bind_queues)
+      @sub.expects(:subscribe_queues)
+      @sub.send(:open_channel_and_subscribe, connection, settings)
+      assert_equal channel, @sub.instance_variable_get("@channels")["mickey:42"]
     end
 
   end

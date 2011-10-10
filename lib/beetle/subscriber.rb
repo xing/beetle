@@ -9,9 +9,10 @@ module Beetle
       super
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
-      @amqp_connections = {}
-      @mqs = {}
+      @connections = {}
+      @channels = {}
       @subscriptions = {}
+      @listened_queues = []
     end
 
     # the client calls this method to subscribe to a list of queues.
@@ -23,11 +24,12 @@ module Beetle
     #
     # yields before entering the eventmachine loop (if a block was given)
     def listen_queues(queues) #:nodoc:
+      @listened_queues = queues
+      @exchanges_for_queues = exchanges_for_queues(queues)
       EM.run do
-        exchanges = exchanges_for_queues(queues)
-        create_exchanges(exchanges)
-        bind_queues(queues)
-        subscribe_queues(queues)
+        each_server do
+          connect_server connection_settings
+        end
         yield if block_given?
       end
     end
@@ -46,10 +48,10 @@ module Beetle
 
     # closes all AMQP connections and stops the eventmachine loop
     def stop! #:nodoc:
-      if @amqp_connections.empty?
+      if @connections.empty?
         EM.stop_event_loop
       else
-        server, connection = @amqp_connections.shift
+        server, connection = @connections.shift
         logger.debug "Beetle: closing connection to #{server}"
         connection.close { stop! }
       end
@@ -73,30 +75,19 @@ module Beetle
     end
 
     def create_exchanges(exchanges)
-      each_server do
-        exchanges.each { |name| exchange(name) }
-      end
+      exchanges.each { |name| exchange(name) }
     end
 
     def bind_queues(queues)
-      each_server do
-        queues.each { |name| queue(name) }
-      end
+      queues.each { |name| queue(name) }
     end
 
     def subscribe_queues(queues)
-      each_server do
-        queues.each { |name| subscribe(name) if @handlers.include?(name) }
-      end
+      queues.each { |name| subscribe(name) if @handlers.include?(name) }
     end
 
-    # returns the mq object for the given server or returns a new one created with the
-    # prefetch(1) option. this tells it to just send one message to the receiving buffer
-    # (instead of filling it). this is necesssary to ensure that one subscriber always just
-    # handles one single message. we cannot ensure reliability if the buffer is filled with
-    # messages and crashes.
-    def mq(server=@server)
-      @mqs[server] ||= MQ.new(amqp_connection).prefetch(1)
+    def channel(server=@server)
+      @channels[server]
     end
 
     def subscriptions(server=@server)
@@ -152,7 +143,7 @@ module Beetle
             # Debugger.start
             # debugger
             status = result == Beetle::RC::OK ? "OK" : "FAILED"
-            exchange = AMQP::Exchange.new(mq(server), :direct, "")
+            exchange = AMQP::Exchange.new(channel(server), :direct, "")
             exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
           end
           # logger.debug "Beetle: processed message"
@@ -168,27 +159,60 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
-      mq.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
+      channel.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
     end
 
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
-      queue = mq.queue(queue_name, creation_keys)
+      queue = channel.queue(queue_name, creation_keys)
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue
     end
 
-    def amqp_connection(server=@server)
-      @amqp_connections[server] ||= new_amqp_connection
+    def connection_settings
+      {
+        :host => current_host, :port => current_port, :logging => false,
+        :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost,
+        :on_tcp_connection_failure => on_tcp_connection_failure
+      }
     end
 
-    def new_amqp_connection
-      # FIXME: wtf, how to test that reconnection feature....
-      con = AMQP.connect(:host => current_host, :port => current_port, :logging => false,
-                         :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost)
-      con.instance_variable_set("@on_disconnect", proc{ con.__send__(:reconnect) })
-      con
+    def on_tcp_connection_failure
+      Proc.new do |settings|
+        logger.warn "Beetle: connection failed: #{server_from_settings(settings)}"
+        EM::Timer.new(10) { connect_server(settings) }
+      end
     end
 
+    def on_tcp_connection_loss(connection, settings)
+      # reconnect in 10 seconds, without enforcement
+      logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. reconnecting."
+      connection.reconnect(false, 10)
+    end
+
+    def connect_server(settings)
+      server = server_from_settings settings
+      logger.info "Beetle: connecting to rabbit #{server}"
+      AMQP.connect(settings) do |connection|
+        connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
+        @connections[server] = connection
+        open_channel_and_subscribe(connection, settings)
+      end
+    rescue EventMachine::ConnectionError => e
+      logger.error "Beetle: connection error: #{e}"
+    end
+
+    def open_channel_and_subscribe(connection, settings)
+      server = server_from_settings settings
+      AMQP::Channel.new(connection) do |channel|
+        channel.auto_recovery = true
+        channel.prefetch(1)
+        set_current_server server
+        @channels[server] = channel
+        create_exchanges(@exchanges_for_queues)
+        bind_queues(@listened_queues)
+        subscribe_queues(@listened_queues)
+      end
+    end
   end
 end
