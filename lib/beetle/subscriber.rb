@@ -1,5 +1,4 @@
 require 'amqp'
-require 'mq'
 
 module Beetle
   # Manages subscriptions and message processing on the receiver side of things.
@@ -119,7 +118,7 @@ module Beetle
       begin
         queues[queue_name].subscribe(keys, &callback)
         subscriptions[queue_name] = [keys, callback]
-      rescue MQ::Error
+      rescue
         error("Beetle: binding multiple handlers for the same queue isn't possible.")
       end
     end
@@ -147,13 +146,14 @@ module Beetle
           if result.reject?
             sleep 1
             header.reject(:requeue => true)
-          elsif reply_to = header.properties[:reply_to]
+          elsif reply_to = header.attributes[:reply_to]
+            # logger.info "Beetle: sending reply to queue #{reply_to}"
             # require 'ruby-debug'
             # Debugger.start
             # debugger
             status = result == Beetle::RC::OK ? "OK" : "FAILED"
-            exchange = MQ::Exchange.new(mq(server), :direct, "", :key => reply_to)
-            exchange.publish(m.handler_result.to_s, :headers => {:status => status})
+            exchange = AMQP::Exchange.new(mq(server), :direct, "")
+            exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
           end
           # logger.debug "Beetle: processed message"
         rescue Exception

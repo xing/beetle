@@ -32,7 +32,7 @@ Beetle.config.redis_server = "localhost:6379"
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)
   header = mock("header")
-  header.stubs(:properties).returns(beetle_headers)
+  header.stubs(:attributes).returns(beetle_headers)
   header
 end
 

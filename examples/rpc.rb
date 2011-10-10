@@ -3,7 +3,7 @@ require "rubygems"
 require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
 # suppress debug messages
-Beetle.config.logger.level = Logger::DEBUG
+Beetle.config.logger.level = Logger::INFO
 Beetle.config.servers = "localhost:5672, localhost:5673"
 # instantiate a client
 
@@ -28,12 +28,12 @@ if ARGV.include?("--server")
     trap("INT") { puts "stopped echo server"; client.stop_listening }
   end
 else
-  n = 100
+  n = 10000
   ms = Benchmark.ms do
     n.times do |i|
       content = "Hello #{i}"
       # puts "performing RPC with message content '#{content}'"
-      status, result = client.rpc(:echo, content)
+      status, result = client.rpc(:echo, content, :persistent => false)
       # puts "status  #{status}"
       # puts "result  #{result}"
       # puts

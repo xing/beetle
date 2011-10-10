@@ -73,9 +73,10 @@ module Beetle
 
     # extracts various values form the AMQP header properties
     def decode #:nodoc:
-      amqp_headers = header.properties
+      # p header.attributes
+      amqp_headers = header.attributes
       @uuid = amqp_headers[:message_id]
-      headers = amqp_headers[:headers]
+      headers = amqp_headers[:headers].symbolize_keys
       @format_version = headers[:format_version].to_i
       @flags = headers[:flags].to_i
       @expires_at = headers[:expires_at].to_i
