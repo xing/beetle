@@ -106,12 +106,8 @@ module Beetle
       callback = create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       keys = opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true)
       logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # on server #{@server}"
-      begin
-        queues[queue_name].subscribe(keys, &callback)
-        subscriptions[queue_name] = [keys, callback]
-      rescue
-        error("Beetle: binding multiple handlers for the same queue isn't possible.")
-      end
+      queues[queue_name].subscribe(keys, &callback)
+      subscriptions[queue_name] = [keys, callback]
     end
 
     def pause(queue_name)
