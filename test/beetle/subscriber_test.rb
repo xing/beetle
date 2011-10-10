@@ -372,7 +372,7 @@ module Beetle
       @sub.expects(:open_channel_and_subscribe).with(connection, settings)
       AMQP.expects(:connect).with(settings).yields(connection)
       @sub.send(:connect_server, settings)
-      assert connection, @sub.instance_variable_get("@connections")["mickey:42"]
+      assert_equal connection, @sub.instance_variable_get("@connections")["mickey:42"]
     end
 
     test "channel opening, exchange creation, queue bindings and subscription" do
