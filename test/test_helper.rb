@@ -4,11 +4,7 @@ require 'mocha'
 require 'active_support/testing/declarative'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
-
-begin
-  require 'redgreen' unless ENV['TM_FILENAME']
-rescue LoadError => e
-end
+require File.expand_path(File.dirname(__FILE__) + '/colorized_test_output')
 
 # we can remove this hack which is needed only for testing
 begin
@@ -29,12 +25,14 @@ end
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 Beetle.config.redis_server = "localhost:6379"
 
+
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)
   header = mock("header")
-  header.stubs(:properties).returns(beetle_headers)
+  header.stubs(:attributes).returns(beetle_headers)
   header
 end
+
 
 def redis_stub(name, opts = {})
   default_port = opts['port'] || "1234"

@@ -1,5 +1,10 @@
 = Release Notes
 
+== Version 0.3.0.rc.3
+
+* use hiredis as the redis backend, which overcomes lack of proper time-outs in the "generic" redis-rb
+  gem for Ruby 1.9
+
 == Version 0.2.9.8
 
 * since version 2.0, RabbitMQ supports Basic.reject(:requeue => true). we use it now too,

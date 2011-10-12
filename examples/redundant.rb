@@ -58,7 +58,7 @@ end
 # this starts the event machine event loop using EM.run
 # the block passed to listen will be yielded as the last step of the setup process
 client.listen do
-  EM.add_timer(0.1) { client.stop_listening }
+  EM.add_timer(0.2) { client.stop_listening }
 end
 
 puts "Received #{k} test messages"

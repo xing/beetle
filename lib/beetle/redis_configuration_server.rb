@@ -1,8 +1,8 @@
 module Beetle
   # A RedisConfigurationServer is the supervisor part of beetle's
-  # redis failover solution
+  # redis failover solution.
   #
-  # An single instance of RedisConfigurationServer works as a supervisor for
+  # A single instance of RedisConfigurationServer works as a supervisor for
   # several RedisConfigurationClient instances. It is responsible for watching
   # the redis master and electing and publishing a new master in case of failure.
   #
@@ -75,6 +75,7 @@ module Beetle
       end
     end
 
+    # called by the message dispatcher when a "client_started" message from a RedisConfigurationClient is received
     def client_started(payload)
       id = payload["id"]
       if client_id_valid?(id)
@@ -186,7 +187,7 @@ module Beetle
       end
       known_client
     end
-    
+
     def client_id_valid?(client_id)
       @client_ids.include?(client_id)
     end

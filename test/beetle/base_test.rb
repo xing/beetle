@@ -48,5 +48,9 @@ module Beetle
       @bs.send(:set_current_server, "xxx:123")
       assert_equal "xxx:123", @bs.server
     end
+
+    test "server_from_settings should create a valid server string from an AMQP settings hash" do
+      assert_equal "goofy:123", @bs.send(:server_from_settings, {:host => "goofy", :port => 123})
+    end
   end
 end

@@ -55,11 +55,9 @@ module Beetle
     end
   end
 
-  class RedisTimeoutTest < Test::Unit::TestCase
-    test "should use a timer" do
-      r = Redis.new(:host => "localhost", :port => 6390, :timeout => 1)
-      r.client.expects(:with_timeout).with(1).raises(Timeout::Error)
-      assert_equal({}, r.info_with_rescue)
+  class HiredisLoadedTest < Test::Unit::TestCase
+    test 'should be using hiredis instead of the redis ruby backend' do
+      assert defined?(Hiredis)
     end
   end
 end
