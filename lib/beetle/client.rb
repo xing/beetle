@@ -289,7 +289,7 @@ module Beetle
     end
 
     def queue_name_for_tracing(queue)
-      "trace-#{queue}-#{`hostname`.chomp}-#{$$}"
+      "trace-#{queue}-#{Beetle.hostname}-#{$$}"
     end
   end
 end

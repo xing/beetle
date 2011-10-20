@@ -25,7 +25,7 @@ module Beetle
 
     # Unique id for this instance (defaults to the fully qualified hostname)
     def id
-      @id ||= `hostname -f`.chomp
+      @id ||= Beetle.hostname
     end
 
     def initialize #:nodoc:

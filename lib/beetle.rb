@@ -6,6 +6,7 @@ require 'redis'
 require 'active_support'
 require 'active_support/core_ext'
 require 'set'
+require 'socket'
 
 module Beetle
   Timer = if RUBY_VERSION < "1.9"
@@ -45,6 +46,13 @@ module Beetle
   PUBLISHING_KEYS         = [:key, :mandatory, :immediate, :persistent, :reply_to]
   # AMQP options for subscribing to queues
   SUBSCRIPTION_KEYS       = [:ack, :key]
+
+  # determine the fully qualified domainname of the host we're running on
+  def self.hostname
+    name = Socket.gethostname
+    parts = name.split('.')
+    parts.size > 1 ? name : Socket.gethostbyname(parts.first).first
+  end
 
   # use ruby's autoload mechanism for loading beetle classes
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
