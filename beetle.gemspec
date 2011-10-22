@@ -44,8 +44,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency("rake",              [">= 0.8.7"])
   s.add_development_dependency("mocha",             [">= 0"])
   s.add_development_dependency("rcov",              [">= 0"])
-  s.add_development_dependency("redgreen",          [">= 0"])
-  s.add_development_dependency("wirble",            [">= 0"])
   s.add_development_dependency("cucumber",          [">= 0.7.2"])
   s.add_development_dependency("daemon_controller", [">= 0"])
 end
