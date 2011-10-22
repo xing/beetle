@@ -39,7 +39,7 @@ module TestDaemons
     end
 
     def restart(delay=1)
-      redis.shutdown rescue Errno::ECONNREFUSED
+      redis.shutdown
       sleep delay
       `redis-server #{config_filename}`
     end

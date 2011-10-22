@@ -60,4 +60,19 @@ module Beetle
       assert defined?(Hiredis)
     end
   end
+
+  class BrokenRedisShutdownTest < Test::Unit::TestCase
+    def setup
+      @r = Redis.new(:host => "localhost", :port => 6390)
+    end
+
+    # if this test fails after upgrading redis, we can probably remove
+    # our custom shutdown method from redis_ext.rb
+    test "redis shutdown implementation is broken" do
+      @r.client.expects(:call_without_reply).with([:shutdown]).once
+      @r.client.expects(:disconnect).never
+      @r.broken_shutdown
+    end
+  end
+
 end
