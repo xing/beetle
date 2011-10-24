@@ -41,6 +41,7 @@ module TestDaemons
     def restart(delay=1)
       redis.shutdown
       sleep delay
+      raise "SHUTDOWN COMMAND FAILED" if running?
       `redis-server #{config_filename}`
     end
 
@@ -51,6 +52,7 @@ module TestDaemons
       #       sleep 1
       #     end
       daemon_controller.stop
+      raise "FAILED TO STOP redis server on port #{port}" if running?
     ensure
       cleanup
     end
