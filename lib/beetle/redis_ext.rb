@@ -62,7 +62,8 @@ class Redis #:nodoc:
   def shutdown
     synchronize do
       begin
-        @client.call_without_reply [:shutdown]
+        @client.call [:shutdown]
+      rescue Errno::ECONNREFUSED
       ensure
         @client.disconnect
       end
