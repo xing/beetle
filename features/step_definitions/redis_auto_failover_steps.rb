@@ -134,5 +134,7 @@ Then /^a system notification for no slave available to become new master should 
 end
 
 Then /^the redis configuration server should answer http requests$/ do
-  TestDaemons::RedisConfigurationServer.answers_http_requests?
+  TestDaemons::RedisConfigurationServer.answers_text_requests?
+  TestDaemons::RedisConfigurationServer.answers_html_requests?
+  TestDaemons::RedisConfigurationServer.answers_json_requests?
 end

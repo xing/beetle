@@ -46,6 +46,18 @@ module Beetle
       beetle.config
     end
 
+    # returns a hash describing the current server status
+    def status
+      {
+        :configured_brokers => config.servers.split(/\s*,\s*/),
+        :configured_client_ids => client_ids.to_a.sort,
+        :configured_redis_servers => config.redis_servers.split(/\s*,\s*/),
+        :redis_master => current_master.try(:server).to_s,
+        :redis_master_available? => master_available?,
+        :redis_slaves_available => available_slaves.map(&:server),
+      }
+    end
+
     # start watching redis
     def start
       verify_redis_master_file_string
