@@ -49,6 +49,7 @@ module Beetle
     # returns a hash describing the current server status
     def status
       {
+        :beetle_version => Beetle::VERSION,
         :configured_brokers => config.servers.split(/\s*,\s*/),
         :configured_client_ids => client_ids.to_a.sort,
         :configured_redis_servers => config.redis_servers.split(/\s*,\s*/),
