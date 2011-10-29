@@ -71,7 +71,7 @@ module Beetle
       b << "<html><head><title>Beetle Configuration Server Status</title>#{html_styles(status)}</head>"
       b << "<body><h1>Beetle Configuration Server Status</h1><table cellspacing=0>\n"
       plain_text_response(status).split("\n").compact.each do |row|
-        row =~/(^[^:]+): (.*$)/
+        row =~/(^[^:]+): (.*)$/
         b << "<tr><td>#{$1}</td><td>#{$2}</td></tr>\n"
       end
       b << "</table></body></html>"
