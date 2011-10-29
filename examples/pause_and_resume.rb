@@ -21,12 +21,8 @@ $client.register_message(:test)
 # purge the test queue
 $client.purge(:test)
 
-# empty the dedup store
-$client.deduplication_store.flushdb
-
-# we're starting with 0 exceptions and expect our handler to process the message until the exception count has reached 10
-$exceptions = 0
-$max_exceptions = 10
+# initially, our service is online
+$online = true
 
 # declare a handler class for message processing
 # in this example we've not only overwritten the process method but also the
@@ -35,32 +31,45 @@ class Handler < Beetle::Handler
 
   # called when the handler receives the message - fail everytime
   def process
-    raise "failed #{$exceptions += 1} times"
+    puts "received message #{message.data} online=#{$online}"
+    unless $online
+      $client.pause_listening(:test)
+      raise "offline"
+    end
   end
 
   # called when handler process raised an exception
   def error(exception)
-    logger.info "execution failed: #{exception}"
+    puts "execution failed: #{exception}"
   end
 
-  # called when the handler has finally failed
-  # we're stopping the event loop so this script stops after that
-  def failure(result)
-    super
-    EM.add_timer(1){$client.stop_listening}
-  end
 end
 
-# register our handler to the message, configure it to our max_exceptions limit, we configure a delay of 0 to have it not wait before retrying
-$client.register_handler(:test, Handler, :exceptions => $max_exceptions, :delay => 0)
+# publish a decent amount of messages
+# 1000.times do |i|
+#   $client.publish(:test, i)
+# end
+# $client.stop_publishing
 
-# publish a our test message
-$client.publish(:test, "snafu")
+# register our handler to the message, configure it to our max_exceptions limit, we configure a delay of 0 to have it not wait before retrying
+$client.register_handler(:test, Handler, :exceptions => 1, :delay => 0)
 
 # and start our listening loop...
-$client.listen
+$client.listen do
+  n = 0
+  ptimer = EM.add_periodic_timer(0.1) do
+    data = (n+=1)
+    puts "publishing message #{data}"
+    $client.publish(:test, data)
+  end
 
-# error handling, if everything went right this shouldn't happen.
-if $exceptions != $max_exceptions + 1
-  raise "Something is fishy. Failed #{$exceptions} times"
+  EM.add_periodic_timer(2) do
+    $online = !$online
+    $client.resume_listening(:test) if $online
+  end
+
+  EM.add_timer(10) do
+    $client.pause_listening
+    EM.add_timer(1) { $client.stop_listening }
+  end
 end

@@ -236,19 +236,27 @@ module Beetle
     test "should delegate queue purging to the publisher instance" do
       client = Client.new
       client.register_queue(:queue)
-      client.send(:publisher).expects(:purge).with("queue").returns("ha!")
+      client.send(:publisher).expects(:purge).with(["queue"]).returns("ha!")
       assert_equal "ha!", client.purge("queue")
     end
 
     test "purging a queue should convert the queue name to a string" do
       client = Client.new
       client.register_queue(:queue)
-      client.send(:publisher).expects(:purge).with("queue").returns("ha!")
+      client.send(:publisher).expects(:purge).with(["queue"]).returns("ha!")
       assert_equal "ha!", client.purge(:queue)
     end
 
     test "trying to purge an unknown queue should raise an exception" do
       assert_raises(UnknownQueue) { Client.new.purge(:mumu) }
+    end
+
+    test "should be possible to purge multiple queues with a single call" do
+      client = Client.new
+      client.register_queue(:queue1)
+      client.register_queue(:queue2)
+      client.send(:publisher).expects(:purge).with(["queue1","queue2"]).returns("ha!")
+      assert_equal "ha!", client.purge(:queue1, :queue2)
     end
 
     test "should delegate rpc calls to the publisher instance" do
@@ -274,7 +282,7 @@ module Beetle
     test "should delegate listening to queues to the subscriber instance" do
       client = Client.new
       client.register_queue(:test)
-      client.send(:subscriber).expects(:listen_queues).with([:test]).yields
+      client.send(:subscriber).expects(:listen_queues).with(['test']).yields
       client.listen_queues([:test])
     end
 
@@ -283,10 +291,34 @@ module Beetle
       assert_raises(UnknownQueue) { Client.new.listen_queues([:foobar])}
     end
 
+    test "trying to pause listening on an unknown queue should raise an exception" do
+      client = Client.new
+      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+    end
+
+    test "trying to resume listening on an unknown queue should raise an exception" do
+      client = Client.new
+      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+    end
+
     test "should delegate stop_listening to the subscriber instance" do
       client = Client.new
       client.send(:subscriber).expects(:stop!)
       client.stop_listening
+    end
+
+    test "should delegate pause_listening to the subscriber instance" do
+      client = Client.new
+      client.register_queue(:test)
+      client.send(:subscriber).expects(:pause_listening).with(%w(test))
+      client.pause_listening(:test)
+    end
+
+    test "should delegate resume_listening to the subscriber instance" do
+      client = Client.new
+      client.register_queue(:test)
+      client.send(:subscriber).expects(:resume_listening).with(%w(test))
+      client.resume_listening(:test)
     end
 
     test "should delegate handler registration to the subscriber instance" do

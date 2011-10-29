@@ -77,17 +77,18 @@ module Beetle
       assert_equal Beetle.config.logger, Handler.logger
     end
 
-    test "default implementation of error and process and failure should not crash" do
+    test "default implementation of error and process and failure and completed should not crash" do
       handler = Handler.create(lambda {})
       handler.process
       handler.error('barfoo')
       handler.failure('razzmatazz')
+      handler.completed
     end
 
     test "should silently rescue exceptions in the process_exception call" do
       mock = mock('error handler')
       e = Exception.new
-      mock.expects(:call).with('message', e).raises(RuntimeError)
+      mock.expects(:call).with('message', e).raises(Exception)
       handler = Handler.create(lambda {}, :errback => mock)
       handler.instance_variable_set(:@message, 'message')
       assert_nothing_raised {handler.process_exception(e)}
@@ -95,10 +96,16 @@ module Beetle
 
     test "should silently rescue exceptions in the process_failure call" do
       mock = mock('failure handler')
-      mock.expects(:call).with('message', 1).raises(RuntimeError)
+      mock.expects(:call).with('message', 1).raises(Exception)
       handler = Handler.create(lambda {}, :failback => mock)
       handler.instance_variable_set(:@message, 'message')
       assert_nothing_raised {handler.process_failure(1)}
+    end
+
+    test "should silently rescue exceptions in the processing_completed call" do
+      handler = Handler.create(lambda {})
+      handler.expects(:completed).raises(Exception)
+      assert_nothing_raised {handler.processing_completed}
     end
 
   end

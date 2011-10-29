@@ -16,7 +16,7 @@ module Beetle
         Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
         Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
         Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-        Errno::EHOSTUNREACH, Errno::ECONNRESET
+        Errno::EHOSTUNREACH, Errno::ECONNRESET, Timeout::Error
       ]
     end
 
@@ -130,8 +130,12 @@ module Beetle
       [status, result]
     end
 
-    def purge(queue_name) #:nodoc:
-      each_server { queue(queue_name).purge rescue nil }
+    def purge(queue_names) #:nodoc:
+      each_server do
+        queue_names.each do |name|
+          queue(name).purge rescue nil
+        end
+      end
     end
 
     def stop #:nodoc:
@@ -210,7 +214,7 @@ module Beetle
           end
         end
       rescue Exception => e
-        logger.error "Beetle: error closing down bunny #{e}"
+        logger.warn "Beetle: error closing down bunny #{e}"
         Beetle::reraise_expectation_errors!
       ensure
         @bunnies[@server] = nil

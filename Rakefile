@@ -1,8 +1,11 @@
 require 'rake'
 require 'rake/testtask'
 require 'rcov/rcovtask'
+require 'bundler/gem_tasks'
+
+# rake 0.9.2 hack to supress deprecation warnings caused by cucumber
+include Rake::DSL if RAKEVERSION >= "0.9"
 require 'cucumber/rake/task'
-require 'active_support'
 
 # 1.8/1.9 compatible way of loading lib/beetle.rb
 $:.unshift 'lib'
@@ -28,7 +31,6 @@ namespace :test do
     system 'open test/coverage/index.html'
   end if RUBY_PLATFORM =~ /darwin/
 end
-
 
 namespace :beetle do
   task :test do
@@ -106,9 +108,4 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('**/*.rdoc')
   rdoc.rdoc_files.include('MIT-LICENSE')
   rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
-desc "build the beetle gem"
-task :build do
-  system("gem build beetle.gemspec")
 end

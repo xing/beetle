@@ -55,11 +55,24 @@ module Beetle
     end
   end
 
-  class RedisTimeoutTest < Test::Unit::TestCase
-    test "should use a timer" do
-      r = Redis.new(:host => "localhost", :port => 6390, :timeout => 1)
-      r.client.expects(:with_timeout).with(1).raises(Timeout::Error)
-      assert_equal({}, r.info_with_rescue)
+  class HiredisLoadedTest < Test::Unit::TestCase
+    test 'should be using hiredis instead of the redis ruby backend' do
+      assert defined?(Hiredis)
     end
   end
+
+  class BrokenRedisShutdownTest < Test::Unit::TestCase
+    def setup
+      @r = Redis.new(:host => "localhost", :port => 6390)
+    end
+
+    # if this test fails after upgrading redis, we can probably remove
+    # our custom shutdown method from redis_ext.rb
+    test "redis shutdown implementation is broken" do
+      @r.client.expects(:call_without_reply).with([:shutdown]).once
+      @r.client.expects(:disconnect).never
+      @r.broken_shutdown
+    end
+  end
+
 end

@@ -33,6 +33,10 @@ module Beetle
       @server = s
     end
 
+    def server_from_settings(settings)
+      settings.values_at(:host,:port).join(':')
+    end
+
     def each_server
       @servers.each { |s| set_current_server(s); yield }
     end

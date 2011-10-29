@@ -274,7 +274,7 @@ module Beetle
       @pub.expects(:set_current_server).with("b").in_sequence(s)
       @pub.expects(:queue).with("queue").returns(queue).in_sequence(s)
       queue.expects(:purge).in_sequence(s)
-      @pub.purge("queue")
+      @pub.purge(["queue"])
     end
   end
 

@@ -23,9 +23,9 @@ module Beetle
     # The current redis master
     attr_reader :current_master
 
-    # Unique id for this instance (defaults to the hostname)
+    # Unique id for this instance (defaults to the fully qualified hostname)
     def id
-      @id ||= `hostname`.chomp
+      @id ||= Beetle.hostname
     end
 
     def initialize #:nodoc:
