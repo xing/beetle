@@ -44,7 +44,6 @@ module Beetle
 
     def server_status(response, type)
       response.status = 200
-      config_server.redis.refresh
       status = config_server.status
       response.content =
         case type
