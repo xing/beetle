@@ -59,6 +59,10 @@ module Beetle
       @server.beetle.expects(:publish).with(:reconfigure, payload)
       @server.master_available!
     end
+
+    test "should be able to report current status" do
+      assert @server.status.is_a?(Hash)
+    end
   end
 
   class RedisConfigurationServerInvalidationTest < Test::Unit::TestCase

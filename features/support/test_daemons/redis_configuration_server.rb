@@ -1,4 +1,5 @@
 require 'daemon_controller'
+require 'net/http'
 
 module TestDaemons
   class RedisConfigurationServer
@@ -25,7 +26,7 @@ module TestDaemons
       DaemonController.new(
          :identifier    => "Redis configuration test server",
          :start_command => "ruby bin/beetle configuration_server start -- -v --redis-master-file #{redis_master_file} --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-retry-interval 1 --pid-dir #{tmp_path} --amqp-servers 127.0.0.1:5672",
-         :ping_command  => lambda{ true },
+         :ping_command  => lambda{ answers_text_requests? },
          :pid_file      => pid_file,
          :log_file      => log_file,
          :start_timeout => 5
@@ -48,5 +49,39 @@ module TestDaemons
       File.expand_path(File.dirname(__FILE__) + "/../../../tmp")
     end
 
+    def self.answers_text_requests?
+      response = get_status("/.txt", "text/plain")
+      response.code == '200' &&
+        response.content_type == "text/plain"
+    rescue
+      false
+    end
+
+    def self.answers_json_requests?
+      response = get_status("/.json", "application/json")
+      response.code == '200' &&
+        response.content_type == "application/json"
+    rescue
+      false
+    end
+
+    def self.answers_html_requests?
+      response = get_status("/", "text/html")
+      response.code == '200' &&
+        response.content_type == "txt/html"
+    rescue
+      false
+    end
+
+    def self.get_status(path, content_type)
+      uri = URI.parse("http://127.0.0.1:8080#{path}")
+      http = Net::HTTP.new(uri.host, uri.port)
+      request = Net::HTTP::Get.new(uri.request_uri)
+      request['Accept'] = content_type
+      response = http.request(request)
+      # $stderr.puts response.content_type
+      # $stderr.puts response.body
+      response
+    end
   end
 end
