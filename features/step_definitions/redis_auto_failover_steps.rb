@@ -134,7 +134,17 @@ Then /^a system notification for no slave available to become new master should 
 end
 
 Then /^the redis configuration server should answer http requests$/ do
-  TestDaemons::RedisConfigurationServer.answers_text_requests?
-  TestDaemons::RedisConfigurationServer.answers_html_requests?
-  TestDaemons::RedisConfigurationServer.answers_json_requests?
+  assert TestDaemons::RedisConfigurationServer.answers_text_requests?
+  assert TestDaemons::RedisConfigurationServer.answers_html_requests?
+  assert TestDaemons::RedisConfigurationServer.answers_json_requests?
+end
+
+Given /^an immediate master switch is initiated and responds with (\d+)$/ do |response_code|
+  response = TestDaemons::RedisConfigurationServer.initiate_master_switch
+  assert_equal response_code, response.code
+  sleep 1
+end
+
+Then /^the system can run for a while without dying$/ do
+  sleep 60
 end

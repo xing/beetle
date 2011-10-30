@@ -63,6 +63,28 @@ module Beetle
     test "should be able to report current status" do
       assert @server.status.is_a?(Hash)
     end
+
+    test "should not execute a conditional master switch if the current master is available" do
+      @server.expects(:master_available?).returns(true)
+      @server.expects(:paused?).returns(false)
+      @server.expects(:master_unavailable!).never
+      assert !@server.initiate_master_switch
+    end
+
+    test "should not execute a conditional master switch if a switch is already in progress" do
+      @server.expects(:master_available?).returns(false)
+      @server.expects(:paused?).returns(true)
+      @server.expects(:master_unavailable!).never
+      assert @server.initiate_master_switch
+    end
+
+    test "should execute a conditional master switch if the current master is unavailable and no switch is in progress yet" do
+      @server.expects(:master_available?).returns(false)
+      @server.expects(:master_unavailable!).once
+      @server.expects(:paused?).returns(false)
+      assert @server.initiate_master_switch
+    end
+
   end
 
   class RedisConfigurationServerInvalidationTest < Test::Unit::TestCase

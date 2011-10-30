@@ -24,6 +24,7 @@ module Beetle
       #   @http_post_content
       #   @http_headers
       response = EM::DelegatedHttpResponse.new(self)
+      response.headers['Refresh'] = '3; url=/'
       # headers = @http_headers.split("\0").inject({}){|h, s| (s =~ /^([^:]+): (.*)$/ && (h[$1] = $2)); h }
 
       case @http_request_uri
@@ -36,6 +37,8 @@ module Beetle
       when "/.txt"
         response.content_type 'text/plain'
         server_status(response, "plain")
+      when '/initiate_master_switch'
+        initiate_master_switch(response)
       else
         not_found(response)
       end
@@ -74,7 +77,13 @@ module Beetle
         row =~/(^[^:]+): (.*)$/
         b << "<tr><td>#{$1}</td><td>#{$2}</td></tr>\n"
       end
-      b << "</table></body></html>"
+      b << "</table>"
+      unless status[:redis_master_available?]
+        b << "<form name='masterswitch' method='post' action='/initiate_master_switch'>"
+        b << "<a href='javascript: document.masterswitch.submit();'>Initiate master switch</a>"
+        b << "</form>"
+      end
+      b << "</body></html>"
     end
 
     def html_styles(status)
@@ -86,8 +95,30 @@ body { margin: 1em; }
 table tr:nth-child(2n+1){ background:#fff; }
 td { padding: 0.1em 0.2em; }
 h1 { color: #{warn_color}; margin-bottom: 0.2em;}
+a:link, a:visited {text-decoration:none; color:#A52A2A;}
+a:hover, a:active {text-decoration:none; color:#FF0000;}
+a {
+  font-size: 2em; padding: 10px; background: #cdcdcd;
+  -moz-border-radius: 5px;
+   border-radius: 5px;
+  -moz-box-shadow: 2px 2px 2px #bbb;
+  -webkit-box-shadow: 2px 2px 2px #bbb;
+  box-shadow: 2px 2px 2px #bbb;
+}
+form { margin-top: 1em; }
 </style>
 EOS
+    end
+
+    def initiate_master_switch(response)
+      response.content_type 'text/plain'
+      if config_server.initiate_master_switch
+        response.status = 201
+        response.content = "Master switch initiated"
+      else
+        response.status = 200
+        response.content = "No master switch necessary"
+      end
     end
 
     def not_found(response)

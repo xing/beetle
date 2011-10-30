@@ -56,6 +56,7 @@ module Beetle
         :redis_master => current_master.try(:server).to_s,
         :redis_master_available? => master_available?,
         :redis_slaves_available => available_slaves.map(&:server),
+        :switch_in_progress => paused?,
       }
     end
 
@@ -145,6 +146,17 @@ module Beetle
     # list of available redis slaves
     def available_slaves
       redis.slaves
+    end
+
+    # initiate a master switch if the current master is not available and no switch is in progress
+    def initiate_master_switch
+      redis.refresh
+      available, switch_in_progress = master_available?, paused?
+      logger.debug "initiating master switch: already in progress = #{switch_in_progress}"
+      unless available || switch_in_progress
+        master_unavailable!
+      end
+      !available || switch_in_progress
     end
 
     private

@@ -66,9 +66,10 @@ module TestDaemons
     end
 
     def self.answers_html_requests?
-      response = get_status("/", "text/html")
-      response.code == '200' &&
-        response.content_type == "txt/html"
+      response1 = get_status("/", "text/html")
+      response2 = get_status("/.html", "text/html")
+      response1.code == '200' && response2.code == '200' &&
+        response1.content_type == "text/html" && response2.content_type == "text/html"
     rescue
       false
     end
@@ -79,9 +80,14 @@ module TestDaemons
       request = Net::HTTP::Get.new(uri.request_uri)
       request['Accept'] = content_type
       response = http.request(request)
-      # $stderr.puts response.content_type
-      # $stderr.puts response.body
       response
     end
+
+    def self.initiate_master_switch
+      http = Net::HTTP.new('127.0.0.1', 8080)
+      response = http.post '/initiate_master_switch', ''
+      response
+    end
+
   end
 end

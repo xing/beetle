@@ -107,3 +107,42 @@ Feature: Redis auto failover
   Scenario: Redis configuation server should embed a http server
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     Then the redis configuration server should answer http requests
+
+  Scenario: Accelerated redis master switch when master is down
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And redis server "redis-1" is down
+    And an immediate master switch is initiated and responds with 201
+    Then a system notification for "redis-1" not being available should be sent
+    And the role of redis server "redis-2" should be "master"
+    And the redis master of "rc-client-1" should be "redis-2"
+    And the redis master of "rc-client-2" should be "redis-2"
+    And the redis master of the beetle handler should be "redis-2"
+    And a system notification for switching from "redis-1" to "redis-2" should be sent
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
+
+  Scenario: Accelerated redis master switch when master is up
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And an immediate master switch is initiated and responds with 200
+    Then the role of redis server "redis-1" should be "master"
+    And the redis master of "rc-client-1" should be "redis-1"
+    And the redis master of "rc-client-2" should be "redis-1"
+    And the redis master of the beetle handler should be "redis-1"
+    And the role of redis server "redis-2" should be "slave"
+
+#   Scenario: Running the system for a few seconds to perform manual testing
+#     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+#     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+#     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+#     And a beetle handler using the redis-master file from "rc-client-1" exists
+#     And the redis master of "rc-client-1" should be "redis-1"
+#     And the redis master of "rc-client-2" should be "redis-1"
+#     And the redis master of the beetle handler should be "redis-1"
+#     And the role of redis server "redis-2" should be "slave"
+#     Then the system can run for a while without dying
