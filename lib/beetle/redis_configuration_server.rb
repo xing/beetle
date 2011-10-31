@@ -279,6 +279,7 @@ module Beetle
         beetle.publish(:system_notification, {"message" => msg}.to_json)
 
         new_master.master!
+        write_redis_master_file(new_master.server)
         @current_master = new_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"

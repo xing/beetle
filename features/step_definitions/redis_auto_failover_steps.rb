@@ -95,6 +95,12 @@ Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configura
   assert master, "#{redis_name} is not master of #{redis_configuration_client_name}, master file content: #{server_info.inspect}"
 end
 
+Then /^the redis master file of the redis configuration server should contain "([^"]*)"$/ do |redis_name|  # " for emacs :(
+  master_file = TestDaemons::RedisConfigurationServer.redis_master_file
+  file_contents = File.read(master_file).chomp
+  assert_equal TestDaemons::Redis[redis_name].ip_with_port, file_contents
+end
+
 Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
   master_file = redis_master_file(redis_configuration_client_name)
   empty = false

@@ -147,6 +147,7 @@ module Beetle
       new_master = stub(:master! => nil, :server => "jo:6379")
       @server.beetle.expects(:publish).with(:system_notification, anything)
       @server.expects(:determine_new_master).returns(new_master)
+      @server.expects(:write_redis_master_file).with(new_master.server)
       @server.send :switch_master
       assert_equal new_master, @server.current_master
     end

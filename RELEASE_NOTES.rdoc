@@ -2,6 +2,7 @@
 
 == Version 0.3.0
 
+* redis master file contents now correctly reflects the state of the running configuration server
 * allow accelerating master switch via POST to redis configuration server
 * embedded http server into the redis configuration server (port 8080)
 * fixed a problem with redis shutdown command

@@ -15,6 +15,7 @@ Feature: Redis auto failover
     And the retry timeout for the redis master check is reached
     Then a system notification for "redis-1" not being available should be sent
     And the role of redis server "redis-2" should be "master"
+    And the redis master file of the redis configuration server should contain "redis-2"
     And the redis master of "rc-client-1" should be "redis-2"
     And the redis master of "rc-client-2" should be "redis-2"
     And the redis master of the beetle handler should be "redis-2"
