@@ -1,9 +1,15 @@
 = Release Notes
 
-== Version 0.3.0.rc.3
+== Version 0.3.0
 
+* allow accelerating master switch via POST to redis configuration server
+* embedded http server into the redis configuration server (port 8080)
+* fixed a problem with redis shutdown command
+* upgraded to redis 2.2.2
+* upgraded to amqp gem version 0.8 line
 * use hiredis as the redis backend, which overcomes lack of proper time-outs in the "generic" redis-rb
   gem for Ruby 1.9
+* use fully qualified hostnames to identify redis configuration clients
 
 == Version 0.2.9.8
 
