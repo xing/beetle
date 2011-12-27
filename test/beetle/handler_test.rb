@@ -80,7 +80,7 @@ module Beetle
     test "default implementation of error and process and failure and completed should not crash" do
       handler = Handler.create(lambda {})
       handler.process
-      handler.error('barfoo')
+      handler.error(StandardError.new('barfoo'))
       handler.failure('razzmatazz')
       handler.completed
     end

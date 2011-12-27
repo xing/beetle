@@ -83,7 +83,7 @@ module Beetle
     # called when handler execution raised an exception and no error callback was
     # specified when the handler instance was created
     def error(exception)
-      logger.error "Beetle: handler execution raised an exception: #{exception}"
+      logger.error "Beetle: handler execution raised an exception: #{exception.class}(#{exception.message})"
     end
 
     # called when message processing has finally failed (i.e., the number of allowed
