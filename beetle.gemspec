@@ -35,7 +35,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("uuid4r",                  [">= 0.1.2"])
   s.add_runtime_dependency("bunny",                   ["= 0.7.8"])
   s.add_runtime_dependency("redis",                   ["= 2.2.2"])
-  s.add_runtime_dependency("hiredis",                 ["= 0.3.2"])
+  s.add_runtime_dependency("hiredis",                 ["= 0.4.4"])
   s.add_runtime_dependency("amq-client",              ["= 0.9.1"])
   s.add_runtime_dependency("amq-protocol",            ["= 0.9.0"])
   s.add_runtime_dependency("amqp",                    ["= 0.9.2"])
