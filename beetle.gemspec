@@ -44,7 +44,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("daemons",                 [">= 1.0.10"])
   s.add_development_dependency("rake",                [">= 0.8.7"])
   s.add_development_dependency("mocha",               [">= 0"])
-  s.add_development_dependency("rcov",                [">= 0"])
+  s.add_development_dependency("rcov",                ["~> 0.9.10"])
   s.add_development_dependency("cucumber",            [">= 0.7.2"])
   s.add_development_dependency("daemon_controller",   [">= 0"])
 end
