@@ -15,7 +15,7 @@ Beetle.config.logger.level = Logger::INFO
 
 # setup client
 client = Beetle::Client.new
-client.register_queue(:test)
+client.register_queue(:test, :arguments => {"x-message-ttl" => 60 * 1000})
 client.register_message(:test)
 
 # purge the test queue

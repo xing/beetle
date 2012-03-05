@@ -40,7 +40,7 @@ module Beetle
   # AMQP options for exchange creation
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]
   # AMQP options for queue creation
-  QUEUE_CREATION_KEYS     = [:passive, :durable, :exclusive, :auto_delete, :no_wait]
+  QUEUE_CREATION_KEYS     = [:passive, :durable, :exclusive, :auto_delete, :no_wait, :arguments]
   # AMQP options for queue bindings
   QUEUE_BINDING_KEYS      = [:key, :no_wait]
   # AMQP options for message publishing

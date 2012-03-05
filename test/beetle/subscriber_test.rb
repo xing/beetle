@@ -128,12 +128,12 @@ module Beetle
     end
 
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
-      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#")
+      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#", "arguments" => {"schmu" => 5})
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("MQ")
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false).returns(q)
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"schmu" => 5}).returns(q)
       @sub.expects(:channel).returns(m)
 
       @sub.send(:queue, "some_queue")
