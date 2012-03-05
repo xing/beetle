@@ -149,9 +149,10 @@ module Beetle
 
     # this is a convenience method to configure exchanges, queues, messages and handlers
     # with a common set of options. allows one to call all register methods without the
-    # register_ prefix. returns self.
+    # register_ prefix. returns self. if the passed in block has no parameters, the block
+    # will be evaluated in the context of the client configurator.
     #
-    # Example:
+    # Example: (block with config argument)
     #  client = Beetle.client.new.configure :exchange => :foobar do |config|
     #    config.queue :q1, :key => "foo"
     #    config.queue :q2, :key => "bar"
@@ -160,8 +161,24 @@ module Beetle
     #    config.handler :q1 { puts "got foo"}
     #    config.handler :q2 { puts "got bar"}
     #  end
-    def configure(options={}) #:yields: config
-      yield Configurator.new(self, options)
+    #
+    # Example: (block without config argument)
+    #  client = Beetle.client.new.configure :exchange => :foobar do
+    #    queue :q1, :key => "foo"
+    #    queue :q2, :key => "bar"
+    #    message :foo
+    #    message :bar
+    #    handler :q1 { puts "got foo"}
+    #    handler :q2 { puts "got bar"}
+    #  end
+    #
+    def configure(options={}, &block)
+      configurator = Configurator.new(self, options)
+      if block.arity == 1
+        yield configurator
+      else
+        configurator.instance_eval &block
+      end
       self
     end
 

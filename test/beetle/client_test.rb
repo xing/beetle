@@ -151,6 +151,16 @@ module Beetle
       @client.configure(options) {|config| assert_equal 42, config}
     end
 
+    test "configure should eval a passed block without arguments in the context of the configurator" do
+      options = {:exchange => :foobar}
+      m = "mock"
+      m.expects(:foo).returns(42)
+      Client::Configurator.expects(:new).with(@client, options).returns(m)
+      value = nil
+      @client.configure(options) { value = foo }
+      assert_equal 42, value
+    end
+
     test "a configurator should forward all known registration methods to the client" do
       options = {:foo => :bar}
       config = Client::Configurator.new(@client, options)
