@@ -363,7 +363,7 @@ module Beetle
       client = Client.new
       client.register_queue("test")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(client.queues.keys, {}, nil).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(client.queues.keys, {}, nil).yields(message_stub_for_tracing)
       sub.expects(:listen_queues)
       client.stubs(:puts)
       client.trace
@@ -379,11 +379,19 @@ module Beetle
       client.register_queue("test")
       client.register_queue("irrelevant")
       sub = client.send(:subscriber)
-      sub.expects(:register_handler).with(["test"], {}, nil).yields(stub_everything("message"))
+      sub.expects(:register_handler).with(["test"], {}, nil).yields(message_stub_for_tracing)
       sub.expects(:listen_queues).with(["test"])
       client.stubs(:puts)
       client.trace(["test"])
     end
 
+    def message_stub_for_tracing
+      header_stub = stub_everything("header")
+      header_stub.stubs(:method).returns(stub_everything("method"))
+      header_stub.stubs(:attributes).returns(stub_everything("attributes"))
+      msg_stub = stub_everything("message")
+      msg_stub.stubs(:header).returns(header_stub)
+      msg_stub
+    end
   end
 end
