@@ -33,6 +33,12 @@ if RUBY_VERSION < "1.9"
       system 'open test/coverage/index.html'
     end if RUBY_PLATFORM =~ /darwin/
   end
+else
+  namespace :test do
+    task :coverage => :test do
+      system 'open coverage/index.html'
+    end
+  end
 end
 
 namespace :beetle do
@@ -101,7 +107,7 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
-require 'rake/rdoctask'
+require 'rdoc/task'
 
 Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_dir = 'site/rdoc'
