@@ -10,6 +10,7 @@ require 'socket'
 require 'beetle/version'
 
 module Beetle
+  #:nocov:
   Timer = if RUBY_VERSION < "1.9"
             begin
               require 'system_timer'
@@ -23,6 +24,7 @@ module Beetle
             require 'timeout'
             Timeout
           end
+  #:nocov:
 
   # abstract superclass for Beetle specific exceptions
   class Error < StandardError; end
@@ -80,7 +82,9 @@ module Beetle
       raise if $!.is_a?(Mocha::ExpectationError)
     end
   else
+    #:nocov:
     def self.reraise_expectation_errors! #:nodoc:
     end
+    #:nocov:
   end
 end

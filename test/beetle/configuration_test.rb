@@ -13,6 +13,12 @@ module Beetle
       assert_equal new_value, config.gc_threshold
     end
 
+    test "should log an error if the specified file does not exist" do
+      config    = Configuration.new
+      config.logger.expects(:error)
+      assert_raises(Errno::ENOENT){ config.config_file = "some/path/to/a/file" }
+    end
+
     test "should log to STDOUT if no log_file given" do
       config = Configuration.new
       Logger.expects(:new).with(STDOUT).returns(stub_everything)
