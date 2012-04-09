@@ -52,7 +52,11 @@ module Beetle
   def self.hostname
     name = Socket.gethostname
     parts = name.split('.')
-    parts.size > 1 ? name : Socket.gethostbyname(parts.first).first
+    if parts.size > 1
+      name
+    else
+      Socket.gethostbyname(parts.first).first rescue name
+    end
   end
 
   # use ruby's autoload mechanism for loading beetle classes
