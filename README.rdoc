@@ -85,7 +85,7 @@ For development, you'll need
 {Ali Jelveh}[http://github.com/dudemeister] and
 {Sebastian Roebke}[http://github.com/boosty].
 
-You cand find out more about our work on our {dev blog}[http://devblog.xing.com].
+You can find out more about our work on our {dev blog}[http://devblog.xing.com].
 
 Copyright (c) 2010 {XING AG}[http://www.xing.com/]
 
