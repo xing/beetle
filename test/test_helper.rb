@@ -13,14 +13,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require File.expand_path(File.dirname(__FILE__) + '/colorized_test_output')
 
 # we can remove this hack which is needed only for testing
-begin
-  require 'qrack/errors'
-rescue LoadError
-  module Qrack
-    class BufferOverflowError < StandardError; end
-    class InvalidTypeError < StandardError; end
-  end
-end
+require 'qrack/errors'
 
 
 class Test::Unit::TestCase
