@@ -199,7 +199,7 @@ module Beetle
     # have we already seen this message? if not, set the status to "incomplete" and store
     # the message exipration timestamp in the deduplication store.
     def key_exists?
-      old_message = 0 == @store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at, :timeout => now + timeout)
+      old_message = !@store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at, :timeout => now + timeout)
       if old_message
         logger.debug "Beetle: received duplicate message: #{msg_id} on queue: #{@queue}"
       end

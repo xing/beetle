@@ -13,11 +13,11 @@ module Beetle
       assert_equal 0, @r.del("hahahaha")
     end
 
-    test "msetnx returns 0 or 1" do
-      assert_equal 1, @r.msetnx("a", 1, "b", 2)
+    test "msetnx returns a boolean" do
+      assert_equal true, @r.msetnx("a", 1, "b", 2)
       assert_equal "1", @r.get("a")
       assert_equal "2", @r.get("b")
-      assert_equal 0, @r.msetnx("a", 3, "b", 4)
+      assert_equal false, @r.msetnx("a", 3, "b", 4)
       assert_equal "1", @r.get("a")
       assert_equal "2", @r.get("b")
     end

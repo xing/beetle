@@ -61,23 +61,14 @@ module Beetle
     end
   end
 
-  class BrokenRedisShutdownTest < Test::Unit::TestCase
+  class RedisShutdownTest < Test::Unit::TestCase
     def setup
       @r = Redis.new(:host => "localhost", :port => 6390)
     end
 
-    # if this test fails after upgrading redis, we can probably remove
-    # our custom shutdown method from redis_ext.rb
-    test "orginal redis shutdown implementation is broken" do
-      @r.client.expects(:call_without_reply).with([:shutdown]).once
-      @r.client.expects(:disconnect).never
-      @r.broken_shutdown
-    end
-
-    test "patched redis shutdown implementation should call :shutdown and rescue Errno::ECONNREFUSED" do
-      @r.client.expects(:call).with([:shutdown]).once.raises(Errno::ECONNREFUSED)
-      @r.client.expects(:disconnect).once
-      @r.shutdown
+    test "redis shutdown implementation should call :shutdown and return nil" do
+      @r.client.expects(:call).with([:shutdown]).once.raises(Redis::ConnectionError)
+      assert_nil @r.shutdown
     end
   end
 
