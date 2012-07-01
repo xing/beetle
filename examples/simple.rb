@@ -1,8 +1,6 @@
 # simple.rb
 # this example shows you a very basic message/handler setup
 #
-#
-#
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
 # start it with ruby simple.rb
