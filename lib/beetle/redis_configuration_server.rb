@@ -86,7 +86,7 @@ module Beetle
       return unless redeem_token(token)
       @client_pong_ids_received << id
       if all_client_pong_ids_received?
-        logger.debug "All client pong messages received"
+        logger.info "All client pong messages received"
         @available_timer.cancel if @available_timer
         invalidate_current_master
       end
@@ -96,10 +96,10 @@ module Beetle
     def client_started(payload)
       id = payload["id"]
       if client_id_valid?(id)
-        logger.info("Received client_started message from id '#{id}'")
+        logger.info "Received client_started message from id '#{id}'"
       else
         msg = "Received client_started message from unknown id '#{id}'"
-        logger.error(msg)
+        logger.error msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
     end
@@ -215,7 +215,7 @@ module Beetle
     def validate_pong_client_id(client_id)
       unless known_client = client_id_valid?(client_id)
         msg = "Received pong message from unknown id '#{client_id}'"
-        logger.error(msg)
+        logger.error msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
       known_client
@@ -275,7 +275,7 @@ module Beetle
     def switch_master
       if new_master = determine_new_master
         msg = "Setting redis master to '#{new_master.server}' (was '#{current_master.server}')"
-        logger.warn(msg)
+        logger.warn msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
 
         new_master.master!
@@ -283,7 +283,7 @@ module Beetle
         @current_master = new_master
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
-        logger.error(msg)
+        logger.error msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
 
