@@ -216,6 +216,7 @@ module Beetle
       unless known_client = client_id_valid?(client_id)
         msg = "Received pong message from unknown id '#{client_id}'"
         logger.error msg
+        logger.info "Sending system_notification message with text: #{msg}"
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
       known_client
@@ -239,12 +240,14 @@ module Beetle
 
     def check_all_clients_available
       generate_new_token
+      logger.info "Sending ping message with token '#{@current_token}'"
       beetle.publish(:ping, payload_with_current_token)
       @available_timer = EM::Timer.new(config.redis_configuration_client_timeout) { cancel_invalidation }
     end
 
     def invalidate_current_master
       generate_new_token
+      logger.info "Sending invalidate message with token '#{@current_token}'"
       beetle.publish(:invalidate, payload_with_current_token)
       @invalidate_timer = EM::Timer.new(config.redis_configuration_client_timeout) { cancel_invalidation }
     end
@@ -276,6 +279,7 @@ module Beetle
       if new_master = determine_new_master
         msg = "Setting redis master to '#{new_master.server}' (was '#{current_master.server}')"
         logger.warn msg
+        logger.info "Sending system_notification message with text: #{msg}"
         beetle.publish(:system_notification, {"message" => msg}.to_json)
 
         new_master.master!
@@ -284,6 +288,7 @@ module Beetle
       else
         msg = "Redis master could not be switched, no slave available to become new master, promoting old master"
         logger.error msg
+        logger.info "Sending system_notification message with text: #{msg}"
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
 
@@ -292,7 +297,7 @@ module Beetle
     end
 
     def publish_master(master)
-      logger.info "Publishing reconfigure message with server '#{master.server}'"
+      logger.info "Sending reconfigure message with server '#{master.server}'"
       beetle.publish(:reconfigure, payload_with_current_token({"server" => master.server}))
     end
 
