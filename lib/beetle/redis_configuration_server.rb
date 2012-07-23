@@ -152,7 +152,7 @@ module Beetle
     def initiate_master_switch
       redis.refresh
       available, switch_in_progress = master_available?, paused?
-      logger.debug "initiating master switch: already in progress = #{switch_in_progress}"
+      logger.debug "Initiating master switch: already in progress = #{switch_in_progress}"
       unless available || switch_in_progress
         master_unavailable!
       end
@@ -205,7 +205,7 @@ module Beetle
       else
         write_redis_master_file(current_master.server) if @current_master = redis.auto_detect_master
       end
-      current_master or raise NoRedisMaster.new("failed to determine initial redis master")
+      current_master or raise NoRedisMaster.new("Failed to determine initial redis master")
     end
 
     def determine_new_master
