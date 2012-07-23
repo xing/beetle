@@ -117,16 +117,19 @@ module Beetle
     end
 
     def pong!
+      logger.info "Sending pong message with id '#{id}' and token '#{@current_token}'"
       beetle.publish(:pong, {"id" => id, "token" => @current_token}.to_json)
     end
 
     def client_started!
+      logger.info "Sending client_started message with id '#{id}'"
       beetle.publish(:client_started, {"id" => id}.to_json)
     end
 
     def invalidate!
       @current_master = nil
       clear_redis_master_file
+      logger.info "Sending client_invalidated message with id '#{id}' and token '#{@current_token}'"
       beetle.publish(:client_invalidated, {"id" => id, "token" => @current_token}.to_json)
     end
 
