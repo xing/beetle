@@ -5,7 +5,7 @@ end
 
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
   TestDaemons::Redis[redis_name].start
-  Given "redis server \"#{redis_name}\" is slave of \"#{redis_master_name}\""
+  step "redis server \"#{redis_name}\" is slave of \"#{redis_master_name}\""
 end
 
 Given /^redis server "([^\"]*)" is master$/ do |redis_name|

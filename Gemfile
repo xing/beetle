@@ -8,7 +8,7 @@ gem "rcov", "~> 0.9.10", :platform => :ruby_18
 gem "simplecov", "~> 0.6.1", :platform => :ruby_19
 gem "rdoc", "~> 3.0"
 
-gem "cucumber", ">= 0.7.2"
+gem "cucumber", ">= 1.2.1"
 gem "daemon_controller", ">= 0"
 
 gem 'SystemTimer', '=1.2.3', :platform => :ruby_18
