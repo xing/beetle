@@ -303,38 +303,26 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerSystemNotificationAndLoggingTest < Test::Unit::TestCase
+  class RedisConfigurationServerSystemNotificationTest < Test::Unit::TestCase
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
       @server.stubs(:beetle).returns(stub(:publish))
-      @server.stubs(:logger).returns(stub)
       EventMachine.stubs(:add_timer).yields
     end
 
-    test "should log and send a system notification when pong message from unknown client received" do
+    test "should send a system notification when receiving pong message from unknown client" do
       payload = {"id" => "unknown-client", "token" => @server.current_token}
       msg = "Received pong message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
-      @server.logger.expects(:error).with(msg)
       @server.pong(payload)
     end
 
-    test "should warn about unknown clients when receiving client_started messages" do
+    test "should send a system notification when receiving client_started message from unknown client" do
       payload = {"id" => "unknown-client"}
       msg = "Received client_started message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
-      @server.logger.expects(:error).with(msg)
       @server.client_started(payload)
     end
-
-    test "should log an info about received client_started client_started messages" do
-      payload = {"id" => "known-client"}
-      msg = "Received client_started message from id 'known-client'"
-      @server.logger.expects(:info).with(msg)
-      @server.expects(:client_id_valid?).with('known-client').returns(true)
-      @server.client_started(payload)
-    end
-
   end
 end
