@@ -29,6 +29,7 @@ module Beetle
       @processor = processor
       @error_callback = opts[:errback]
       @failure_callback = opts[:failback]
+      @__handler_called__ = nil
     end
 
     # called when a message should be processed. if the message was caused by an RPC, the
@@ -43,6 +44,8 @@ module Beetle
       else
         process
       end
+    ensure
+      @__handler_called__ = true
     end
 
     # called for message processing if no processor was specfied when the handler instance
@@ -75,7 +78,7 @@ module Beetle
 
     # should not be overriden in subclasses
     def processing_completed
-      completed
+      completed if @__handler_called__
     rescue Exception
       Beetle::reraise_expectation_errors!
     end

@@ -103,8 +103,15 @@ module Beetle
     end
 
     test "should silently rescue exceptions in the processing_completed call" do
-      handler = Handler.create(lambda {})
+      handler = Handler.create(lambda {|m|})
       handler.expects(:completed).raises(Exception)
+      handler.call(mock("message"))
+      assert_nothing_raised {handler.processing_completed}
+    end
+
+    test "should not invoke completed method when the hander was never called" do
+      handler = Handler.create(lambda {})
+      handler.expects(:completed).never
       assert_nothing_raised {handler.processing_completed}
     end
 
