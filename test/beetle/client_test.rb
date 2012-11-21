@@ -181,6 +181,26 @@ module Beetle
 
       assert_raises(NoMethodError){ config.moo }
     end
+
+    test "a configurator should forward all known registration methods to the client (no arguments block syntax)" do
+      options = {:foo => :bar}
+      config = Client::Configurator.new(@client, options)
+      @client.expects(:register_exchange).with(:a, options)
+      @client.expects(:register_queue).with(:q, options.merge(:exchange => :foo))
+      @client.expects(:register_binding).with(:b, options.merge(:key => :baz))
+      @client.expects(:register_message).with(:m, options.merge(:exchange => :foo))
+      @client.expects(:register_handler).with(:h, options.merge(:queue => :q))
+      @client.configure(options) do
+        exchange(:a)
+        queue(:q, :exchange => :foo)
+        binding(:b, :key => :baz)
+        message(:m, :exchange => :foo)
+        handler(:h, :queue => :q)
+      end
+
+      assert_raises(NoMethodError){ @client.configure{moo(3)} }
+    end
+
   end
 
   class ClientTest < Test::Unit::TestCase

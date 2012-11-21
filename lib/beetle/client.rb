@@ -299,6 +299,10 @@ module Beetle
         options = @options.merge(args.last.is_a?(Hash) ? args.pop : {})
         @client.send("register_#{method}", *(args+[options]), &block)
       end
+      # need to override binding explicitely
+      def binding(*args, &block)
+        method_missing(:binding, *args, &block)
+      end
     end
 
     def publisher
