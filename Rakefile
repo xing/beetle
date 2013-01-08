@@ -53,20 +53,33 @@ namespace :beetle do
 end
 
 namespace :rabbit do
-  def start(node_name, port)
+  def start(node_name, port, web_port)
     script = File.expand_path(File.dirname(__FILE__)+"/script/start_rabbit")
-    puts "starting rabbit #{node_name} on port #{port}"
+    config_file = File.expand_path(File.dirname(__FILE__)+"/tmp/rabbitmq")
+    
+    create_config_file config_file, web_port
+    
+    puts "starting rabbit #{node_name} on port #{port}, web management port #{web_port}"
     puts "type ^C a RETURN to abort"
     sleep 1
-    exec "sudo #{script} #{node_name} #{port}"
+    exec "sudo #{script} #{node_name} #{port} #{config_file}"
   end
+  
+  def create_config_file(config_file, web_port)
+    File.open(config_file+".config",'w')  {|f|
+        f.write("[\n")
+        f.write("{rabbitmq_management, [{listener, [{port, #{web_port}}]}]}\n")
+        f.write("].\n")
+      }  
+  end
+  
   desc "start rabbit instance 1"
   task :start1 do
-    start "rabbit1", 5672
+    start "rabbit1", 5672, 15672
   end
   desc "start rabbit instance 2"
   task :start2 do
-    start "rabbit2", 5673
+    start "rabbit2", 5673, 15673
   end
   desc "reset rabbit instances (deletes all data!)"
   task :reset do
