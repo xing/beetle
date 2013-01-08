@@ -21,6 +21,7 @@ export RABBITMQ_NODENAME=$1
 export RABBITMQ_NODE_PORT=$2
 # Defaults to 5672.
 
+export RABBITMQ_CONFIG_FILE=$3
 # RABBITMQ_CLUSTER_CONFIG_FILE
 # Defaults to /etc/rabbitmq/rabbitmq_cluster.config. If this file is present it
 # is used by the server to auto-configure a RabbitMQ cluster.  See the clustering
