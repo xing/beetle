@@ -348,7 +348,7 @@ module Beetle
 
       proc = lambda {|*args| raise "crash"}
       s = sequence("s")
-      message.expects(:completed!).never
+      message.expects(:completed!).once
       header.expects(:ack)
       assert_equal RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
     end
@@ -363,7 +363,7 @@ module Beetle
 
       proc = lambda {|*args| raise "crash"}
       s = sequence("s")
-      message.expects(:completed!).never
+      message.expects(:completed!).once
       header.expects(:ack)
       assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
     end
