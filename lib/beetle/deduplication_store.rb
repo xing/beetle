@@ -53,11 +53,43 @@ module Beetle
       keys = redis.keys("msgid:*:expires")
       threshold = now + @config.gc_threshold
       keys.each do |key|
-        expires_at = redis.get key
-        if expires_at && expires_at.to_i < threshold
-          msg_id = msg_id(key)
-          redis.del(*keys(msg_id))
+        gc_key(key, threshold)
+      end
+    end
+
+    # garbage collect keys from a given file
+    def garbage_collect_keys_from_file(file_name, now = Time.now.to_i)
+      threshold = now + @config.gc_threshold
+      expired = total = 0
+      File.foreach(file_name) do |line|
+        line.chomp!
+        total += 1
+        if line =~ /^msgid:.*:expires$/
+          expired += 1 if gc_key(line, threshold)
+        else
+          $stderr.puts "skipping #{line}"
         end
+      end
+      puts "expired #{expired} keys out of #{total}"
+    end
+
+    # garbage collect a single key if it's older than given threshold
+    def gc_key(key, threshold)
+      expires_at = redis.get key
+      if expires_at
+        if expires_at.to_i < threshold
+          msg_id = msg_id(key)
+          # puts "expiring: #{msg_id}"
+          redis.del(*keys(msg_id))
+          return true
+        else
+          # keys has future expiry date
+          # puts "#{msg_id} expires on #{Time.at(expires_at.to_i)}"
+          return false
+        end
+      else
+        # key might have been deleted in the meantime
+        return false
       end
     end
 
