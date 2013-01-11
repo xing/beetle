@@ -22,4 +22,4 @@ begin
   end
 rescue LoadError => e
   # do nothing
-end unless ENV['TM_FILENAME']
+end if $stdout.tty?
