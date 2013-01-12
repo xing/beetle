@@ -39,7 +39,7 @@ More information can be found on the {project website}[http://xing.github.com/be
     b.publish :test, "I'm a test message"
 
 === Subscribing
-    b.listen
+    b.listen_queues
 
 === Examples
 
@@ -65,16 +65,16 @@ To set up a redundant messaging system you will need
 At runtime, Beetle will use
 * {uuid4r}[http://github.com/skaes/uuid4r]
   (which needs ossp-uuid)
-* {bunny}[http://github.com/celldee/bunny]
-* {redis}[http://github.com/ezmobius/redis-rb]
-* {amqp}[http://github.com/tmm1/amqp]
+* {bunny}[http://github.com/ruby-amqp/bunny]
+* {redis}[http://github.com/redis/redis-rb]
+* {amqp}[http://github.com/ruby-amqp/amqp]
   (which is based on {eventmachine}[http://github.com/eventmachine/eventmachine])
 * {daemons}[http://daemons.rubyforge.org/]
 * activesupport
 
 For development, you'll need
 * {mocha}[http://github.com/floehopper/mocha]
-* {rcov}[http://github.com/relevance/rcov]
+* {rcov}[http://github.com/relevance/rcov] (for ruby 1.8.7)
 * {cucumber}[http://github.com/aslakhellesoy/cucumber]
 * {daemon_controller}[http://github.com/FooBarWidget/daemon_controller]
 

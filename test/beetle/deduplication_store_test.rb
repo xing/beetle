@@ -111,4 +111,26 @@ module Beetle
     end
   end
 
+  class GarbageCollectionTest < Test::Unit::TestCase
+    def setup
+      @store = DeduplicationStore.new
+    end
+
+    test "never tries to delete message keys when expire key doesn not exist" do
+      key = "foo"
+      @store.redis.del key
+      assert !@store.gc_key(key, 0)
+    end
+
+    test "rescues exeptions and logs an error" do
+      RedisServerInfo.expects(:new).raises("foo")
+      assert_nothing_raised { @store.garbage_collect_keys_using_master_and_slave }
+    end
+
+    test "logs an error when system command fails" do
+      @store.stubs(:system).returns(false)
+      @store.logger.expects(:error)
+      @store.garbage_collect_keys_using_master_and_slave
+    end
+  end
 end

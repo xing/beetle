@@ -324,5 +324,12 @@ module Beetle
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
       @server.client_started(payload)
     end
+
+    test "should not send a system notification when receiving a client started message from a known client" do
+      payload = {"id" => "rc-client-1"}
+      msg = "Received client_started message from unknown id 'unknown-client'"
+      @server.beetle.expects(:publish).never
+      @server.client_started(payload)
+    end
   end
 end

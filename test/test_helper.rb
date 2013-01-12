@@ -18,6 +18,7 @@ end
 
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 Beetle.config.redis_server = "localhost:6379"
+Beetle.config.redis_servers = "localhost:6379,localhost:6380"
 
 
 def header_with_params(opts = {})

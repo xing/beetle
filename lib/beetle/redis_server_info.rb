@@ -14,7 +14,7 @@ module Beetle
       @instances ||= @config.redis_servers.split(/ *, */).map{|s| Redis.from_server_string(s, @options)}
     end
 
-    # fetches the server from the insatnces whith the given <tt>server</tt> string
+    # fetches the server from the instances whith the given <tt>server</tt> string
     def find(server)
       instances.find{|r| r.server == server}
     end

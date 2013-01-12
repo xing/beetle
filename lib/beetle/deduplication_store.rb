@@ -48,6 +48,29 @@ module Beetle
       key =~ /^(msgid:[^:]*:[-0-9a-f]*):.*$/ && $1
     end
 
+    # garbage collect using master and slave (and redis-cli)
+    def garbage_collect_keys_using_master_and_slave(now = Time.now.to_i)
+      logger.info "garbage collecting obsolete redis keys from #{@config.redis_servers}"
+      info = RedisServerInfo.new(@config, {})
+      info.refresh
+      unless connection = info.slaves.first
+        logger.warn "no slave available, falling back to master."
+        connection = redis
+      end
+      file = "/tmp/beetle_redis_expire_keys_#{$$}.txt"
+      cmd = "redis-cli -h #{connection.host} -p #{connection.port} -n #{@config.redis_db} keys 'msgid:*:expires' > #{file}"
+      logger.info "retrieving expire keys: '#{cmd}'"
+      if system(cmd)
+        garbage_collect_keys_from_file(file, now)
+      else
+        logger.error "could not retrieve expire keys"
+      end
+    rescue => e
+      logger.error "#{e.class}(#{e})"
+    ensure
+      system("rm -f #{file}")
+    end
+
     # garbage collect keys in Redis (always assume the worst!)
     def garbage_collect_keys(now = Time.now.to_i)
       keys = redis.keys("msgid:*:expires")
@@ -63,14 +86,12 @@ module Beetle
       expired = total = 0
       File.foreach(file_name) do |line|
         line.chomp!
-        total += 1
         if line =~ /^msgid:.*:expires$/
+          total += 1
           expired += 1 if gc_key(line, threshold)
-        else
-          $stderr.puts "skipping #{line}"
         end
       end
-      puts "expired #{expired} keys out of #{total}"
+      logger.info "expired #{expired} keys out of #{total}"
     end
 
     # garbage collect a single key if it's older than given threshold
