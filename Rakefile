@@ -55,7 +55,9 @@ end
 namespace :rabbit do
   def start(node_name, port, web_port)
     script = File.expand_path(File.dirname(__FILE__)+"/script/start_rabbit")
-    config_file = File.expand_path(File.dirname(__FILE__)+"/tmp/rabbitmq")
+    # on my machine, the rabbitmq user is not be allowed to access my files.
+    # so we need to put the config file under /tmp
+    config_file = "/tmp/beetle-testing-rabbitmq-#{node_name}"
 
     create_config_file config_file, web_port
 
@@ -66,11 +68,11 @@ namespace :rabbit do
   end
 
   def create_config_file(config_file, web_port)
-    File.open(config_file+".config",'w')  {|f|
-        f.write("[\n")
-        f.write("{rabbitmq_management, [{listener, [{port, #{web_port}}]}]}\n")
-        f.write("].\n")
-      }
+    File.open("#{config_file}.config",'w') do |f|
+      f.puts "["
+      f.puts "  {rabbitmq_management, [{listener, [{port, #{web_port}}]}]}"
+      f.puts "]."
+    end
   end
 
   desc "start rabbit instance 1"

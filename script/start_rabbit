@@ -28,3 +28,5 @@ export RABBITMQ_CONFIG_FILE=$3
 # guide at <http://www.rabbitmq.com/clustering.html> for details.
 
 rabbitmq-server
+
+rm -f $RABBITMQ_CONFIG_FILE
