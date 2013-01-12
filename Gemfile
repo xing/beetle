@@ -2,7 +2,7 @@ source :rubygems
 
 gemspec
 
-gem "rake", "~> 0.9.2.2"
+gem "rake", "~> 10.0.3"
 gem "mocha", "~> 0.11.4"
 gem "rcov", "~> 0.9.10", :platform => :ruby_18
 gem "simplecov", "~> 0.6.1", :platform => :ruby_19

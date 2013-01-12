@@ -124,7 +124,7 @@ end
 
 require 'rdoc/task'
 
-Rake::RDocTask.new do |rdoc|
+RDoc::Task.new do |rdoc|
   rdoc.rdoc_dir = 'site/rdoc'
   rdoc.title    = 'Beetle'
   rdoc.main     = 'README.rdoc'
