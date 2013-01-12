@@ -1,5 +1,7 @@
 $:.unshift(File.expand_path('..', __FILE__))
-require 'bunny'
+require 'amq/client'               # defines AMQ::Client::Settings
+require 'bunny'                    # which bunny picks up
+require 'qrack/errors'             # needed by the publisher
 require 'uuid4r'
 require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
 require 'redis'

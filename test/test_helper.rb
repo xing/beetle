@@ -12,14 +12,9 @@ require 'active_support/testing/declarative'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require File.expand_path(File.dirname(__FILE__) + '/colorized_test_output')
 
-# we can remove this hack which is needed only for testing
-require 'qrack/errors'
-
-
 class Test::Unit::TestCase
   extend ActiveSupport::Testing::Declarative
 end
-
 
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 Beetle.config.redis_server = "localhost:6379"
