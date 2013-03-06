@@ -7,6 +7,8 @@ module Beetle
     # create a new subscriber instance
     def initialize(client, options = {}) #:nodoc:
       super
+      @status = :idle
+      @request_stop = false
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
@@ -51,9 +53,19 @@ module Beetle
       if @connections.empty?
         EM.stop_event_loop
       else
-        server, connection = @connections.shift
-        logger.debug "Beetle: closing connection to #{server}"
-        connection.close { stop! }
+        # Only kill connections if not currently processing a message
+        # otherwise messages can get ACKed after the connection is closed
+        # resulting in the ACK not being received and hence the
+        # message being re-delivered
+        if @status == :idle
+          server, connection = @connections.shift
+          logger.debug "Beetle: closing connection to #{server}"
+          connection.close { stop! }
+        else
+          # else ask for stop.  After processing the current message the
+          # stop will be re-attempted
+          @request_stop = true
+        end
       end
     end
 
@@ -125,6 +137,7 @@ module Beetle
       server = @server
       lambda do |header, data|
         begin
+          @status = :busy
           # logger.debug "Beetle: received message"
           processor = Handler.create(handler, opts)
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
@@ -150,6 +163,10 @@ module Beetle
         ensure
           # processing_completed swallows all exceptions, so we don't need to protect this call
           processor.processing_completed
+          @status = :idle
+          if @request_stop
+            stop!
+          end
         end
       end
     end
