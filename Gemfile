@@ -3,10 +3,10 @@ source 'https://rubygems.org'
 gemspec
 
 gem "rake", "~> 10.0.3"
-gem "mocha", "~> 0.11.4"
+gem "mocha", "~> 0.13.3"
 gem "rcov", "~> 0.9.10", :platform => :ruby_18
-gem "simplecov", "~> 0.6.1", :platform => :ruby_19
-gem "rdoc", "~> 3.0"
+gem "simplecov", "~> 0.7.1", :platform => :ruby_19
+gem "rdoc", "~> 4.0"
 
 gem "cucumber", ">= 1.2.1"
 gem "daemon_controller", ">= 0"

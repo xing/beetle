@@ -6,7 +6,7 @@ if RUBY_VERSION >= "1.9"
   end
 end
 require 'test/unit'
-require 'mocha'
+require 'mocha/setup'
 require 'active_support/testing/declarative'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
