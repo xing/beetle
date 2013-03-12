@@ -74,8 +74,10 @@ module TestDaemons
       false
     end
 
+    HTTP_SERVER_PORT = RUBY_PLATFORM =~ /darwin/ ? 9080 : 8080
+
     def self.get_status(path, content_type)
-      uri = URI.parse("http://127.0.0.1:8080#{path}")
+      uri = URI.parse("http://127.0.0.1:#{HTTP_SERVER_PORT}#{path}")
       http = Net::HTTP.new(uri.host, uri.port)
       request = Net::HTTP::Get.new(uri.request_uri)
       request['Accept'] = content_type
@@ -84,7 +86,7 @@ module TestDaemons
     end
 
     def self.initiate_master_switch
-      http = Net::HTTP.new('127.0.0.1', 8080)
+      http = Net::HTTP.new('127.0.0.1', HTTP_SERVER_PORT)
       response = http.post '/initiate_master_switch', ''
       response
     end
