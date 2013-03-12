@@ -56,7 +56,7 @@ module Beetle
   end
 
   class HiredisLoadedTest < Test::Unit::TestCase
-    test 'should be using hiredis instead of the redis ruby backend' do
+    test "should be using hiredis instead of the redis ruby backend" do
       assert defined?(Hiredis)
     end
   end
@@ -66,9 +66,27 @@ module Beetle
       @r = Redis.new(:host => "localhost", :port => 6390)
     end
 
-    test "redis shutdown implementation should call :shutdown and return nil" do
-      @r.client.expects(:call).with([:shutdown]).once.raises(Redis::ConnectionError)
-      assert_nil @r.shutdown
+    if Redis::VERSION < "3.0"
+
+      test "orginal redis shutdown implementation is broken" do
+        @r.client.expects(:call_without_reply).with([:shutdown]).once
+        @r.client.expects(:disconnect).never
+        @r.broken_shutdown
+      end
+
+      test "patched redis shutdown implementation should call :shutdown and rescue Errno::ECONNREFUSED" do
+        @r.client.expects(:call).with([:shutdown]).once.raises(Errno::ECONNREFUSED)
+        @r.client.expects(:disconnect).once
+        @r.shutdown
+      end
+
+    else
+
+      test "redis shutdown implementation should call :shutdown and return nil" do
+        @r.client.expects(:call).with([:shutdown]).once.raises(Redis::ConnectionError)
+        assert_nil @r.shutdown
+      end
+
     end
   end
 

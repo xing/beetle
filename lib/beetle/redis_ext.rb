@@ -46,4 +46,36 @@ class Redis #:nodoc:
     info["role"] == "slave" && info["master_host"] == host && info["master_port"] == port.to_s
   end
 
+  # compatibility layer for redis 2.2.2
+  # remove this once all our apps have upgraded to 3.x
+  if Redis::VERSION < "3.0"
+
+    # Redis 2 tries to establish a connection on inspect. this is evil!
+    def inspect
+      super
+    end
+
+    # redis 2.2.2 shutdown implementation does not disconnect from the redis server.
+    # this leaves the connection in an inconsistent state and causes the next command to silently fail.
+    # this in turn breaks our cucumber test scenarios.
+    # fix this here, until a new version is released which fixes the problem.
+
+    alias_method :broken_shutdown, :shutdown
+
+    # Synchronously save the dataset to disk and then shut down the server.
+    def shutdown
+      synchronize do
+        begin
+          @client.call [:shutdown]
+        rescue Errno::ECONNREFUSED
+        ensure
+          @client.disconnect
+        end
+      end
+    end
+
+    def msetnx(*values)
+      super != 0
+    end
+  end
 end
