@@ -22,7 +22,7 @@ module Beetle
       assert_equal channel, @sub.send(:channel, "donald:1")
     end
 
-    test "stop! should close all amqp connections and then stop the event loop" do
+    test "stop! should close all amqp connections and then stop the event loop if no handler is currently running" do
       connection1 = mock('con1')
       connection1.expects(:close).yields
       connection2 = mock('con2')
@@ -30,6 +30,19 @@ module Beetle
       @sub.instance_variable_set "@connections", [["server1", connection1], ["server2",connection2]]
       EM.expects(:stop_event_loop)
       @sub.send(:stop!)
+      assert !@sub.instance_variable_get("@request_stop")
+    end
+
+    test "stop! should not stop the event loop if a handler is currently running" do
+      @sub.instance_variable_set "@status", :busy
+      connection1 = mock('con1')
+      connection1.expects(:close).never
+      connection2 = mock('con2')
+      connection2.expects(:close).never
+      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2",connection2]]
+      EM.expects(:stop_event_loop).never
+      @sub.send(:stop!)
+      assert @sub.instance_variable_get("@request_stop")
     end
 
   end
@@ -221,6 +234,14 @@ module Beetle
     test "exceptions raised from message processing should be ignored" do
       header = header_with_params({})
       Message.any_instance.expects(:process).raises(Exception.new("don't worry"))
+      assert_nothing_raised { @callback.call(header, 'foo') }
+    end
+
+    test "should call stop! if @request_stop has been set" do
+      header = header_with_params({})
+      Message.any_instance.expects(:process).raises(Exception.new("don't worry"))
+      @sub.instance_variable_set("@request_stop", true)
+      @sub.expects(:stop!)
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
