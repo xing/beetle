@@ -60,7 +60,7 @@ module Beetle
     end
 
     def plain_text_response(status)
-      status.keys.sort_by{|k| k.to_s}.map do |k|
+      status.keys.sort_by{|k| k.to_s}.reverse.map do |k|
         name = k.to_s # .split('_').join(" ")
         if (value = status[k]).is_a?(Array)
           value = value.join(", ")
@@ -75,7 +75,11 @@ module Beetle
       b << "<body><h1>Beetle Configuration Server Status</h1><table cellspacing=0>\n"
       plain_text_response(status).split("\n").compact.each do |row|
         row =~/(^[^:]+): (.*)$/
-        b << "<tr><td>#{$1}</td><td>#{$2}</td></tr>\n"
+        name, value = $1, $2
+        if value =~ /,/
+          value = "<ul>" << value.split(/\s*,\s*/).map{|s| "<li>#{s}</li>"}.join << "</ul>"
+        end
+        b << "<tr><td>#{name}</td><td>#{value}</td></tr>\n"
       end
       b << "</table>"
       unless status[:redis_master_available?]
@@ -92,8 +96,10 @@ module Beetle
 <style media="screen" type="text/css">
 html { font: 1.25em/1.5 arial, sans-serif;}
 body { margin: 1em; }
-table tr:nth-child(2n+1){ background:#fff; }
-td { padding: 0.1em 0.2em; }
+table tr:nth-child(2n+1){ background-color: #ffffff; }
+td { padding: 0.1em 0.2em; vertical-align: top; }
+ul { list-style-type: none; margin: 0; padding: 0;}
+li { }
 h1 { color: #{warn_color}; margin-bottom: 0.2em;}
 a:link, a:visited {text-decoration:none; color:#A52A2A;}
 a:hover, a:active {text-decoration:none; color:#FF0000;}
