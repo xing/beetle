@@ -177,7 +177,7 @@ module Beetle
       if block.arity == 1
         yield configurator
       else
-        configurator.instance_eval &block
+        configurator.instance_eval(&block)
       end
       self
     end
