@@ -70,9 +70,17 @@ module Beetle
     end
 
     def html_response(status)
-      b = "<!doctype html>\n"
+      b = "<!doctype html>"
       b << "<html><head><title>Beetle Configuration Server Status</title>#{html_styles(status)}</head>"
-      b << "<body><h1>Beetle Configuration Server Status</h1><table cellspacing=0>\n"
+      b << "<body><h1>Beetle Configuration Server Status</h1>"
+      unless status[:redis_master_available?]
+        b << "<form name='masterswitch' method='post' action='/initiate_master_switch'>"
+        b << "Master down! "
+        b << "<a href='javascript: document.masterswitch.submit();'>Initiate master switch</a> "
+        b << "or wait until system performs it automatically."
+        b << "</form>"
+      end
+      b << "<table cellspacing=0>\n"
       plain_text_response(status).split("\n").compact.each do |row|
         row =~/(^[^:]+): (.*)$/
         name, value = $1, $2
@@ -82,11 +90,6 @@ module Beetle
         b << "<tr><td>#{name}</td><td>#{value}</td></tr>\n"
       end
       b << "</table>"
-      unless status[:redis_master_available?]
-        b << "<form name='masterswitch' method='post' action='/initiate_master_switch'>"
-        b << "<a href='javascript: document.masterswitch.submit();'>Initiate master switch</a>"
-        b << "</form>"
-      end
       b << "</body></html>"
     end
 
@@ -104,14 +107,14 @@ h1 { color: #{warn_color}; margin-bottom: 0.2em;}
 a:link, a:visited {text-decoration:none; color:#A52A2A;}
 a:hover, a:active {text-decoration:none; color:#FF0000;}
 a {
-  font-size: 2em; padding: 10px; background: #cdcdcd;
+  padding: 10px; background: #cdcdcd;
   -moz-border-radius: 5px;
    border-radius: 5px;
   -moz-box-shadow: 2px 2px 2px #bbb;
   -webkit-box-shadow: 2px 2px 2px #bbb;
   box-shadow: 2px 2px 2px #bbb;
 }
-form { margin-top: 1em; }
+form { font-size: 1em; margin-bottom: 1em; }
 </style>
 EOS
     end
