@@ -4,6 +4,7 @@
 .bundle
 .DS_Store
 .rvmrc
+.ruby-version
 erl_crash.dump
 pkg
 site
