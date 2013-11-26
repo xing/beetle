@@ -774,4 +774,13 @@ module Beetle
     end
   end
 
+
+  class KeyTest < Test::Unit::TestCase
+    test "returns the routing key" do
+      header = header_with_params({})
+      header.stubs(:routing_key).returns("foo")
+      message = Message.new("somequeue", header, "")
+      assert_equal "foo", message.key
+    end
+  end
 end

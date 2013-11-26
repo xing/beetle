@@ -100,6 +100,11 @@ module Beetle
       opts
     end
 
+    # the routing key
+    def key
+      header.routing_key
+    end
+
     # unique message id. used to form various keys in the deduplication store.
     def msg_id
       @msg_id ||= "msgid:#{queue}:#{uuid}"
