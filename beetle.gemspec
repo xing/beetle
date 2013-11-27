@@ -21,16 +21,6 @@ Gem::Specification.new do |s|
   s.rubygems_version   = "1.3.7"
   s.test_files         = Dir['test/**/*.rb']
 
-  s.post_install_message = <<-INFO
-  *********************************************************************************************
-
-    Please install the SystemTimer gem if you're running a ruby version < 1.9:
-    `gem install SystemTimer -v '=1.2.1'`
-    See: http://ph7spot.com/musings/system-timer
-
-  *********************************************************************************************
-  INFO
-
   s.specification_version = 3
   s.add_runtime_dependency("uuid4r",                  [">= 0.1.2"])
   s.add_runtime_dependency("bunny",                   ["= 0.7.9"])
