@@ -775,12 +775,13 @@ module Beetle
   end
 
 
-  class KeyTest < Test::Unit::TestCase
+  class RoutingKeyTest < Test::Unit::TestCase
     test "returns the routing key" do
       header = header_with_params({})
       header.stubs(:routing_key).returns("foo")
       message = Message.new("somequeue", header, "")
-      assert_equal "foo", message.key
+      assert_equal "foo", message.routing_key
+      assert_equal "foo", message.key # alias
     end
   end
 end

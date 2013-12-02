@@ -101,9 +101,10 @@ module Beetle
     end
 
     # the routing key
-    def key
+    def routing_key
       header.routing_key
     end
+    alias_method :key, :routing_key
 
     # unique message id. used to form various keys in the deduplication store.
     def msg_id
