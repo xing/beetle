@@ -57,7 +57,7 @@ module Beetle
         logger.warn "no slave available, falling back to master."
         connection = redis
       end
-      file = "/tmp/beetle_redis_expire_keys_#{$$}.txt"
+      file = "#{@config.tmpdir}/beetle_redis_expire_keys_#{$$}.txt"
       cmd = "redis-cli -h #{connection.host} -p #{connection.port} -n #{@config.redis_db} keys 'msgid:*:expires' > #{file}"
       logger.info "retrieving expire keys: '#{cmd}'"
       if system(cmd)

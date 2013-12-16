@@ -51,6 +51,9 @@ module Beetle
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
 
+    # directory to store large intermediate files (defaults '/tmp')
+    attr_accessor :tmpdir
+
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
@@ -75,6 +78,7 @@ module Beetle
       self.password = "guest"
 
       self.publishing_timeout = 0
+      self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
     end
