@@ -8,7 +8,7 @@ module Beetle
     attr_accessor :logger
     # defaults to <tt>STDOUT</tt>
     attr_accessor :log_file
-    # number of seconds after which keys are removed form the message deduplication store (defaults to <tt>3.days</tt>)
+    # number of seconds after which keys are removed from the message deduplication store (defaults to <tt>1.hour</tt>)
     attr_accessor :gc_threshold
     # the redis server to use for deduplication
     # either a string like <tt>"localhost:6379"</tt> (default) or a file that contains the string.

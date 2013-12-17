@@ -84,33 +84,33 @@ module Beetle
     end
 
     test "should be able to garbage collect expired keys" do
-      Beetle.config.expects(:gc_threshold).returns(0)
+      Beetle.config.expects(:gc_threshold).returns(10)
       header = header_with_params({:ttl => 0})
       message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
       @store.redis.expects(:del).with(*@store.keys(message.msg_id))
-      @store.garbage_collect_keys(Time.now.to_i+1)
+      @store.garbage_collect_keys(Time.now.to_i+11)
     end
 
     test "should be able to garbage collect expired keys using master and slave" do
-      Beetle.config.expects(:gc_threshold).returns(0)
+      Beetle.config.expects(:gc_threshold).returns(10)
       header = header_with_params({:ttl => 0})
       message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
       @store.redis.expects(:del).with(*@store.keys(message.msg_id))
-      @store.garbage_collect_keys_using_master_and_slave(Time.now.to_i+1)
+      @store.garbage_collect_keys_using_master_and_slave(Time.now.to_i+11)
     end
 
     test "should not garbage collect not yet expired keys" do
-      Beetle.config.expects(:gc_threshold).returns(0)
+      Beetle.config.expects(:gc_threshold).returns(10)
       header = header_with_params({:ttl => 0})
       message = Message.new("somequeue", header, 'foo', :store => @store)
       assert !message.key_exists?
       assert message.key_exists?
       @store.redis.expects(:del).never
-      @store.garbage_collect_keys(Time.now.to_i-1)
+      @store.garbage_collect_keys(Time.now.to_i)
     end
 
     test "successful processing of a non redundant message should delete all keys from the database" do

@@ -20,12 +20,13 @@ module Beetle
         opts.banner = "Usage: beetle garbage_collect_deduplication_store [options]"
         opts.separator ""
 
-        opts.on("--redis-servers LIST", Array, "Required (e.g. 192.168.0.1:6379,192.168.0.2:6379)") do |val|
-          Beetle.config.redis_servers = val.join(",")
-        end
-
         opts.on("--config-file PATH", String, "Path to an external yaml config file") do |val|
           Beetle.config.config_file = val
+          Beetle.config.log_file = STDOUT
+        end
+
+        opts.on("--redis-servers LIST", Array, "Comma separted list of redis server:port specs used for GC") do |val|
+          Beetle.config.redis_servers = val.join(",")
         end
 
         opts.on("--redis-db N", Integer, "Redis database used for GC") do |val|
@@ -33,6 +34,7 @@ module Beetle
         end
 
         opts.on("-v", "--verbose") do |val|
+          Beetle.config.log_file = STDOUT
           Beetle.config.logger.level = Logger::DEBUG
         end
 

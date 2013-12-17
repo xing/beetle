@@ -114,11 +114,13 @@ module Beetle
   class GarbageCollectionTest < Test::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
+      Beetle.config.stubs(:gc_threshold).returns(10)
     end
 
-    test "never tries to delete message keys when expire key doesn not exist" do
+    test "never tries to delete message keys when expire key does not exist" do
       key = "foo"
       @store.redis.del key
+      @store.redis.expects(:del).never
       assert !@store.gc_key(key, 0)
     end
 
@@ -132,5 +134,29 @@ module Beetle
       @store.logger.expects(:error)
       @store.garbage_collect_keys_using_master_and_slave
     end
+
+    test "garbage collects a key when it has expired" do
+      key = "foo"
+      t = Time.now.to_i
+      @store.redis.set(key, t)
+      @store.redis.expects(:del)
+      assert @store.gc_key(key, t+1)
+    end
+
+    test "does not garbage collect a key when it has not expired" do
+      key = "foo"
+      t = Time.now.to_i
+      @store.redis.set(key, t)
+      @store.redis.expects(:del).never
+      assert !@store.gc_key(key, t)
+    end
+
+    test "correctly sets threshold for garbage collection" do
+      t = Time.now.to_i
+      @store.redis.expects(:keys).returns(["foo"])
+      @store.expects(:gc_key).with("foo", t-10)
+      @store.garbage_collect_keys
+    end
+
   end
 end
