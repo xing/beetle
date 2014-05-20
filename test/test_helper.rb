@@ -17,6 +17,8 @@ class Test::Unit::TestCase
   extend ActiveSupport::Testing::Declarative
 end
 
+I18n.enforce_available_locales = false
+
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 Beetle.config.redis_server = "localhost:6379"
 Beetle.config.redis_servers = "localhost:6379,localhost:6380"
