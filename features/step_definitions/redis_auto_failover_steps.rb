@@ -1,10 +1,10 @@
 Given /^a redis server "([^\"]*)" exists as master$/ do |redis_name|
-  TestDaemons::Redis[redis_name].start
+  TestDaemons::Redis[redis_name].restart
   TestDaemons::Redis[redis_name].master
 end
 
 Given /^a redis server "([^\"]*)" exists as slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
-  TestDaemons::Redis[redis_name].start
+  TestDaemons::Redis[redis_name].restart
   step "redis server \"#{redis_name}\" is slave of \"#{redis_master_name}\""
 end
 
@@ -63,7 +63,7 @@ Given /^the retry timeout for the redis master determination is reached$/ do
 end
 
 Given /^redis server "([^\"]*)" is coming back$/ do |redis_name|
-  TestDaemons::Redis[redis_name].start
+  TestDaemons::Redis[redis_name].restart
 end
 
 Given /^an old redis master file for "([^\"]*)" with master "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_name|

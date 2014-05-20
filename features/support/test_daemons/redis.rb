@@ -16,7 +16,7 @@ module TestDaemons
     def initialize(name)
       @name = name
       @port = @@next_available_port
-      
+
       @@next_available_port += 1
       @@instances[name] = self
     end
@@ -38,11 +38,12 @@ module TestDaemons
       daemon_controller.start
     end
 
-    def restart(delay=1)
-      redis.shutdown
+    def restart(delay = 0)
+      create_dir
+      create_config
+      daemon_controller.stop
       sleep delay
-      raise "SHUTDOWN COMMAND FAILED" if running?
-      `redis-server #{config_filename}`
+      daemon_controller.start
     end
 
     def stop
@@ -77,7 +78,7 @@ module TestDaemons
     end
 
     def running?
-      cmd = "ps aux | grep 'redis-server #{config_filename}' | grep -v grep"
+      cmd = "ps aux | egrep 'redis-server.*#{port}' | grep -v grep"
       res = `#{cmd}`
       x = res.chomp.split("\n")
       x.size == 1
@@ -111,7 +112,7 @@ module TestDaemons
     def ip_with_port
       "127.0.0.1:#{port}"
     end
-  
+
     def redis
       @redis ||= ::Redis.new(:host => "127.0.0.1", :port => port)
     end
@@ -145,7 +146,7 @@ module TestDaemons
     end
 
     def config_filename
-      tmp_path + "/redis-test-server-#{name}.conf"
+      tmp_path + "/redis-test-server-#{name}-#{port}.conf"
     end
 
     def config_content
@@ -175,7 +176,7 @@ module TestDaemons
 
     def daemon_controller
       @daemon_controller ||= DaemonController.new(
-         :identifier    => "Redis test server",
+         :identifier    => "Redis test server #{name}",
          :start_command => "redis-server #{config_filename}",
          :ping_command  => lambda { running? && available? },
          :pid_file      => pid_file,
@@ -183,6 +184,5 @@ module TestDaemons
          :start_timeout => 5
       )
     end
-  
   end
 end
