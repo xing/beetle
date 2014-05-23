@@ -12,21 +12,8 @@ require 'socket'
 require 'beetle/version'
 
 module Beetle
-  #:nocov:
-  Timer = if RUBY_VERSION < "1.9"
-            begin
-              require 'system_timer'
-              SystemTimer
-            rescue Exception
-              warn "WARNING: It's highly recommended to install the SystemTimer gem: `gem install SystemTimer -v '=1.2.1'` See: http://ph7spot.com/musings/system-timer" if RUBY_VERSION < "1.9"
-              require 'timeout'
-              Timeout
-            end
-          else
-            require 'timeout'
-            Timeout
-          end
-  #:nocov:
+  require 'timeout'
+  Timer = Timeout
 
   # abstract superclass for Beetle specific exceptions
   class Error < StandardError; end

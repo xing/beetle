@@ -10,34 +10,9 @@ require 'cucumber/rake/task'
 $:.unshift 'lib'
 require 'beetle'
 
-if RUBY_VERSION < "1.9"
-  require 'rcov/rcovtask'
-
-  namespace :test do
-    namespace :coverage do
-      desc "Delete aggregate coverage data."
-      task(:clean) { rm_f "coverage.data" }
-    end
-
-    desc 'Aggregate code coverage'
-    task :coverage => "test:coverage:clean"
-
-    Rcov::RcovTask.new(:coverage) do |t|
-      t.libs << "test"
-      t.test_files = FileList["test/**/*_test.rb"]
-      t.output_dir = "test/coverage"
-      t.verbose = true
-      t.rcov_opts << "--exclude '.*' --include-file 'lib/beetle/'"
-    end
-    task :coverage do
-      system 'open test/coverage/index.html'
-    end if RUBY_PLATFORM =~ /darwin/
-  end
-else
-  namespace :test do
-    task :coverage => :test do
-      system 'open coverage/index.html'
-    end
+namespace :test do
+  task :coverage => :test do
+    system 'open coverage/index.html'
   end
 end
 
