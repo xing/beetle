@@ -95,17 +95,19 @@ module Beetle
     def build_beetle
       system = Beetle.config.system_name
       Beetle::Client.new.configure :exchange => system, :auto_delete => true do |config|
-        config.message :ping
-        config.queue   :ping, :amqp_name => "#{system}_ping_#{id}"
+        # messages sent
         config.message :pong
-        config.message :invalidate
-        config.queue   :invalidate, :amqp_name => "#{system}_invalidate_#{id}"
-        config.message :client_invalidated
-        config.message :reconfigure
-        config.queue   :reconfigure, :amqp_name => "#{system}_reconfigure_#{id}"
         config.message :client_started
-
-        config.handler [:ping, :invalidate, :reconfigure], MessageDispatcher
+        config.message :client_invalidated
+        # messages received
+        config.message :ping
+        config.message :invalidate
+        config.message :reconfigure
+        # queue setup
+        config.queue   :client, :key => 'ping', :amqp_name => "#{system}_configuration_client_#{id}"
+        config.binding :client, :key => 'invalidate'
+        config.binding :client, :key => 'reconfigure'
+        config.handler :client, MessageDispatcher
       end
     end
 

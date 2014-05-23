@@ -176,18 +176,20 @@ module Beetle
     def build_beetle
       system = Beetle.config.system_name
       Beetle::Client.new.configure :exchange => system, :auto_delete => true do |config|
-        config.message :client_invalidated
-        config.queue   :client_invalidated, :amqp_name => "#{system}_client_invalidated"
-        config.message :pong
-        config.queue   :pong, :amqp_name => "#{system}_pong"
+        # messages sent
         config.message :ping
         config.message :invalidate
         config.message :reconfigure
         config.message :system_notification
+        # messages received
         config.message :client_started
-        config.queue   :client_started, :amqp_name => "#{system}_client_started"
-
-        config.handler [:pong, :client_invalidated, :client_started], MessageDispatcher
+        config.message :pong
+        config.message :client_invalidated
+        # queue setup
+        config.queue   :server, :key => 'pong', :amqp_name => "#{system}_configuration_server"
+        config.binding :server, :key => 'client_started'
+        config.binding :server, :key => 'client_invalidated'
+        config.handler :server, MessageDispatcher
       end
     end
 
