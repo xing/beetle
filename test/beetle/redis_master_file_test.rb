@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
 
-  class RedisMasterFileTest < Test::Unit::TestCase
+  class RedisMasterFileTest < MiniTest::Unit::TestCase
     include Logging
     include RedisMasterFile
 

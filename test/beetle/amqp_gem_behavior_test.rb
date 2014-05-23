@@ -4,7 +4,7 @@ require 'amqp'
 
 AMQP.client.logger = Beetle.config.logger
 
-class AMQPGemBehaviorTest < Test::Unit::TestCase
+class AMQPGemBehaviorTest < MiniTest::Unit::TestCase
   test "subscribing twice to the same queue raises a RuntimeError which throws us out of the event loop" do
     begin
       exception = nil

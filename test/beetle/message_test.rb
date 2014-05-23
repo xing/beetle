@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
 
-  class EncodingTest < Test::Unit::TestCase
+  class EncodingTest < MiniTest::Unit::TestCase
     test "an exception during decoding should be stored in the exception attribute" do
       header = stub_everything("raising header")
       m = Message.new("queue", header, 'foo')
@@ -69,7 +69,7 @@ module Beetle
 
   end
 
-  class KeyManagementTest < Test::Unit::TestCase
+  class KeyManagementTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -164,7 +164,7 @@ module Beetle
     end
   end
 
-  class AckingTest < Test::Unit::TestCase
+  class AckingTest < MiniTest::Unit::TestCase
 
     def setup
       @store = DeduplicationStore.new
@@ -238,7 +238,7 @@ module Beetle
 
   end
 
-  class FreshMessageTest < Test::Unit::TestCase
+  class FreshMessageTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -273,7 +273,7 @@ module Beetle
 
   end
 
-  class SimpleMessageTest < Test::Unit::TestCase
+  class SimpleMessageTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -307,7 +307,7 @@ module Beetle
 
   end
 
-  class HandlerCrashTest < Test::Unit::TestCase
+  class HandlerCrashTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -380,7 +380,7 @@ module Beetle
 
   end
 
-  class SeenMessageTest < Test::Unit::TestCase
+  class SeenMessageTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -526,7 +526,7 @@ module Beetle
 
   end
 
-  class ProcessingTest < Test::Unit::TestCase
+  class ProcessingTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -594,7 +594,7 @@ module Beetle
 
   end
 
-  class HandlerTimeoutTest < Test::Unit::TestCase
+  class HandlerTimeoutTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -622,7 +622,7 @@ module Beetle
 
   end
 
-  class SettingsTest < Test::Unit::TestCase
+  class SettingsTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -775,7 +775,7 @@ module Beetle
   end
 
 
-  class RoutingKeyTest < Test::Unit::TestCase
+  class RoutingKeyTest < MiniTest::Unit::TestCase
     test "returns the routing key" do
       header = header_with_params({})
       header.stubs(:routing_key).returns("foo")

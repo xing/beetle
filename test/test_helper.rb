@@ -4,15 +4,20 @@ SimpleCov.start do
   add_filter "/test/"
   add_filter "/lib/beetle/redis_ext.rb"
 end
-require 'test/unit'
+
+require 'minitest/autorun'
+require 'minitest/unit'
+require 'minitest/pride' if ENV['RAINBOW_COLORED_TESTS'] == "1" && $stdout.tty?
 require 'mocha/setup'
-require 'active_support/testing/declarative'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
-require File.expand_path(File.dirname(__FILE__) + '/colorized_test_output')
 
-class Test::Unit::TestCase
+class MiniTest::Unit::TestCase
+  require "active_support/testing/declarative"
   extend ActiveSupport::Testing::Declarative
+  def assert_nothing_raised(*)
+    yield
+  end
 end
 
 I18n.enforce_available_locales = false

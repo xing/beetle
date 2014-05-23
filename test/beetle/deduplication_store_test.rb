@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
 
-  class RedisAssumptionsTest < Test::Unit::TestCase
+  class RedisAssumptionsTest < MiniTest::Unit::TestCase
     def setup
       @r = DeduplicationStore.new.redis
       @r.flushdb
@@ -23,7 +23,7 @@ module Beetle
     end
   end
 
-  class RedisServerStringTest < Test::Unit::TestCase
+  class RedisServerStringTest < MiniTest::Unit::TestCase
     def setup
       @original_redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new
@@ -40,7 +40,7 @@ module Beetle
     end
   end
 
-  class RedisServerFileTest < Test::Unit::TestCase
+  class RedisServerFileTest < MiniTest::Unit::TestCase
     def setup
       @original_redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new
@@ -81,7 +81,7 @@ module Beetle
     end
   end
 
-  class RedisFailoverTest < Test::Unit::TestCase
+  class RedisFailoverTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       Beetle.config.expects(:redis_failover_timeout).returns(1)
@@ -111,7 +111,7 @@ module Beetle
     end
   end
 
-  class GarbageCollectionTest < Test::Unit::TestCase
+  class GarbageCollectionTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
       Beetle.config.stubs(:gc_threshold).returns(10)

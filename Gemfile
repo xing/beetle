@@ -12,7 +12,6 @@ gem "daemon_controller", "~> 1.2.0"
 gem "minitest", "~> 4.7.5"
 
 gem 'i18n'
-gem 'ansi'
 gem 'wirble'
 
 # gem 'bunny', '=0.7.8', :path => "#{ENV['HOME']}/src/bunny"

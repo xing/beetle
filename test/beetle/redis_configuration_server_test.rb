@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class RedisConfigurationServerTest < Test::Unit::TestCase
+  class RedisConfigurationServerTest < MiniTest::Unit::TestCase
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
@@ -10,7 +10,7 @@ module Beetle
 
     test "should exit when started with less than two redis configured" do
       Beetle.config.redis_servers = ""
-      assert_raise Beetle::ConfigurationError do
+      assert_raises Beetle::ConfigurationError do
         @server.start
       end
     end
@@ -87,7 +87,7 @@ module Beetle
 
   end
 
-  class RedisConfigurationServerInvalidationTest < Test::Unit::TestCase
+  class RedisConfigurationServerInvalidationTest < MiniTest::Unit::TestCase
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       Beetle.config.redis_servers = "redis:0,redis:1"
@@ -175,7 +175,7 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerInitialRedisMasterDeterminationTest < Test::Unit::TestCase
+  class RedisConfigurationServerInitialRedisMasterDeterminationTest < MiniTest::Unit::TestCase
     def setup
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
@@ -303,7 +303,7 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerSystemNotificationTest < Test::Unit::TestCase
+  class RedisConfigurationServerSystemNotificationTest < MiniTest::Unit::TestCase
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new

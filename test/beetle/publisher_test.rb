@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
-  class PublisherTest < Test::Unit::TestCase
+  class PublisherTest < MiniTest::Unit::TestCase
     def setup
       client = Client.new
       @pub = Publisher.new(client)
@@ -46,7 +46,7 @@ module Beetle
 
   end
 
-  class PublisherPublishingTest < Test::Unit::TestCase
+  class PublisherPublishingTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @pub = Publisher.new(@client)
@@ -212,7 +212,7 @@ module Beetle
 
   end
 
-  class PublisherQueueManagementTest < Test::Unit::TestCase
+  class PublisherQueueManagementTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @pub = Publisher.new(@client)
@@ -278,7 +278,7 @@ module Beetle
     end
   end
 
-  class PublisherExchangeManagementTest < Test::Unit::TestCase
+  class PublisherExchangeManagementTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @pub = Publisher.new(@client)
@@ -300,7 +300,7 @@ module Beetle
     end
   end
 
-  class PublisherServerManagementTest < Test::Unit::TestCase
+  class PublisherServerManagementTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @pub = Publisher.new(@client)
@@ -377,7 +377,7 @@ module Beetle
   end
 
 
-  class RPCTest < Test::Unit::TestCase
+  class RPCTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @pub = Publisher.new(@client)

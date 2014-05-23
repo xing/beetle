@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class RedisConfigurationClientTest < Test::Unit::TestCase
+  class RedisConfigurationClientTest < MiniTest::Unit::TestCase
     def setup
       Beetle.config.redis_servers = "redis:0,redis:1"
       @client = RedisConfigurationClient.new
