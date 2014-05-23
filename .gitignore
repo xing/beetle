@@ -12,3 +12,4 @@ test/coverage
 tmp/*
 *.gem
 coverage
+dump.rdb
