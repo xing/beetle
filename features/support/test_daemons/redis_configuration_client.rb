@@ -35,7 +35,7 @@ module TestDaemons
 
     def daemon_controller
       @daemon_controller ||= DaemonController.new(
-         :identifier    => "Redis configuration test client",
+         :identifier    => "Redis configuration test client #{@name}",
          :start_command => "ruby bin/beetle configuration_client start -- -v --redis-master-file #{redis_master_file} --id #{@name} --pid-dir #{tmp_path} --amqp-servers 127.0.0.1:5672",
          :ping_command  => lambda{ true },
          :pid_file      => pid_file,
