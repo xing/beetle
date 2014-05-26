@@ -5,8 +5,7 @@ require 'qrack/errors'             # needed by the publisher
 require 'uuid4r'
 require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
 require 'redis'
-require 'active_support'
-require 'active_support/core_ext'
+require 'active_support/all'
 require 'set'
 require 'socket'
 require 'beetle/version'
