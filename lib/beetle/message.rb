@@ -292,6 +292,7 @@ module Beetle
       Timer.timeout(@timeout.to_f) { @handler_result = handler.call(self) }
       RC::OK
     rescue Exception => @exception
+      ActiveRecord::Base.clear_all_connections! if defined?(ActiveRecord)
       Beetle::reraise_expectation_errors!
       logger.debug "Beetle: message handler crashed on #{msg_id}"
       RC::HandlerCrash

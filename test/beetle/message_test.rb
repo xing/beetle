@@ -622,6 +622,45 @@ module Beetle
 
   end
 
+  class MySQLFailoverTest < MiniTest::Unit::TestCase
+    require "active_record"
+
+    def setup
+      @store = DeduplicationStore.new
+      @store.flushdb
+
+      ActiveRecord::Base.establish_connection(
+        adapter:  "mysql2",
+        host:     "localhost",
+        database: "beetle_test"
+      )
+    end
+
+    test "a handler that drops a MySQL query ensures the connection still works" do
+      header = header_with_params({})
+      header.expects(:ack)
+      message = Message.new("somequeue", header, "foo", :timeout => 1.second, :attempts => 2, :store => @store)
+      action = lambda do |*args|
+        # the timeout should stop the query before it finishes.
+        ActiveRecord::Base.connection.execute("select sleep(6);")
+      end
+      handler = Handler.create(action)
+      result = message.process(handler)
+      assert_equal RC::ExceptionsLimitReached, result
+
+      # second message should process without problems
+      second_header = header_with_params({})
+      second_header.expects(:ack)
+      second_message = Message.new("somequeue", second_header, "foo2", :timeout => 2.seconds, :attempts => 1, :store => @store)
+      second_action = lambda do |*args|
+        ActiveRecord::Base.connection.execute("select 1;")
+      end
+      second_handler = Handler.create(second_action)
+      second_result = second_message.process(second_handler)
+      assert_equal RC::OK, second_result
+    end
+  end
+
   class SettingsTest < MiniTest::Unit::TestCase
     def setup
       @store = DeduplicationStore.new
