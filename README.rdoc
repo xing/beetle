@@ -62,9 +62,16 @@ To set up a redundant messaging system you will need
 
 == Test environment
 
-For testing purposes, you will need a MySQL database with the database `beetle_test` created. This is needed to test special cases in which Beetle handles the connection with ActiveRecord.
+For testing purposes, you will need a MySQL database with the database
+`beetle_test` created. This is needed to test special cases in which
+Beetle handles the connection with ActiveRecord:
 
-You also need a Redis instance running. The default configuration of Redis will work.
+     mysql -e 'create database beetle_test;'
+
+You also need a Redis instance running. The default configuration of Redis will work:
+
+    redis-server
+
 
 == Gem Dependencies
 
