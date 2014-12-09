@@ -1,10 +1,11 @@
 before_install:
   - gem install bundler -v '= 1.5.1'
+before_script:
+  - mysql -e 'create database beetle_test;'
 rvm:
   - 1.9.3
   - 2.0.0
   - 2.1.0
 script: "bundle exec rake test"
 services:
-  - mysql -e 'create database beetle_test;'
   - redis-server

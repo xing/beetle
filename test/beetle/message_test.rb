@@ -631,9 +631,9 @@ module Beetle
 
       ActiveRecord::Base.establish_connection(
         adapter:  "mysql2",
-        host:     "localhost",
         database: "beetle_test",
-        username: "root"
+        username: "root",
+        encoding: "utf8"
       )
     end
 
