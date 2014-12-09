@@ -60,6 +60,12 @@ To set up a redundant messaging system you will need
 * at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
 * at least one {Redis}[http://github.com/antirez/redis] server (better are two in a master/slave setup, see REDIS_AUTO_FAILOVER.rdoc)
 
+== Test environment
+
+For testing purposes, you will need a MySQL database with the database `beetle_test` created. This is needed to test special cases in which Beetle handles the connection with ActiveRecord.
+
+You also need a Redis instance running. The default configuration of Redis will work.
+
 == Gem Dependencies
 
 At runtime, Beetle will use
@@ -70,13 +76,17 @@ At runtime, Beetle will use
 * {amqp}[http://github.com/ruby-amqp/amqp]
   (which is based on {eventmachine}[http://github.com/eventmachine/eventmachine])
 * {daemons}[http://daemons.rubyforge.org/]
-* activesupport
+* {activesupport}[https://github.com/rails/rails/tree/master/activesupport]
 
 For development, you'll need
 * {mocha}[http://github.com/floehopper/mocha]
 * {rcov}[http://github.com/relevance/rcov] (for ruby 1.8.7)
 * {cucumber}[http://github.com/aslakhellesoy/cucumber]
 * {daemon_controller}[http://github.com/FooBarWidget/daemon_controller]
+
+For tests, you'll need
+* {activerecord}[https://github.com/rails/rails/tree/master/activerecord]
+* {mysql2}[https://github.com/brianmario/mysql2/]
 
 == Authors
 
