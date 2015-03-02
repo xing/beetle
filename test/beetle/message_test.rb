@@ -64,9 +64,23 @@ module Beetle
 
     test "the publishing options must only include string values" do
       options = Message.publishing_options(:redundant => true, :mandatory => true, :bogus => true)
+
       assert options[:headers].all? {|_, param| param.is_a?(String)}
     end
 
+    test "the publishing options support adding custom headers" do
+      options = Message.publishing_options(
+        :redundant => true,
+        :headers => {
+          :sender_id => "SENDER_ID",
+          :sender_action => "SENDER_ACTION"
+        }
+      )
+
+      assert_equal "1", options[:headers][:flags]
+      assert_equal "SENDER_ID", options[:headers][:sender_id]
+      assert_equal "SENDER_ACTION", options[:headers][:sender_action]
+    end
   end
 
   class KeyManagementTest < MiniTest::Unit::TestCase
