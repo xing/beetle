@@ -34,7 +34,7 @@ module Beetle
   # AMQP options for queue bindings
   QUEUE_BINDING_KEYS      = [:key, :no_wait]
   # AMQP options for message publishing
-  PUBLISHING_KEYS         = [:key, :mandatory, :immediate, :persistent, :reply_to]
+  PUBLISHING_KEYS         = [:key, :mandatory, :immediate, :persistent, :reply_to, :headers]
   # AMQP options for subscribing to queues
   SUBSCRIPTION_KEYS       = [:ack, :key]
 
