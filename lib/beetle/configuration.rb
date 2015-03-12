@@ -111,7 +111,12 @@ module Beetle
 
     private
     def load_config
-      hash = YAML::load(ERB.new(IO.read(config_file)).result)
+      raw = ERB.new(IO.read(config_file)).result
+      hash = if config_file =~ /\.json$/
+               JSON.parse(raw)
+             else
+               YAML.load(raw)
+             end
       hash.each do |key, value|
         send("#{key}=", value)
       end
