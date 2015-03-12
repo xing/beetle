@@ -32,5 +32,10 @@ module Beetle
       Logger.expects(:new).with(file).returns(stub_everything)
       config.logger
     end
+
+    test "#brokers returns a hash of the configured brokers" do
+      config = Configuration.new
+      assert_equal({"servers"=>"localhost:5672", "additional_subscription_servers"=>""}, config.brokers)
+    end
   end
 end

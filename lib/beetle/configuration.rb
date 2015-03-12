@@ -58,6 +58,14 @@ module Beetle
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
+    # returns the configured amqp brokers
+    def brokers
+      {
+        'servers' => self.servers,
+        'additional_subscription_servers' => self.additional_subscription_servers
+      }
+    end
+
     def initialize #:nodoc:
       self.system_name = "system"
 
