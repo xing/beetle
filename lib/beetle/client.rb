@@ -267,10 +267,13 @@ module Beetle
       end
     end
 
-    def reset!
+    def reset
       stop_publishing if @publisher
       stop_listening if @subscriber
       config.reload
+    rescue Exception => e
+      logger.warn("Error resetting client")
+      logger.warn(e)
     ensure
       @publisher = nil
       @subscriber = nil

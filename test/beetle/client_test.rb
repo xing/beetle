@@ -204,6 +204,25 @@ module Beetle
   end
 
   class ClientTest < MiniTest::Unit::TestCase
+    test "#reset should stop subscriber and publisher" do
+      client = Client.new
+      client.send(:publisher).expects(:stop)
+      client.send(:subscriber).expects(:stop!)
+      client.reset
+    end
+
+    test "#reset should reload the configuration" do
+      client = Client.new
+      client.config.expects(:reload)
+      client.reset
+    end
+
+    test "#reset should not propagate exceptions" do
+      client = Client.new
+      client.expects(:config).raises(ArgumentError)
+      client.reset
+    end
+
     test "instantiating a client should not instantiate the subscriber/publisher" do
       Publisher.expects(:new).never
       Subscriber.expects(:new).never
