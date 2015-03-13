@@ -313,6 +313,14 @@ module Beetle
       @subscriber ||= Subscriber.new(self)
     end
 
+    def reset!
+      stop_publishing if @publisher
+      stop_listening if @subscriber
+    ensure
+      @publisher = nil
+      @subscriber = nil
+    end
+
     def queue_name_for_tracing(queue)
       "trace-#{queue}-#{Beetle.hostname}-#{$$}"
     end
