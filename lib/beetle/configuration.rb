@@ -98,6 +98,12 @@ module Beetle
       load_config
     end
 
+    # reloads the configuration from the configuration file
+    # if one is configured
+    def reload
+      load_config if @config_file
+    end
+
     def logger
       @logger ||=
         begin

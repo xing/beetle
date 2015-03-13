@@ -267,6 +267,15 @@ module Beetle
       end
     end
 
+    def reset!
+      stop_publishing if @publisher
+      stop_listening if @subscriber
+      config.reload
+    ensure
+      @publisher = nil
+      @subscriber = nil
+    end
+
     private
 
     def determine_queue_names(queues)
@@ -311,14 +320,6 @@ module Beetle
 
     def subscriber
       @subscriber ||= Subscriber.new(self)
-    end
-
-    def reset!
-      stop_publishing if @publisher
-      stop_listening if @subscriber
-    ensure
-      @publisher = nil
-      @subscriber = nil
     end
 
     def queue_name_for_tracing(queue)
