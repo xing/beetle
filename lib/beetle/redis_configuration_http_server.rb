@@ -39,10 +39,24 @@ module Beetle
         server_status(response, "plain")
       when '/initiate_master_switch'
         initiate_master_switch(response)
+      when '/brokers'
+        list_brokers(response)
       else
         not_found(response)
       end
       response.send_response
+    end
+
+    def list_brokers(response)
+      brokers = config_server.config.brokers
+      response.status = 200
+      if @http_headers =~ %r(application/json)
+        response.content_type 'application/json'
+        response.content = brokers.to_json
+      else
+        response.content_type 'text/yaml'
+        response.content = brokers.to_yaml
+      end
     end
 
     def server_status(response, type)

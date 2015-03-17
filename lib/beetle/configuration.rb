@@ -58,6 +58,14 @@ module Beetle
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
+    # returns the configured amqp brokers
+    def brokers
+      {
+        'servers' => self.servers,
+        'additional_subscription_servers' => self.additional_subscription_servers
+      }
+    end
+
     def initialize #:nodoc:
       self.system_name = "system"
 
@@ -90,6 +98,12 @@ module Beetle
       load_config
     end
 
+    # reloads the configuration from the configuration file
+    # if one is configured
+    def reload
+      load_config if @config_file
+    end
+
     def logger
       @logger ||=
         begin
@@ -103,7 +117,12 @@ module Beetle
 
     private
     def load_config
-      hash = YAML::load(ERB.new(IO.read(config_file)).result)
+      raw = ERB.new(IO.read(config_file)).result
+      hash = if config_file =~ /\.json$/
+               JSON.parse(raw)
+             else
+               YAML.load(raw)
+             end
       hash.each do |key, value|
         send("#{key}=", value)
       end
