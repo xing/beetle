@@ -48,13 +48,12 @@ module Beetle
     # create a fresh Client instance from a given configuration object
     def initialize(config = Beetle.config)
       @config  = config
-      @servers = config.servers.split(/ *, */)
-      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */)
       @exchanges = {}
       @queues = {}
       @messages = {}
       @bindings = {}
       @deduplication_store = DeduplicationStore.new(config)
+      load_brokers_from_config
     end
 
     # register an exchange with the given _name_ and a set of _options_:
@@ -271,6 +270,7 @@ module Beetle
       stop_publishing if @publisher
       stop_listening if @subscriber
       config.reload
+      load_brokers_from_config
     rescue Exception => e
       logger.warn("Error resetting client")
       logger.warn(e)
@@ -327,6 +327,11 @@ module Beetle
 
     def queue_name_for_tracing(queue)
       "trace-#{queue}-#{Beetle.hostname}-#{$$}"
+    end
+
+    def load_brokers_from_config
+      @servers = config.servers.split(/ *, */)
+      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */)
     end
   end
 end
