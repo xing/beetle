@@ -129,7 +129,7 @@ module Beetle
 
     # generate uuid for publishing
     def self.generate_uuid
-      UUID4R::uuid(1)
+      UUID4R::uuid(4)
     end
 
     # whether the publisher has tried sending this message to two servers
