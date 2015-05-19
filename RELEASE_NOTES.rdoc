@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 0.3.14
+* switched message id generation to use v4 uuids
+
 == Version 0.3.0
 
 * redis master file contents now correctly reflects the state of the running configuration server
