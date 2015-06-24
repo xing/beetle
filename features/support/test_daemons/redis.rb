@@ -41,12 +41,13 @@ module TestDaemons
     def restart(delay = 0)
       create_dir
       create_config
-      daemon_controller.stop
+      daemon_controller.stop if running?
       sleep delay
       daemon_controller.start
     end
 
     def stop
+      return unless running?
       # TODO: Might need to be moved into RedisConfigurationServer
       #     10.times do
       #       break if (redis.info["bgsave_in_progress"]) == 0 rescue false
@@ -178,10 +179,12 @@ module TestDaemons
       @daemon_controller ||= DaemonController.new(
          :identifier    => "Redis test server #{name}",
          :start_command => "redis-server #{config_filename}",
+         :stop_command  => "redis-cli -p #{port} shutdown nosave",
          :ping_command  => lambda { running? && available? },
          :pid_file      => pid_file,
          :log_file      => log_file,
-         :start_timeout => 5
+         :start_timeout => 20,
+         :stop_timeout  => 20,
       )
     end
   end
