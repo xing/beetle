@@ -33,7 +33,7 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME").
+      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
         with(:body => {
         "pattern" => "^QUEUE_NAME$",
         "priority" => 1,
@@ -48,7 +48,7 @@ module Beetle
     end
 
     test "raises exception when policy couldn't successfully be created" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME").
+      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
         to_return(:status => [405])
 
       assert_raises DeadLetterQueue::FailedRabbitRequest do
@@ -57,7 +57,7 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME").
+      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
         with(:body => {
         "pattern" => "^QUEUE_NAME$",
         "priority" => 1,
