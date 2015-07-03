@@ -69,6 +69,11 @@ module Beetle
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
       @store            = opts[:store]
+      @routing_key      = if x_death = @header.attributes[:headers]["x-death"]
+                            x_death.last["routing-keys"].first
+                          else
+                            @header.routing_key
+                          end
     end
 
     # extracts various values form the AMQP header properties

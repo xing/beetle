@@ -35,6 +35,12 @@ class Handler < Beetle::Handler
 
   # called when the handler receives the message - fail everytime
   def process
+    logger.info "received message with routing key: #{message.routing_key}"
+    death = message.header.attributes[:headers]["x-death"]
+    if death
+      logger.info "X-DEATH: died #{death.first["count"]} times"
+      death.each {|d| logger.debug d}
+    end
     raise "failed #{$exceptions += 1} times"
   end
 
