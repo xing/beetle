@@ -5,6 +5,7 @@ module Beetle
   class DeadLetterQueue
     READ_TIMEOUT = 3 #seconds
     DEFAULT_DEAD_LETTER_MSG_TTL = 1000 #1 second
+    RABBIT_API_PORT = 15672
 
     class FailedRabbitRequest < StandardError; end
 
@@ -55,7 +56,7 @@ module Beetle
       def run_rabbit_http_request(uri, request, &block)
         request.basic_auth("guest", "guest")
         request["Content-Type"] = "application/json"
-        response = Net::HTTP.start(uri.hostname, uri.port, :read_timeout => READ_TIMEOUT) do |http|
+        response = Net::HTTP.start(uri.hostname, RABBIT_API_PORT, :read_timeout => READ_TIMEOUT) do |http|
           block.call(http) if block_given?
         end
       end
