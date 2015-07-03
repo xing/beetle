@@ -4,6 +4,7 @@ require 'json'
 module Beetle
   class DeadLetterQueue
     READ_TIMEOUT = 3 #seconds
+    DEFAULT_DEAD_LETTER_MSG_TTL = 1000 #1 second
 
     class FailedRabbitRequest < StandardError; end
 
@@ -44,7 +45,11 @@ module Beetle
       end
 
       def dead_letter_routing_key(queue_name, options)
-        options.fetch(:dead_letter_routing_key) { "#{queue_name}_dead_letter" }
+        options.fetch(:routing_key) { dead_letter_queue_name(queue_name) }
+      end
+
+      def dead_letter_queue_name(queue_name)
+        "#{queue_name}_dead_letter"
       end
 
       def run_rabbit_http_request(uri, request, &block)

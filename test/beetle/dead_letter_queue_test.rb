@@ -72,10 +72,4 @@ module Beetle
       DeadLetterQueue.set_dead_letter_queue!(@server, @queue_name, :message_ttl => 10000)
     end
   end
-
-  class AllTest < MiniTest::Unit::TestCase
-    #Beetle::DeadLetterQueues.all
-
-    test "raises exception when queues couldn't be obtained"
-  end
 end
