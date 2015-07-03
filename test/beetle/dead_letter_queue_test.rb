@@ -1,6 +1,19 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
+  class SetDeadLetterQueuesTest < MiniTest::Unit::TestCase
+    test "creates a dead letter queue for each server" do
+      servers = %w(a b)
+
+      DeadLetterQueue.expects(:set_dead_letter_queue!).
+        with("a", "QUEUE_NAME", :message_ttl => 10000)
+      DeadLetterQueue.expects(:set_dead_letter_queue!).
+        with("b", "QUEUE_NAME", :message_ttl => 10000)
+
+      DeadLetterQueue.set_dead_letter_queues!(servers, "QUEUE_NAME", :message_ttl => 10000)
+    end
+  end
+
   class SetDeadLetterQueueTest < MiniTest::Unit::TestCase
     def setup
       @server = "localhost:15672"
