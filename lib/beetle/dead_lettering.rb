@@ -34,7 +34,8 @@ module Beetle
       raise ArgumentError.new("server missing")     if server.blank?
       raise ArgumentError.new("queue name missing") if queue_name.blank?
 
-      request_url = URI("http://#{server}/api/policies/%2F/#{queue_name}_policy")
+      vhost = CGI.escape(@config.vhost)
+      request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
       request = Net::HTTP::Put.new(request_url)
 
       request_body = {
