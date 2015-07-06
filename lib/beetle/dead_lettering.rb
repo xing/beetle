@@ -22,10 +22,10 @@ module Beetle
       dead_letter_queue = channel.queue(dead_letter_queue_name, creation_keys)
 
       logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
-      set_dead_letter_queues!(servers, target_queue)
+      set_dead_letter_policies!(servers, target_queue)
 
       logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
-      set_dead_letter_queues!(servers, dead_letter_queue_name,
+      set_dead_letter_policies!(servers, dead_letter_queue_name,
                               :message_ttl => DEFAULT_DEAD_LETTER_MSG_TTL,
                               :routing_key => target_queue)
     end
