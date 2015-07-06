@@ -182,7 +182,7 @@ module Beetle
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = channel.queue(queue_name, creation_keys)
       target_servers = @client.servers + @client.additional_subscription_servers
-      DeadLetterQueue.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys) if @client.config.dead_lettering_enabled?
+      DeadLettering.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys) if @client.config.dead_lettering_enabled?
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue

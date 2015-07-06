@@ -2,7 +2,7 @@ require 'net/http'
 require 'json'
 
 module Beetle
-  class DeadLetterQueue
+  class DeadLettering
     READ_TIMEOUT = 3 #seconds
     DEFAULT_DEAD_LETTER_MSG_TTL = 1000 #1 second
     RABBIT_API_PORT = 15672
@@ -21,7 +21,7 @@ module Beetle
 
         logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
         set_dead_letter_queues!(servers, dead_letter_queue_name,
-                                :message_ttl => DeadLetterQueue::DEFAULT_DEAD_LETTER_MSG_TTL,
+                                :message_ttl => DEFAULT_DEAD_LETTER_MSG_TTL,
                                 :routing_key => target_queue)
       end
 

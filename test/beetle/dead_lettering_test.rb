@@ -1,16 +1,16 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class SetDeadLetterQueuesTest < MiniTest::Unit::TestCase
+  class SetDeadLetteringsTest < MiniTest::Unit::TestCase
     test "creates a dead letter queue for each server" do
       servers = %w(a b)
 
-      DeadLetterQueue.expects(:set_dead_letter_policy!).
+      DeadLettering.expects(:set_dead_letter_policy!).
         with("a", "QUEUE_NAME", :message_ttl => 10000)
-      DeadLetterQueue.expects(:set_dead_letter_policy!).
+      DeadLettering.expects(:set_dead_letter_policy!).
         with("b", "QUEUE_NAME", :message_ttl => 10000)
 
-      DeadLetterQueue.set_dead_letter_policies!(servers, "QUEUE_NAME", :message_ttl => 10000)
+      DeadLettering.set_dead_letter_policies!(servers, "QUEUE_NAME", :message_ttl => 10000)
     end
   end
 
@@ -22,13 +22,13 @@ module Beetle
 
     test "raises exception when queue name wasn't specified" do
       assert_raises ArgumentError do
-        DeadLetterQueue.set_dead_letter_policy!(@server, "")
+        DeadLettering.set_dead_letter_policy!(@server, "")
       end
     end
 
     test "raises exception when no server was specified" do
       assert_raises ArgumentError do
-        DeadLetterQueue.set_dead_letter_policy!("", @queue_name)
+        DeadLettering.set_dead_letter_policy!("", @queue_name)
       end
     end
 
@@ -44,15 +44,15 @@ module Beetle
         }}.to_json).
         to_return(:status => 204)
 
-      DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name)
+      DeadLettering.set_dead_letter_policy!(@server, @queue_name)
     end
 
     test "raises exception when policy couldn't successfully be created" do
       stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
         to_return(:status => [405])
 
-      assert_raises DeadLetterQueue::FailedRabbitRequest do
-        DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name)
+      assert_raises DeadLettering::FailedRabbitRequest do
+        DeadLettering.set_dead_letter_policy!(@server, @queue_name)
       end
     end
 
@@ -69,7 +69,7 @@ module Beetle
         }}.to_json).
         to_return(:status => 204)
 
-      DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name, :message_ttl => 10000)
+      DeadLettering.set_dead_letter_policy!(@server, @queue_name, :message_ttl => 10000)
     end
   end
 end
