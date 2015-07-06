@@ -57,7 +57,7 @@ module Beetle
     # reject messages with "requeue => false", where messages are temporarily moved to the side and are republished to
     # the end of the original queue when they expire in the dead letter queue.
     #
-    # By default this is turned ofs and needs to be explicitly enabled.
+    # By default this is turned off and needs to be explicitly enabled.
     attr_accessor :dead_lettering_enabled
     alias_method :dead_lettering_enabled?, :dead_lettering_enabled
 
