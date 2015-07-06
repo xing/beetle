@@ -145,7 +145,7 @@ module Beetle
           result = m.process(processor)
           if result.reject?
             sleep 1
-            header.reject(:requeue => true)
+            header.reject(:requeue => false)
           elsif reply_to = header.attributes[:reply_to]
             # logger.info "Beetle: sending reply to queue #{reply_to}"
             # require 'ruby-debug'
