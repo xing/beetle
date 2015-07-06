@@ -38,7 +38,7 @@ class Handler < Beetle::Handler
     logger.info "received message with routing key: #{message.routing_key}"
     death = message.header.attributes[:headers]["x-death"]
     if death
-      logger.info "X-DEATH: died #{death.first["count"]} times"
+      logger.info "X-DEATH: Message is comming back from dead letter queue (#{death.first["count"]})"
       death.each {|d| logger.debug d}
     end
     raise "failed #{$exceptions += 1} times"
