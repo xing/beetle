@@ -144,7 +144,6 @@ module Beetle
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.reject?
-            sleep 1
             header.reject(:requeue => false)
           elsif reply_to = header.attributes[:reply_to]
             # logger.info "Beetle: sending reply to queue #{reply_to}"
