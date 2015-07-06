@@ -15,8 +15,10 @@ Beetle.config.logger.level = Logger::INFO
 
 # setup client
 $client = Beetle::Client.new
-$client.register_queue(:test)
-$client.register_message(:test)
+$client.configure(:key => "my.test.message") do
+  message(:test)
+  queue(:test)
+end
 
 # purge the test queue
 $client.purge(:test)
