@@ -21,8 +21,8 @@ module Beetle
 
         logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
         set_dead_letter_queues!(servers, dead_letter_queue_name,
-           :message_ttl => DeadLetterQueue::DEFAULT_DEAD_LETTER_MSG_TTL,
-           :routing_key => target_queue)
+                                :message_ttl => DeadLetterQueue::DEFAULT_DEAD_LETTER_MSG_TTL,
+                                :routing_key => target_queue)
       end
 
       def set_dead_letter_queues!(servers, queue_name, options={})
@@ -37,14 +37,14 @@ module Beetle
         request = Net::HTTP::Put.new(request_url)
 
         request_body = {
-            "pattern" => "^#{queue_name}$",
-            "priority" => 1,
-            "apply-to" => "queues",
-            "definition" => {
-              "dead-letter-routing-key" => dead_letter_routing_key(queue_name, options),
-              "dead-letter-exchange" => ""
-            }
+          "pattern" => "^#{queue_name}$",
+          "priority" => 1,
+          "apply-to" => "queues",
+          "definition" => {
+            "dead-letter-routing-key" => dead_letter_routing_key(queue_name, options),
+            "dead-letter-exchange" => ""
           }
+        }
 
         request_body["definition"].merge!("message-ttl" => options[:message_ttl]) if options[:message_ttl]
 
