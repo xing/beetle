@@ -112,7 +112,7 @@ module Beetle
       @dead_lettering.bind_dead_letter_queues!(channel, @servers, @queue_name)
     end
 
-    test "creates and bind the dead letter queue via policies when enabled" do
+    test "creates and connects the dead letter queue via policies when enabled" do
       @config.dead_lettering_enabled = true
 
       channel = stub('channel')
