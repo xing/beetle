@@ -21,9 +21,12 @@ module Beetle
       set_dead_letter_policies!(servers, target_queue)
 
       logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
-      set_dead_letter_policies!(servers, dead_letter_queue_name,
-                              :message_ttl => @config.dead_lettering_msg_ttl,
-                              :routing_key => target_queue)
+      set_dead_letter_policies!(
+        servers,
+        dead_letter_queue_name,
+        :message_ttl => @config.dead_lettering_msg_ttl,
+        :routing_key => target_queue
+      )
     end
 
     def set_dead_letter_policies!(servers, queue_name, options={})
