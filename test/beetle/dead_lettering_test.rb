@@ -96,4 +96,35 @@ module Beetle
       @dead_lettering.set_dead_letter_policy!(@server, @queue_name)
     end
   end
+
+  class BindDeadLetterQueuesTest < MiniTest::Unit::TestCase
+    def setup
+      @queue_name = "QUEUE_NAME"
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @dead_lettering = DeadLettering.new(@config)
+      @servers = ["localhost:55672"]
+    end
+
+    test "is turned off by default" do
+      channel = stub('channel')
+      @dead_lettering.expects(:set_dead_letter_policies!).never
+      @dead_lettering.bind_dead_letter_queues!(channel, @servers, @queue_name)
+    end
+
+    test "creates and bind the dead letter queue via policies when enabled" do
+      @config.dead_lettering_enabled = true
+
+      channel = stub('channel')
+
+      channel.expects(:queue).with("#{@queue_name}_dead_letter", {})
+      @dead_lettering.expects(:set_dead_letter_policies!).with(@servers, @queue_name)
+      @dead_lettering.expects(:set_dead_letter_policies!).with(@servers, "#{@queue_name}_dead_letter",
+        :routing_key => @queue_name,
+        :message_ttl => 1000
+      )
+
+      @dead_lettering.bind_dead_letter_queues!(channel, @servers, @queue_name)
+    end
+  end
 end
