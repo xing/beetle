@@ -230,7 +230,7 @@ module Beetle
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("Bunny")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m)
+      @pub.expects(:bunny).returns(m).twice
 
       @pub.send(:queue, "some_queue")
       assert_equal q, @pub.send(:queues)["some_queue"]
