@@ -144,7 +144,12 @@ module Beetle
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.reject?
-            header.reject(:requeue => false)
+            if @client.config.dead_lettering_enabled
+              header.reject(:requeue => false)
+            else
+              sleep 1
+              header.reject(:requeue => true)
+            end
           elsif reply_to = header.attributes[:reply_to]
             # logger.info "Beetle: sending reply to queue #{reply_to}"
             # require 'ruby-debug'
@@ -177,7 +182,7 @@ module Beetle
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = channel.queue(queue_name, creation_keys)
       target_servers = @client.servers + @client.additional_subscription_servers
-      DeadLetterQueue.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys)
+      DeadLetterQueue.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys) if @client.config.dead_lettering_enabled?
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue

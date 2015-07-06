@@ -48,6 +48,19 @@ module Beetle
     # the password to use when connectiong to the AMQP servers (defaults to <tt>"guest"</tt>)
     attr_accessor :password
 
+    # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
+    # throughput degradation (when rejected messages block the processing of other messages
+    # at the head of the queue) in some cases.
+    #
+    # This setting enables the creation of dead letter queues that mimic the old beetle behaviour on RabbitMQ 3.x.
+    # Instead of rejecting messages with "requeue => false", beetle will setup dead letter queues for all queues,
+    # where messages are temporarily moved to the side and are republished to the end of the original queue when they expire
+    # in the dead letter queue.
+    #
+    # By default this is turned of and needs to be explicitly enabled.
+    attr_accessor :dead_lettering_enabled
+    alias_method :dead_lettering_enabled?, :dead_lettering_enabled
+
     # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
@@ -85,6 +98,8 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+
+      self.dead_lettering_enabled = false
 
       self.publishing_timeout = 0
       self.tmpdir = "/tmp"

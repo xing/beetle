@@ -199,7 +199,7 @@ module Beetle
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       logger.debug("Beetle: creating queue with opts: #{creation_keys.inspect}")
       queue = bunny.queue(queue_name, creation_keys)
-      DeadLetterQueue.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys)
+      DeadLetterQueue.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys) if @client.config.dead_lettering_enabled?
       logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_keys.inspect}")
       queue.bind(exchange(exchange_name), binding_keys)
       queue
