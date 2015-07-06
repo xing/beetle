@@ -22,7 +22,9 @@ module Beetle
     def setup
       @server = "localhost:15672"
       @queue_name = "QUEUE_NAME"
-      @dead_lettering = DeadLettering.new(Configuration.new)
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @dead_lettering = DeadLettering.new(@config)
     end
 
     test "raises exception when queue name wasn't specified" do
