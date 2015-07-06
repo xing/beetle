@@ -25,11 +25,11 @@ module Beetle
                                 :routing_key => target_queue)
       end
 
-      def set_dead_letter_queues!(servers, queue_name, options={})
-        servers.each { |server| set_dead_letter_queue!(server, queue_name, options) }
+      def set_dead_letter_policies!(servers, queue_name, options={})
+        servers.each { |server| set_dead_letter_policy!(server, queue_name, options) }
       end
 
-      def set_dead_letter_queue!(server, queue_name, options={})
+      def set_dead_letter_policy!(server, queue_name, options={})
         raise ArgumentError.new("server missing")     if server.blank?
         raise ArgumentError.new("queue name missing") if queue_name.blank?
 

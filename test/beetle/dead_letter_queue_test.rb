@@ -5,16 +5,16 @@ module Beetle
     test "creates a dead letter queue for each server" do
       servers = %w(a b)
 
-      DeadLetterQueue.expects(:set_dead_letter_queue!).
+      DeadLetterQueue.expects(:set_dead_letter_policy!).
         with("a", "QUEUE_NAME", :message_ttl => 10000)
-      DeadLetterQueue.expects(:set_dead_letter_queue!).
+      DeadLetterQueue.expects(:set_dead_letter_policy!).
         with("b", "QUEUE_NAME", :message_ttl => 10000)
 
-      DeadLetterQueue.set_dead_letter_queues!(servers, "QUEUE_NAME", :message_ttl => 10000)
+      DeadLetterQueue.set_dead_letter_policies!(servers, "QUEUE_NAME", :message_ttl => 10000)
     end
   end
 
-  class SetDeadLetterQueueTest < MiniTest::Unit::TestCase
+  class SetDeadLetterPolicyTest < MiniTest::Unit::TestCase
     def setup
       @server = "localhost:15672"
       @queue_name = "QUEUE_NAME"
@@ -22,13 +22,13 @@ module Beetle
 
     test "raises exception when queue name wasn't specified" do
       assert_raises ArgumentError do
-        DeadLetterQueue.set_dead_letter_queue!(@server, "")
+        DeadLetterQueue.set_dead_letter_policy!(@server, "")
       end
     end
 
     test "raises exception when no server was specified" do
       assert_raises ArgumentError do
-        DeadLetterQueue.set_dead_letter_queue!("", @queue_name)
+        DeadLetterQueue.set_dead_letter_policy!("", @queue_name)
       end
     end
 
@@ -44,7 +44,7 @@ module Beetle
         }}.to_json).
         to_return(:status => 204)
 
-      DeadLetterQueue.set_dead_letter_queue!(@server, @queue_name)
+      DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name)
     end
 
     test "raises exception when policy couldn't successfully be created" do
@@ -52,7 +52,7 @@ module Beetle
         to_return(:status => [405])
 
       assert_raises DeadLetterQueue::FailedRabbitRequest do
-        DeadLetterQueue.set_dead_letter_queue!(@server, @queue_name)
+        DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name)
       end
     end
 
@@ -69,7 +69,7 @@ module Beetle
         }}.to_json).
         to_return(:status => 204)
 
-      DeadLetterQueue.set_dead_letter_queue!(@server, @queue_name, :message_ttl => 10000)
+      DeadLetterQueue.set_dead_letter_policy!(@server, @queue_name, :message_ttl => 10000)
     end
   end
 end
