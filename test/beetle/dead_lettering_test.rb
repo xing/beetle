@@ -78,5 +78,22 @@ module Beetle
 
       @dead_lettering.set_dead_letter_policy!(@server, @queue_name, :message_ttl => 10000)
     end
+
+    test "properly encodes the vhost from the configuration" do
+      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy").
+        with(:body => {
+        "pattern" => "^QUEUE_NAME$",
+        "priority" => 1,
+        "apply-to" => "queues",
+        "definition" => {
+          "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
+          "dead-letter-exchange" => ""
+        }}.to_json).
+        to_return(:status => 204)
+
+      @config.vhost = "foo/"
+
+      @dead_lettering.set_dead_letter_policy!(@server, @queue_name)
+    end
   end
 end
