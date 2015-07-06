@@ -3,9 +3,9 @@ before_install:
 before_script:
   - mysql -e 'create database beetle_test;'
 rvm:
-  - 1.9.3
   - 2.0.0
   - 2.1.0
+  - 2.2.0
 script: "bundle exec rake test"
 services:
   - redis-server
