@@ -61,6 +61,16 @@ module Beetle
     attr_accessor :dead_lettering_enabled
     alias_method :dead_lettering_enabled?, :dead_lettering_enabled
 
+    # the time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
+    # to the original queue
+    attr_accessor :dead_lettering_msg_ttl
+
+    # Read timeout for http requests to create dead letter bindings
+    attr_accessor :dead_lettering_read_timeout
+
+    # Returns the port on which the Rabbit API is hosted
+    attr_accessor :api_port
+
     # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
@@ -98,8 +108,11 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+      self.api_port = 15672
 
       self.dead_lettering_enabled = false
+      self.dead_lettering_msg_ttl = 1000 #1 second
+      self.dead_lettering_read_timeout = 3 #3 seconds
 
       self.publishing_timeout = 0
       self.tmpdir = "/tmp"

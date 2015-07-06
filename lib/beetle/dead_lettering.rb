@@ -3,10 +3,6 @@ require 'json'
 
 module Beetle
   class DeadLettering
-    READ_TIMEOUT = 3 #seconds
-    DEFAULT_DEAD_LETTER_MSG_TTL = 1000 #1 second
-    RABBIT_API_PORT = 15672
-
     class FailedRabbitRequest < StandardError; end
 
     def initialize(config)
@@ -26,7 +22,7 @@ module Beetle
 
       logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
       set_dead_letter_policies!(servers, dead_letter_queue_name,
-                              :message_ttl => DEFAULT_DEAD_LETTER_MSG_TTL,
+                              :message_ttl => @config.dead_lettering_msg_ttl,
                               :routing_key => target_queue)
     end
 
@@ -74,9 +70,9 @@ module Beetle
     end
 
     def run_rabbit_http_request(uri, request, &block)
-      request.basic_auth("guest", "guest")
+      request.basic_auth(@config.user, @config.password)
       request["Content-Type"] = "application/json"
-      response = Net::HTTP.start(uri.hostname, RABBIT_API_PORT, :read_timeout => READ_TIMEOUT) do |http|
+      response = Net::HTTP.start(uri.hostname, @config.api_port, :read_timeout => @config.dead_lettering_read_timeout) do |http|
         block.call(http) if block_given?
       end
     end
