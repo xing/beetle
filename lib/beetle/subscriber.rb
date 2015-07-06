@@ -177,21 +177,8 @@ module Beetle
 
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = channel.queue(queue_name, creation_keys)
-
-      dead_letter_queue_name = DeadLetterQueue.dead_letter_queue_name(queue_name)
-      servers = @client.servers + @client.additional_subscription_servers
-      logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
-      #TODO: Taking the creation_keys from the related queue for the creation of the dead letter queue
-      #      doesn't seem to be right
-      dead_letter_queue = channel.queue(dead_letter_queue_name, creation_keys)
-
-      logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{queue_name} on all servers")
-      DeadLetterQueue.set_dead_letter_queues!(servers, queue_name)
-
-      logger.debug("Beetle: setting #{queue_name} as dead letter queue of #{dead_letter_queue_name} on all servers")
-      DeadLetterQueue.set_dead_letter_queues!(servers, dead_letter_queue_name,
-                                            :message_ttl => DeadLetterQueue::DEFAULT_DEAD_LETTER_MSG_TTL,
-                                            :routing_key => queue_name)
+      target_servers = @client.servers + @client.additional_subscription_servers
+      DeadLetterQueue.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys)
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue
