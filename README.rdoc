@@ -99,7 +99,8 @@ For tests, you'll need
 
 {Stefan Kaes}[http://github.com/skaes],
 {Pascal Friederich}[http://github.com/paukul],
-{Ali Jelveh}[http://github.com/dudemeister] and
+{Ali Jelveh}[http://github.com/dudemeister],
+{Bjoern Rochel}[http://github.com/bjro] and
 {Sebastian Roebke}[http://github.com/boosty].
 
 You can find out more about our work on our {dev blog}[http://devblog.xing.com].
