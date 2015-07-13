@@ -190,13 +190,8 @@ module Beetle
 
     def connection_settings
       {
-        :host => current_host,
-        :port => current_port,
-        :logging => false,
-        :user => @client.config.user,
-        :pass => @client.config.password,
-        :vhost => @client.config.vhost,
-        :frame_max => @client.config.frame_max,
+        :host => current_host, :port => current_port, :logging => false,
+        :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost,
         :on_tcp_connection_failure => on_tcp_connection_failure
       }
     end
