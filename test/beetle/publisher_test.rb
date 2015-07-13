@@ -19,7 +19,12 @@ module Beetle
       m = mock("dummy")
       expected_bunny_options = {
         :host => @pub.send(:current_host), :port => @pub.send(:current_port),
-        :logging => false, :user => "guest", :pass => "guest", :vhost => "/", :socket_timeout => 0
+        :logging => false,
+        :user => "guest",
+        :pass => "guest",
+        :vhost => "/",
+        :socket_timeout => 0,
+        :frame_max => 131072
       }
       Bunny.expects(:new).with(expected_bunny_options).returns(m)
       m.expects(:start)
