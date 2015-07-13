@@ -150,8 +150,8 @@ module Beetle
 
     def new_bunny
       b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging],
-                    :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost,
-                    :socket_timeout => Beetle.config.publishing_timeout)
+                    :user => @client.config.user, :pass => @client.config.password, :vhost => @client.config.vhost,
+                    :socket_timeout => @client.config.publishing_timeout)
       b.start
       b
     end
