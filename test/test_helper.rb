@@ -15,6 +15,8 @@ require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 class MiniTest::Unit::TestCase
   require "active_support/testing/declarative"
   extend ActiveSupport::Testing::Declarative
+  require "webmock"
+  include WebMock::API
   def assert_nothing_raised(*)
     yield
   end

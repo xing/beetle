@@ -47,6 +47,31 @@ module Beetle
     attr_accessor :user
     # the password to use when connectiong to the AMQP servers (defaults to <tt>"guest"</tt>)
     attr_accessor :password
+    # the maximum permissible size of a frame (in bytes). Defaults to 128 KB
+    attr_accessor :frame_max
+
+    # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
+    # throughput degradation (when rejected messages block the processing of other messages
+    # at the head of the queue) in some cases.
+    #
+    # This setting enables the creation of dead letter queues that mimic the old beetle behaviour on RabbitMQ 3.x.
+    # Instead of rejecting messages with "requeue => true", beetle will setup dead letter queues for all queues, will
+    # reject messages with "requeue => false", where messages are temporarily moved to the side and are republished to
+    # the end of the original queue when they expire in the dead letter queue.
+    #
+    # By default this is turned off and needs to be explicitly enabled.
+    attr_accessor :dead_lettering_enabled
+    alias_method :dead_lettering_enabled?, :dead_lettering_enabled
+
+    # the time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
+    # to the original queue
+    attr_accessor :dead_lettering_msg_ttl
+
+    # Read timeout for http requests to create dead letter bindings
+    attr_accessor :dead_lettering_read_timeout
+
+    # Returns the port on which the Rabbit API is hosted
+    attr_accessor :api_port
 
     # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
@@ -85,6 +110,12 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
+      self.api_port = 15672
+      self.frame_max = 131072
+
+      self.dead_lettering_enabled = false
+      self.dead_lettering_msg_ttl = 1000 #1 second
+      self.dead_lettering_read_timeout = 3 #3 seconds
 
       self.publishing_timeout = 0
       self.tmpdir = "/tmp"

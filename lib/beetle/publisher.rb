@@ -149,9 +149,15 @@ module Beetle
     end
 
     def new_bunny
-      b = Bunny.new(:host => current_host, :port => current_port, :logging => !!@options[:logging],
-                    :user => Beetle.config.user, :pass => Beetle.config.password, :vhost => Beetle.config.vhost,
-                    :socket_timeout => Beetle.config.publishing_timeout)
+      b = Bunny.new(
+        :host           => current_host,
+        :port           => current_port,
+        :logging        => !!@options[:logging],
+        :user           => @client.config.user,
+        :pass           => @client.config.password,
+        :vhost          => @client.config.vhost,
+        :frame_max      => @client.config.frame_max,
+        :socket_timeout => @client.config.publishing_timeout)
       b.start
       b
     end
@@ -195,10 +201,11 @@ module Beetle
       @exchanges_with_bound_queues[exchange_name] = true
     end
 
-    # TODO: Refactor, fethch the keys and stuff itself
+    # TODO: Refactor, fetch the keys and stuff itself
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       logger.debug("Beetle: creating queue with opts: #{creation_keys.inspect}")
       queue = bunny.queue(queue_name, creation_keys)
+      @dead_lettering.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys)
       logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_keys.inspect}")
       queue.bind(exchange(exchange_name), binding_keys)
       queue

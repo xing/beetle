@@ -15,8 +15,11 @@ Beetle.config.logger.level = Logger::INFO
 
 # setup client
 $client = Beetle::Client.new
-$client.register_queue(:test)
-$client.register_message(:test)
+$client.config.dead_lettering_enabled = true
+$client.configure(:key => "my.test.message") do
+  message(:test)
+  queue(:test)
+end
 
 # purge the test queue
 $client.purge(:test)
@@ -35,6 +38,12 @@ class Handler < Beetle::Handler
 
   # called when the handler receives the message - fail everytime
   def process
+    logger.info "received message with routing key: #{message.routing_key}"
+    death = message.header.attributes[:headers]["x-death"]
+    if death
+      logger.info "X-DEATH: Message is coming back from dead letter queue (#{death.first["count"]})"
+      death.each {|d| logger.debug d}
+    end
     raise "failed #{$exceptions += 1} times"
   end
 

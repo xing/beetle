@@ -19,7 +19,12 @@ module Beetle
       m = mock("dummy")
       expected_bunny_options = {
         :host => @pub.send(:current_host), :port => @pub.send(:current_port),
-        :logging => false, :user => "guest", :pass => "guest", :vhost => "/", :socket_timeout => 0
+        :logging => false,
+        :user => "guest",
+        :pass => "guest",
+        :vhost => "/",
+        :socket_timeout => 0,
+        :frame_max => 131072
       }
       Bunny.expects(:new).with(expected_bunny_options).returns(m)
       m.expects(:start)
@@ -230,7 +235,7 @@ module Beetle
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("Bunny")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m)
+      @pub.expects(:bunny).returns(m).twice
 
       @pub.send(:queue, "some_queue")
       assert_equal q, @pub.send(:queues)["some_queue"]

@@ -103,7 +103,11 @@ module Beetle
 
     # the routing key
     def routing_key
-      header.routing_key
+      @routing_key ||= if x_death = header.attributes[:headers]["x-death"]
+        x_death.last["routing-keys"].first
+      else
+        header.routing_key
+      end
     end
     alias_method :key, :routing_key
 
