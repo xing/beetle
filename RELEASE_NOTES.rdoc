@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 0.4.0
+* Added optional dead lettering feature to mimic RabbitMQ 2.x requeueing behaviour on RabbitMQ 3.x
+
 == Version 0.3.14
 * switched message id generation to use v4 uuids
 
