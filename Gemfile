@@ -2,9 +2,9 @@ source 'https://rubygems.org'
 
 gemspec
 
-gem "rake", "~> 10.1.0"
-gem "mocha", "~> 0.13.3"
-gem "simplecov", "~> 0.7.1"
+gem "rake", "~> 10.4.2"
+gem "mocha", "~> 1.1.0"
+gem "simplecov", "~> 0.10.0"
 gem "rdoc", "~> 4.0"
 
 gem "cucumber", "~> 1.3.15"
