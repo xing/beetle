@@ -837,5 +837,16 @@ module Beetle
       assert_equal "foo", message.routing_key
       assert_equal "foo", message.key # alias
     end
+
+    test "returns the routing key for a dead lettered message" do
+      header = header_with_params({})
+      header.stubs(:routing_key).returns("bar")
+      header.attributes.merge!(headers: {"x-death" => [{"routing-keys" => ["foo"]}]})
+
+      message = Message.new("somequeue", header, "")
+      assert_equal "foo", message.routing_key
+      assert_equal "foo", message.key # alias
+    end
+
   end
 end

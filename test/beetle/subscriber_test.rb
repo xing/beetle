@@ -218,6 +218,37 @@ module Beetle
     end
   end
 
+
+  class DeadLetterrngCallBackExecutionTest < MiniTest::Unit::TestCase
+    def setup
+      @client = Client.new
+      @client.config.dead_lettering_enabled = true
+      @queue = "somequeue"
+      @client.register_queue(@queue)
+      @sub = @client.send(:subscriber)
+      @exception = Exception.new "murks"
+      @handler = Handler.create(lambda{|*args| raise @exception})
+      # handler method 'processing_completed' should be called under all circumstances
+      @handler.expects(:processing_completed).once
+      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
+    end
+
+    def teardown
+      @client.config.dead_lettering_enabled = false
+    end
+
+    test "should call reject on the message header when processing the handler returns true on reject? if dead_lettering has been enabled" do
+      header = header_with_params({})
+      result = mock("result")
+      result.expects(:reject?).returns(true)
+      Message.any_instance.expects(:process).returns(result)
+      @sub.expects(:sleep).never
+      header.expects(:reject).with(:requeue => false)
+      @callback.call(header, 'foo')
+    end
+
+  end
+
   class CallBackExecutionTest < MiniTest::Unit::TestCase
     def setup
       client = Client.new
