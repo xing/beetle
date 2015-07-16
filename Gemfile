@@ -17,4 +17,4 @@ gem "mysql2", "~> 0.3.11"
 gem 'i18n'
 gem 'wirble'
 
-# gem 'bunny', '=0.7.8', :path => "#{ENV['HOME']}/src/bunny"
+# gem 'bunny', '=0.7.10', :path => "#{ENV['HOME']}/src/bunny"
