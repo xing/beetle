@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 0.4.1
+* Require newer bunny version (0.7.10) to fix publishing of messages larger than frame_max
+
 == Version 0.4.0
 * Added optional dead lettering feature to mimic RabbitMQ 2.x requeueing behaviour on RabbitMQ 3.x
 

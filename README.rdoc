@@ -87,7 +87,6 @@ At runtime, Beetle will use
 
 For development, you'll need
 * {mocha}[http://github.com/floehopper/mocha]
-* {rcov}[http://github.com/relevance/rcov] (for ruby 1.8.7)
 * {cucumber}[http://github.com/aslakhellesoy/cucumber]
 * {daemon_controller}[http://github.com/FooBarWidget/daemon_controller]
 
@@ -105,7 +104,7 @@ For tests, you'll need
 
 You can find out more about our work on our {dev blog}[http://devblog.xing.com].
 
-Copyright (c) 2010 {XING AG}[http://www.xing.com/]
+Copyright (c) 2010-2015 {XING AG}[http://www.xing.com/]
 
 Released under the MIT license. For full details see MIT-LICENSE included in this
 distribution.
