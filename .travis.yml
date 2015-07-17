@@ -1,5 +1,3 @@
-before_install:
-  - gem install bundler -v '= 1.5.1'
 before_script:
   - mysql -e 'create database beetle_test;'
 rvm:
