@@ -60,7 +60,7 @@ module Beetle
 
     def publish_with_redundancy(exchange_name, message_name, data, opts) #:nodoc:
       if @servers.size < 2
-        logger.error "Beetle: at least two active servers are required for redundant publishing"
+        logger.warn "Beetle: at least two active servers are required for redundant publishing"
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []
