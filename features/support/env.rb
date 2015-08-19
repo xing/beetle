@@ -1,9 +1,10 @@
 require File.expand_path('../../../lib/beetle', __FILE__)
 
-# Allow using Test::Unit for step assertions
-# See http://wiki.github.com/aslakhellesoy/cucumber/using-testunit
-require 'test/unit/assertions'
-World(Test::Unit::Assertions)
+# See https://github.com/cucumber/cucumber/wiki/Using-MiniTest
+require 'minitest/unit'
+World do
+  extend MiniTest::Assertions
+end
 
 Before do
   `ruby features/support/system_notification_logger start`
