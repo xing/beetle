@@ -16,6 +16,13 @@ module Beetle
       assert_equal Message::FORMAT_VERSION, m.format_version
     end
 
+    test "a message should decode the timestamp" do
+      Message.stubs(:now).returns(42)
+      header = header_with_params()
+      m = Message.new("queue", header, 'foo')
+      assert_equal 42, m.timestamp
+    end
+
     test "a redundantly encoded message should have the redundant flag set on delivery" do
       header = header_with_params(:redundant => true)
       m = Message.new("queue", header, 'foo')
@@ -24,14 +31,14 @@ module Beetle
     end
 
     test "encoding a message with a specfied time to live should set an expiration time" do
-      Message.expects(:now).returns(25)
+      Message.stubs(:now).returns(25)
       header = header_with_params(:ttl => 17)
       m = Message.new("queue", header, 'foo')
       assert_equal 42, m.expires_at
     end
 
     test "encoding a message should set the default expiration date if none is provided in the call to encode" do
-      Message.expects(:now).returns(1)
+      Message.stubs(:now).returns(1)
       header = header_with_params({})
       m = Message.new("queue", header, 'foo')
       assert_equal 1 + Message::DEFAULT_TTL, m.expires_at
@@ -60,6 +67,12 @@ module Beetle
       Message.expects(:generate_uuid).returns(uuid)
       options = Message.publishing_options(:redundant => true)
       assert_equal uuid, options[:message_id]
+    end
+
+    test "the publishing options should include the timestamp" do
+      Message.stubs(:now).returns(42)
+      options = Message.publishing_options
+      assert_equal 42, options[:timestamp]
     end
 
     test "the publishing options must only include string values" do

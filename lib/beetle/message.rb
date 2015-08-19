@@ -32,6 +32,8 @@ module Beetle
     attr_reader :header
     # the uuid of the message
     attr_reader :uuid
+    # unix timestamp when the message was published
+    attr_reader :timestamp
     # message payload
     attr_reader :data
     # the message format version of the message
@@ -76,6 +78,7 @@ module Beetle
       # p header.attributes
       amqp_headers = header.attributes
       @uuid = amqp_headers[:message_id]
+      @timestamp = amqp_headers[:timestamp]
       headers = amqp_headers[:headers].symbolize_keys
       @format_version = headers[:format_version].to_i
       @flags = headers[:flags].to_i
@@ -92,6 +95,7 @@ module Beetle
       expires_at = now + (opts[:ttl] || DEFAULT_TTL)
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s
+      opts[:timestamp] = now
       headers = (opts[:headers] ||= {})
       headers.merge!(
         :format_version => FORMAT_VERSION.to_s,
