@@ -66,7 +66,7 @@ module Beetle
       2.times { @store.redis }
     end
 
-    test "should return nil if the master file doesn't exist" do
+    test "should blow up if the master file doesn't exist" do
       Beetle.config.redis_server = "/tmp/__i_don_not_exist__.txt"
       assert_raises(Errno::ENOENT) { @store.redis_master_from_master_file }
     end
