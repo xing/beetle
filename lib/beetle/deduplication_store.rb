@@ -189,8 +189,6 @@ module Beetle
     def redis_master_from_master_file
       set_current_redis_master_from_master_file if redis_master_file_changed?
       @current_master
-    rescue Errno::ENOENT
-      nil
     end
 
     # redis master file changed outside the running process?
