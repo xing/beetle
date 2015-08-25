@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 0.4.2
+* Fail hard on missing master file
+* Set message timestamp header
+
 == Version 0.4.1
 * Require newer bunny version (0.7.10) to fix publishing of messages larger than frame_max
 
