@@ -124,6 +124,12 @@ module Beetle
       with_failover { redis.setnx(key(msg_id, suffix), value) }
     end
 
+    # TODO
+    def mset(msg_id, values)
+      values = values.inject([]){|a,(k,v)| a.concat([key(msg_id, k), v])}
+      with_failover { redis.mset(*values) }
+    end
+
     # store some key/value pairs if none of the given keys exist.
     def msetnx(msg_id, values)
       values = values.inject([]){|a,(k,v)| a.concat([key(msg_id, k), v])}
