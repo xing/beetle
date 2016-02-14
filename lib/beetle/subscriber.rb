@@ -7,14 +7,13 @@ module Beetle
     # create a new subscriber instance
     def initialize(client, options = {}) #:nodoc:
       super
-      @status = :idle
-      @request_stop = false
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
       @channels = {}
       @subscriptions = {}
       @listened_queues = []
+      @channels_closed = false
     end
 
     # the client calls this method to subscribe to a list of queues.
@@ -48,24 +47,19 @@ module Beetle
       end
     end
 
-    # closes all AMQP connections and stops the eventmachine loop
+    # closes all AMQP connections and stop the eventmachine loop.  note that the shutdown
+    # process is asynchronous. must not be called while a message handler is
+    # running. typically one would use <tt>EM.add_timer(0) { stop! }</tt> to ensure this.
     def stop! #:nodoc:
-      if @connections.empty?
-        EM.stop_event_loop
-      else
-        # Only kill connections if not currently processing a message
-        # otherwise messages can get ACKed after the connection is closed
-        # resulting in the ACK not being received and hence the
-        # message being re-delivered
-        if @status == :idle
-          server, connection = @connections.shift
-          logger.debug "Beetle: closing connection to #{server}"
-          connection.close { stop! }
-        else
-          # else ask for stop.  After processing the current message the
-          # stop will be re-attempted
-          @request_stop = true
+      if EM.reactor_running?
+        EM.add_timer(0) do
+          close_all_channels
+          close_all_connections
         end
+      else
+        # try to clean up as much a possible under the circumstances, by closing all connections
+        # this should a least close the sockets
+        close_connections_with_reactor_not_running
       end
     end
 
@@ -77,6 +71,38 @@ module Beetle
     end
 
     private
+
+    # close all sockets.
+    def close_connections_with_reactor_not_running
+      @connections.each { |_, connection| connection.close }
+    ensure
+      @connections = {}
+      @channels = {}
+    end
+
+    # close all connections. this assumes the reactor is running
+    def close_all_connections
+      if @connections.empty?
+        EM.stop_event_loop
+      else
+        server, connection = @connections.shift
+        logger.debug "Beetle: closing connection to #{server}"
+        connection.close { close_all_connections }
+      end
+    end
+
+    # closes all channels. this needs to be the first action during a
+    # subscriber shutdown, so that susbscription callbacks can detect
+    # they should stop processing messages received from the prefetch
+    # queue.
+    def close_all_channels
+      return if @channels_closed
+      @channels.each do |server, channel|
+        logger.debug "Beetle: closing channel to server #{server}"
+        channel.close
+      end
+      @channels_closed = true
+    end
 
     def exchanges_for_queues(queues)
       @client.bindings.slice(*queues).map{|_, opts| opts.map{|opt| opt[:exchange]}}.flatten.uniq
@@ -136,8 +162,11 @@ module Beetle
     def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       server = @server
       lambda do |header, data|
+        if channel(server).closing?
+          logger.info "Beetle: ignoring message since channel to server #{server} already closed"
+          return
+        end
         begin
-          @status = :busy
           # logger.debug "Beetle: received message"
           processor = Handler.create(handler, opts)
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
@@ -167,10 +196,6 @@ module Beetle
         ensure
           # processing_completed swallows all exceptions, so we don't need to protect this call
           processor.processing_completed
-          @status = :idle
-          if @request_stop
-            stop!
-          end
         end
       end
     end
