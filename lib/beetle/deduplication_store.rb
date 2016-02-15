@@ -124,7 +124,7 @@ module Beetle
       with_failover { redis.setnx(key(msg_id, suffix), value) }
     end
 
-    # TODO
+    # store some key/value pairs
     def mset(msg_id, values)
       values = values.inject([]){|a,(k,v)| a.concat([key(msg_id, k), v])}
       with_failover { redis.mset(*values) }
@@ -144,6 +144,12 @@ module Beetle
     # retrieve the value with given <tt>suffix</tt> for given <tt>msg_id</tt>. returns a string.
     def get(msg_id, suffix)
       with_failover { redis.get(key(msg_id, suffix)) }
+    end
+
+    # retrieve the values with given <tt>suffixes</tt> for given <tt>msg_id</tt>. returns a list of strings.
+    def mget(msg_id, keys)
+      keys = keys.map{|suffix| key(msg_id, suffix)}
+      with_failover { redis.mget(*keys) }
     end
 
     # delete key with given <tt>suffix</tt> for given <tt>msg_id</tt>.
