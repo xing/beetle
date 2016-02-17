@@ -11,9 +11,9 @@ module Beetle
   # On the publisher side, publishing a message will ensure that the exchange it will be
   # sent to, and each of the queues bound to the exchange, will be created on demand. On
   # the subscriber side, exchanges, queues, bindings and queue subscriptions will be
-  # created when the application calls the listen method. An application can decide to
-  # subscribe to only a subset of the configured queues by passing a list of queue names
-  # to the listen method.
+  # created when the application calls the listen_queues method. An application can decide
+  # to subscribe to only a subset of the configured queues by passing a list of queue
+  # names to the listen method.
   #
   # The net effect of this strategy is that producers and consumers can be started in any
   # order, so that no message is lost if message producers are accidentally started before
@@ -216,14 +216,15 @@ module Beetle
       subscriber.listen_queues(queues, &block)
     end
 
-    # stops the eventmachine loop
+    # stops the subscriber by closing all channels and connections. note this an
+    # asynchronous operation due to the underlying eventmachine mechanism.
     def stop_listening
-      subscriber.stop!
+      @subscriber.stop! if @subscriber
     end
 
     # disconnects the publisher from all servers it's currently connected to
     def stop_publishing
-      publisher.stop
+      @publisher.stop if @publisher
     end
 
     # pause listening on a list of queues
@@ -267,8 +268,8 @@ module Beetle
     end
 
     def reset
-      stop_publishing if @publisher
-      stop_listening if @subscriber
+      stop_publishing
+      stop_listening
       config.reload
       load_brokers_from_config
     rescue Exception => e

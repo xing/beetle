@@ -22,29 +22,32 @@ module Beetle
       assert_equal channel, @sub.send(:channel, "donald:1")
     end
 
-    test "stop! should close all amqp connections and then stop the event loop if no handler is currently running" do
-      connection1 = mock('con1')
+    test "stop! should close all amqp channels and connections and then stop the event loop if the reactor is running" do
+      connection1 = mock('conection1')
       connection1.expects(:close).yields
-      connection2 = mock('con2')
+      connection2 = mock('connection2')
       connection2.expects(:close).yields
-      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2",connection2]]
+      channel1 = mock('channel1')
+      channel1.expects(:close)
+      channel2 = mock('channel2')
+      channel2.expects(:close)
+      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2", connection2]]
+      @sub.instance_variable_set "@channels", {"server1" =>  channel1, "server2" => channel2}
+      EM.expects(:reactor_running?).returns(true)
       EM.expects(:stop_event_loop)
+      EM.expects(:add_timer).with(0).yields
       @sub.send(:stop!)
-      assert !@sub.instance_variable_get("@request_stop")
     end
 
-    test "stop! should not stop the event loop if a handler is currently running" do
-      @sub.instance_variable_set "@status", :busy
-      connection1 = mock('con1')
-      connection1.expects(:close).never
-      connection2 = mock('con2')
-      connection2.expects(:close).never
-      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2",connection2]]
-      EM.expects(:stop_event_loop).never
+    test "stop! should close all connections if the reactor is not running" do
+      connection1 = mock('conection1')
+      connection1.expects(:close).yields
+      connection2 = mock('connection2')
+      connection2.expects(:close).yields
+      @sub.instance_variable_set "@connections", [["server1", connection1], ["server2", connection2]]
+      EM.expects(:reactor_running?).returns(false)
       @sub.send(:stop!)
-      assert @sub.instance_variable_get("@request_stop")
     end
-
   end
 
   class SubscriberPauseAndResumeTest < MiniTest::Unit::TestCase
@@ -219,13 +222,16 @@ module Beetle
   end
 
 
-  class DeadLetterrngCallBackExecutionTest < MiniTest::Unit::TestCase
+  class DeadLetteringCallBackExecutionTest < MiniTest::Unit::TestCase
     def setup
       @client = Client.new
       @client.config.dead_lettering_enabled = true
       @queue = "somequeue"
       @client.register_queue(@queue)
       @sub = @client.send(:subscriber)
+      mq = mock("MQ")
+      mq.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(@sub.server).returns(mq)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
       # handler method 'processing_completed' should be called under all circumstances
@@ -257,42 +263,52 @@ module Beetle
       @sub = client.send(:subscriber)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
-      # handler method 'processing_completed' should be called under all circumstances
-      @handler.expects(:processing_completed).once
       @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
     end
 
     test "exceptions raised from message processing should be ignored" do
+      @handler.expects(:processing_completed).once
       header = header_with_params({})
       Message.any_instance.expects(:process).raises(Exception.new("don't worry"))
+      channel = mock("MQ")
+      channel.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(@sub.server).returns(channel)
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
-    test "should call stop! if @request_stop has been set" do
+    test "callback should not process messages if the underlying channel has already been closed" do
+      @handler.expects(:processing_completed).never
       header = header_with_params({})
-      Message.any_instance.expects(:process).raises(Exception.new("don't worry"))
-      @sub.instance_variable_set("@request_stop", true)
-      @sub.expects(:stop!)
+      Message.any_instance.expects(:process).never
+      channel = mock("channel")
+      channel.expects(:closing?).returns(true)
+      @sub.expects(:channel).with(@sub.server).returns(channel)
       assert_nothing_raised { @callback.call(header, 'foo') }
     end
 
     test "should call reject on the message header when processing the handler returns true on reject?" do
+      @handler.expects(:processing_completed).once
       header = header_with_params({})
       result = mock("result")
       result.expects(:reject?).returns(true)
       Message.any_instance.expects(:process).returns(result)
       @sub.expects(:sleep).with(1)
+      mq = mock("MQ")
+      mq.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(@sub.server).returns(mq)
       header.expects(:reject).with(:requeue => true)
       @callback.call(header, 'foo')
     end
 
     test "should sent a reply with status OK if the message reply_to header is set and processing the handler succeeds" do
+      @handler.expects(:processing_completed).once
       header = header_with_params(:reply_to => "tmp-queue")
       result = RC::OK
       Message.any_instance.expects(:process).returns(result)
       Message.any_instance.expects(:handler_result).returns("response-data")
       mq = mock("MQ")
-      @sub.expects(:channel).with(@sub.server).returns(mq)
+      mq.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(@sub.server).returns(mq).twice
       exchange = mock("exchange")
       exchange.expects(:publish).with("response-data", :routing_key => "tmp-queue", :headers => {:status => "OK"}, :persistent => false)
       AMQP::Exchange.expects(:new).with(mq, :direct, "").returns(exchange)
@@ -300,12 +316,14 @@ module Beetle
     end
 
     test "should sent a reply with status FAILED if the message reply_to header is set and processing the handler fails" do
+      @handler.expects(:processing_completed).once
       header = header_with_params(:reply_to => "tmp-queue")
       result = RC::AttemptsLimitReached
       Message.any_instance.expects(:process).returns(result)
       Message.any_instance.expects(:handler_result).returns(nil)
       mq = mock("MQ")
-      @sub.expects(:channel).with(@sub.server).returns(mq)
+      mq.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(@sub.server).returns(mq).twice
       exchange = mock("exchange")
       exchange.expects(:publish).with("", :routing_key => "tmp-queue", :headers => {:status => "FAILED"}, :persistent => false)
       AMQP::Exchange.expects(:new).with(mq, :direct, "").returns(exchange)
@@ -323,6 +341,9 @@ module Beetle
     test "subscribe should subscribe with a subscription callback created from the registered block and remember the subscription" do
       @client.register_queue(:some_queue, :exchange => "some_exchange", :key => "some_key")
       server = @sub.server
+      channel = mock("channel")
+      channel.expects(:closing?).returns(false)
+      @sub.expects(:channel).with(server).returns(channel)
       header = header_with_params({})
       header.expects(:ack)
       block_called = false
