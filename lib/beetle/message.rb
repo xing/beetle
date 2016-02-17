@@ -172,8 +172,7 @@ module Beetle
 
     # mark message handling complete in the deduplication store
     def completed!
-      @store.set(msg_id, :status, "completed")
-      timed_out!
+      @store.mset(msg_id, :status => "completed", :timeout => 0)
     end
 
     # whether we should wait before running the handler
@@ -237,6 +236,10 @@ module Beetle
       logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
+    def fetch_status_delay_timeout_attempts_exceptions
+      @store.mget(msg_id, [:status, :delay, :timeout, :attempts, :exceptions])
+    end
+
     # process this message and do not allow any exception to escape to the caller
     def process(handler)
       logger.debug "Beetle: processing message #{msg_id}"
@@ -269,30 +272,33 @@ module Beetle
         run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
       elsif !key_exists?
         run_handler!(handler)
-      elsif completed?
-        ack!
-        RC::OK
-      elsif delayed?
-        logger.warn "Beetle: ignored delayed message (#{msg_id})!"
-        RC::Delayed
-      elsif !timed_out?
-        RC::HandlerNotYetTimedOut
-      elsif attempts_limit_reached?
-        completed!
-        ack!
-        logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
-        RC::AttemptsLimitReached
-      elsif exceptions_limit_reached?
-        completed!
-        ack!
-        logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
-        RC::ExceptionsLimitReached
       else
-        set_timeout!
-        if aquire_mutex!
-          run_handler!(handler)
+        status, delay, timeout, attempts, exceptions = fetch_status_delay_timeout_attempts_exceptions
+        if status == "completed"
+          ack!
+          RC::OK
+        elsif delay && delay.to_i > now
+          logger.warn "Beetle: ignored delayed message (#{msg_id})!"
+          RC::Delayed
+        elsif !(timeout && timeout.to_i < now)
+          RC::HandlerNotYetTimedOut
+        elsif attempts.to_i >= attempts_limit
+          completed!
+          ack!
+          logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+          RC::AttemptsLimitReached
+        elsif exceptions.to_i > exceptions_limit
+          completed!
+          ack!
+          logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+          RC::ExceptionsLimitReached
         else
-          RC::MutexLocked
+          set_timeout!
+          if aquire_mutex!
+            run_handler!(handler)
+          else
+            RC::MutexLocked
+          end
         end
       end
     end
