@@ -1,5 +1,13 @@
 = Release Notes
 
+== Version 0.4.3
+* fixed a race condition which could lead to duplicate message processing
+* fixed eventmachine shutdown sequence problem, which led to ACKs
+  occasionally being lost due to writing to a closed socket, which in
+  turn caused messages to be processed twice
+* stop_listening now always triggers the subscribe shutdown sequence
+  via a eventmachine timer callback, if the eventmachine reactor is running
+
 == Version 0.4.2
 * Fail hard on missing master file
 * Set message timestamp header
