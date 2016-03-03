@@ -13,3 +13,4 @@ tmp/*
 *.gem
 coverage
 dump.rdb
+TAGS
