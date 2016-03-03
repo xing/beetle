@@ -11,6 +11,7 @@ require 'minitest/pride' if ENV['RAINBOW_COLORED_TESTS'] == "1" && $stdout.tty?
 require 'mocha/setup'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
+require 'eventmachine'
 
 class MiniTest::Unit::TestCase
   require "active_support/testing/declarative"

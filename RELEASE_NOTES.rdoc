@@ -2,6 +2,7 @@
 
 == Version 0.4.x
 * added command to show beetle version: "beetle --version"
+* configuration server tracks ids of unknown clients
 
 == Version 0.4.3
 * fixed a race condition which could lead to duplicate message processing

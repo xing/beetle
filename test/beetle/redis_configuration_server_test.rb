@@ -85,6 +85,10 @@ module Beetle
       assert @server.initiate_master_switch
     end
 
+    test "should put a limit on the number of stored unknown client ids" do
+      1000.times { |i| @server.send(:add_unknown_client_id, i.to_s) }
+      assert @server.unknown_client_ids.size < 100
+    end
   end
 
   class RedisConfigurationServerInvalidationTest < MiniTest::Unit::TestCase
@@ -315,6 +319,7 @@ module Beetle
       payload = {"id" => "unknown-client", "token" => @server.current_token}
       msg = "Received pong message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
+      @server.expects(:add_unknown_client_id).with("unknown-client")
       @server.pong(payload)
     end
 
@@ -322,13 +327,14 @@ module Beetle
       payload = {"id" => "unknown-client"}
       msg = "Received client_started message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
+      @server.expects(:add_unknown_client_id).with("unknown-client")
       @server.client_started(payload)
     end
 
     test "should not send a system notification when receiving a client started message from a known client" do
       payload = {"id" => "rc-client-1"}
-      msg = "Received client_started message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).never
+      @server.expects(:add_unknown_client_id).never
       @server.client_started(payload)
     end
   end

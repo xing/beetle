@@ -24,8 +24,12 @@ module Beetle
     # the list of known client ids
     attr_reader :client_ids
 
+    # the list of client ids we have received but we don't know about
+    attr_reader :unknown_client_ids
+
     def initialize #:nodoc:
       @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
+      @unknown_client_ids = Set.new
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
@@ -57,6 +61,7 @@ module Beetle
         :redis_master_available? => master_available?,
         :redis_slaves_available => available_slaves.map(&:server),
         :switch_in_progress => paused?,
+        :unknown_client_ids => unknown_client_ids.to_a,
       }
     end
 
@@ -99,6 +104,7 @@ module Beetle
         logger.info "Received client_started message from id '#{id}'"
       else
         msg = "Received client_started message from unknown id '#{id}'"
+        add_unknown_client_id(id)
         logger.error msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
@@ -161,6 +167,15 @@ module Beetle
 
     private
 
+    # prevent memory overflows caused by evil or buggy clients
+    MAX_UNKNOWN_CLIENT_IDS = 20
+
+    def add_unknown_client_id(id)
+      ids = @unknown_client_ids
+      ids.delete(ids.first) if ids.size >= MAX_UNKNOWN_CLIENT_IDS
+      ids << id
+    end
+
     def check_redis_configuration
       raise ConfigurationError.new("Redis failover needs two or more redis servers") if redis.instances.size < 2
     end
@@ -217,6 +232,7 @@ module Beetle
     def validate_pong_client_id(client_id)
       unless known_client = client_id_valid?(client_id)
         msg = "Received pong message from unknown id '#{client_id}'"
+        add_unknown_client_id(client_id)
         logger.error msg
         logger.info "Sending system_notification message with text: #{msg}"
         beetle.publish(:system_notification, {"message" => msg}.to_json)
