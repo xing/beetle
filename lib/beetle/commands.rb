@@ -27,4 +27,9 @@ module Beetle
   end
 end
 
-Beetle::Commands.execute(ARGV.shift)
+if ARGV.first.to_s.sub(/\A--/,'') == "version"
+  require 'beetle/version'
+  puts Beetle::VERSION
+else
+  Beetle::Commands.execute(ARGV.shift)
+end
