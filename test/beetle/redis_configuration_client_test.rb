@@ -20,7 +20,7 @@ module Beetle
       @client.stubs(:clear_redis_master_file)
       @client.beetle.expects(:publish).with(:client_started, {:id => @client.id}.to_json)
       @client.beetle.expects(:listen).yields
-      EventMachine.expects(:add_periodic_timer).with(60).yields
+      EventMachine.expects(:add_periodic_timer).with(Beetle.config.redis_failover_client_heartbeat_interval).yields
       @client.beetle.expects(:publish).with(:heartbeat, {:id => @client.id}.to_json)
       @client.start
     end
