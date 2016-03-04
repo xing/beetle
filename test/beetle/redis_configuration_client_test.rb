@@ -5,7 +5,6 @@ module Beetle
     def setup
       Beetle.config.redis_servers = "redis:0,redis:1"
       @client = RedisConfigurationClient.new
-      Client.any_instance.stubs(:listen)
       @client.stubs(:touch_master_file)
       @client.stubs(:verify_redis_master_file_string)
     end
@@ -13,6 +12,16 @@ module Beetle
     test "should send a client_started message when started" do
       @client.stubs(:clear_redis_master_file)
       @client.beetle.expects(:publish).with(:client_started, {:id => @client.id}.to_json)
+      Client.any_instance.stubs(:listen)
+      @client.start
+    end
+
+    test "should install a periodic timer which sends a heartbeat message" do
+      @client.stubs(:clear_redis_master_file)
+      @client.beetle.expects(:publish).with(:client_started, {:id => @client.id}.to_json)
+      @client.beetle.expects(:listen).yields
+      EventMachine.expects(:add_periodic_timer).with(60).yields
+      @client.beetle.expects(:publish).with(:heartbeat, {:id => @client.id}.to_json)
       @client.start
     end
 
@@ -68,6 +77,7 @@ module Beetle
       Beetle::Client.any_instance.stubs(:publish)
       @client.expects(:clear_redis_master_file)
       @client.expects(:client_started!)
+      Client.any_instance.stubs(:listen)
       @client.start
     end
 
@@ -76,6 +86,7 @@ module Beetle
       Beetle::Client.any_instance.stubs(:publish)
       @client.expects(:clear_redis_master_file)
       @client.expects(:client_started!)
+      Client.any_instance.stubs(:listen)
       @client.start
     end
 

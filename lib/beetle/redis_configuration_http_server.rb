@@ -77,7 +77,7 @@ module Beetle
       status.keys.sort_by{|k| k.to_s}.reverse.map do |k|
         name = k.to_s # .split('_').join(" ")
         if (value = status[k]).is_a?(Array)
-          value = value.join(", ")
+          value = value.empty? ? "none" : value.join(", ")
         end
         "#{name}: #{value}"
       end.join("\n")

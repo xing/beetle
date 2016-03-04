@@ -24,7 +24,6 @@ module Beetle
     test "should ignore outdated client_invalidated messages" do
       @server.instance_variable_set(:@current_token, 2)
       @server.client_invalidated("id" => "rc-client-1", "token" => 2)
-      old_token = 1.minute.ago.to_f
       @server.client_invalidated("id" => "rc-client-2", "token" => 1)
 
       assert_equal(["rc-client-1"].to_set, @server.instance_variable_get(:@client_invalidated_ids_received))
@@ -33,7 +32,6 @@ module Beetle
     test "should ignore outdated pong messages" do
       @server.instance_variable_set(:@current_token, 2)
       @server.pong("id" => "rc-client-1", "token" => 2)
-      old_token = 1.minute.ago.to_f
       @server.pong("id" => "rc-client-2", "token" => 1)
 
       assert_equal(["rc-client-1"].to_set, @server.instance_variable_get(:@client_pong_ids_received))
@@ -61,6 +59,8 @@ module Beetle
     end
 
     test "should be able to report current status" do
+      @server.expects(:unknown_client_ids).returns(Set.new ["x", "y"])
+      @server.expects(:unresponsive_clients).returns(["a", Time.now - 200])
       assert @server.status.is_a?(Hash)
     end
 
@@ -86,8 +86,22 @@ module Beetle
     end
 
     test "should put a limit on the number of stored unknown client ids" do
-      1000.times { |i| @server.send(:add_unknown_client_id, i.to_s) }
+      1000.times do |i|
+        id = i.to_s
+        @server.send(:client_seen, id)
+        @server.send(:add_unknown_client_id, id)
+      end
       assert @server.unknown_client_ids.size < 100
+      assert_equal @server.unknown_client_ids.size, @server.clients_last_seen.size
+    end
+
+    test "should assume clients to be unresponsive after specified interval time" do
+      @server.send(:client_seen, "1")
+      @server.send(:client_seen, "2")
+      @server.client_dead_threshold = 0
+      assert_equal %w(1 2), @server.unresponsive_clients.map(&:first)
+      @server.client_dead_threshold = 10
+      assert_equal [], @server.unresponsive_clients
     end
   end
 
@@ -319,16 +333,16 @@ module Beetle
       payload = {"id" => "unknown-client", "token" => @server.current_token}
       msg = "Received pong message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
-      @server.expects(:add_unknown_client_id).with("unknown-client")
       @server.pong(payload)
+      assert @server.unknown_client_ids.include?("unknown-client")
     end
 
     test "should send a system notification when receiving client_started message from unknown client" do
       payload = {"id" => "unknown-client"}
       msg = "Received client_started message from unknown id 'unknown-client'"
       @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
-      @server.expects(:add_unknown_client_id).with("unknown-client")
       @server.client_started(payload)
+      assert @server.unknown_client_ids.include?("unknown-client")
     end
 
     test "should not send a system notification when receiving a client started message from a known client" do
@@ -336,6 +350,24 @@ module Beetle
       @server.beetle.expects(:publish).never
       @server.expects(:add_unknown_client_id).never
       @server.client_started(payload)
+      assert @server.clients_last_seen.include?("rc-client-1")
     end
+
+    test "should send a system notification when receiving heartbeat message from unknown client" do
+      payload = {"id" => "unknown-client"}
+      msg = "Received heartbeat message from unknown id 'unknown-client'"
+      @server.beetle.expects(:publish).with(:system_notification, ({:message => msg}).to_json)
+      @server.heartbeat(payload)
+      assert @server.unknown_client_ids.include?("unknown-client")
+    end
+
+    test "should not send a system notification when receiving a heartbeat message from a known client" do
+      payload = {"id" => "rc-client-1"}
+      @server.beetle.expects(:publish).never
+      @server.expects(:add_unknown_client_id).never
+      @server.heartbeat(payload)
+      assert @server.clients_last_seen.include?("rc-client-1")
+    end
+
   end
 end

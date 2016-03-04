@@ -27,6 +27,14 @@ module Beetle
     # handler timeout.
     attr_accessor :redis_failover_timeout
 
+    # how often heartbeat messages are exchanged between failover
+    # daemons. defaults to 10 seconds.
+    attr_accessor :redis_failover_client_heartbeat_interval
+
+    # how long to wait until a redis_failover client daeom can be considered
+    # dead. defaults to 60 seconds.
+    attr_accessor :redis_failover_client_dead_interval
+
     ## redis configuration server options
     # how often should the redis configuration server try to reach the redis master before nominating a new one (defaults to <tt>3</tt>)
     attr_accessor :redis_configuration_master_retries
@@ -99,6 +107,8 @@ module Beetle
       self.redis_servers = ""
       self.redis_db = 4
       self.redis_failover_timeout = 180.seconds
+      self.redis_failover_client_heartbeat_interval = 10.seconds
+      self.redis_failover_client_dead_interval = 60.seconds
 
       self.redis_configuration_master_retries = 3
       self.redis_configuration_master_retry_interval = 10.seconds

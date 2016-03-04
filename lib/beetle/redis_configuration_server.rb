@@ -27,12 +27,20 @@ module Beetle
     # the list of client ids we have received but we don't know about
     attr_reader :unknown_client_ids
 
+    # clients last seen time stamps
+    attr_reader :clients_last_seen
+
+    # clients are presumed dead after this many seconds
+    attr_accessor :client_dead_threshold
+
     def initialize #:nodoc:
       @client_ids = Set.new(config.redis_configuration_client_ids.split(","))
       @unknown_client_ids = Set.new
+      @clients_last_seen = {}
       @current_token = (Time.now.to_f * 1000).to_i
       @client_pong_ids_received = Set.new
       @client_invalidated_ids_received = Set.new
+      @client_dead_threshold = config.redis_failover_client_dead_interval
       MessageDispatcher.configuration_server = self
     end
 
@@ -62,7 +70,17 @@ module Beetle
         :redis_slaves_available => available_slaves.map(&:server),
         :switch_in_progress => paused?,
         :unknown_client_ids => unknown_client_ids.to_a,
+        :unresponsive_clients => unresponsive_clients.map{|c,t| "#{c}:#{t.to_i}"},
       }
+    end
+
+    # returns an array of [client_id, silent time in seconds] which haven't sent
+    # a message for more than <tt>client_dead_threshold</tt> seconds, sorted by
+    # silent time in descending order.
+    def unresponsive_clients
+      now = Time.now
+      threshold = now - client_dead_threshold
+      clients_last_seen.select{|_,t| t < threshold}.map{|c,t| [c, now - t]}.sort_by{|_,t| t}.reverse
     end
 
     # start watching redis
@@ -85,6 +103,7 @@ module Beetle
     # called by the message dispatcher when a "pong" message from a RedisConfigurationClient is received
     def pong(payload)
       id = payload["id"]
+      client_seen(id)
       token = payload["token"]
       return unless validate_pong_client_id(id)
       logger.info "Received pong message from id '#{id}' with token '#{token}'"
@@ -100,11 +119,26 @@ module Beetle
     # called by the message dispatcher when a "client_started" message from a RedisConfigurationClient is received
     def client_started(payload)
       id = payload["id"]
+      client_seen(id)
       if client_id_valid?(id)
         logger.info "Received client_started message from id '#{id}'"
       else
-        msg = "Received client_started message from unknown id '#{id}'"
         add_unknown_client_id(id)
+        msg = "Received client_started message from unknown id '#{id}'"
+        logger.error msg
+        beetle.publish(:system_notification, {"message" => msg}.to_json)
+      end
+    end
+
+    # called by the message dispatcher when a "heartbeat" message from a RedisConfigurationClient is received
+    def heartbeat(payload)
+      id = payload["id"]
+      client_seen(id)
+      if client_id_valid?(id)
+        logger.info "Received heartbeat message from id '#{id}'"
+      else
+        add_unknown_client_id(id)
+        msg = "Received heartbeat message from unknown id '#{id}'"
         logger.error msg
         beetle.publish(:system_notification, {"message" => msg}.to_json)
       end
@@ -113,7 +147,9 @@ module Beetle
     # called by the message dispatcher when a "client_invalidated" message from a RedisConfigurationClient is received
     def client_invalidated(payload)
       id = payload["id"]
+      client_seen(id)
       token = payload["token"]
+      add_unknown_client_id(id) unless client_id_valid?(id)
       logger.info "Received client_invalidated message from id '#{id}' with token '#{token}'"
       return unless redeem_token(token)
       @client_invalidated_ids_received << id
@@ -172,8 +208,16 @@ module Beetle
 
     def add_unknown_client_id(id)
       ids = @unknown_client_ids
-      ids.delete(ids.first) if ids.size >= MAX_UNKNOWN_CLIENT_IDS
+      while ids.size >= MAX_UNKNOWN_CLIENT_IDS
+        old_id = ids.first
+        ids.delete(old_id)
+        clients_last_seen.delete(old_id)
+      end
       ids << id
+    end
+
+    def client_seen(client_id)
+      clients_last_seen[client_id] = Time.now
     end
 
     def check_redis_configuration
@@ -200,10 +244,12 @@ module Beetle
         config.message :client_started
         config.message :pong
         config.message :client_invalidated
+        config.message :heartbeat
         # queue setup
         config.queue   :server, :key => 'pong', :amqp_name => "#{system}_configuration_server"
         config.binding :server, :key => 'client_started'
         config.binding :server, :key => 'client_invalidated'
+        config.binding :server, :key => 'heartbeat'
         config.handler :server, MessageDispatcher
       end
     end
@@ -231,8 +277,8 @@ module Beetle
 
     def validate_pong_client_id(client_id)
       unless known_client = client_id_valid?(client_id)
-        msg = "Received pong message from unknown id '#{client_id}'"
         add_unknown_client_id(client_id)
+        msg = "Received pong message from unknown id '#{client_id}'"
         logger.error msg
         logger.info "Sending system_notification message with text: #{msg}"
         beetle.publish(:system_notification, {"message" => msg}.to_json)

@@ -42,7 +42,11 @@ module Beetle
       determine_initial_master
       clear_redis_master_file unless current_master.try(:master?)
       logger.info "Listening"
-      beetle.listen
+      beetle.listen do
+        EventMachine.add_periodic_timer(Beetle.config.redis_failover_client_heartbeat_interval) do
+          heartbeat!
+        end
+      end
     end
 
     # called by the message dispatcher when a "pong" message from RedisConfigurationServer is received
@@ -99,6 +103,7 @@ module Beetle
         config.message :pong
         config.message :client_started
         config.message :client_invalidated
+        config.message :heartbeat
         # messages received
         config.message :ping
         config.message :invalidate
@@ -126,6 +131,11 @@ module Beetle
     def client_started!
       logger.info "Sending client_started message with id '#{id}'"
       beetle.publish(:client_started, {"id" => id}.to_json)
+    end
+
+    def heartbeat!
+      logger.info "Sending heartbeat message with id '#{id}'"
+      beetle.publish(:heartbeat, {"id" => id}.to_json)
     end
 
     def invalidate!
