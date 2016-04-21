@@ -65,7 +65,7 @@ all other redis servers into slaves of the current master.
 
 * on startup, an RCC can consult its redis master file to determine the current master without the help of the RCS by checking that it's still a master (or wait for the periodic reconfigure message with the current master from the RCS)
 * when the RCS finds the master to be down, it will retry a couple of times before starting a reconfiguration round
-* the RCS sends all RCCs a "ping" message to check if every client is there and able to to answer
+* the RCS sends all RCCs a "ping" message to check if every client is there and able to answer
 * the RCCs acknowledge via a "pong" message if they can confirm the current master to be unavailable
 * the RCS waits for *all* RCCs to reply via pong
 * the RCS tells all RCCs to stop using the master by sending an "invalidate" message
