@@ -9,4 +9,4 @@ script: "bundle exec rake test"
 services:
   - redis-server
   - rabbitmq
-sudo: false
+sudo: required
