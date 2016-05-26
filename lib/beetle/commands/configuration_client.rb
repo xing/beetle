@@ -14,6 +14,7 @@ module Beetle
     #           --amqp-servers LIST          AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)
     #           --config-file PATH           Path to an external yaml config file
     #           --pid-dir DIR                Write pid and log to DIR
+    #           --multiple                   Allow multiple clients started in parallel (for testing only)
     #       -v, --verbose                    Set log level to DEBUG
     #       -h, --help                       Show this message
     #
@@ -51,6 +52,11 @@ module Beetle
           dir = val
         end
 
+        multiple = false
+        opts.on("--multiple", "Allow multiple clients") do |val|
+          multiple = true
+        end
+
         opts.on("-v", "--verbose", "Set log level to DEBUG") do |val|
           Beetle.config.logger.level = Logger::DEBUG
         end
@@ -62,7 +68,7 @@ module Beetle
 
         opts.parse!(app_options)
 
-        Daemons.run_proc("redis_configuration_client", :multiple => true, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
+        Daemons.run_proc("redis_configuration_client", :multiple => multiple, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           client = Beetle::RedisConfigurationClient.new
           client.id = client_id if client_id
           client.start
