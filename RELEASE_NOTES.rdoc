@@ -1,12 +1,20 @@
 = Release Notes
 
+== Version 0.4.5
+
+* Starting mutliple redis failover clients is now prohibited by
+  defualt. This behavior can be overriden using
+  "beetle configuration_client start -- --multiple"
+
 == Version 0.4.4
+
 * added command to show beetle version: "beetle --version"
 * configuration server tracks ids of unknown clients
 * configuration clients now sends heartbeats
 * configuration server tracks last seen times of clients, based on heartbeat
 
 == Version 0.4.3
+
 * fixed a race condition which could lead to duplicate message processing
 * fixed eventmachine shutdown sequence problem, which led to ACKs
   occasionally being lost due to writing to a closed socket, which in
