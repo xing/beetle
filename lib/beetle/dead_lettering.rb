@@ -15,7 +15,7 @@ module Beetle
       dead_letter_queue_name = dead_letter_queue_name(target_queue)
 
       logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
-      dead_letter_queue = channel.queue(dead_letter_queue_name, creation_keys)
+      channel.queue(dead_letter_queue_name, creation_keys)
 
       logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
       set_dead_letter_policies!(servers, target_queue)
@@ -76,7 +76,7 @@ module Beetle
     def run_rabbit_http_request(uri, request, &block)
       request.basic_auth(@config.user, @config.password)
       request["Content-Type"] = "application/json"
-      response = Net::HTTP.start(uri.hostname, @config.api_port, :read_timeout => @config.dead_lettering_read_timeout) do |http|
+      Net::HTTP.start(uri.hostname, @config.api_port, :read_timeout => @config.dead_lettering_read_timeout) do |http|
         block.call(http) if block_given?
       end
     end
