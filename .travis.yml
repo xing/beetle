@@ -2,9 +2,11 @@ before_script:
   - mysql -e 'create database beetle_test;'
 rvm:
   - 2.0.0
-  - 2.1.6
-  - 2.2.2
+  - 2.1.7
+  - 2.2.5
+  - 2.3.1
 script: "bundle exec rake test"
 services:
   - redis-server
+  - rabbitmq
 sudo: false
