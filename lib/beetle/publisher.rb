@@ -21,14 +21,16 @@ module Beetle
     end
 
     def publish(message_name, data, opts={}) #:nodoc:
-      opts = @client.messages[message_name].merge(opts.symbolize_keys)
-      exchange_name = opts.delete(:exchange)
-      opts.delete(:queue)
-      recycle_dead_servers unless @dead_servers.empty?
-      if opts[:redundant]
-        publish_with_redundancy(exchange_name, message_name, data, opts)
-      else
-        publish_with_failover(exchange_name, message_name, data, opts)
+      ActiveSupport::Notifications.instrument('publish.beetle') do
+        opts = @client.messages[message_name].merge(opts.symbolize_keys)
+        exchange_name = opts.delete(:exchange)
+        opts.delete(:queue)
+        recycle_dead_servers unless @dead_servers.empty?
+        if opts[:redundant]
+          publish_with_redundancy(exchange_name, message_name, data, opts)
+        else
+          publish_with_failover(exchange_name, message_name, data, opts)
+        end
       end
     end
 
