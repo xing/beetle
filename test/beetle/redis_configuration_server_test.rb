@@ -64,6 +64,14 @@ module Beetle
       assert @server.status.is_a?(Hash)
     end
 
+    test "should be able to calculate unseen clients array" do
+      assert_equal @server.client_ids.sort, @server.unseen_client_ids
+      @server.send(:client_seen, "rc-client-1")
+      assert_equal ["rc-client-2"], @server.unseen_client_ids
+      @server.send(:client_seen, "rc-client-2")
+      assert_equal [], @server.unseen_client_ids
+    end
+
     test "should not execute a conditional master switch if the current master is available" do
       @server.expects(:master_available?).returns(true)
       @server.expects(:paused?).returns(false)

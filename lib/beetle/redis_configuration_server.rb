@@ -77,7 +77,7 @@ module Beetle
 
     # return array of client ids which never sent a ping
     def unseen_client_ids
-      client_ids - clients_last_seen.keys
+      (client_ids - clients_last_seen.keys.to_set).to_a.sort
     end
 
     # returns an array of [client_id, silent time in seconds] which haven't sent
