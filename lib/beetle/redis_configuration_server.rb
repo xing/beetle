@@ -71,7 +71,13 @@ module Beetle
         :switch_in_progress => paused?,
         :unknown_client_ids => unknown_client_ids.to_a,
         :unresponsive_clients => unresponsive_clients.map{|c,t| "#{c}:#{t.to_i}"},
+        :unseen_client_ids => unseen_client_ids
       }
+    end
+
+    # return array of client ids which never sent a ping
+    def unseen_client_ids
+      client_ids - clients_last_seen.keys
     end
 
     # returns an array of [client_id, silent time in seconds] which haven't sent
