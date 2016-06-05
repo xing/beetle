@@ -86,6 +86,8 @@ COPY script $BEETLE_HOME/script
 
 RUN echo '[{rabbit, [{loopback_users, []}]}].' > /etc/rabbitmq/rabbitmq.config
 
+ENV RAINBOW_COLORED_TESTS 1
+
 EXPOSE 6379 6380 5672 15672
 
 ENTRYPOINT ["/tini", "--", "script/docker-entrypoint.sh"]
