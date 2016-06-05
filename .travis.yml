@@ -1,10 +1,6 @@
-rvm:
-#  - 2.1.10
-#  - 2.2.5
-  - 2.3.1
-script: "./script/docker-run-beetle-tests"
+sudo: required
 services:
   - docker
-sudo: required
 before_install:
   - "./script/docker-build-beetle-image"
+script: "./script/docker-run-beetle-tests"

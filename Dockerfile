@@ -70,7 +70,7 @@ RUN mkdir -p $BEETLE_HOME
 WORKDIR $BEETLE_HOME
 
 # Docker for Mac is currently broken
-COPY Gemfile Gemfile.lock Rakefile beetle.gemspec $BEETLE_HOME/
+COPY Gemfile Rakefile beetle.gemspec $BEETLE_HOME/
 COPY bin $BEETLE_HOME/bin
 COPY lib $BEETLE_HOME/lib
 COPY etc $BEETLE_HOME/etc
