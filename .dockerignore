@@ -1,0 +1,5 @@
+.git
+*.log
+*.rdb
+*.gem
+.bundle

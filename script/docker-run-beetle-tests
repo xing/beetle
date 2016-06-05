@@ -1,0 +1,4 @@
+#!/bin/bash
+cmd="docker run -it --rm beetle-test"
+echo $cmd
+exec $cmd
