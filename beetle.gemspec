@@ -34,4 +34,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("daemons",                 [">= 1.1.9"])
 
   s.add_development_dependency("webmock", [">= 1.21.0"])
+  s.add_development_dependency("rake", ["~> 10.5"])
 end

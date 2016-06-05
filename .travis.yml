@@ -4,5 +4,5 @@ services:
 before_install:
   - sudo apt-get purge rabbitmq-server -y || true
   - ps auxww
-  - "./script/docker-build-beetle-image"
-script: "./script/docker-run-beetle-tests"
+install: ./script/docker-build-beetle-image
+script: ./script/docker-run-beetle-tests
