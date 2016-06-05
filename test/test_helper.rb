@@ -28,7 +28,7 @@ I18n.enforce_available_locales = false
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
 Beetle.config.redis_server = "localhost:6379"
 Beetle.config.redis_servers = "localhost:6379,localhost:6380"
-
+Beetle.config.servers = "127.0.0.1:5672"
 
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)
