@@ -1,9 +1,10 @@
 rvm:
-  - 2.1.10
-  - 2.2.5
+#  - 2.1.10
+#  - 2.2.5
   - 2.3.1
-script: "bundle exec rake test"
+script: "./script/docker-run-beetle-tests"
 services:
-  - redis-server
-  - rabbitmq
+  - docker
 sudo: required
+before_install:
+  - "./script/docker-build-beetle-image"
