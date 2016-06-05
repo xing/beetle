@@ -71,8 +71,12 @@ WORKDIR $BEETLE_HOME
 
 # Docker for Mac is currently broken
 COPY Gemfile Rakefile beetle.gemspec $BEETLE_HOME/
-COPY bin $BEETLE_HOME/bin
 COPY lib $BEETLE_HOME/lib
+
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+RUN bundle install -j 4
+
+COPY bin $BEETLE_HOME/bin
 COPY etc $BEETLE_HOME/etc
 COPY examples $BEETLE_HOME/examples
 COPY features $BEETLE_HOME/features
@@ -80,8 +84,7 @@ COPY test $BEETLE_HOME/test
 COPY tmp $BEETLE_HOME/tmp
 COPY script $BEETLE_HOME/script
 
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN bundle install -j 4
+RUN echo '[{rabbit, [{loopback_users, []}]}].' > /etc/rabbitmq/rabbitmq.config
 
 EXPOSE 6379 6380 5672 15672
 

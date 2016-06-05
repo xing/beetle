@@ -1,6 +1,6 @@
 #!/bin/bash
 BEETLE_HOME=/usr/src/beetle
-PORTS="-p 6389:6379 -p 6390:6380 -p 15674:5672 -p 5674:5672"
+PORTS="-p 6389:6379 -p 6390:6380 -p 15674:15672 -p 5674:5672"
 MOUNTS=`echo lib test features tmp | sed -e "s|\b\([a-z]*\)\b|-v \1:$BEETLE_HOME/\1|g"`
 cmd="docker run -it --rm $PORTS $MOUNTS --name beetle-test beetle-test $@"
 echo $cmd

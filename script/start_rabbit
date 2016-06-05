@@ -27,7 +27,7 @@ export RABBITMQ_CONFIG_FILE=$3
 # is used by the server to auto-configure a RabbitMQ cluster.  See the clustering
 # guide at <http://www.rabbitmq.com/clustering.html> for details.
 
-rabbitmq-plugins enable rabbitmq_management
+rabbitmq-plugins -n $1 enable rabbitmq_management
 rabbitmq-server
 
 rm -f $RABBITMQ_CONFIG_FILE

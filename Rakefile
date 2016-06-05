@@ -46,6 +46,7 @@ namespace :rabbit do
   def create_config_file(config_file, web_port)
     File.open("#{config_file}.config",'w') do |f|
       f.puts "["
+      f.puts "  {rabbit, [{loopback_users, []}]},"
       f.puts "  {rabbitmq_management, [{listener, [{port, #{web_port}}]}]}"
       f.puts "]."
     end
