@@ -23,7 +23,7 @@ module Beetle
       @server = "127.0.0.1:15672"
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
-      @config.logger = Logger.new("/dev/null")
+      @config.logger = Beetle.config.logger
       @dead_lettering = DeadLettering.new(@config)
     end
 
@@ -101,7 +101,7 @@ module Beetle
     def setup
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
-      @config.logger = Logger.new("/dev/null")
+      @config.logger = Beetle.config.logger
       @dead_lettering = DeadLettering.new(@config)
       @servers = ["127.0.0.1:55672"]
     end
