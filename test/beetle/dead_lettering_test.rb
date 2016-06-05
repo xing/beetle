@@ -20,7 +20,7 @@ module Beetle
 
   class SetDeadLetterPolicyTest < MiniTest::Unit::TestCase
     def setup
-      @server = "localhost:15672"
+      @server = "127.0.0.1:15672"
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
@@ -40,7 +40,7 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
+      stub_request(:put, "http://guest:guest@127.0.0.1:15672/api/policies/%2F/QUEUE_NAME_policy").
         with(:body => {
         "pattern" => "^QUEUE_NAME$",
         "priority" => 1,
@@ -55,7 +55,7 @@ module Beetle
     end
 
     test "raises exception when policy couldn't successfully be created" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
+      stub_request(:put, "http://guest:guest@127.0.0.1:15672/api/policies/%2F/QUEUE_NAME_policy").
         to_return(:status => [405])
 
       assert_raises DeadLettering::FailedRabbitRequest do
@@ -64,7 +64,7 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
+      stub_request(:put, "http://guest:guest@127.0.0.1:15672/api/policies/%2F/QUEUE_NAME_policy").
         with(:body => {
         "pattern" => "^QUEUE_NAME$",
         "priority" => 1,
@@ -80,7 +80,7 @@ module Beetle
     end
 
     test "properly encodes the vhost from the configuration" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy").
+      stub_request(:put, "http://guest:guest@127.0.0.1:15672/api/policies/foo%2F/QUEUE_NAME_policy").
         with(:body => {
         "pattern" => "^QUEUE_NAME$",
         "priority" => 1,
@@ -103,7 +103,7 @@ module Beetle
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
       @dead_lettering = DeadLettering.new(@config)
-      @servers = ["localhost:55672"]
+      @servers = ["127.0.0.1:55672"]
     end
 
     test "is turned off by default" do
