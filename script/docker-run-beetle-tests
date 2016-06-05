@@ -1,4 +1,5 @@
 #!/bin/bash
-cmd="docker run -it --rm beetle-test"
+ENV="RAINBOW_COLORED_TESTS=$RAINBOW_COLORED_TESTS"
+cmd="docker run -it --rm -e $ENV beetle-test"
 echo $cmd
 exec $cmd

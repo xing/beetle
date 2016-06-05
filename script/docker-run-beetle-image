@@ -3,6 +3,7 @@ BEETLE_HOME=/usr/src/beetle
 PORTS="-p 6389:6379 -p 6390:6380 -p 15674:15672 -p 5674:5672"
 DIR=$(cd $(dirname $BASH_SOURCE)/.. && pwd)
 MOUNTS=`echo bin lib test features tmp script | sed -e "s|\b\([a-z]*\)\b|-v $DIR/\1:$BEETLE_HOME/\1|g"`
-cmd="docker run -it --rm $PORTS $MOUNTS --name beetle-test beetle-test $@"
+ENV="RAINBOW_COLORED_TESTS=$RAINBOW_COLORED_TESTS"
+cmd="docker run -it --rm $PORTS $MOUNTS -e $ENV --name beetle-test beetle-test $@"
 echo $cmd
 exec $cmd
