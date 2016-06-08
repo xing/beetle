@@ -76,6 +76,8 @@ module Beetle
           exit
         end
 
+        Beetle.config.logger.progname = "redis_configuration_server"
+
         Daemons.run_proc("redis_configuration_server", :log_output => true, :dir_mode => dir_mode, :dir => dir) do
           config_server =  Beetle::RedisConfigurationServer.new
           Beetle::RedisConfigurationHttpServer.config_server = config_server

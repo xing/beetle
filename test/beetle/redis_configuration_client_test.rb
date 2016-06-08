@@ -108,7 +108,7 @@ module Beetle
 
     test "determine_initial_master should instantiate a new redis if there is a file with content" do
       @client.expects(:master_file_exists?).returns(true)
-      @client.expects(:read_redis_master_file).returns("localhost:6379")
+      @client.expects(:read_redis_master_file).returns(ENV["REDIS_SERVER"])
       master = @client.send(:determine_initial_master)
       assert_equal "master", master.role
       assert_equal master, @client.current_master

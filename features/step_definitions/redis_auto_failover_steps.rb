@@ -13,12 +13,16 @@ Given /^redis server "([^\"]*)" is master$/ do |redis_name|
 end
 
 Given /^redis server "([^\"]*)" is slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
-  TestDaemons::Redis[redis_name].slave_of(TestDaemons::Redis[redis_master_name].port)
-  master = TestDaemons::Redis[redis_master_name].redis
+  if ENV['BEETLE_TEST_CONTAINER'] == '1'
+    master_host, master_port = redis_master_name, 6379
+  else
+    master_host, master_port = "localhost", TestDaemons::Redis[redis_master_name].port
+  end
+  TestDaemons::Redis[redis_name].slave_of(master_host, master_port)
   slave = TestDaemons::Redis[redis_name].redis
   begin
     sleep 1
-  end while !slave.slave_of?(master.host, master.port)
+  end while !slave.slave_of?(master_host, master_port)
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" with clients "([^\"]*)" exists$/ do |redis_names, redis_configuration_client_names|
@@ -115,7 +119,7 @@ Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configurat
 end
 
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
-  Beetle.config.servers = "localhost:5672" # rabbitmq
+  Beetle.config.servers = ENV['RABBITMQ_SERVERS'] || "localhost:5672"
   Beetle.config.logger.level = Logger::INFO
   client = Beetle::Client.new.configure :auto_delete => true do |config|
     config.queue(:echo)

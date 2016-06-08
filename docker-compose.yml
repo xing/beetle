@@ -1,0 +1,70 @@
+version: '2'
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:5.5
+    ports:
+      - "6612:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+
+  redis-master:
+    container_name: redis-master
+    image: redis:3.2.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./tmp/master-dir:/data
+
+  redis-slave:
+    container_name: redis-slave
+    image: redis:3.2.0
+    ports:
+      - "6380:6379"
+    command: redis-server --slaveof redis-master 6379
+    volumes:
+      - ./tmp/slave-dir:/data
+    depends_on:
+      - redis-master
+
+  rabbitmq1:
+    container_name: rabbitmq1
+    image: rabbitmq:3.6.2-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  rabbitmq2:
+    container_name: rabbitmq2
+    image: rabbitmq:3.6.2-management
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+
+  redis-1:
+    container_name: redis-1
+    image: redis:3.2.0
+    ports:
+      - "6381:6379"
+    volumes:
+      - ./tmp/redis-1:/data
+    command: redis-server --pidfile redis-1.pid --logfile redis-1.log
+
+  redis-2:
+    container_name: redis-2
+    image: redis:3.2.0
+    ports:
+      - "6382:6379"
+    volumes:
+      - ./tmp/redis-2:/data
+    command: redis-server --pidfile redis-2.pid --logfile redis-2.log
+
+  redis-3:
+    container_name: redis-3
+    image: redis:3.2.0
+    ports:
+      - "6383:6379"
+    volumes:
+      - ./tmp/redis-3:/data
+    command: redis-server --pidfile redis-3.pid --logfile redis-3.log

@@ -89,11 +89,6 @@ Cucumber::Rake::Task.new(:cucumber) do |t|
   t.cucumber_opts = "features --format progress"
 end
 
-task :default do
-  Rake::Task[:test].invoke
-  Rake::Task[:cucumber].invoke
-end
-
 Rake::TestTask.new do |t|
   t.libs << "test"
   t.test_files = FileList['test/**/*_test.rb']
@@ -112,6 +107,31 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
+desc "clean tmp directory and remove containers created for testing"
 task :clean do
-  system('rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid')
+  system("rm -f tmp/*.output tmp/*.log tmp/*lock tmp/*pid tmp/redis-*/*")
 end
+
+desc "clean tmp directory and remove containers created for testing"
+task :realclean => :clean do
+  system("docker ps -q | xargs docker stop")
+  system("docker ps -a | awk '/(Exited|Created).*(redis-|rabbitmq)/ {print $1;}' | xargs docker rm")
+end
+
+desc "create services defined in docker-compose.yml"
+task :create do
+  system "docker-compose create"
+end
+
+desc "start services defined in docker-compose.yml"
+task :start => :create do
+  containers = %w(redis-master redis-slave rabbitmq1 rabbitmq2 mysql)
+  system "docker-compose start #{containers.join(' ')}"
+end
+
+desc "stop services defined in docker-compose.yml"
+task :stop do
+  system "docker-compose stop"
+end
+
+task :default => [:test, :cucumber]

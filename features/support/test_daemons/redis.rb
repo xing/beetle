@@ -8,16 +8,23 @@ require 'daemon_controller'
 module TestDaemons
   class Redis
 
+    def self.containerized?
+      ENV['BEETLE_TEST_CONTAINER'] == '1'
+    end
+
+    def containerized?
+      self.class.containerized?
+    end
+
     @@instances = {}
-    @@next_available_port = 6381
+    @@next_available_port = containerized? ? 6379 : 6381
 
     attr_reader :name, :port
 
     def initialize(name)
       @name = name
       @port = @@next_available_port
-
-      @@next_available_port += 1
+      @@next_available_port += 1 unless containerized?
       @@instances[name] = self
     end
 
@@ -33,17 +40,14 @@ module TestDaemons
     end
 
     def start
-      create_dir
       create_config
       daemon_controller.start
     end
 
     def restart(delay = 0)
-      create_dir
-      create_config
       daemon_controller.stop if running?
       sleep delay
-      daemon_controller.start
+      start
     end
 
     def stop
@@ -54,15 +58,14 @@ module TestDaemons
       #       sleep 1
       #     end
       daemon_controller.stop
-      raise "FAILED TO STOP redis server on port #{port}" if running?
+      raise "FAILED TO STOP redis server #{name} on port #{port}" if running?
     ensure
       cleanup
     end
 
     def cleanup
-      remove_dir
-      remove_config
       remove_pid_file
+      remove_config unless containerized?
     end
 
     # TODO: The retry logic must be moved into RedisConfigurationServer
@@ -79,10 +82,15 @@ module TestDaemons
     end
 
     def running?
-      cmd = "ps aux | egrep 'redis-server.*#{port}' | grep -v grep"
-      res = `#{cmd}`
-      x = res.chomp.split("\n")
-      x.size == 1
+      if containerized?
+        cmd = "docker ps --filter 'name=#{name}' --format '{{.ID}}'"
+        container_id == `#{cmd}`.chomp
+      else
+        cmd = "ps aux | egrep 'redis-server.*#{port}' | grep -v grep"
+        res = `#{cmd}`
+        x = res.chomp.split("\n")
+        x.size == 1
+      end
     end
 
     def available?
@@ -98,10 +106,10 @@ module TestDaemons
     end
 
     # TODO: Move to redis_ext
-    def slave_of(master_port)
+    def slave_of(master_host, master_port)
       tries = 0
       begin
-        redis.slave_of!("127.0.0.1", master_port)
+        redis.slave_of!(master_host, master_port)
       rescue Errno::ECONNREFUSED, Errno::EAGAIN
         puts "slave role setting for #{name} failed: #{$!}"
         sleep 1
@@ -111,22 +119,18 @@ module TestDaemons
     end
 
     def ip_with_port
-      "127.0.0.1:#{port}"
+      "#{host}:#{port}"
+    end
+
+    def host
+      containerized? ? name : "localhost"
     end
 
     def redis
-      @redis ||= ::Redis.new(:host => "127.0.0.1", :port => port)
+      @redis ||= ::Redis.new(:host => host, :port => port)
     end
 
     private
-
-    def create_dir
-      FileUtils.mkdir(dir) unless File.exists?(dir)
-    end
-
-    def remove_dir
-      FileUtils.rm_r(dir) if File.exists?(dir)
-    end
 
     def create_config
       File.open(config_filename, "w") do |file|
@@ -138,6 +142,7 @@ module TestDaemons
       FileUtils.rm(config_filename) if File.exists?(config_filename)
     end
 
+
     def remove_pid_file
       FileUtils.rm(pid_file) if File.exists?(pid_file)
     end
@@ -146,8 +151,17 @@ module TestDaemons
       File.expand_path(File.dirname(__FILE__) + "/../../../tmp")
     end
 
+    def dir
+      File.join(tmp_path, name)
+    end
+
+
     def config_filename
       tmp_path + "/redis-test-server-#{name}-#{port}.conf"
+    end
+
+    def config_template_filename
+      File.dirname(__FILE__) + "/redis.conf.erb"
     end
 
     def config_content
@@ -155,37 +169,52 @@ module TestDaemons
       template.result(binding)
     end
 
-    def config_template_filename
-      File.dirname(__FILE__) + "/redis.conf.erb"
-    end
-
     def pid_file
-      tmp_path + "/redis-test-server-#{name}.pid"
-    end
-
-    def pid
-      File.read(pid_file).chomp.to_i
+      File.join(dir, "#{name}.pid")
     end
 
     def log_file
-      tmp_path + "/redis-test-server-#{name}.log"
+      File.join(dir, "#{name}.log")
     end
 
-    def dir
-      tmp_path + "/redis-test-server-#{name}/"
+    def container_id
+      @container_id ||=
+        `docker ps -a --filter 'name=#{name}' --format='{{.ID}}'`.chomp.tap do |id|
+          raise "did not find docker container" if id.blank?
+        end
+    end
+
+    def start_command
+      if containerized?
+        "docker start #{container_id}"
+      else
+        "redis-server #{config_filename}"
+      end
+    end
+
+    def stop_command
+      if containerized?
+        "redis-cli -h #{host} -p #{port} shutdown nosave && docker wait #{container_id}"
+      else
+        "redis-cli -h #{host} -p #{port} shutdown nosave"
+      end
     end
 
     def daemon_controller
-      @daemon_controller ||= DaemonController.new(
-         :identifier    => "Redis test server #{name}",
-         :start_command => "redis-server #{config_filename}",
-         :stop_command  => "redis-cli -p #{port} shutdown nosave",
-         :ping_command  => lambda { running? && available? },
-         :pid_file      => pid_file,
-         :log_file      => log_file,
-         :start_timeout => 20,
-         :stop_timeout  => 20,
-      )
+      @daemon_controller ||=
+        begin
+          # puts start_command, stop_command
+          DaemonController.new(
+            :identifier    => "Redis test server #{name}",
+            :pid_file      => pid_file,
+            :start_command => start_command,
+            :stop_command  => stop_command,
+            :ping_command  => lambda { running? && available? },
+            :log_file      => log_file,
+            :start_timeout => 20,
+            :stop_timeout  => 20,
+          )
+        end
     end
   end
 end

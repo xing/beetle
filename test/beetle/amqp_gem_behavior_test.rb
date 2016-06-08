@@ -9,7 +9,7 @@ class AMQPGemBehaviorTest < MiniTest::Unit::TestCase
     begin
       exception = nil
       EM.run do
-        AMQP.start(:logging => false) do |connection|
+        AMQP.start(:host => ENV['RABBITMQ_SERVER'], :logging => true) do |connection|
           EM::Timer.new(1){ connection.close { EM.stop }}
           channel = AMQP::Channel.new(connection)
           channel.on_error { puts "woot"}

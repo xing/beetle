@@ -1,0 +1,9 @@
+#!/bin/bash
+BEETLE_HOME=/usr/src/beetle
+DIR=$(cd $(dirname $BASH_SOURCE)/.. && pwd)
+MOUNTS=`echo bin lib test features tmp script | sed -e "s|\b\([a-z]*\)\b|-v $DIR/\1:$BEETLE_HOME/\1|g"`
+ENV="-e RAINBOW_COLORED_TESTS=$RAINBOW_COLORED_TESTS -e REDIS_SERVERS=redis-master:6379,redis-slave:6379 -e RABBITMQ_SERVERS=rabbitmq1:5672,rabbitmq2:5672 -e MYSQL_HOST=mysql"
+MOUNT_DOCKER_SOCK="-v /var/run/docker.sock:/var/run/docker.sock"
+cmd="docker run -it --rm $PORTS $MOUNTS $ENV $MOUNT_DOCKER_SOCK --name beetle-test --net=beetle_default beetle-test $@"
+echo $cmd
+exec $cmd
