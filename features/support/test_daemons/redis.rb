@@ -184,7 +184,7 @@ module TestDaemons
          :pid_file      => pid_file,
          :log_file      => log_file,
          :start_timeout => 20,
-         :stop_timeout  => 20,
+         :stop_timeout  => 30,
       )
     end
   end
