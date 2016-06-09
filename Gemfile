@@ -8,7 +8,6 @@ gem "simplecov", "~> 0.10.0"
 gem "rdoc", "~> 4.0"
 
 gem "cucumber", "~> 1.3.15"
-gem "daemons", "~> 1.1.9"
 gem "daemon_controller", "~> 1.2.0"
 gem "minitest", "~> 4.7.5"
 gem "activerecord", "~> 4.0"

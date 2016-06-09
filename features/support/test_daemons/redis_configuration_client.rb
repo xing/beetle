@@ -49,7 +49,7 @@ module TestDaemons
     end
 
     def pid_file
-      "#{tmp_path}/redis_configuration_client#{@daemon_id}.pid"
+      "#{tmp_path}/redis_configuration_client_num#{@daemon_id}.pid"
     end
 
     def log_file

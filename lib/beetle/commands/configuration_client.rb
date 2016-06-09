@@ -15,6 +15,7 @@ module Beetle
     #           --config-file PATH           Path to an external yaml config file
     #           --pid-dir DIR                Write pid and log to DIR
     #           --multiple                   Allow multiple clients started in parallel (for testing only)
+    #           --force                      Force start (delete stale pid file if necessary)
     #       -v, --verbose                    Set log level to DEBUG
     #       -h, --help                       Show this message
     #
@@ -57,6 +58,11 @@ module Beetle
           multiple = true
         end
 
+        force = false
+        opts.on("--force", "Force start (delete stale pid file if necessary)") do |val|
+          force = true
+        end
+
         opts.on("-v", "--verbose", "Set log level to DEBUG") do |val|
           Beetle.config.logger.level = Logger::DEBUG
         end
@@ -68,7 +74,15 @@ module Beetle
 
         opts.parse!(app_options)
 
-        Daemons.run_proc("redis_configuration_client", :multiple => multiple, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
+        daemon_options = {
+          :multiple   => multiple,
+          :log_output => true,
+          :dir_mode   => dir_mode,
+          :dir        => dir,
+          :force      => force
+        }
+
+        Daemons.run_proc("redis_configuration_client", daemon_options) do
           client = Beetle::RedisConfigurationClient.new
           client.id = client_id if client_id
           client.start
