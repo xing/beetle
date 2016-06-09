@@ -115,7 +115,7 @@ Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configurat
 end
 
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
-  Beetle.config.servers = "localhost:5672" # rabbitmq
+  Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
   Beetle.config.logger.level = Logger::INFO
   client = Beetle::Client.new.configure :auto_delete => true do |config|
     config.queue(:echo)
