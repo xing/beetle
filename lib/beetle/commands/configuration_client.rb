@@ -68,7 +68,15 @@ module Beetle
 
         opts.parse!(app_options)
 
-        Daemons.run_proc("redis_configuration_client", :multiple => multiple, :log_output => true, :dir_mode => dir_mode, :dir => dir) do
+        daemon_options = {
+          :multiple   => multiple,
+          :log_output => true,
+          :dir_mode   => dir_mode,
+          :dir        => dir,
+          :force      => true
+        }
+
+        Daemons.run_proc("redis_configuration_client", daemon_options) do
           client = Beetle::RedisConfigurationClient.new
           client.id = client_id if client_id
           client.start

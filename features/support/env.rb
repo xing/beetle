@@ -37,7 +37,7 @@ def redis_master_file(client_name)
 end
 
 def first_redis_configuration_client_pid
-  File.read("redis_configuration_client0.pid").chomp.to_i
+  File.read("redis_configuration_client_num0.pid").chomp.to_i
 end
 
 def system_notification_log_path

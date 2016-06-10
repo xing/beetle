@@ -76,7 +76,14 @@ module Beetle
           exit
         end
 
-        Daemons.run_proc("redis_configuration_server", :log_output => true, :dir_mode => dir_mode, :dir => dir) do
+        daemon_options = {
+          :log_output => true,
+          :dir_mode   => dir_mode,
+          :dir        => dir,
+          :force      => true
+        }
+
+        Daemons.run_proc("redis_configuration_server", daemon_options) do
           config_server =  Beetle::RedisConfigurationServer.new
           Beetle::RedisConfigurationHttpServer.config_server = config_server
           http_server_port = RUBY_PLATFORM =~ /darwin/ ? 9080 : 8080
