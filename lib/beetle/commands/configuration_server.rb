@@ -16,7 +16,6 @@ module Beetle
     #           --amqp-servers LIST          AMQP server list (e.g. 192.168.0.1:5672,192.168.0.2:5672)
     #           --config-file PATH           Path to an external yaml config file
     #           --pid-dir DIR                Write pid and log to DIR
-    #           --force                      Force start (delete stale pid file if necessary)
     #       -v, --verbose
     #       -h, --help                       Show this message
     #
@@ -61,11 +60,6 @@ module Beetle
           dir = val
         end
 
-        force = false
-        opts.on("--force", "Force start (delete stale pid file if necessary)") do |val|
-          force = true
-        end
-
         opts.on("-v", "--verbose") do |val|
           Beetle.config.logger.level = Logger::DEBUG
         end
@@ -86,7 +80,7 @@ module Beetle
           :log_output => true,
           :dir_mode   => dir_mode,
           :dir        => dir,
-          :force      => force
+          :force      => true
         }
 
         Daemons.run_proc("redis_configuration_server", daemon_options) do
