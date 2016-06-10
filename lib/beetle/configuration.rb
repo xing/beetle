@@ -31,7 +31,7 @@ module Beetle
     # daemons. defaults to 10 seconds.
     attr_accessor :redis_failover_client_heartbeat_interval
 
-    # how long to wait until a redis_failover client daeom can be considered
+    # how long to wait until a redis_failover client daemon can be considered
     # dead. defaults to 60 seconds.
     attr_accessor :redis_failover_client_dead_interval
 
