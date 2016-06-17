@@ -135,3 +135,13 @@ task :stop do
 end
 
 task :default => [:test, :cucumber]
+
+namespace :test do
+  desc "run tests inside docker using service containers for redis, rabbitmq and mysql"
+  task :docker do
+    Rake::Task['start'].invoke
+    system("./script/docker-build-beetle-image")
+    system("./script/docker-run-beetle-image")
+    Rake::Task['stop'].invoke
+  end
+end
