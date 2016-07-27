@@ -1,9 +1,26 @@
 = Release Notes
 
+== Version 0.4.9
+
+* Allow redis_configuration_client to run in the foreground (useful
+  for docker)
+
+== Version 0.4.8
+
+* unseen clients need to be an array
+
+== Version 0.4.7
+
+* list clients which have never sent a ping in the failover server UI
+
+== Version 0.4.6
+
+* Publish activesupport notifications to support performance measurements
+
 == Version 0.4.5
 
 * Starting mutliple redis failover clients is now prohibited by
-  defualt. This behavior can be overriden using
+  default. This behavior can be overriden using
   "beetle configuration_client start -- --multiple"
 
 == Version 0.4.4
