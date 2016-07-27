@@ -61,6 +61,11 @@ module Beetle
           Beetle.config.logger.level = Logger::DEBUG
         end
 
+        foreground = false
+        opts.on("-f", "--foreground", "Run in foreground") do |val|
+          foreground = true
+        end
+
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
           exit
@@ -68,18 +73,24 @@ module Beetle
 
         opts.parse!(app_options)
 
-        daemon_options = {
-          :multiple   => multiple,
-          :log_output => true,
-          :dir_mode   => dir_mode,
-          :dir        => dir,
-          :force      => true
-        }
-
-        Daemons.run_proc("redis_configuration_client", daemon_options) do
+        if foreground
           client = Beetle::RedisConfigurationClient.new
           client.id = client_id if client_id
           client.start
+        else
+          daemon_options = {
+            :multiple   => multiple,
+            :log_output => true,
+            :dir_mode   => dir_mode,
+            :dir        => dir,
+            :force      => true
+          }
+
+          Daemons.run_proc("redis_configuration_client", daemon_options) do
+            client = Beetle::RedisConfigurationClient.new
+            client.id = client_id if client_id
+            client.start
+          end
         end
       end
     end
