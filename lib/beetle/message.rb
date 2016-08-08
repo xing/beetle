@@ -97,6 +97,8 @@ module Beetle
       opts[:message_id] = generate_uuid.to_s
       opts[:timestamp] = now
       headers = (opts[:headers] ||= {})
+      headers.reject! {|k,v| v.nil? }
+      headers.each {|k,v| headers[k] = v.to_s if v.is_a?(Symbol) }
       headers.merge!(
         :format_version => FORMAT_VERSION.to_s,
         :flags => flags.to_s,

@@ -94,6 +94,16 @@ module Beetle
       assert_equal "SENDER_ID", options[:headers][:sender_id]
       assert_equal "SENDER_ACTION", options[:headers][:sender_action]
     end
+
+    test "the publishing options convert symbol values to strings" do
+      options = Message.publishing_options(:headers => { :x => :foo })
+      assert_equal "foo", options[:headers][:x]
+    end
+
+    test "the publishing options reject nil headers" do
+      options = Message.publishing_options(:headers => { :x => nil })
+      assert !options[:headers].has_key?(:x)
+    end
   end
 
   class KeyManagementTest < MiniTest::Unit::TestCase
