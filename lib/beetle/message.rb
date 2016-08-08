@@ -96,7 +96,8 @@ module Beetle
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s
       opts[:timestamp] = now
-      headers = (opts[:headers] ||= {})
+      headers = {}
+      headers.merge!(opts[:headers]) if opts[:headers]
       headers.reject! {|k,v| v.nil? }
       headers.each {|k,v| headers[k] = v.to_s if v.is_a?(Symbol) }
       headers.merge!(
@@ -104,6 +105,7 @@ module Beetle
         :flags => flags.to_s,
         :expires_at => expires_at.to_s
       )
+      opts[:headers] = headers
       opts
     end
 

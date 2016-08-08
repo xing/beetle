@@ -104,6 +104,12 @@ module Beetle
       options = Message.publishing_options(:headers => { :x => nil })
       assert !options[:headers].has_key?(:x)
     end
+
+    test "the publishing options don't change the passed in headers" do
+      my_opts = {:headers => { :x => nil }}
+      Message.publishing_options(my_opts)
+      assert my_opts[:headers].has_key?(:x)
+    end
   end
 
   class KeyManagementTest < MiniTest::Unit::TestCase
