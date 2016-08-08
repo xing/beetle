@@ -1,5 +1,10 @@
 = Release Notes
 
+
+== Version 0.4.10
+
+* Publisher handles nil and symbols as values in headers correctly
+
 == Version 0.4.9
 
 * Allow redis_configuration_client to run in the foreground (useful
