@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 0.4.11
+
+* Automatically close open publisher sockets at program exit
 
 == Version 0.4.10
 
