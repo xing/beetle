@@ -7,6 +7,7 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      at_exit { stop }
     end
 
     # list of exceptions potentially raised by bunny
@@ -216,6 +217,7 @@ module Beetle
     def stop!(exception=nil)
       begin
         Beetle::Timer.timeout(1) do
+          logger.debug "Beetle: closing connection from publisher to #{server}"
           if exception
             bunny.__send__ :close_socket
           else
