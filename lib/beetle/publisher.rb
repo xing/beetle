@@ -10,9 +10,6 @@ module Beetle
       @dead_servers = {}
       @bunnies = {}
       at_exit { stop }
-      if @servers.size == 1
-        logger.warn "Beetle: at least two servers are required for redundant publishing"
-      end
     end
 
     # list of exceptions potentially raised by bunny
