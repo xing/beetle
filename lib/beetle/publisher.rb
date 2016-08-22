@@ -2,12 +2,17 @@ module Beetle
   # Provides the publishing logic implementation.
   class Publisher < Base
 
+    attr_reader :dead_servers
+
     def initialize(client, options = {}) #:nodoc:
       super
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
       at_exit { stop }
+      if @servers.size == 1
+        logger.warn "Beetle: at least two servers are required for redundant publishing"
+      end
     end
 
     # list of exceptions potentially raised by bunny
@@ -63,7 +68,7 @@ module Beetle
 
     def publish_with_redundancy(exchange_name, message_name, data, opts) #:nodoc:
       if @servers.size < 2
-        logger.warn "Beetle: at least two active servers are required for redundant publishing"
+        logger.warn "Beetle: at least two active servers are required for redundant publishing" if @dead_servers.size > 0
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []

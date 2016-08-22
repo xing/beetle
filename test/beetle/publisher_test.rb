@@ -170,6 +170,37 @@ module Beetle
       assert_equal 2, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
     end
 
+    test "redundant publishing should log a warning if only one server is active" do
+      @pub.servers = %w(server1 server2)
+      @pub.server = "server1"
+      @pub.send :mark_server_dead
+
+      redundant = sequence("redundant")
+      e = mock("exchange")
+
+      @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing")
+
+      @pub.expects(:exchange).returns(e).in_sequence(redundant)
+      e.expects(:publish).in_sequence(redundant)
+
+      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+    end
+
+    test "redundant publishing should not log a warning if only one server exists" do
+      @pub.servers = %w(server1)
+      @pub.server = "server1"
+
+      redundant = sequence("redundant")
+      e = mock("exchange")
+
+      @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing").never
+
+      @pub.expects(:exchange).returns(e).in_sequence(redundant)
+      e.expects(:publish).in_sequence(redundant)
+
+      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+    end
+
     test "publishing should use the message ttl passed in the options hash to encode the message body" do
       opts = {:ttl => 1.day}
       Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
