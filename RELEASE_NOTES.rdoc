@@ -1,5 +1,10 @@
 = Release Notes
 
+== Version 0.4.12
+
+* Don't log warnings when publishing redundantly and only
+  one server is has been configured
+
 == Version 0.4.11
 
 * Automatically close open publisher sockets at program exit
