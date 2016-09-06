@@ -2,8 +2,6 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require 'eventmachine'
 require 'amqp'
 
-AMQP.client.logger = Beetle.config.logger
-
 class AMQPGemBehaviorTest < MiniTest::Unit::TestCase
   test "subscribing twice to the same queue raises a RuntimeError which throws us out of the event loop" do
     begin

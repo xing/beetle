@@ -1,5 +1,4 @@
 $:.unshift(File.expand_path('..', __FILE__))
-require 'amq/client'               # defines AMQ::Client::Settings
 require 'bunny'                    # which bunny picks up
 require 'qrack/errors'             # needed by the publisher
 require 'uuid4r'
