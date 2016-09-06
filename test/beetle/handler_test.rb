@@ -13,7 +13,7 @@ module Beetle
     end
   end
 
-  class HandlerTest < MiniTest::Unit::TestCase
+  class HandlerTest < Minitest::Test
 
     test "should allow using a block as a callback" do
       test_var = false

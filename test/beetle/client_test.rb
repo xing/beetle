@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
-  class ClientDefaultsTest < MiniTest::Unit::TestCase
+  class ClientDefaultsTest < Minitest::Test
     def setup
       @client = Client.new
     end
@@ -32,7 +32,7 @@ module Beetle
     end
   end
 
-  class RegistrationTest < MiniTest::Unit::TestCase
+  class RegistrationTest < Minitest::Test
     def setup
       @client = Client.new
     end
@@ -203,7 +203,7 @@ module Beetle
 
   end
 
-  class ClientTest < MiniTest::Unit::TestCase
+  class ClientTest < Minitest::Test
     test "#reset should stop subscriber and publisher" do
       client = Client.new
       client.send(:publisher).expects(:stop)

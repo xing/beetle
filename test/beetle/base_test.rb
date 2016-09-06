@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
-  class BaseTest < MiniTest::Unit::TestCase
+  class BaseTest < Minitest::Test
     test "initially we should have no exchanges" do
       @bs = Base.new(Client.new)
       assert_equal({}, @bs.instance_variable_get("@exchanges"))
@@ -19,7 +19,7 @@ module Beetle
     end
   end
 
-  class BaseServerManagementTest < MiniTest::Unit::TestCase
+  class BaseServerManagementTest < Minitest::Test
     def setup
       @client = Client.new
       @bs = Base.new(@client)

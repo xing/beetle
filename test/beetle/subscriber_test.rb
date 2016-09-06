@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class SubscriberTest < MiniTest::Unit::TestCase
+  class SubscriberTest < Minitest::Test
     def setup
       client = Client.new
       @sub = client.send(:subscriber)
@@ -50,7 +50,7 @@ module Beetle
     end
   end
 
-  class SubscriberPauseAndResumeTest < MiniTest::Unit::TestCase
+  class SubscriberPauseAndResumeTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
@@ -119,7 +119,7 @@ module Beetle
 
   end
 
-  class AdditionalSubscriptionServersTest < MiniTest::Unit::TestCase
+  class AdditionalSubscriptionServersTest < Minitest::Test
     def setup
       @config = Configuration.new
       @config.additional_subscription_servers = "localhost:1234"
@@ -132,7 +132,7 @@ module Beetle
     end
   end
 
-  class SubscriberQueueManagementTest < MiniTest::Unit::TestCase
+  class SubscriberQueueManagementTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
@@ -189,7 +189,7 @@ module Beetle
 
   end
 
-  class SubscriberExchangeManagementTest < MiniTest::Unit::TestCase
+  class SubscriberExchangeManagementTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
@@ -222,7 +222,7 @@ module Beetle
   end
 
 
-  class DeadLetteringCallBackExecutionTest < MiniTest::Unit::TestCase
+  class DeadLetteringCallBackExecutionTest < Minitest::Test
     def setup
       @client = Client.new
       @client.config.dead_lettering_enabled = true
@@ -255,7 +255,7 @@ module Beetle
 
   end
 
-  class CallBackExecutionTest < MiniTest::Unit::TestCase
+  class CallBackExecutionTest < Minitest::Test
     def setup
       client = Client.new
       @queue = "somequeue"
@@ -332,7 +332,7 @@ module Beetle
 
   end
 
-  class SubscriptionTest < MiniTest::Unit::TestCase
+  class SubscriptionTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
@@ -386,7 +386,7 @@ module Beetle
     end
   end
 
-  class HandlersTest < MiniTest::Unit::TestCase
+  class HandlersTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)
@@ -406,7 +406,7 @@ module Beetle
 
   end
 
-  class ConnectionTest < MiniTest::Unit::TestCase
+  class ConnectionTest < Minitest::Test
     def setup
       @client = Client.new
       @sub = @client.send(:subscriber)

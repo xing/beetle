@@ -1,10 +1,6 @@
 require 'bundler/setup'
-require 'rake'
 require 'rake/testtask'
 require 'bundler/gem_tasks'
-
-# rake 0.9.2 hack to supress deprecation warnings caused by cucumber
-include Rake::DSL if RAKEVERSION >= "0.9"
 require 'cucumber/rake/task'
 
 # 1.8/1.9 compatible way of loading lib/beetle.rb
@@ -98,6 +94,7 @@ Rake::TestTask.new do |t|
   t.libs << "test"
   t.test_files = FileList['test/**/*_test.rb']
   t.verbose = true
+  t.warning = false
 end
 
 require 'rdoc/task'

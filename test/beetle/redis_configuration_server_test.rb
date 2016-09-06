@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class RedisConfigurationServerTest < MiniTest::Unit::TestCase
+  class RedisConfigurationServerTest < Minitest::Test
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new
@@ -113,7 +113,7 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerInvalidationTest < MiniTest::Unit::TestCase
+  class RedisConfigurationServerInvalidationTest < Minitest::Test
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       Beetle.config.redis_servers = "redis:0,redis:1"
@@ -201,7 +201,7 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerInitialRedisMasterDeterminationTest < MiniTest::Unit::TestCase
+  class RedisConfigurationServerInitialRedisMasterDeterminationTest < Minitest::Test
     def setup
       EM::Timer.stubs(:new).returns(true)
       EventMachine.stubs(:add_periodic_timer).yields
@@ -329,7 +329,7 @@ module Beetle
     end
   end
 
-  class RedisConfigurationServerSystemNotificationTest < MiniTest::Unit::TestCase
+  class RedisConfigurationServerSystemNotificationTest < Minitest::Test
     def setup
       Beetle.config.redis_configuration_client_ids = "rc-client-1,rc-client-2"
       @server = RedisConfigurationServer.new

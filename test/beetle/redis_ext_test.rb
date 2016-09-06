@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
 
-  class NonExistentRedisTest < MiniTest::Unit::TestCase
+  class NonExistentRedisTest < Minitest::Test
     def setup
       @r = Redis.new(:host => "localhost", :port => 6390)
     end
@@ -33,7 +33,7 @@ module Beetle
     end
   end
 
-  class AddedRedisMethodsTest < MiniTest::Unit::TestCase
+  class AddedRedisMethodsTest < Minitest::Test
     def setup
       @r = Redis.new(:host => "localhost", :port => 6390)
     end
@@ -55,13 +55,13 @@ module Beetle
     end
   end
 
-  class HiredisLoadedTest < MiniTest::Unit::TestCase
+  class HiredisLoadedTest < Minitest::Test
     test "should be using hiredis instead of the redis ruby backend" do
       assert defined?(Hiredis)
     end
   end
 
-  class RedisShutdownTest < MiniTest::Unit::TestCase
+  class RedisShutdownTest < Minitest::Test
     def setup
       @r = Redis.new(:host => "localhost", :port => 6390)
     end

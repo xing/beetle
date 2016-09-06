@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class SetDeadLetteringsTest < MiniTest::Unit::TestCase
+  class SetDeadLetteringsTest < Minitest::Test
     def setup
       @dead_lettering = DeadLettering.new(Configuration.new)
     end
@@ -18,7 +18,7 @@ module Beetle
     end
   end
 
-  class SetDeadLetterPolicyTest < MiniTest::Unit::TestCase
+  class SetDeadLetterPolicyTest < Minitest::Test
     def setup
       @server = "localhost:15672"
       @queue_name = "QUEUE_NAME"
@@ -97,7 +97,7 @@ module Beetle
     end
   end
 
-  class BindDeadLetterQueuesTest < MiniTest::Unit::TestCase
+  class BindDeadLetterQueuesTest < Minitest::Test
     def setup
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new

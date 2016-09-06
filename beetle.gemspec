@@ -31,6 +31,4 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("activesupport",           [">= 2.3.4"])
   s.add_runtime_dependency("eventmachine_httpserver", [">= 0.2.1"])
   s.add_runtime_dependency("daemons",                 [">= 1.2.0"])
-
-  s.add_development_dependency("webmock", ["~> 1.21.0"])
 end

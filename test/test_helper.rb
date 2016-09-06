@@ -13,7 +13,7 @@ require 'mocha/setup'
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require 'eventmachine'
 
-class MiniTest::Unit::TestCase
+class Minitest::Test
   require "active_support/testing/declarative"
   extend ActiveSupport::Testing::Declarative
   require "webmock"

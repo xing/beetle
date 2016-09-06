@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 require 'eventmachine'
 require 'amqp'
 
-class AMQPGemBehaviorTest < MiniTest::Unit::TestCase
+class AMQPGemBehaviorTest < Minitest::Test
   test "subscribing twice to the same queue raises a RuntimeError which throws us out of the event loop" do
     begin
       exception = nil

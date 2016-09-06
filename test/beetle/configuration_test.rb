@@ -1,7 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
-  class ConfigurationTest < MiniTest::Unit::TestCase
+  class ConfigurationTest < Minitest::Test
     test "should load it's settings from a config file if that file exists" do
       config    = Configuration.new
       old_value = config.gc_threshold
