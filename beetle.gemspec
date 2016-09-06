@@ -18,7 +18,6 @@ Gem::Specification.new do |s|
   s.homepage           = "http://xing.github.com/beetle/"
   s.rdoc_options       = ["--charset=UTF-8"]
   s.require_paths      = ["lib"]
-  s.rubygems_version   = "1.3.7"
   s.test_files         = Dir['test/**/*.rb']
 
   s.specification_version = 3
