@@ -1,9 +1,17 @@
 = Release Notes
 
+== Version 1.0.0
+
+* introduced semantic versioning
+* upgraded gems used for devloping beetle
+* upgraded amqp gem to version 1.6.0 and amq-protocol to 2.0.1
+* relaxed requirements on redis and hiredis versions
+* support setting prefetch count for subscriber
+
 == Version 0.4.12
 
 * Don't log warnings when publishing redundantly and only
-  one server is has been configured
+  one server has been configured
 
 == Version 0.4.11
 

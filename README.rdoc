@@ -108,3 +108,41 @@ Copyright (c) 2010-2015 {XING AG}[http://www.xing.com/]
 
 Released under the MIT license. For full details see MIT-LICENSE included in this
 distribution.
+
+== Contributing
+
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create new Pull Request
+
+Don't increase the gem version in your pull requests. It will be done after merging the request,
+to allow merging of pull requests in a flexible order.
+
+== How to release a new gem version
+
+Update RELEASE_NOTES.rdoc!
+
+We use {semantic versioning}[http://semver.org/] and create a git tag
+for each release.
+
+Edit `lib/beetle/version.rb` to set the new version number
+(`Major.Minor.Patch`).
+
+In short (see {semver.org}[http://semver.org] for details):
+
+* *Major* version MUST be incremented if any backwards incompatible changes
+  are introduced to the public API.
+* *Minor* version MUST be incremented if new, backwards compatible functionality
+  is introduced to the public API. It MUST be incremented if any public API
+  functionality is marked as deprecated.
+* *Patch* version MUST be incremented if only backwards compatible bug fixes
+  are introduced.
+
+Then use `rake release` which will create the git tag and upload the
+gem to gems.xing.com:
+
+    $ bundle exec rake release
+
+The generated gem is located in the `pkg/` directory.
