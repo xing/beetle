@@ -85,6 +85,11 @@ module Beetle
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
 
+    # Prefetch count for subscribers (defaults to 1). Setting this higher
+    # than 1 can potentially increase throughput, but comes at the cost of
+    # decreased parallelism.
+    attr_accessor :prefetch_count
+
     # directory to store large intermediate files (defaults '/tmp')
     attr_accessor :tmpdir
 
@@ -122,6 +127,7 @@ module Beetle
       self.password = "guest"
       self.api_port = 15672
       self.frame_max = 131072
+      self.prefetch_count = 1
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000 #1 second

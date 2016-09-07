@@ -454,7 +454,7 @@ module Beetle
     test "channel opening, exchange creation, queue bindings and subscription" do
       connection = mock("connection")
       channel = mock("channel")
-      channel.expects(:prefetch).with(1)
+      channel.expects(:prefetch).with(@client.config.prefetch)
       channel.expects(:auto_recovery=).with(true)
       AMQP::Channel.expects(:new).with(connection).yields(channel)
       @sub.expects(:create_exchanges)

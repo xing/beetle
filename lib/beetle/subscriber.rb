@@ -252,8 +252,8 @@ module Beetle
     def open_channel_and_subscribe(connection, settings)
       server = server_from_settings settings
       AMQP::Channel.new(connection) do |channel|
+        channel.prefetch(@client.config.prefetch_count)
         channel.auto_recovery = true
-        channel.prefetch(1)
         set_current_server server
         @channels[server] = channel
         create_exchanges(@exchanges_for_queues)
