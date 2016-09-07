@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 1.0.1
+
+* don't try to connect on publisher shutdown
+
 == Version 1.0.0
 
 * introduced semantic versioning
