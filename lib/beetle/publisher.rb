@@ -153,6 +153,10 @@ module Beetle
       @bunnies[@server] ||= new_bunny
     end
 
+    def bunny?
+      @bunnies[@server]
+    end
+
     def new_bunny
       b = Bunny.new(
         :host           => current_host,
@@ -217,23 +221,22 @@ module Beetle
     end
 
     def stop!(exception=nil)
-      begin
-        Beetle::Timer.timeout(1) do
-          logger.debug "Beetle: closing connection from publisher to #{server}"
-          if exception
-            bunny.__send__ :close_socket
-          else
-            bunny.stop
-          end
+      return unless bunny?
+      Beetle::Timer.timeout(1) do
+        logger.debug "Beetle: closing connection from publisher to #{server}"
+        if exception
+          bunny.__send__ :close_socket
+        else
+          bunny.stop
         end
-      rescue Exception => e
-        logger.warn "Beetle: error closing down bunny #{e}"
-        Beetle::reraise_expectation_errors!
-      ensure
-        @bunnies[@server] = nil
-        @exchanges[@server] = {}
-        @queues[@server] = {}
       end
+    rescue Exception => e
+      logger.warn "Beetle: error closing down bunny: #{e}"
+      Beetle::reraise_expectation_errors!
+    ensure
+      @bunnies[@server] = nil
+      @exchanges[@server] = {}
+      @queues[@server] = {}
     end
   end
 end

@@ -42,7 +42,17 @@ module Beetle
     test "stop! should shut down bunny and clean internal data structures" do
       b = mock("bunny")
       b.expects(:stop).raises(Exception.new)
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b)
+      @pub.send(:stop!)
+      assert_equal({}, @pub.send(:exchanges))
+      assert_equal({}, @pub.send(:queues))
+      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+    end
+
+    test "stop! should not create a new bunny " do
+      @pub.expects(:bunny?).returns(false)
+      @pub.expects(:bunny).never
       @pub.send(:stop!)
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
@@ -403,9 +413,11 @@ module Beetle
       s = sequence("shutdown")
       bunny = mock("bunny")
       @pub.expects(:set_current_server).with("localhost:1111").in_sequence(s)
+      @pub.expects(:bunny?).returns(true).in_sequence(s)
       @pub.expects(:bunny).returns(bunny).in_sequence(s)
       bunny.expects(:stop).in_sequence(s)
       @pub.expects(:set_current_server).with("localhost:2222").in_sequence(s)
+      @pub.expects(:bunny?).returns(true).in_sequence(s)
       @pub.expects(:bunny).returns(bunny).in_sequence(s)
       bunny.expects(:stop).in_sequence(s)
       @pub.stop
