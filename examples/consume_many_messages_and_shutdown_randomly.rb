@@ -18,6 +18,8 @@ require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
 # set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
+# excercise prefetch_count setting
+Beetle.config.prefetch_count = 100
 
 # setup client
 client = Beetle::Client.new
