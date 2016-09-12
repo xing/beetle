@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 1.0.2
+
+* relax hiredis requirements to >= 0.4.5
+
 == Version 1.0.1
 
 * don't try to connect on publisher shutdown
