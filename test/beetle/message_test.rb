@@ -46,13 +46,14 @@ module Beetle
 
     test "the publishing options should include both the beetle headers and the amqp params" do
       key = 'fookey'
-      options = Message.publishing_options(:redundant => true, :key => key, :mandatory => true, :immediate => true, :persistent => true)
+      options = Message.publishing_options(:redundant => true, :key => key, :mandatory => true, :immediate => true, :persistent => true, :priority => 10)
 
       assert options[:mandatory]
       assert options[:immediate]
       assert options[:persistent]
       assert_equal key, options[:key]
       assert_equal "1", options[:headers][:flags]
+      assert_equal 10, options[:priority]
     end
 
     test "the publishing options should silently ignore other parameters than the valid publishing keys" do
