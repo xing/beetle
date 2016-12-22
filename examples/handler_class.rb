@@ -43,6 +43,20 @@ class Handler < Beetle::Handler
 
 end
 
+# when you have several messages you want to handle
+# within the same handler class you may want to use
+# the "handle" method instead of overriding the
+# process method
+class AnotherHandler < Beetle::Handler
+  handle "very.important.message" do |payload|
+    # handle message
+  end
+
+  handle "another.important.message", "same.handler.twice" do |payload|
+    # handle message
+  end
+end
+
 # register our handler to the message
 client.register_handler(:test, Handler)
 
