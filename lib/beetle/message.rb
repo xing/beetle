@@ -73,7 +73,7 @@ module Beetle
       @store            = opts[:store]
     end
 
-    # extracts various values form the AMQP header properties
+    # extracts various values from the AMQP header properties
     def decode #:nodoc:
       # p header.attributes
       amqp_headers = header.attributes
