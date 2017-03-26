@@ -79,7 +79,7 @@ module TestDaemons
     end
 
     def running?
-      cmd = "ps aux | egrep 'redis-server.*#{port}' | grep -v grep"
+      cmd = "ps aux | fgrep 'redis-server \*:#{port}' | grep -v grep"
       res = `#{cmd}`
       x = res.chomp.split("\n")
       x.size == 1

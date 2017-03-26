@@ -17,5 +17,6 @@ gem 'i18n'
 gem 'wirble'
 
 gem "webmock", "~> 1.21.0"
+gem "websocket-eventmachine-client"
 
 # gem 'bunny', '=0.7.10', :path => "#{ENV['HOME']}/src/bunny"

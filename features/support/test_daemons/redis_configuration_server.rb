@@ -25,7 +25,8 @@ module TestDaemons
       clients_parameter_string = @@redis_configuration_clients.blank? ? "" : "--client-ids #{@@redis_configuration_clients}"
       DaemonController.new(
          :identifier    => "Redis configuration test server",
-         :start_command => "ruby bin/beetle configuration_server start -- -v --redis-master-file #{redis_master_file} --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-retry-interval 1 --pid-dir #{tmp_path} --amqp-servers 127.0.0.1:5672",
+         :start_command => "./beetle configuration_server -v --redis-master-file #{redis_master_file} --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-master-retry-interval 1 --pid-file #{pid_file} --log-file #{log_file}",
+         :daemonize_for_me => true,
          :ping_command  => lambda{ answers_text_requests? },
          :pid_file      => pid_file,
          :log_file      => log_file,
@@ -74,7 +75,7 @@ module TestDaemons
       false
     end
 
-    HTTP_SERVER_PORT = RUBY_PLATFORM =~ /darwin/ ? 9080 : 8080
+    HTTP_SERVER_PORT = RUBY_PLATFORM =~ /darwin/ ? 9650 : 8080
 
     def self.get_status(path, content_type)
       uri = URI.parse("http://127.0.0.1:#{HTTP_SERVER_PORT}#{path}")
