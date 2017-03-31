@@ -10,7 +10,8 @@ GO_DEPS = \
 	github.com/jessevdk/go-flags \
 	github.com/davecgh/go-spew/spew \
 	gopkg.in/tylerb/graceful.v1 \
-	gopkg.in/redis.v5
+	gopkg.in/redis.v5 \
+	gopkg.in/yaml.v2
 
 .godeps:
 	$(GO_ENV) go get $(GO_DEPS)

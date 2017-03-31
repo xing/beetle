@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"gopkg.in/yaml.v2"
 )
 
 var opts struct {
@@ -146,11 +147,51 @@ func redirectStdoutAndStderr(path string) {
 	// see https://github.com/golang/go/issues/325
 	logFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_APPEND, 0644)
 	if err != nil {
-		fmt.Printf("could not open log file: %s", err)
+		fmt.Printf("could not open log file: %s\n", err)
 		return
 	}
 	syscall.Dup2(int(logFile.Fd()), 1)
 	syscall.Dup2(int(logFile.Fd()), 2)
+}
+
+type Config struct {
+	RedisServers             string `yaml:"redis_servers"`
+	ClientIds                string `yaml:"redis_configuration_client_ids"`
+	ClientTimeout            int    `yaml:"redis_configuration_client_timeout"`
+	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
+	RedisMasterFile          string `yaml:"redis_server"`
+	LogFile                  string `yaml:"log_file"`
+}
+
+func readConfigFile() {
+	var c Config
+	yamlFile, err := ioutil.ReadFile(opts.ConfigFile)
+	if err != nil {
+		logError("yamlFile.Get err #%v ", err)
+	}
+	err = yaml.Unmarshal(yamlFile, &c)
+	if err != nil {
+		logError("Unmarshal: %v", err)
+		os.Exit(1)
+	}
+	if opts.RedisServers == "" {
+		opts.RedisServers = c.RedisServers
+	}
+	if opts.ClientIds == "" {
+		opts.ClientIds = c.ClientIds
+	}
+	if opts.ClientTimeout == 0 {
+		opts.ClientTimeout = time.Duration(c.ClientTimeout) * time.Second
+	}
+	if opts.RedisMasterRetryInterval == 0 {
+		opts.RedisMasterRetryInterval = c.RedisMasterRetryInterval
+	}
+	if opts.RedisMasterFile == "" {
+		opts.RedisMasterFile = c.RedisMasterFile
+	}
+	if opts.LogFile == "" {
+		opts.LogFile = c.LogFile
+	}
 }
 
 func main() {
@@ -173,6 +214,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	readConfigFile()
 	Verbose = opts.Verbose
 	redirectStdoutAndStderr(opts.LogFile)
 	installSignalHandler()
