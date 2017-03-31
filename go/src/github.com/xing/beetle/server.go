@@ -106,7 +106,7 @@ func (a PSTA) Swap(i, j int) {
 func (s *ServerState) UnresponsiveClients() []string {
 	res := make([]string, 0)
 	now := time.Now()
-	threshold := now.Add(s.opts.ClientTimeout)
+	threshold := now.Add(-s.opts.ClientTimeout)
 	a := make(PSTA, 0)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
