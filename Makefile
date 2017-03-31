@@ -60,11 +60,11 @@ world:
 
 release:
 	@test "$(shell git status --porcelain)" = "" || (echo "project is dirty, please check in modified files and remove untracked ones" && false)
-	@git fetch --tags
+	@git fetch --tags xing
 	@test "`git tag -l | grep $(OLY_VERSION)`" != "\n" || (echo "version $(OLY_VERSION) already exists. please edit version/version.go" && false)
 	@$(MAKE) world
 	@./create_release.sh
-	@git fetch --tags
+	@git fetch --tags xing
 
 BEETLE_VERSION := v$(shell awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $$4}'  $(GO_SRC)/version.go)
 
