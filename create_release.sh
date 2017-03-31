@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=`awk '/^const STRING =/ { gsub(/"/, ""); print $4}' go/src/github.com/xing/beetle/version.go`
+VERSION=`awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $4}' go/src/github.com/xing/beetle/version.go`
 TAG="v$VERSION"
 BASEURL="https://source.xing.com/api/v3/repos/architects/gobeetle"
 if test -z "$SOURCE_XING_COM_USER"; then
