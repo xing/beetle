@@ -19,7 +19,7 @@ EOF
 read -r -d '' POST_DATA <<EOF
 {
   "tag_name": "$TAG",
-  "target_commitish": "master",
+  "target_commitish": "go-beetle",
   "name": "$TAG",
   "body": "$DESC",
   "draft": false,

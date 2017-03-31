@@ -21,6 +21,7 @@ GO_PKG = github.com/xing/beetle
 GO_SRC = go/src/$(GO_PKG)
 GO_INSTALL_TARGETS = beetle
 GO_TARGETS = $(GO_INSTALL_TARGETS) $(GO_NOINSTALL_TARGETS)
+SCRIPTS = beetled
 
 INSTALL_PROGRAM = ginstall
 PLATFORM := $(shell uname -s)
@@ -36,10 +37,10 @@ clean:
 	rm -rf go/pkg go/bin $(GO_TARGETS) .godeps
 
 install: $(GO_INSTALL_TARGETS)
-	$(INSTALL_PROGRAM) beetle $(BIN_DIR)
+	$(INSTALL_PROGRAM) $(GO_INSTALL_TARGETS) $(SCRIPTS) $(BIN_DIR)
 
 uninstall:
-	cd $(BIN_DIR) && rm -f $(GO_INSTALL_TARGETS)
+	cd $(BIN_DIR) && rm -f $(GO_INSTALL_TARGETS) $(SCRIPTS)
 
 GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go)
 
@@ -71,13 +72,13 @@ release:
 linux:
 	GOOS=linux GOARCH=amd64 $(MAKE) clean all
 	rm -f release/beetle* release/linux.tar.gz
-	cp -p $(GO_INSTALL_TARGETS) release/
+	cp -p $(GO_INSTALL_TARGETS) $(SCRIPTS) release/
 	cd release && $(TAR) czf linux.tar.gz beetle*
 	rm -f release/beetle*
 
 darwin:
 	GOOS=darwin GOARCH=amd64 $(MAKE) clean all
 	rm -f release/beetle* release/darwin.tar.gz
-	cp -p $(GO_INSTALL_TARGETS) release/
+	cp -p $(GO_INSTALL_TARGETS) $(SCRIPTS) release/
 	cd release && $(TAR) czf darwin.tar.gz beetle*
 	rm -f release/beetle*
