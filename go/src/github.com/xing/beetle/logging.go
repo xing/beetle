@@ -12,6 +12,14 @@ func logInfo(format string, args ...interface{}) {
 	fmt.Printf(final_format, args...)
 }
 
+func logDebug(format string, args ...interface{}) {
+	if !Verbose {
+		return
+	}
+	final_format := fmt.Sprintf("I[%d] %s\n", os.Getpid(), format)
+	fmt.Printf(final_format, args...)
+}
+
 func logError(format string, args ...interface{}) {
 	final_format := fmt.Sprintf("E[%d] %s\n", os.Getpid(), format)
 	fmt.Fprintf(os.Stderr, final_format, args...)

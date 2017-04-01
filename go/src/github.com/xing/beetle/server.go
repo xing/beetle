@@ -111,12 +111,8 @@ func (s *ServerState) UnresponsiveClients() []string {
 	now := time.Now()
 	threshold := now.Add(-(time.Duration(s.opts.ClientTimeout) * time.Second))
 	a := make(PSTA, 0)
-	logInfo("current time: %v", now)
-	logInfo("threshold   : %v", threshold)
-	logInfo("timeout     : %ds", s.opts.ClientTimeout)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
-			logInfo("old client %s: %v", c, t)
 			a = append(a, PST{c: c, t: int(now.Sub(t).Seconds())})
 		}
 	}
@@ -290,21 +286,21 @@ func (s *ServerState) dispatcher() {
 }
 
 func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
-	logInfo("dipatcher received %+v", msg.body)
+	logDebug("dipatcher received %+v", msg.body)
 	switch msg.body.Name {
 	case CLIENT_STARTED:
-		logInfo("Adding client %s", msg.body.Id)
+		logDebug("Adding client %s", msg.body.Id)
 		s.AddClient(msg.body.Id, msg.channel)
 		s.ClientSeen(msg.body.Id)
 	case UNSUBSCRIBE:
-		logInfo("Removing client %s", msg.body.Id)
+		logDebug("Removing client %s", msg.body.Id)
 		s.RemoveClient(msg.body.Id)
 		close(msg.channel)
 	case START_NOTIFY:
-		logInfo("Adding notification %s", msg.body.Id)
+		logDebug("Adding notification %s", msg.body.Id)
 		s.AddNotification(msg.channel)
 	case STOP_NOTIFY:
-		logInfo("Removing notification %s", msg.body.Id)
+		logDebug("Removing notification %s", msg.body.Id)
 		s.RemoveNotification(msg.channel)
 		close(msg.channel)
 	case HEARTBEAT:
@@ -314,7 +310,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	case CLIENT_INVALIDATED:
 		s.ClientInvalidated(msg.body)
 	default:
-		logInfo("Unknown message: %s", msg.body.Name)
+		logError("received unknown message: %s", msg.body.Name)
 	}
 }
 

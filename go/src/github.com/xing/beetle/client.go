@@ -26,6 +26,8 @@ type ClientState struct {
 	input         chan MsgContent
 	currentMaster *RedisShim
 	currentToken  string
+	writerDone    chan struct{}
+	readerDone    chan struct{}
 }
 
 func (s *ClientState) Connect() (err error) {
@@ -42,22 +44,22 @@ func (s *ClientState) Close() {
 	defer s.ws.Close()
 	err := s.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
-		logError("write close failed: %s", err)
+		logError("writing websocket close failed: %s", err)
 	}
 }
 
 func (s *ClientState) send(msg MsgContent) error {
 	b, err := json.Marshal(msg)
 	if err != nil {
-		logError("could not marshal message error=%s: %v", err, msg)
+		logError("could not marshal message: %s", err)
 		return err
 	}
 	err = s.ws.WriteMessage(websocket.TextMessage, b)
 	if err != nil {
-		logError("could not send message, error=%s: %s", err, string(b))
+		logError("could not send message: %s", err)
 		return err
 	}
-	logInfo("sent %s", string(b))
+	logInfo("sent:     %s", string(b))
 	return nil
 }
 
@@ -122,7 +124,7 @@ func (s *ClientState) Invalidate(msg MsgContent) error {
 
 func (s *ClientState) Reconfigure(msg MsgContent) error {
 	if !s.RedeemToken(msg.Token) {
-		logInfo("recieved invalid or outdated token: %s", msg.Token)
+		logInfo("received invalid or outdated token: %s", msg.Token)
 	}
 	if msg.Server != ReadRedisMasterFile(s.opts.RedisMasterFile) {
 		s.NewMaster(msg.Server)
@@ -131,31 +133,33 @@ func (s *ClientState) Reconfigure(msg MsgContent) error {
 	return nil
 }
 
-var done chan struct{}
-
 func (s *ClientState) Reader() {
+	defer func() { s.readerDone <- struct{}{} }()
+	defer s.Close()
 	for !interrupted {
 		msgType, bytes, err := s.ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
-			logError("stopped reading from server socket: %v", err)
-			break
+			logError("error reading from server socket: %s", err)
+			return
 		}
+		logInfo("received: %s", string(bytes))
 		var body MsgContent
 		err = json.Unmarshal(bytes, &body)
 		if err != nil {
-			logError("reader: could not parse msg, error=%s: %s", err, string(bytes))
-			break
+			logError("reader: could not parse msg: %s", err)
+			return
 		}
 		s.input <- body
 	}
 }
 
-func (s *ClientState) Writer() (err error) {
+func (s *ClientState) Writer() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-	defer s.Close()
+	defer func() { s.writerDone <- struct{}{} }()
 	i := 0
+	var err error
 	for !interrupted {
 		select {
 		case msg := <-s.input:
@@ -165,17 +169,17 @@ func (s *ClientState) Writer() (err error) {
 			if i == 0 {
 				err = s.SendHeartBeat()
 			}
+		case <-s.readerDone:
+			return
 		}
 		if err != nil {
-			return err
+			return
 		}
 	}
-	done <- struct{}{}
-	return nil
 }
 
 func (s *ClientState) Dispatch(msg MsgContent) error {
-	logInfo("dispatcher received: %+v", msg)
+	logDebug("dispatcher received: %+v", msg)
 	switch msg.Name {
 	case RECONFIGURE:
 		return s.Reconfigure(msg)
@@ -206,32 +210,35 @@ func (s *ClientState) Run() error {
 		return err
 	}
 
-	done = make(chan struct{})
-
 	go s.Writer()
 	s.Reader()
 
 	select {
-	case <-done:
-		logInfo("done")
-	case <-time.After(1 * time.Second):
-		logWarn("closing websocket timed out after 1 second")
+	case <-s.writerDone:
+		logInfo("writer finished cleanly")
+	case <-time.After(2 * time.Second):
+		logWarn("clean writer shutdown timed out after 2 seconds")
 	}
 	return nil
 }
 
 func RunConfigurationClient(o ClientOptions) error {
-	logInfo("client: %+v\n", o)
+	logInfo("client started with options: %+v\n", o)
 	for !interrupted {
 		addr := fmt.Sprintf("%s:%d", o.Server, o.Port)
 		u := url.URL{Scheme: "ws", Host: addr, Path: "/configuration"}
-		state := &ClientState{opts: o, url: u.String()}
+		state := &ClientState{
+			opts:       o,
+			url:        u.String(),
+			readerDone: make(chan struct{}, 1),
+			writerDone: make(chan struct{}, 1),
+		}
 		state.input = make(chan MsgContent, 1000)
 		err := state.Run()
 		if err != nil {
 			logError("%s", err)
 			if !interrupted {
-				time.Sleep(1 * time.Second)
+				time.Sleep(3 * time.Second)
 			}
 		}
 	}
