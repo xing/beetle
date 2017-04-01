@@ -2,14 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync/atomic"
 	"time"
 )
 
+func init() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
+}
+
 func logInfo(format string, args ...interface{}) {
 	final_format := fmt.Sprintf("I[%d] %s\n", os.Getpid(), format)
-	fmt.Printf(final_format, args...)
+	log.Printf(final_format, args...)
 }
 
 func logDebug(format string, args ...interface{}) {
@@ -17,17 +22,17 @@ func logDebug(format string, args ...interface{}) {
 		return
 	}
 	final_format := fmt.Sprintf("I[%d] %s\n", os.Getpid(), format)
-	fmt.Printf(final_format, args...)
+	log.Printf(final_format, args...)
 }
 
 func logError(format string, args ...interface{}) {
 	final_format := fmt.Sprintf("E[%d] %s\n", os.Getpid(), format)
-	fmt.Fprintf(os.Stderr, final_format, args...)
+	log.Printf(final_format, args...)
 }
 
 func logWarn(format string, args ...interface{}) {
 	final_format := fmt.Sprintf("W[%d] %s\n", os.Getpid(), format)
-	fmt.Fprintf(os.Stderr, final_format, args...)
+	log.Printf(final_format, args...)
 }
 
 func (s *ServerState) statsReporter() {

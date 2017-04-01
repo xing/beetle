@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -201,7 +200,6 @@ func readConfigFile() {
 }
 
 func main() {
-	log.SetFlags(0)
 	cmdHandler := func(command flags.Commander, args []string) error {
 		cmd = command
 		cmdArgs = args

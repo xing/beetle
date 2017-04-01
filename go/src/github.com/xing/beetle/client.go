@@ -59,7 +59,7 @@ func (s *ClientState) send(msg MsgContent) error {
 		logError("could not send message: %s", err)
 		return err
 	}
-	logInfo("sent:     %s", string(b))
+	logDebug("sent:     %s", string(b))
 	return nil
 }
 
@@ -68,6 +68,7 @@ func (s *ClientState) SendHeartBeat() error {
 }
 
 func (s *ClientState) Ping(pingMsg MsgContent) error {
+	logInfo("Received ping message")
 	if s.RedeemToken(pingMsg.Token) {
 		return s.SendPong()
 	}
@@ -123,8 +124,9 @@ func (s *ClientState) Invalidate(msg MsgContent) error {
 }
 
 func (s *ClientState) Reconfigure(msg MsgContent) error {
+	logInfo("Received reconfigure message with token %s", msg.Token)
 	if !s.RedeemToken(msg.Token) {
-		logInfo("received invalid or outdated token: %s", msg.Token)
+		logInfo("Received invalid or outdated token: %s", msg.Token)
 	}
 	if msg.Server != ReadRedisMasterFile(s.opts.RedisMasterFile) {
 		s.NewMaster(msg.Server)
@@ -143,7 +145,7 @@ func (s *ClientState) Reader() {
 			logError("error reading from server socket: %s", err)
 			return
 		}
-		logInfo("received: %s", string(bytes))
+		logDebug("received: %s", string(bytes))
 		var body MsgContent
 		err = json.Unmarshal(bytes, &body)
 		if err != nil {

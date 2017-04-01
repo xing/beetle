@@ -344,7 +344,9 @@ func RunConfigurationServer(o ServerOptions) error {
 	state.Start()
 	// start threads
 	go state.dispatcher()
-	go state.statsReporter()
+	if Verbose {
+		go state.statsReporter()
+	}
 	state.clientHandler(o.Port)
 	// wait for web socket writers to finish
 	state.waitGroup.Wait()
@@ -365,7 +367,7 @@ func (s *ServerState) clientHandler(web_socket_port int) {
 }
 
 func (s *ServerState) serveNotifications(w http.ResponseWriter, r *http.Request) {
-	logInfo("Received notification request")
+	logDebug("received notification request")
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -385,7 +387,7 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 	for !interrupted {
 		msgType, bytes, err := ws.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
-			logError("wsReader: could not read msg: %s", err)
+			logError("notificationReader: could not read msg: %s", err)
 			break
 		}
 		logInfo("ignored message from notification subscriber: %s", string(bytes))
@@ -410,7 +412,7 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, input_from_dispatch
 }
 
 func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
-	logInfo("Received web socket request")
+	logDebug("received web socket request")
 	atomic.AddInt64(&ws_connections, 1)
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -553,7 +555,7 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 			go s.wsWriter(channel_name, ws, dispatcher_input)
 			writerStarted = true
 		}
-		logInfo("received %s", string(bytes))
+		logDebug("received %s", string(bytes))
 		s.ws_channel <- &WsMsg{body: body, channel: dispatcher_input}
 	}
 	s.ws_channel <- &WsMsg{body: MsgContent{Name: UNSUBSCRIBE, Id: channel_name}, channel: dispatcher_input}
@@ -623,12 +625,13 @@ func (s *ServerState) ClientStarted(msg MsgContent) {
 func (s *ServerState) HeartBeat(msg MsgContent) {
 	s.ClientSeen(msg.Id)
 	if s.ClientIdIsValid(msg.Id) {
-		logInfo("Received heartbeat message from id '%s'", msg.Id)
+		logDebug("received heartbeat message from id '%s'", msg.Id)
 	} else {
 		s.AddUnknownClientId(msg.Id)
 		msg := fmt.Sprintf("Received heartbeat message from unknown id '%s'", msg.Id)
 		logError(msg)
-		s.SendNotification(msg)
+		// heart beats are sonet all the time
+		// s.SendNotification(msg)
 	}
 }
 
