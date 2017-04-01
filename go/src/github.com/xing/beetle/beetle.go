@@ -10,26 +10,26 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/yaml.v2"
 )
 
 var opts struct {
-	Verbose                  bool          `short:"v" long:"verbose" description:"Be verbose."`
-	Id                       string        `long:"id" env:"HOST" description:"Set unique client id."`
-	ClientIds                string        `long:"client-ids" env:"BEETLE_CLIENT_IDS" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
-	ClientTimeout            time.Duration `long:"client-timeout" default:"60s" description:"How long to wait until considering a client dead (or unreachable)."`
-	ConfigFile               string        `long:"config-file" env:"BEETLE_CONFIG_FILE" description:"Config file path."`
-	RedisServers             string        `long:"redis-servers" env:"BEETLE_REDIS_SERVERS" description:"List of redis servers (comma separated, host:port pairs)."`
-	RedisMasterFile          string        `long:"redis-master-file" env:"BEETLE_REDIS_MASTER_FILE" description:"Path of redis master file."`
-	RedisMasterRetries       int           `long:"redis-master-retries" default:"3" env:"BEETLE_REDIS_MASTER_RETRIES" description:"How often to retry checking the availability of the current master before initiating a switch."`
-	RedisMasterRetryInterval int           `long:"redis-master-retry-interval" default:"10" env:"BEETLE_REDIS_MASTER_RETRY_INTERVAL" description:"Number of seconds to wait between master checks."`
-	PidFile                  string        `long:"pid-file" description:"Write process id into given path."`
-	LogFile                  string        `long:"log-file" description:"Redirect stdout and stderr to the given path."`
-	Server                   string        `long:"server" description:"Specifies config server address."`
-	Port                     int           `long:"port" default:"9650" description:"Port to use for web socket connections."`
+	Verbose                  bool   `short:"v" long:"verbose" description:"Be verbose."`
+	Id                       string `long:"id" env:"HOST" description:"Set unique client id."`
+	ClientIds                string `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
+	ClientTimeout            int    `long:"client-timeout" default:"60" description:"Number of seconds to wait until considering a client dead (or unreachable)."`
+	ClientHeartbeatInterval  int    `long:"client-heartbeat-interval" default:"10" description:"Number of seconds between client heartbeats."`
+	ConfigFile               string `long:"config-file" description:"Config file path."`
+	RedisServers             string `long:"redis-servers" description:"List of redis servers (comma separated, host:port pairs)."`
+	RedisMasterFile          string `long:"redis-master-file" description:"Path of redis master file."`
+	RedisMasterRetries       int    `long:"redis-master-retries" default:"3" description:"How often to retry checking the availability of the current master before initiating a switch."`
+	RedisMasterRetryInterval int    `long:"redis-master-retry-interval" default:"10" description:"Number of seconds to wait between master checks."`
+	PidFile                  string `long:"pid-file" description:"Write process id into given path."`
+	LogFile                  string `long:"log-file" description:"Redirect stdout and stderr to the given path."`
+	Server                   string `long:"server" description:"Specifies config server address."`
+	Port                     int    `long:"port" default:"9650" description:"Port to use for web socket connections."`
 }
 
 var Verbose bool
@@ -44,11 +44,12 @@ var cmdRunClient CmdRunClient
 
 func (x *CmdRunClient) Execute(args []string) error {
 	return RunConfigurationClient(ClientOptions{
-		Server:          opts.Server,
-		Port:            opts.Port,
-		Id:              opts.Id,
-		ConfigFile:      opts.ConfigFile,
-		RedisMasterFile: opts.RedisMasterFile,
+		Server:            opts.Server,
+		Port:              opts.Port,
+		Id:                opts.Id,
+		ConfigFile:        opts.ConfigFile,
+		RedisMasterFile:   opts.RedisMasterFile,
+		HeartbeatInterval: opts.ClientHeartbeatInterval,
 	})
 }
 
@@ -61,12 +62,13 @@ func (x *CmdRunServer) Execute(args []string) error {
 	return RunConfigurationServer(ServerOptions{
 		Port:                     opts.Port,
 		ClientIds:                opts.ClientIds,
+		ClientTimeout:            opts.ClientTimeout,
+		ClientHeartbeat:          opts.ClientHeartbeatInterval,
 		ConfigFile:               opts.ConfigFile,
 		RedisServers:             opts.RedisServers,
 		RedisMasterFile:          opts.RedisMasterFile,
 		RedisMasterRetries:       opts.RedisMasterRetries,
 		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
-		ClientTimeout:            opts.ClientTimeout,
 	})
 }
 
@@ -164,14 +166,18 @@ type Config struct {
 }
 
 func readConfigFile() {
+	if opts.ConfigFile == "" {
+		return
+	}
 	var c Config
 	yamlFile, err := ioutil.ReadFile(opts.ConfigFile)
 	if err != nil {
-		logError("yamlFile.Get err #%v ", err)
+		logInfo("Could not read yaml file: %v", err)
+		return
 	}
 	err = yaml.Unmarshal(yamlFile, &c)
 	if err != nil {
-		logError("Unmarshal: %v", err)
+		logError("Could not parse config file: %v", err)
 		os.Exit(1)
 	}
 	if opts.RedisServers == "" {
@@ -181,7 +187,7 @@ func readConfigFile() {
 		opts.ClientIds = c.ClientIds
 	}
 	if opts.ClientTimeout == 0 {
-		opts.ClientTimeout = time.Duration(c.ClientTimeout) * time.Second
+		opts.ClientTimeout = c.ClientTimeout
 	}
 	if opts.RedisMasterRetryInterval == 0 {
 		opts.RedisMasterRetryInterval = c.RedisMasterRetryInterval
@@ -214,8 +220,8 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	readConfigFile()
 	Verbose = opts.Verbose
+	readConfigFile()
 	redirectStdoutAndStderr(opts.LogFile)
 	installSignalHandler()
 	writePidFile(opts.PidFile)

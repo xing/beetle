@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"text/template"
 	"time"
@@ -19,14 +20,15 @@ import (
 )
 
 type ServerOptions struct {
-	ClientIds                string
-	ConfigFile               string
-	RedisMasterFile          string
-	RedisServers             string
-	RedisMasterRetryInterval int
-	RedisMasterRetries       int
 	Port                     int
-	ClientTimeout            time.Duration
+	ClientIds                string
+	ClientTimeout            int
+	ClientHeartbeat          int
+	ConfigFile               string
+	RedisServers             string
+	RedisMasterFile          string
+	RedisMasterRetries       int
+	RedisMasterRetryInterval int
 }
 
 type StringChannel chan string
@@ -55,6 +57,7 @@ type ServerState struct {
 	retries                      int
 	watching                     bool
 	watchTick                    int
+	waitGroup                    sync.WaitGroup
 }
 
 type ServerStatus struct {
@@ -96,7 +99,7 @@ func (a PSTA) Len() int {
 }
 
 func (a PSTA) Less(i, j int) bool {
-	return a[i].t < a[j].t
+	return a[i].t < a[j].t || (a[i].t == a[j].t && a[i].c < a[j].c)
 }
 
 func (a PSTA) Swap(i, j int) {
@@ -106,14 +109,18 @@ func (a PSTA) Swap(i, j int) {
 func (s *ServerState) UnresponsiveClients() []string {
 	res := make([]string, 0)
 	now := time.Now()
-	threshold := now.Add(-s.opts.ClientTimeout)
+	threshold := now.Add(-(time.Duration(s.opts.ClientTimeout) * time.Second))
 	a := make(PSTA, 0)
+	logInfo("current time: %v", now)
+	logInfo("threshold   : %v", threshold)
+	logInfo("timeout     : %ds", s.opts.ClientTimeout)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
+			logInfo("old client %s: %v", c, t)
 			a = append(a, PST{c: c, t: int(now.Sub(t).Seconds())})
 		}
 	}
-	sort.Sort(a)
+	sort.Sort(sort.Reverse(a))
 	for _, x := range a {
 		res = append(res, fmt.Sprintf("%s:%d", x.c, x.t))
 	}
@@ -141,6 +148,7 @@ func (l *StringSet) Keys() []string {
 	for k := range *l {
 		keys = append(keys, k)
 	}
+	sort.Sort(sort.StringSlice(keys))
 	return keys
 }
 
@@ -287,6 +295,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	case CLIENT_STARTED:
 		logInfo("Adding client %s", msg.body.Id)
 		s.AddClient(msg.body.Id, msg.channel)
+		s.ClientSeen(msg.body.Id)
 	case UNSUBSCRIBE:
 		logInfo("Removing client %s", msg.body.Id)
 		s.RemoveClient(msg.body.Id)
@@ -309,36 +318,40 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	}
 }
 
-func RunConfigurationServer(o ServerOptions) error {
-	fmt.Printf("server: %+v\n", o)
-
+func NewServerState(o ServerOptions) *ServerState {
 	// initialize state
-	state := &ServerState{client_channels: make(ChannelMap), notification_channels: make(ChannelSet)}
-	state.opts = o
-	state.redis = NewRedisServerInfo(opts.RedisServers)
-	state.upgrader = websocket.Upgrader{
+	s := &ServerState{client_channels: make(ChannelMap), notification_channels: make(ChannelSet)}
+	s.opts = o
+	s.redis = NewRedisServerInfo(opts.RedisServers)
+	s.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
-	state.ws_channel = make(chan *WsMsg, 10000)
-	state.clientIds = make(StringSet)
+	s.ws_channel = make(chan *WsMsg, 10000)
+	s.clientIds = make(StringSet)
 	for _, id := range strings.Split(opts.ClientIds, ",") {
-		state.clientIds.Add(id)
+		s.clientIds.Add(id)
 	}
-	state.unknownClientIds = make(StringList, 0)
-	state.clientsLastSeen = make(TimeSet)
-	state.currentTokenInt = int(time.Now().UnixNano() / 1000)
-	state.currentToken = strconv.Itoa(state.currentTokenInt)
-	state.clientPongIdsReceived = make(StringSet)
-	state.clientInvalidatedIdsReceived = make(StringSet)
+	s.unknownClientIds = make(StringList, 0)
+	s.clientsLastSeen = make(TimeSet)
+	s.currentTokenInt = int(time.Now().UnixNano() / 1000000)
+	s.currentToken = strconv.Itoa(s.currentTokenInt)
+	s.clientPongIdsReceived = make(StringSet)
+	s.clientInvalidatedIdsReceived = make(StringSet)
+	return s
+}
 
+func RunConfigurationServer(o ServerOptions) error {
+	fmt.Printf("server: %+v\n", o)
+	state := NewServerState(o)
 	state.Start()
-
 	// start threads
 	go state.dispatcher()
 	go state.statsReporter()
 	state.clientHandler(o.Port)
+	// wait for web socket writers to finish
+	state.waitGroup.Wait()
 	return nil
 }
 
@@ -385,8 +398,8 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 }
 
 func (s *ServerState) notificationWriter(ws *websocket.Conn, input_from_dispatcher chan string) {
-	// ws.WriteMessage(websocket.TextMessage, []byte("Hello!"))
-	// defer ws.WriteMessage(websocket.TextMessage, []byte("Goodbye!"))
+	s.waitGroup.Add(1)
+	defer s.waitGroup.Done()
 	for !interrupted {
 		select {
 		case data, ok := <-input_from_dispatcher:
@@ -551,6 +564,9 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 }
 
 func (s *ServerState) wsWriter(clientId string, ws *websocket.Conn, input_from_dispatcher chan string) {
+	s.waitGroup.Add(1)
+	defer s.waitGroup.Done()
+	defer ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
 	for !interrupted {
 		select {
 		case data, ok := <-input_from_dispatcher:
@@ -586,7 +602,7 @@ func (s *ServerState) Pong(msg MsgContent) {
 		return
 	}
 	s.clientPongIdsReceived.Add(msg.Id)
-	if s.AllClientPongIdsRceived() {
+	if s.AllClientPongIdsReceived() {
 		logInfo("All client pong ids received!")
 		if s.availabilityTimer != nil {
 			s.availabilityTimer.Stop()
@@ -790,7 +806,7 @@ func (s *ServerState) CancelInvalidation() {
 	s.StartWatcher()
 }
 
-func (s *ServerState) AllClientPongIdsRceived() bool {
+func (s *ServerState) AllClientPongIdsReceived() bool {
 	return s.clientIds.Equals(s.clientPongIdsReceived)
 }
 

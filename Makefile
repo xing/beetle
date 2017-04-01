@@ -51,6 +51,10 @@ beetle: $(GO_SRC)/beetle.go $(GO_MODULES) .godeps
 test:
 	cd go/src/$(GO_PKG) && $(GO_ENV) go test
 
+test-server:
+	cd go/src/$(GO_PKG) && $(GO_ENV) go test -run TestServer
+
+
 feature:
 	cucumber features/redis_auto_failover.feature:9
 

@@ -11,21 +11,21 @@ import (
 )
 
 type ClientOptions struct {
-	Server          string
-	Port            int
-	Id              string
-	ConfigFile      string
-	RedisMasterFile string
+	Server            string
+	Port              int
+	Id                string
+	ConfigFile        string
+	RedisMasterFile   string
+	HeartbeatInterval int
 }
 
 type ClientState struct {
-	opts              ClientOptions
-	url               string
-	ws                *websocket.Conn
-	input             chan MsgContent
-	heartBeatInterval int
-	currentMaster     *RedisShim
-	currentToken      string
+	opts          ClientOptions
+	url           string
+	ws            *websocket.Conn
+	input         chan MsgContent
+	currentMaster *RedisShim
+	currentToken  string
 }
 
 func (s *ClientState) Connect() (err error) {
@@ -138,6 +138,7 @@ func (s *ClientState) Reader() {
 		msgType, bytes, err := s.ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
+			logError("stopped reading from server socket: %v", err)
 			break
 		}
 		var body MsgContent
@@ -148,7 +149,6 @@ func (s *ClientState) Reader() {
 		}
 		s.input <- body
 	}
-	done <- struct{}{}
 }
 
 func (s *ClientState) Writer() (err error) {
@@ -161,7 +161,7 @@ func (s *ClientState) Writer() (err error) {
 		case msg := <-s.input:
 			err = s.Dispatch(msg)
 		case <-ticker.C:
-			i = (i + 1) % s.heartBeatInterval
+			i = (i + 1) % s.opts.HeartbeatInterval
 			if i == 0 {
 				err = s.SendHeartBeat()
 			}
@@ -170,6 +170,7 @@ func (s *ClientState) Writer() (err error) {
 			return err
 		}
 	}
+	done <- struct{}{}
 	return nil
 }
 
@@ -207,8 +208,8 @@ func (s *ClientState) Run() error {
 
 	done = make(chan struct{})
 
-	go s.Reader()
-	s.Writer()
+	go s.Writer()
+	s.Reader()
 
 	select {
 	case <-done:
@@ -224,7 +225,7 @@ func RunConfigurationClient(o ClientOptions) error {
 	for !interrupted {
 		addr := fmt.Sprintf("%s:%d", o.Server, o.Port)
 		u := url.URL{Scheme: "ws", Host: addr, Path: "/configuration"}
-		state := &ClientState{opts: o, url: u.String(), heartBeatInterval: 10}
+		state := &ClientState{opts: o, url: u.String()}
 		state.input = make(chan MsgContent, 1000)
 		err := state.Run()
 		if err != nil {
