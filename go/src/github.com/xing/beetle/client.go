@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"gopkg.in/gorilla/websocket.v1"
 )
 
 type ClientOptions struct {

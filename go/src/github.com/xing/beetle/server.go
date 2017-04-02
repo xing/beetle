@@ -15,7 +15,7 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/gorilla/websocket"
+	"gopkg.in/gorilla/websocket.v1"
 	"gopkg.in/tylerb/graceful.v1"
 )
 

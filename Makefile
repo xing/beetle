@@ -6,11 +6,11 @@ makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
 BIN_DIR = $(makefile_dir)/bin
 GO_PATH = $(makefile_dir)/go
 GO_DEPS = \
-	github.com/gorilla/websocket \
-	github.com/jessevdk/go-flags \
 	github.com/davecgh/go-spew/spew \
-	gopkg.in/tylerb/graceful.v1 \
+	github.com/jessevdk/go-flags \
+	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
+	gopkg.in/tylerb/graceful.v1 \
 	gopkg.in/yaml.v2
 
 .godeps:
