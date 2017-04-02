@@ -124,9 +124,9 @@ func (s *ClientState) Invalidate(msg MsgContent) error {
 }
 
 func (s *ClientState) Reconfigure(msg MsgContent) error {
-	logInfo("Received reconfigure message with token %s", msg.Token)
+	logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
 	if !s.RedeemToken(msg.Token) {
-		logInfo("Received invalid or outdated token: %s", msg.Token)
+		logInfo("Received invalid or outdated token: '%s'", msg.Token)
 	}
 	if msg.Server != ReadRedisMasterFile(s.opts.RedisMasterFile) {
 		s.NewMaster(msg.Server)

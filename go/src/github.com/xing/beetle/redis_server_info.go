@@ -58,11 +58,11 @@ func (si *RedisServerInfo) Reset() {
 }
 
 func (si *RedisServerInfo) Refresh() {
-	logInfo("refreshing server info")
+	logDebug("refreshing server info")
 	si.Reset()
 	for _, ri := range si.instances {
 		role := ri.Role()
-		logInfo("determined %s to be a '%s'", ri.server, role)
+		logDebug("determined %s to be a '%s'", ri.server, role)
 		si.serverInfo[role] = append(si.serverInfo[role], ri)
 	}
 	// spew.Dump(si)

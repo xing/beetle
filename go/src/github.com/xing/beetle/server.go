@@ -212,7 +212,7 @@ func (s *ServerState) SendToWebSockets(msg *MsgContent) (err error) {
 		logError("Could not marshal message")
 		return
 	}
-	logInfo("Sending message to all clients: %s", string(data))
+	logDebug("Sending message to %d clients: %s", len(s.client_channels), string(data))
 	for _, c := range s.client_channels {
 		select {
 		case c <- string(data):
@@ -689,7 +689,7 @@ func (s *ServerState) MasterAvailable() {
 }
 
 func (s *ServerState) MasterIsAvailable() bool {
-	logInfo("Checking master availability. currentMaster: '%s', server info: %+v", s.currentMaster.server, s.redis.Masters())
+	logDebug("Checking master availability. currentMaster: '%+v'", s.currentMaster)
 	return s.redis.Masters().Include(s.currentMaster)
 }
 
@@ -851,7 +851,7 @@ func (s *ServerState) SwitchMaster() {
 }
 
 func (s *ServerState) PublishMaster(server string) {
-	logInfo("Sending reconfigure message with server '%s', token: '%s'", server, s.currentToken)
+	logInfo("Sending reconfigure message with server '%s' and token: '%s'", server, s.currentToken)
 	msg := &MsgContent{Name: RECONFIGURE, Server: server, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 }
