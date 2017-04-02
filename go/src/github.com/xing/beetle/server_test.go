@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-var serverTestOptions = ServerOptions{ClientTimeout: 50 * time.Millisecond}
+var serverTestOptions = ServerOptions{ClientTimeout: 1}
 
 func TestServerManagingUnresponsiveClients(t *testing.T) {
 	s := NewServerState(serverTestOptions)
@@ -15,8 +15,8 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 	}
 	now := time.Now()
 	recent := now.Add(-1 * time.Millisecond)
-	old := now.Add(-1 * time.Second)
-	older := now.Add(-2 * time.Second)
+	old := now.Add(-2 * time.Second)
+	older := now.Add(-3 * time.Second)
 	// add a fresh client
 	s.clientsLastSeen["a"] = recent
 	u = s.UnresponsiveClients()
@@ -26,14 +26,14 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 	// add an old client
 	s.clientsLastSeen["b"] = old
 	u = s.UnresponsiveClients()
-	if len(u) != 1 || u[0] != "b:1" {
-		t.Errorf("after adding an old client, UnresponsiveClients() should be '[b:1]', but is: '%v'", u)
+	if len(u) != 1 || u[0] != "b:2" {
+		t.Errorf("after adding an old client, UnresponsiveClients() should be '[b:2]', but is: '%v'", u)
 	}
 	// add an older client
 	s.clientsLastSeen["c"] = older
 	u = s.UnresponsiveClients()
-	if len(u) != 2 || u[0] != "c:2" || u[1] != "b:1" {
-		t.Errorf("after adding an old client, UnresponsiveClients() should be '[c:2 b:1]', but is: '%v'", u)
+	if len(u) != 2 || u[0] != "c:3" || u[1] != "b:2" {
+		t.Errorf("after adding an old client, UnresponsiveClients() should be '[c:3 b:2]', but is: '%v'", u)
 	}
 
 }
