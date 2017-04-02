@@ -219,7 +219,7 @@ func (s *ClientState) Run() error {
 	case <-s.writerDone:
 		logInfo("writer finished cleanly")
 	case <-time.After(2 * time.Second):
-		logWarn("clean writer shutdown timed out after 2 seconds")
+		logWarn("writer shutdown timed out after 2 seconds")
 	}
 	return nil
 }

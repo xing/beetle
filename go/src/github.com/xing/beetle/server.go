@@ -338,6 +338,20 @@ func NewServerState(o ServerOptions) *ServerState {
 	return s
 }
 
+func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return false
+	case <-time.After(timeout):
+		return true
+	}
+}
+
 func RunConfigurationServer(o ServerOptions) error {
 	fmt.Printf("server: %+v\n", o)
 	state := NewServerState(o)
@@ -348,8 +362,13 @@ func RunConfigurationServer(o ServerOptions) error {
 		go state.statsReporter()
 	}
 	state.clientHandler(o.Port)
-	// wait for web socket writers to finish
-	state.waitGroup.Wait()
+	logInfo("shutting down")
+	// wait for web socket readers and writers to finish
+	if waitForWaitGrouptWithTimeout(&state.waitGroup, 3*time.Second) {
+		logInfo("websocket readers and writers shut down timed out")
+	} else {
+		logInfo("websocket readers and writers finished cleanly")
+	}
 	return nil
 }
 
