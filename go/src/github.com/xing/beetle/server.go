@@ -718,7 +718,7 @@ func (s *ServerState) AddUnknownClientId(id string) {
 		s.unknownClientIds = s.unknownClientIds[1:len(s.unknownClientIds)]
 		delete(s.clientsLastSeen, old_id)
 	}
-	s.unknownClientIds = append(s.unknownClientIds, id)
+	s.unknownClientIds.Add(id)
 }
 
 func (s *ServerState) ClientSeen(id string) {
