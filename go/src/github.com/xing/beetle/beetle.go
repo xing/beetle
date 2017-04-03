@@ -46,7 +46,6 @@ func (x *CmdRunClient) Execute(args []string) error {
 		Server:            opts.Server,
 		Port:              opts.Port,
 		Id:                opts.Id,
-		ConfigFile:        opts.ConfigFile,
 		RedisMasterFile:   opts.RedisMasterFile,
 		HeartbeatInterval: opts.ClientHeartbeatInterval,
 	})
@@ -63,7 +62,6 @@ func (x *CmdRunServer) Execute(args []string) error {
 		ClientIds:                opts.ClientIds,
 		ClientTimeout:            opts.ClientTimeout,
 		ClientHeartbeat:          opts.ClientHeartbeatInterval,
-		ConfigFile:               opts.ConfigFile,
 		RedisServers:             opts.RedisServers,
 		RedisMasterFile:          opts.RedisMasterFile,
 		RedisMasterRetries:       opts.RedisMasterRetries,

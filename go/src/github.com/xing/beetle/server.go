@@ -24,7 +24,6 @@ type ServerOptions struct {
 	ClientIds                string
 	ClientTimeout            int
 	ClientHeartbeat          int
-	ConfigFile               string
 	RedisServers             string
 	RedisMasterFile          string
 	RedisMasterRetries       int

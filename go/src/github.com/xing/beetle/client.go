@@ -14,7 +14,6 @@ type ClientOptions struct {
 	Server            string
 	Port              int
 	Id                string
-	ConfigFile        string
 	RedisMasterFile   string
 	HeartbeatInterval int
 }
