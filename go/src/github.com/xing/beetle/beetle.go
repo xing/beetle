@@ -34,6 +34,8 @@ var opts struct {
 	Server                   string `long:"server" description:"Specifies config server address."`
 	Port                     int    `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
 	ConsulUrl                string `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
+	GcThreshold              int    `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
+	GcDatabases              string `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
 }
 
 func setDefaults() {
@@ -55,6 +57,12 @@ func setDefaults() {
 	}
 	if opts.Port == 0 {
 		opts.Port = 9650
+	}
+	if opts.GcThreshold == 0 {
+		opts.GcThreshold = 3600 // 1 hour
+	}
+	if opts.GcDatabases == "" {
+		opts.GcDatabases = "4"
 	}
 	if opts.RedisMasterFile == "" {
 		opts.RedisMasterFile = "/etc/beetle/redis-master"
@@ -102,7 +110,7 @@ func (x *CmdRunServer) Execute(args []string) error {
 	})
 }
 
-// run server
+// print config
 type CmdPrintConfig struct{}
 
 var cmdPrintConfig CmdPrintConfig
@@ -110,6 +118,19 @@ var cmdPrintConfig CmdPrintConfig
 func (x *CmdPrintConfig) Execute(args []string) error {
 	fmt.Printf("%+v\n", opts)
 	return nil
+}
+
+// garbage collect keys
+type CmdRunGCKeys struct{}
+
+var cmdRunGCKeys CmdRunGCKeys
+
+func (x *CmdRunGCKeys) Execute(args []string) error {
+	return RunGarbageCollectKeys(GCOptions{
+		RedisMasterFile: opts.RedisMasterFile,
+		GcThreshold:     opts.GcThreshold,
+		GcDatabases:     opts.GcDatabases,
+	})
 }
 
 func init() {
@@ -204,6 +225,8 @@ type Config struct {
 	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
 	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
 	RedisMasterFile          string `yaml:"redis_server"`
+	GcThreshold              int    `yaml:"redis_gc_threshold"`
+	GcDatabases              string `yaml:"redis_gc_databases"`
 }
 
 func mergeConfig(c Config) {
@@ -233,6 +256,12 @@ func mergeConfig(c Config) {
 	}
 	if opts.RedisMasterFile == "" {
 		opts.RedisMasterFile = c.RedisMasterFile
+	}
+	if opts.GcThreshold == 0 {
+		opts.GcThreshold = c.GcThreshold
+	}
+	if opts.GcDatabases == "" {
+		opts.GcDatabases = c.GcDatabases
 	}
 }
 
@@ -290,6 +319,11 @@ func readConsulData() {
 			c.ClientTimeout = d
 		}
 	}
+	if v, ok := env["REDIS_GC_THRESHOLD"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.GcThreshold = d
+		}
+	}
 	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRIES"]; ok {
 		if d, err := strconv.Atoi(v); err == nil {
 			c.RedisMasterRetries = d
@@ -316,6 +350,7 @@ func main() {
 	parser.AddCommand("configuration_client", "run redis configuration client", "", &cmdRunClient)
 	parser.AddCommand("configuration_server", "run redis configuration server", "", &cmdRunServer)
 	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
+	parser.AddCommand("garbage_collect_keys", "garbage collect keys on redis server", "", &cmdRunGCKeys)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()
