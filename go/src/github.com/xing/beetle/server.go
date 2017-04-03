@@ -158,25 +158,6 @@ func (l *StringSet) Add(s string) {
 	}
 }
 
-type StringList []string
-
-func (l StringList) Include(s string) bool {
-	for _, x := range l {
-		if x == s {
-			return true
-		}
-	}
-	return false
-}
-
-func (l StringList) Add(s string) StringList {
-	if l.Include(s) {
-		return l
-	} else {
-		return append(l, s)
-	}
-}
-
 func (l StringSet) Equals(s StringSet) bool {
 	if len(l) != len(s) {
 		return false
@@ -187,6 +168,24 @@ func (l StringSet) Equals(s StringSet) bool {
 		}
 	}
 	return true
+}
+
+type StringList []string
+
+func (l *StringList) Include(s string) bool {
+	for _, x := range *l {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *StringList) Add(s string) {
+	if (*l).Include(s) {
+		return
+	}
+	*l = append(*l, s)
 }
 
 func (s *ServerState) AddClient(name string, channel StringChannel) {
