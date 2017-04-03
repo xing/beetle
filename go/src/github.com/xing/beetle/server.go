@@ -205,6 +205,10 @@ func (s *ServerState) RemoveNotification(channel StringChannel) {
 	delete(s.notification_channels, channel)
 }
 
+func (s *ServerState) ClientTimeout() time.Duration {
+	return time.Duration(s.opts.ClientTimeout) * time.Second
+}
+
 func (s *ServerState) SendToWebSockets(msg *MsgContent) (err error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -794,14 +798,12 @@ func (s *ServerState) StartInvalidation() {
 	s.CheckAllClientsAvailabe()
 }
 
-const REDIS_CONFIGURATION_CLIENT_TIMEOUT = 60
-
 func (s *ServerState) CheckAllClientsAvailabe() {
 	s.GenerateNewToken()
 	logInfo("Sending ping messages with token '%s'", s.currentToken)
 	msg := &MsgContent{Name: PING, Token: s.currentToken}
 	s.SendToWebSockets(msg)
-	s.availabilityTimer = time.AfterFunc(REDIS_CONFIGURATION_CLIENT_TIMEOUT, func() {
+	s.availabilityTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.availabilityTimer = nil
 		s.timer_channel <- CANCEL_INVALIDATION
 	})
@@ -812,7 +814,7 @@ func (s *ServerState) InvalidateCurrentMaster() {
 	logInfo("Sending invalidate messages with token '%s'", s.currentToken)
 	msg := &MsgContent{Name: INVALIDATE, Token: s.currentToken}
 	s.SendToWebSockets(msg)
-	s.invalidateTimer = time.AfterFunc(REDIS_CONFIGURATION_CLIENT_TIMEOUT, func() {
+	s.invalidateTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.invalidateTimer = nil
 		s.timer_channel <- CANCEL_INVALIDATION
 	})
