@@ -423,7 +423,8 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, input_from_dispatch
 		select {
 		case data, ok := <-input_from_dispatcher:
 			if !ok {
-				logInfo("Could not receive text message from dispatcher")
+				logInfo("Terminating notification websocket writer")
+				return
 			}
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
 		case <-time.After(100 * time.Millisecond):
