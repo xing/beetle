@@ -52,6 +52,12 @@ func setDefaults() {
 	if opts.Port == 0 {
 		opts.Port = 9650
 	}
+	if opts.RedisMasterFile == "" {
+		opts.RedisMasterFile = "/etc/beetle/redis-master"
+	}
+	if opts.ConfigFile == "" {
+		opts.ConfigFile = "/etc/beetle/beetle.yml"
+	}
 }
 
 var Verbose bool
@@ -95,8 +101,6 @@ func (x *CmdRunServer) Execute(args []string) error {
 func init() {
 	ReportVersionIfRequestedAndExit()
 	opts.Id = getFQDN()
-	opts.RedisMasterFile = "/etc/beetle/redis-master"
-	opts.ConfigFile = "/etc/beetle/beetle.yml"
 }
 
 func getFQDN() string {
