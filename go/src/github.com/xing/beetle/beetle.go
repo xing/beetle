@@ -183,6 +183,7 @@ type Config struct {
 	ClientIds                string `yaml:"redis_configuration_client_ids"`
 	ClientHeartbeat          int    `yaml:"redis_configuration_client_heartbeat"`
 	ClientTimeout            int    `yaml:"redis_configuration_client_timeout"`
+	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
 	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
 	RedisMasterFile          string `yaml:"redis_server"`
 	LogFile                  string `yaml:"log_file"`
@@ -220,6 +221,9 @@ func readConfigFile() {
 	}
 	if opts.ClientHeartbeatInterval == 0 {
 		opts.ClientHeartbeatInterval = c.ClientHeartbeat
+	}
+	if opts.RedisMasterRetries == 0 {
+		opts.RedisMasterRetries = c.RedisMasterRetries
 	}
 	if opts.RedisMasterRetryInterval == 0 {
 		opts.RedisMasterRetryInterval = c.RedisMasterRetryInterval
