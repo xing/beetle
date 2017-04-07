@@ -100,6 +100,16 @@ func (x *CmdRunServer) Execute(args []string) error {
 	})
 }
 
+// run server
+type CmdPrintConfig struct{}
+
+var cmdPrintConfig CmdPrintConfig
+
+func (x *CmdPrintConfig) Execute(args []string) error {
+	fmt.Printf("%+v\n", opts)
+	return nil
+}
+
 func init() {
 	ReportVersionIfRequestedAndExit()
 	opts.Id = getFQDN()
@@ -310,6 +320,7 @@ func main() {
 	parser := flags.NewParser(&opts, flags.Default)
 	parser.AddCommand("configuration_client", "run redis configuration client", "", &cmdRunClient)
 	parser.AddCommand("configuration_server", "run redis configuration server", "", &cmdRunServer)
+	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()
@@ -324,7 +335,9 @@ func main() {
 	readConfigFile()
 	readConsulData()
 	setDefaults()
-	redirectStdoutAndStderr(opts.LogFile)
+	if cmd != &cmdPrintConfig {
+		redirectStdoutAndStderr(opts.LogFile)
+	}
 	installSignalHandler()
 	writePidFile(opts.PidFile)
 	err = cmd.Execute(cmdArgs)
