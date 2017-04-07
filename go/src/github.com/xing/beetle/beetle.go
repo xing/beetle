@@ -202,7 +202,6 @@ type Config struct {
 	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
 	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
 	RedisMasterFile          string `yaml:"redis_server"`
-	LogFile                  string `yaml:"log_file"`
 }
 
 func mergeConfig(c Config) {
@@ -232,9 +231,6 @@ func mergeConfig(c Config) {
 	}
 	if opts.RedisMasterFile == "" {
 		opts.RedisMasterFile = c.RedisMasterFile
-	}
-	if opts.LogFile == "" {
-		opts.LogFile = c.LogFile
 	}
 }
 
@@ -304,9 +300,6 @@ func readConsulData() {
 	}
 	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
 		c.RedisMasterFile = v
-	}
-	if v, ok := env["REDIS_CONFIGURATION_LOG_FILE"]; ok {
-		c.LogFile = v
 	}
 	mergeConfig(c)
 }
