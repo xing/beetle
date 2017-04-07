@@ -1,4 +1,4 @@
-.PHONY: all clean install uninstall test feature stats world release linux darwin
+.PHONY: all clean install uninstall test feature stats world release linux darwin container tag push
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
@@ -63,12 +63,12 @@ stats:
 	cloc --exclude-dir=coverage lib test features go/src/github.com/xing
 
 world:
-	test `uname -s` = Darwin && $(MAKE) linux darwin || $(MAKE) darwin linux
+	test `uname -s` = Darwin && $(MAKE) linux container tag push darwin || $(MAKE) darwin linux container tag push
 
 BEETLE_VERSION := v$(shell awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $$4}'  $(GO_SRC)/version.go)
 
 release:
-	@test "$(shell git status --porcelain)" = "" || (echo "project is dirty, please check in modified files and remove untracked ones" && false)
+	@test "$(shell git status --porcelain)" = "" || test "$(FORCE)" == "1" || (echo "project is dirty, please check in modified files and remove untracked ones (or use FORCE=1)" && false)
 	@git fetch --tags xing
 	@test "`git tag -l | grep $(BEETLE_VERSION)`" != "\n" || (echo "version $(BEETLE_VERSION) already exists. please edit version/version.go" && false)
 	@$(MAKE) world
@@ -88,3 +88,12 @@ darwin:
 	cp -p $(GO_INSTALL_TARGETS) $(SCRIPTS) release/
 	cd release && $(TAR) czf darwin.tar.gz beetle*
 	rm -f release/beetle*
+
+container:
+	docker build -f Dockerfile -t=architects/gobeetle .
+
+tag:
+	docker tag architects/gobeetle docker.dc.xing.com/architects/gobeetle:preview
+
+push:
+	docker push docker.dc.xing.com/architects/gobeetle:preview
