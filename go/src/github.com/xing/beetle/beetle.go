@@ -13,6 +13,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/yaml.v2"
+	"source.xing.com/olympus/golympus/consul"
 )
 
 var opts struct {
@@ -30,6 +31,7 @@ var opts struct {
 	LogFile                  string `long:"log-file" description:"Redirect stdout and stderr to the given path."`
 	Server                   string `long:"server" description:"Specifies config server address."`
 	Port                     int    `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
+	ConsulUrl                string `long:"consul-url" description:"Specifies consul server url to use for retrieving config values."`
 }
 
 func setDefaults() {
@@ -193,21 +195,7 @@ type Config struct {
 	LogFile                  string `yaml:"log_file"`
 }
 
-func readConfigFile() {
-	if opts.ConfigFile == "" {
-		return
-	}
-	var c Config
-	yamlFile, err := ioutil.ReadFile(opts.ConfigFile)
-	if err != nil {
-		logInfo("Could not read yaml file: %v", err)
-		return
-	}
-	err = yaml.Unmarshal(yamlFile, &c)
-	if err != nil {
-		logError("Could not parse config file: %v", err)
-		os.Exit(1)
-	}
+func mergeConfig(c Config) {
 	if opts.Server == "" {
 		opts.Server = c.Server
 	}
@@ -240,6 +228,79 @@ func readConfigFile() {
 	}
 }
 
+func readConfigFile() {
+	if opts.ConfigFile == "" {
+		return
+	}
+	var c Config
+	yamlFile, err := ioutil.ReadFile(opts.ConfigFile)
+	if err != nil {
+		logInfo("Could not read yaml file: %v", err)
+		return
+	}
+	err = yaml.Unmarshal(yamlFile, &c)
+	if err != nil {
+		logError("Could not parse config file: %v", err)
+		os.Exit(1)
+	}
+	mergeConfig(c)
+}
+
+func readConsulData() {
+	if opts.ConsulUrl == "" {
+		return
+	}
+	logInfo("retrieving config from consul: %s", opts.ConsulUrl)
+	client := consul.NewClient(opts.ConsulUrl, "beetle")
+	env, err := client.GetEnv()
+	if err != nil {
+		logInfo("could not retrieve config from consul: %v", err)
+		return
+	}
+	var c Config
+	if v, ok := env["REDIS_CONFIGURATION_SERVER"]; ok {
+		c.Server = v
+	}
+	if v, ok := env["REDIS_CONFIGURATION_SERVER_PORT"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.Port = d
+		}
+	}
+	if v, ok := env["REDIS_SERVERS"]; ok {
+		c.RedisServers = v
+	}
+	if v, ok := env["REDIS_CONFIGURATION_CLIENT_IDS"]; ok {
+		c.ClientIds = v
+	}
+	if v, ok := env["REDIS_CONFIGURATION_CLIENT_HEARTBEAT"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.ClientHeartbeat = d
+		}
+	}
+	if v, ok := env["REDIS_CONFIGURATION_CLIENT_TIMEOUT"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.ClientTimeout = d
+		}
+	}
+	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRIES"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.RedisMasterRetries = d
+		}
+	}
+	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRY_INTERVAL"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.RedisMasterRetryInterval = d
+		}
+	}
+	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
+		c.RedisMasterFile = v
+	}
+	if v, ok := env["REDIS_CONFIGURATION_LOG_FILE"]; ok {
+		c.LogFile = v
+	}
+	mergeConfig(c)
+}
+
 func main() {
 	cmdHandler := func(command flags.Commander, args []string) error {
 		cmd = command
@@ -261,6 +322,7 @@ func main() {
 	}
 	Verbose = opts.Verbose
 	readConfigFile()
+	readConsulData()
 	setDefaults()
 	redirectStdoutAndStderr(opts.LogFile)
 	installSignalHandler()

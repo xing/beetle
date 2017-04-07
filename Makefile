@@ -11,7 +11,8 @@ GO_DEPS = \
 	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
 	gopkg.in/tylerb/graceful.v1 \
-	gopkg.in/yaml.v2
+	gopkg.in/yaml.v2 \
+	source.xing.com/olympus/golympus/consul
 
 .godeps:
 	$(GO_ENV) go get $(GO_DEPS)
