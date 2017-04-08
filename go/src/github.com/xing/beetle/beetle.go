@@ -31,7 +31,7 @@ var opts struct {
 	LogFile                  string `long:"log-file" description:"Redirect stdout and stderr to the given path."`
 	Server                   string `long:"server" description:"Specifies config server address."`
 	Port                     int    `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
-	ConsulUrl                string `long:"consul-url" description:"Specifies consul server url to use for retrieving config values."`
+	ConsulUrl                string `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
 }
 
 func setDefaults() {
