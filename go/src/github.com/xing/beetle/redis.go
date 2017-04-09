@@ -16,6 +16,9 @@ func MasterFileExists(path string) bool {
 
 func RedisMasterFromMasterFile(path string) *RedisShim {
 	s := ReadRedisMasterFile(path)
+	if s == "" {
+		return nil
+	}
 	return NewRedisShim(s)
 }
 
