@@ -25,8 +25,7 @@ module TestDaemons
       clients_parameter_string = @@redis_configuration_clients.blank? ? "" : "--client-ids #{@@redis_configuration_clients}"
       DaemonController.new(
          :identifier    => "Redis configuration test server",
-         :start_command => "./beetle configuration_server -v --redis-master-file #{redis_master_file} --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-master-retry-interval 1 --pid-file #{pid_file} --log-file #{log_file}",
-         :daemonize_for_me => true,
+         :start_command => "./beetle configuration_server -v -d --redis-master-file #{redis_master_file} --redis-servers #{@@redis_servers} #{clients_parameter_string} --redis-master-retry-interval 1 --pid-file #{pid_file} --log-file #{log_file}",
          :ping_command  => lambda{ answers_text_requests? },
          :pid_file      => pid_file,
          :log_file      => log_file,
