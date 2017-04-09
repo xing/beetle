@@ -25,7 +25,7 @@ GO_PKG = github.com/xing/beetle
 GO_SRC = go/src/$(GO_PKG)
 GO_INSTALL_TARGETS = beetle
 GO_TARGETS = $(GO_INSTALL_TARGETS) $(GO_NOINSTALL_TARGETS)
-SCRIPTS = beetled
+SCRIPTS =
 
 INSTALL_PROGRAM = ginstall
 PLATFORM := $(shell uname -s)
