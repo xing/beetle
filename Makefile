@@ -15,6 +15,8 @@ GO_DEPS = \
 	source.xing.com/olympus/golympus/consul
 
 .godeps:
+	git submodule init
+	git submodule update
 	$(GO_ENV) go get $(GO_DEPS)
 	touch .godeps
 

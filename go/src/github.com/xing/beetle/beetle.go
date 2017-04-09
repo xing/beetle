@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	// "github.com/davecgh/go-spew/spew"
+	"bitbucket.org/madmo/daemonize"
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/yaml.v2"
 	"source.xing.com/olympus/golympus/consul"
@@ -18,6 +19,7 @@ import (
 
 var opts struct {
 	Verbose                  bool   `short:"v" long:"verbose" description:"Be verbose."`
+	Daemonize                bool   `short:"d" long:"--daemonize" description:"Run as a daemon. Use with --log-file."`
 	Id                       string `long:"id" env:"HOST" description:"Set unique client id."`
 	ClientIds                string `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
 	ClientTimeout            int    `long:"client-timeout" description:"Number of seconds to wait until considering a client dead (or unreachable). Defaults to 10."`
@@ -324,13 +326,25 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	if cmd != &cmdPrintConfig {
+		redirectStdoutAndStderr(opts.LogFile)
+		if opts.Daemonize {
+			nochdir, noclose := true, false
+			child, err := daemonize.Daemonize(nochdir, noclose)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if child != nil {
+				os.Exit(0)
+			}
+			logInfo("daemon started")
+		}
+	}
 	Verbose = opts.Verbose
 	readConfigFile()
 	readConsulData()
 	setDefaults()
-	if cmd != &cmdPrintConfig {
-		redirectStdoutAndStderr(opts.LogFile)
-	}
 	installSignalHandler()
 	writePidFile(opts.PidFile)
 	err = cmd.Execute(cmdArgs)

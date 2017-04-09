@@ -1,0 +1,3 @@
+[submodule "go/src/github.com/xing/beetle/vendor/github.com/yookoala/realpath"]
+	path = go/src/github.com/xing/beetle/vendor/github.com/yookoala/realpath
+	url = git@github.com:yookoala/realpath.git
