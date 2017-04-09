@@ -53,6 +53,7 @@ func (s *ClientState) send(msg MsgContent) error {
 		logError("could not marshal message: %s", err)
 		return err
 	}
+	logDebug("sending message")
 	err = s.ws.WriteMessage(websocket.TextMessage, b)
 	if err != nil {
 		logError("could not send message: %s", err)
@@ -136,8 +137,13 @@ func (s *ClientState) Reconfigure(msg MsgContent) error {
 
 func (s *ClientState) Reader() {
 	defer func() { s.readerDone <- struct{}{} }()
-	defer s.Close()
 	for !interrupted {
+		select {
+		case <-s.writerDone:
+			return
+		default:
+		}
+		logDebug("reading message")
 		msgType, bytes, err := s.ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
@@ -157,6 +163,7 @@ func (s *ClientState) Reader() {
 
 func (s *ClientState) Writer() {
 	ticker := time.NewTicker(1 * time.Second)
+	defer s.Close()
 	defer ticker.Stop()
 	defer func() { s.writerDone <- struct{}{} }()
 	i := 0
@@ -211,15 +218,9 @@ func (s *ClientState) Run() error {
 		return err
 	}
 
-	go s.Writer()
-	s.Reader()
+	go s.Reader()
+	s.Writer()
 
-	select {
-	case <-s.writerDone:
-		logInfo("writer finished cleanly")
-	case <-time.After(2 * time.Second):
-		logWarn("writer shutdown timed out after 2 seconds")
-	}
 	return nil
 }
 
@@ -239,9 +240,10 @@ func RunConfigurationClient(o ClientOptions) error {
 		if err != nil {
 			logError("%s", err)
 			if !interrupted {
-				time.Sleep(3 * time.Second)
+				time.Sleep(1 * time.Second)
 			}
 		}
 	}
+	logInfo("client terminated")
 	return nil
 }
