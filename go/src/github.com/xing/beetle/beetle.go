@@ -19,7 +19,7 @@ import (
 
 var opts struct {
 	Verbose                  bool   `short:"v" long:"verbose" description:"Be verbose."`
-	Daemonize                bool   `short:"d" long:"--daemonize" description:"Run as a daemon. Use with --log-file."`
+	Daemonize                bool   `short:"d" long:"daemonize" description:"Run as a daemon. Use with --log-file."`
 	Id                       string `long:"id" env:"HOST" description:"Set unique client id."`
 	ClientIds                string `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
 	ClientTimeout            int    `long:"client-timeout" description:"Number of seconds to wait until considering a client dead (or unreachable). Defaults to 10."`
