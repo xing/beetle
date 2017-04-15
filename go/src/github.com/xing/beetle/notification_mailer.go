@@ -48,7 +48,7 @@ func (s *MailerState) SendMail(text string) {
 	body := fmt.Sprintf("%s\n\nSENT %s", text, time.Now().Format(time.RFC3339))
 	from := s.opts.Recipient
 	to := s.opts.Recipient
-	subject := "Subject: Beetle system notification"
+	header := fmt.Sprintf("Subject: Beetle system notification\nFrom: %s\nTo: %s\n\n", from, to)
 	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", from, to)
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
@@ -61,8 +61,7 @@ func (s *MailerState) SendMail(text string) {
 		return
 	}
 	sendmail.Start()
-	stdin.Write([]byte(subject))
-	stdin.Write([]byte("\n\n"))
+	stdin.Write([]byte(header))
 	stdin.Write([]byte(body))
 	stdin.Close()
 	sendmailOutput, err := ioutil.ReadAll(stdout)
