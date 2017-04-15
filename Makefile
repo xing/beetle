@@ -46,7 +46,7 @@ install: $(GO_INSTALL_TARGETS)
 uninstall:
 	cd $(BIN_DIR) && rm -f $(GO_INSTALL_TARGETS) $(SCRIPTS)
 
-GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go)
+GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go)
 
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) .godeps
 	$(GO_ENV) go build -o $@ $< $(GO_MODULES)

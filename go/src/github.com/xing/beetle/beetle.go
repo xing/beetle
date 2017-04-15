@@ -36,6 +36,7 @@ var opts struct {
 	ConsulUrl                string `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
 	GcThreshold              int    `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
 	GcDatabases              string `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
+	MailTo                   string `long:"mail-to" description:"Send notifcation mails to this address."`
 }
 
 func setDefaults() {
@@ -63,6 +64,9 @@ func setDefaults() {
 	}
 	if opts.GcDatabases == "" {
 		opts.GcDatabases = "4"
+	}
+	if opts.MailTo == "" {
+		opts.MailTo = "root@localhost"
 	}
 	if opts.RedisMasterFile == "" {
 		opts.RedisMasterFile = "/etc/beetle/redis-master"
@@ -107,6 +111,19 @@ func (x *CmdRunServer) Execute(args []string) error {
 		RedisMasterFile:          opts.RedisMasterFile,
 		RedisMasterRetries:       opts.RedisMasterRetries,
 		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
+	})
+}
+
+// run mailer
+type CmdRunMailer struct{}
+
+var cmdRunMailer CmdRunMailer
+
+func (x *CmdRunMailer) Execute(args []string) error {
+	return RunNotificationMailer(MailerOptions{
+		Server:    opts.Server,
+		Port:      opts.Port,
+		Recipient: opts.MailTo,
 	})
 }
 
@@ -227,6 +244,7 @@ type Config struct {
 	RedisMasterFile          string `yaml:"redis_server"`
 	GcThreshold              int    `yaml:"redis_gc_threshold"`
 	GcDatabases              string `yaml:"redis_gc_databases"`
+	MailTo                   string `yaml:"mail_to"`
 }
 
 func mergeConfig(c Config) {
@@ -262,6 +280,9 @@ func mergeConfig(c Config) {
 	}
 	if opts.GcDatabases == "" {
 		opts.GcDatabases = c.GcDatabases
+	}
+	if opts.MailTo == "" {
+		opts.MailTo = c.MailTo
 	}
 }
 
@@ -334,6 +355,9 @@ func readConsulData() {
 			c.RedisMasterRetryInterval = d
 		}
 	}
+	if v, ok := env["MAIL_TO"]; ok {
+		c.MailTo = v
+	}
 	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
 		c.RedisMasterFile = v
 	}
@@ -351,6 +375,7 @@ func main() {
 	parser.AddCommand("configuration_server", "run redis configuration server", "", &cmdRunServer)
 	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
 	parser.AddCommand("garbage_collect_keys", "garbage collect keys on redis server", "", &cmdRunGCKeys)
+	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()
