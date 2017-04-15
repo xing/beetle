@@ -293,7 +293,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	case CLIENT_STARTED:
 		logDebug("Adding client %s", msg.body.Id)
 		s.AddClient(msg.body.Id, msg.channel)
-		s.ClientSeen(msg.body.Id)
+		s.ClientStarted(msg.body)
 	case UNSUBSCRIBE:
 		logDebug("Removing client %s", msg.body.Id)
 		s.RemoveClient(msg.body.Id)
