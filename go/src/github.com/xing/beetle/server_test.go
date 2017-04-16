@@ -84,3 +84,16 @@ func TestSplitProperties(t *testing.T) {
 	actual = re.Split(s, -1)
 	checkEqual(t, actual, expected)
 }
+
+func TestSavingAndLoadingState(t *testing.T) {
+	fmt.Println("=== TestSavingAndLoadingState  ===================================")
+	s := NewServerState(serverTestOptions)
+	s.currentMaster = NewRedisShim("127.0.0.1:6379")
+	s.AddUnknownClientId("xxx")
+	s.AddUnknownClientId("yyy")
+	s.SaveState()
+	old := s.unknownClientIds
+	s.unknownClientIds = make(StringList, 0)
+	s.LoadState()
+	checkEqual(t, s.unknownClientIds, old)
+}

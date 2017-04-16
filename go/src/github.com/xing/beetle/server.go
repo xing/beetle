@@ -36,27 +36,27 @@ type ChannelSet map[StringChannel]StringChannel
 type TimeSet map[string]time.Time
 
 type ServerState struct {
-	opts                         ServerOptions
-	clientIds                    StringSet
-	client_channels              ChannelMap
-	notification_channels        ChannelSet
-	ws_channel                   chan *WsMsg
-	upgrader                     websocket.Upgrader
-	redis                        *RedisServerInfo
-	currentMaster                *RedisShim
-	currentToken                 string
-	currentTokenInt              int
-	clientPongIdsReceived        StringSet
-	clientInvalidatedIdsReceived StringSet
-	unknownClientIds             StringList
-	clientsLastSeen              TimeSet
-	timer_channel                chan string
-	invalidateTimer              *time.Timer
-	availabilityTimer            *time.Timer
-	retries                      int
-	watching                     bool
-	watchTick                    int
-	waitGroup                    sync.WaitGroup
+	opts                         ServerOptions      // Options passed to the constructor.
+	clientIds                    StringSet          // The list of clients we know and which take part in master election.
+	client_channels              ChannelMap         // Channels we use to communicate with client websocket goroutines.
+	notification_channels        ChannelSet         // Channels we use to communicate with notifier websockets goroutines.
+	unknownClientIds             StringList         // List of clients we have seen, but don't know.
+	clientsLastSeen              TimeSet            // For any client we have seen, the time when we've last seen him.
+	ws_channel                   chan *WsMsg        // Channel used by websocket go routines to send messages to dispatcher go routine.
+	upgrader                     websocket.Upgrader // Upgrader to use for turning a http connection into a webscoket connection.
+	redis                        *RedisServerInfo   // Cached state of watched redis insiances. Refreshed every opts.RedisMasterRetryInterval seconds.
+	currentMaster                *RedisShim         // Current redis master.
+	currentTokenInt              int                // Token to identify election rounds.
+	currentToken                 string             // String representation of current token.
+	clientPongIdsReceived        StringSet          // During a pong phase, the set of clients which have answered.
+	clientInvalidatedIdsReceived StringSet          // During the invalidation phase, the set of clients which have answered.
+	timer_channel                chan string        // Channel used to send an abort message to the dispatcher go routine.
+	invalidateTimer              *time.Timer        // Timer used to abort waiting for answers from all clients (invalidate/invalidated).
+	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from all clients (ping/pong).
+	retries                      int                // Count down for checking a master to come back after it has become unreachable.
+	watching                     bool               // Whether we're currently watching a redis master (false during election process).
+	watchTick                    int                // One second tick counter which gets reset every opts.RedisMasterRetryInterval seconds.
+	waitGroup                    sync.WaitGroup     // Used to organize the shutdown process.
 }
 
 type ServerStatus struct {
@@ -329,7 +329,9 @@ func NewServerState(o ServerOptions) *ServerState {
 	s.ws_channel = make(chan *WsMsg, 10000)
 	s.clientIds = make(StringSet)
 	for _, id := range strings.Split(opts.ClientIds, ",") {
-		s.clientIds.Add(id)
+		if id != "" {
+			s.clientIds.Add(id)
+		}
 	}
 	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
@@ -338,6 +340,34 @@ func NewServerState(o ServerOptions) *ServerState {
 	s.clientPongIdsReceived = make(StringSet)
 	s.clientInvalidatedIdsReceived = make(StringSet)
 	return s
+}
+
+// Store some aspects of state in redis to avoid resending
+// notifications on restart.
+func (s *ServerState) SaveState() {
+	if s.currentMaster == nil {
+		return
+	}
+	unknowns := strings.Join(s.unknownClientIds, ",")
+	_, err := s.currentMaster.redis.Set("beetle:unknown-client-ids", unknowns, 0).Result()
+	if err != nil {
+		logError("could not save unknown client ids to redis")
+	}
+}
+
+func (s *ServerState) LoadState() {
+	if s.currentMaster == nil {
+		return
+	}
+	v, err := s.currentMaster.redis.Get("beetle:unknown-client-ids").Result()
+	if err != nil {
+		logInfo("could not load unknown client ids from redis")
+	}
+	for _, id := range strings.Split(v, ",") {
+		if id != "" {
+			s.AddUnknownClientId(id)
+		}
+	}
 }
 
 func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
@@ -357,7 +387,7 @@ func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) boo
 func RunConfigurationServer(o ServerOptions) error {
 	fmt.Printf("server: %+v\n", o)
 	state := NewServerState(o)
-	state.Start()
+	state.StartAndReloadState()
 	// start threads
 	go state.dispatcher()
 	if Verbose {
@@ -601,7 +631,7 @@ func (s *ServerState) wsWriter(clientId string, ws *websocket.Conn, input_from_d
 	}
 }
 
-func (s *ServerState) Start() {
+func (s *ServerState) StartAndReloadState() {
 	VerifyMasterFileString(s.opts.RedisMasterFile)
 	s.CheckRedisConfiguration()
 	s.redis.Refresh()
@@ -610,6 +640,7 @@ func (s *ServerState) Start() {
 		logError("Could not determine initial master")
 		os.Exit(1)
 	}
+	s.LoadState()
 }
 
 func (s *ServerState) Pong(msg MsgContent) {
@@ -689,6 +720,7 @@ func (s *ServerState) MasterUnavailable() {
 func (s *ServerState) MasterAvailable() {
 	s.PublishMaster(s.currentMaster.server)
 	s.ConfigureSlaves(s.currentMaster)
+	s.SaveState()
 }
 
 func (s *ServerState) MasterIsAvailable() bool {
