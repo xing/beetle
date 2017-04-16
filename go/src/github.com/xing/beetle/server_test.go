@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"reflect"
 	"regexp"
 	"strings"
@@ -16,10 +18,42 @@ import (
 
 var serverTestOptions = ServerOptions{ClientTimeout: 1}
 
-func init() {
+func startAndWaitForText(cmd *exec.Cmd, text string) {
+	pipe, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Printf("could not obtain stdout of redis-server: %v", err)
+		cmd.Process.Kill()
+		os.Exit(1)
+	}
+	scanner := bufio.NewScanner(pipe)
+	cmd.Start()
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, text) {
+			return
+		}
+	}
+}
+
+func TestMain(m *testing.M) {
 	if os.Getenv("V") != "1" {
 		log.SetOutput(ioutil.Discard)
 	}
+	cmd, err := exec.LookPath("redis-server")
+	if err != nil {
+		fmt.Printf("could not find redis server. you need one to run the tests!")
+		os.Exit(1)
+	}
+	redis1 := exec.Command(cmd, "--port", "7001")
+	startAndWaitForText(redis1, "server is now ready to accept connections")
+	redis2 := exec.Command(cmd, "--port", "7002", "--slaveof", "127.0.0.1", "7001")
+	startAndWaitForText(redis2, "MASTER <-> SLAVE sync: Finished with success")
+	result := m.Run()
+	redis1.Process.Kill()
+	redis2.Process.Kill()
+	redis1.Wait()
+	redis2.Wait()
+	os.Exit(result)
 }
 
 func TestServerManagingUnresponsiveClients(t *testing.T) {
@@ -88,7 +122,7 @@ func TestSplitProperties(t *testing.T) {
 func TestSavingAndLoadingState(t *testing.T) {
 	fmt.Println("=== TestSavingAndLoadingState  ===================================")
 	s := NewServerState(serverTestOptions)
-	s.currentMaster = NewRedisShim("127.0.0.1:6379")
+	s.currentMaster = NewRedisShim("127.0.0.1:7001")
 	s.AddUnknownClientId("xxx")
 	s.AddUnknownClientId("yyy")
 	s.SaveState()
