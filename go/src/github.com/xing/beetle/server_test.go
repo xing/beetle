@@ -1,13 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 var serverTestOptions = ServerOptions{ClientTimeout: 1}
 
 func TestServerManagingUnresponsiveClients(t *testing.T) {
+	fmt.Println("=== ServerManagingUnresponsiveClients ============================")
 	s := NewServerState(serverTestOptions)
 	u := s.UnresponsiveClients()
 	if len(u) != 0 {
@@ -36,4 +43,39 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 		t.Errorf("after adding an old client, UnresponsiveClients() should be '[c:3 b:2]', but is: '%v'", u)
 	}
 
+}
+
+func TestSplitProperties(t *testing.T) {
+	fmt.Println("=== SplitProperties ==============================================")
+	s, expected := "", []string{""}
+	actual := strings.Split(s, ",")
+	if !reflect.DeepEqual(expected, actual) {
+		spew.Dump(actual, expected)
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+	}
+	s, expected = ",", []string{"", ""}
+	actual = strings.Split(s, ",")
+	if !reflect.DeepEqual(expected, actual) {
+		spew.Dump(actual, expected)
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+	}
+	s, expected = "a", []string{"a"}
+	actual = strings.Split(s, ",")
+	if !reflect.DeepEqual(expected, actual) {
+		spew.Dump(actual, expected)
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+	}
+	re := regexp.MustCompile(" *, *")
+	s, expected = "", []string{""}
+	actual = re.Split(s, -1)
+	if !reflect.DeepEqual(expected, actual) {
+		spew.Dump(actual, expected)
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+	}
+	s, expected = "  ,,   ", []string{"", "", ""}
+	actual = re.Split(s, -1)
+	if !reflect.DeepEqual(expected, actual) {
+		spew.Dump(actual, expected)
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+	}
 }

@@ -29,7 +29,7 @@ func TestReadMasterFile(t *testing.T) {
 }
 
 func TestRedisIsAvailable(t *testing.T) {
-	fmt.Println("=== ReadIsAvailable ===============================================")
+	fmt.Println("=== ReadIsAvailable ==============================================")
 	r := NewRedisShim("127.0.0.1:6379")
 	isAvailable := r.IsAvailable()
 	if !isAvailable {
@@ -38,7 +38,7 @@ func TestRedisIsAvailable(t *testing.T) {
 }
 
 func TestRedisNotAvailable(t *testing.T) {
-	fmt.Println("=== ReadIsNotAvailable ============================================")
+	fmt.Println("=== ReadIsNotAvailable ===========================================")
 	r := NewRedisShim("127.0.0.1:6377")
 	isAvailable := r.IsAvailable()
 	if isAvailable {
@@ -47,7 +47,7 @@ func TestRedisNotAvailable(t *testing.T) {
 }
 
 func TestRedisMakeMaster(t *testing.T) {
-	fmt.Println("=== RedisMakeMaster ===============================================")
+	fmt.Println("=== RedisMakeMaster ==============================================")
 	r := NewRedisShim("127.0.0.1:6379")
 	err := r.MakeMaster()
 	if err != nil {
