@@ -20,7 +20,7 @@ GO_DEPS = \
 	$(GO_ENV) go get $(GO_DEPS)
 	touch .godeps
 
-GO_ENV = GOPATH=$(GO_PATH)
+GO_ENV = GOPATH=$(GO_PATH) V=$(V)
 GO_PKG = github.com/xing/beetle
 GO_SRC = go/src/$(GO_PKG)
 GO_INSTALL_TARGETS = beetle

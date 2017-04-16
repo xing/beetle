@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -12,6 +15,12 @@ import (
 )
 
 var serverTestOptions = ServerOptions{ClientTimeout: 1}
+
+func init() {
+	if os.Getenv("V") != "1" {
+		log.SetOutput(ioutil.Discard)
+	}
+}
 
 func TestServerManagingUnresponsiveClients(t *testing.T) {
 	fmt.Println("=== ServerManagingUnresponsiveClients ============================")
