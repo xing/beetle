@@ -54,37 +54,33 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 
 }
 
+func checkEqual(t *testing.T, actual, expected interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("expected %+v to be equal to %+v", actual, expected)
+		spew.Dump(actual, expected)
+	}
+}
+
 func TestSplitProperties(t *testing.T) {
 	fmt.Println("=== SplitProperties ==============================================")
 	s, expected := "", []string{""}
 	actual := strings.Split(s, ",")
-	if !reflect.DeepEqual(expected, actual) {
-		spew.Dump(actual, expected)
-		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-	}
+	checkEqual(t, actual, expected)
+
 	s, expected = ",", []string{"", ""}
 	actual = strings.Split(s, ",")
-	if !reflect.DeepEqual(expected, actual) {
-		spew.Dump(actual, expected)
-		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-	}
+	checkEqual(t, actual, expected)
+
 	s, expected = "a", []string{"a"}
 	actual = strings.Split(s, ",")
-	if !reflect.DeepEqual(expected, actual) {
-		spew.Dump(actual, expected)
-		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-	}
+	checkEqual(t, actual, expected)
+
 	re := regexp.MustCompile(" *, *")
 	s, expected = "", []string{""}
 	actual = re.Split(s, -1)
-	if !reflect.DeepEqual(expected, actual) {
-		spew.Dump(actual, expected)
-		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-	}
+	checkEqual(t, actual, expected)
+
 	s, expected = "  ,,   ", []string{"", "", ""}
 	actual = re.Split(s, -1)
-	if !reflect.DeepEqual(expected, actual) {
-		spew.Dump(actual, expected)
-		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-	}
+	checkEqual(t, actual, expected)
 }
