@@ -131,3 +131,15 @@ func TestSavingAndLoadingState(t *testing.T) {
 	s.LoadState()
 	checkEqual(t, s.unknownClientIds, old)
 }
+
+func TestClientSeen(t *testing.T) {
+	fmt.Println("=== TestClientSeen ===============================================")
+	s := NewServerState(serverTestOptions)
+	s.currentMaster = NewRedisShim("127.0.0.1:7001")
+	if s.ClientSeen("xxx") {
+		t.Errorf("server claims he's seen a client which it hasn't seen before. nuts?")
+	}
+	if !s.ClientSeen("xxx") {
+		t.Errorf("server claims he's hasn't seen a client which it has seen before. nuts?")
+	}
+}
