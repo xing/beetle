@@ -62,7 +62,7 @@ feature:
 	cucumber features/redis_auto_failover.feature:9
 
 stats:
-	cloc --exclude-dir=coverage lib test features go/src/github.com/xing
+	cloc --exclude-dir=coverage,vendor lib test features go/src/github.com/xing
 
 world:
 	test `uname -s` = Darwin && $(MAKE) linux container tag push darwin || $(MAKE) darwin linux container tag push
