@@ -81,7 +81,7 @@ func (s *ServerState) GetStatus() *ServerStatus {
 		RedisMasterAvailable:   s.MasterIsAvailable(),
 		RedisSlavesAvailable:   s.redis.Slaves().Servers(),
 		SwitchInProgress:       s.WatcherPaused(),
-		UnknownClientIds:       s.unknownClientIds,
+		UnknownClientIds:       s.UnknownClientIds(),
 		UnresponsiveClients:    s.UnresponsiveClients(),
 		UnseenClientIds:        s.UnseenClientIds(),
 	}
@@ -130,6 +130,13 @@ func (s *ServerState) UnseenClientIds() []string {
 			res = append(res, x)
 		}
 	}
+	sort.Strings(res)
+	return res
+}
+
+func (s *ServerState) UnknownClientIds() []string {
+	res := make([]string, 0, len(s.unknownClientIds))
+	copy(res, s.unknownClientIds)
 	sort.Strings(res)
 	return res
 }
