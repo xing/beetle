@@ -374,7 +374,7 @@ func main() {
 	parser.AddCommand("configuration_client", "run redis configuration client", "", &cmdRunClient)
 	parser.AddCommand("configuration_server", "run redis configuration server", "", &cmdRunServer)
 	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
-	parser.AddCommand("garbage_collect_keys", "garbage collect keys on redis server", "", &cmdRunGCKeys)
+	parser.AddCommand("garbage_collect_deduplication_store", "garbage collect keys on redis server", "", &cmdRunGCKeys)
 	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
 	parser.CommandHandler = cmdHandler
 
