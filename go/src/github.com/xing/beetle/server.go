@@ -346,7 +346,7 @@ func NewServerState(o ServerOptions) *ServerState {
 // notifications on restart.
 func (s *ServerState) SaveState() {
 	if s.currentMaster == nil {
-		logError("could not save state because we have no redis master")
+		logError("could not save state because no redis master is available")
 		return
 	}
 	unknowns := strings.Join(s.unknownClientIds, ",")
@@ -354,7 +354,7 @@ func (s *ServerState) SaveState() {
 	if err != nil {
 		logError("could not save unknown client ids to redis")
 	}
-	logInfo("saved unkown client ids to redis: %s", unknowns)
+	logDebug("saved unkown client ids to redis: %s", unknowns)
 	lastSeen := make([]string, 0)
 	for id, t := range s.clientsLastSeen {
 		lastSeen = append(lastSeen, fmt.Sprintf("%s:%d", id, t.UnixNano()))
@@ -364,7 +364,7 @@ func (s *ServerState) SaveState() {
 	if err != nil {
 		logError("could not save clients last seen info to redis")
 	}
-	logInfo("saved last seen info to redis: %s", lastSeenStr)
+	logDebug("saved last seen info to redis: %s", lastSeenStr)
 }
 
 func (s *ServerState) LoadState() {
