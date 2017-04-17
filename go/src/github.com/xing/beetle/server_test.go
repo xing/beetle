@@ -143,3 +143,14 @@ func TestClientSeen(t *testing.T) {
 		t.Errorf("server claims he's hasn't seen a client which it has seen before. nuts?")
 	}
 }
+
+func TestUnknownClientIdsSorting(t *testing.T) {
+	fmt.Println("=== TestUnknownClientIdsSortig ===================================")
+	s := NewServerState(serverTestOptions)
+	s.AddUnknownClientId("yyy")
+	s.AddUnknownClientId("aaa")
+	s.AddUnknownClientId("xxx")
+	expected := []string{"aaa", "xxx", "yyy"}
+	actual := s.UnknownClientIds()
+	checkEqual(t, actual, expected)
+}

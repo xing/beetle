@@ -135,7 +135,8 @@ func (s *ServerState) UnseenClientIds() []string {
 }
 
 func (s *ServerState) UnknownClientIds() []string {
-	res := make([]string, 0, len(s.unknownClientIds))
+	l := len(s.unknownClientIds)
+	res := make([]string, l, l)
 	copy(res, s.unknownClientIds)
 	sort.Strings(res)
 	return res
