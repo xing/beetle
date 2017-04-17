@@ -335,7 +335,7 @@ func NewServerState(o ServerOptions) *ServerState {
 	}
 	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
-	s.currentTokenInt = int(time.Now().UnixNano() / 1000000)
+	s.currentTokenInt = int(time.Now().UnixNano() / 1000000) // millisecond resolution
 	s.currentToken = strconv.Itoa(s.currentTokenInt)
 	s.clientPongIdsReceived = make(StringSet)
 	s.clientInvalidatedIdsReceived = make(StringSet)
@@ -346,6 +346,7 @@ func NewServerState(o ServerOptions) *ServerState {
 // notifications on restart.
 func (s *ServerState) SaveState() {
 	if s.currentMaster == nil {
+		logError("could not save state because we have no redis master")
 		return
 	}
 	unknowns := strings.Join(s.unknownClientIds, ",")
@@ -353,10 +354,22 @@ func (s *ServerState) SaveState() {
 	if err != nil {
 		logError("could not save unknown client ids to redis")
 	}
+	logInfo("saved unkown client ids to redis: %s", unknowns)
+	lastSeen := make([]string, 0)
+	for id, t := range s.clientsLastSeen {
+		lastSeen = append(lastSeen, fmt.Sprintf("%s:%d", id, t.UnixNano()))
+	}
+	lastSeenStr := strings.Join(lastSeen, ",")
+	_, err = s.currentMaster.redis.Set("beetle:clients-last-seen", lastSeenStr, 0).Result()
+	if err != nil {
+		logError("could not save clients last seen info to redis")
+	}
+	logInfo("saved last seen info to redis: %s", lastSeenStr)
 }
 
 func (s *ServerState) LoadState() {
 	if s.currentMaster == nil {
+		logError("could not restore state because we have no redis master")
 		return
 	}
 	v, err := s.currentMaster.redis.Get("beetle:unknown-client-ids").Result()
@@ -368,6 +381,24 @@ func (s *ServerState) LoadState() {
 			s.AddUnknownClientId(id)
 		}
 	}
+	logInfo("restored unkown client ids from redis: %v", s.unknownClientIds)
+	v, err = s.currentMaster.redis.Get("beetle:clients-last-seen").Result()
+	if err != nil {
+		logInfo("could not load last seen info from redis")
+	}
+	for _, x := range strings.Split(v, ",") {
+		if x != "" {
+			parts := strings.Split(x, ":")
+			id, t := parts[0], parts[1]
+			i, err := strconv.Atoi(t)
+			if err != nil {
+				logError("could not recreate timestamp for id '%s': %s", id, t)
+			} else {
+				s.clientsLastSeen[id] = time.Unix(0, int64(i))
+			}
+		}
+	}
+	logInfo("restored client last seen info from redis: %v", s.clientsLastSeen)
 }
 
 func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
@@ -669,9 +700,9 @@ func (s *ServerState) ClientStarted(msg MsgContent) {
 		logInfo("Received client_started message from id '%s'", msg.Id)
 	} else {
 		s.AddUnknownClientId(msg.Id)
-		msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
-		logError(msg)
 		if !seen {
+			msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
+			logError(msg)
 			s.SendNotification(msg)
 		}
 	}
@@ -683,9 +714,9 @@ func (s *ServerState) HeartBeat(msg MsgContent) {
 		logDebug("received heartbeat message from id '%s'", msg.Id)
 	} else {
 		s.AddUnknownClientId(msg.Id)
-		msg := fmt.Sprintf("Received heartbeat message from unknown id '%s'", msg.Id)
-		logError(msg)
 		if !seen {
+			msg := fmt.Sprintf("Received heartbeat message from unknown id '%s'", msg.Id)
+			logError(msg)
 			s.SendNotification(msg)
 		}
 	}
