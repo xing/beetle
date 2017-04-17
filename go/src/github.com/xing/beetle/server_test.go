@@ -123,17 +123,12 @@ func TestSavingAndLoadingState(t *testing.T) {
 	fmt.Println("=== TestSavingAndLoadingState  ===================================")
 	s := NewServerState(serverTestOptions)
 	s.currentMaster = NewRedisShim("127.0.0.1:7001")
-	s.AddUnknownClientId("xxx")
 	s.ClientSeen("xxx")
-	s.AddUnknownClientId("yyy")
 	s.ClientSeen("yyy")
 	s.SaveState()
-	oldIds := s.unknownClientIds
 	oldLastSeen := s.clientsLastSeen
-	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
 	s.LoadState()
-	checkEqual(t, s.unknownClientIds, oldIds)
 	checkEqual(t, s.clientsLastSeen, oldLastSeen)
 }
 

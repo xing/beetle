@@ -349,18 +349,12 @@ func (s *ServerState) SaveState() {
 		logError("could not save state because no redis master is available")
 		return
 	}
-	unknowns := strings.Join(s.unknownClientIds, ",")
-	_, err := s.currentMaster.redis.Set("beetle:unknown-client-ids", unknowns, 0).Result()
-	if err != nil {
-		logError("could not save unknown client ids to redis")
-	}
-	logDebug("saved unkown client ids to redis: %s", unknowns)
 	lastSeen := make([]string, 0)
 	for id, t := range s.clientsLastSeen {
 		lastSeen = append(lastSeen, fmt.Sprintf("%s:%d", id, t.UnixNano()))
 	}
 	lastSeenStr := strings.Join(lastSeen, ",")
-	_, err = s.currentMaster.redis.Set("beetle:clients-last-seen", lastSeenStr, 0).Result()
+	_, err := s.currentMaster.redis.Set("beetle:clients-last-seen", lastSeenStr, 0).Result()
 	if err != nil {
 		logError("could not save clients last seen info to redis")
 	}
@@ -372,19 +366,9 @@ func (s *ServerState) LoadState() {
 		logError("could not restore state because we have no redis master")
 		return
 	}
-	v, err := s.currentMaster.redis.Get("beetle:unknown-client-ids").Result()
+	v, err := s.currentMaster.redis.Get("beetle:clients-last-seen").Result()
 	if err != nil {
-		logInfo("could not load unknown client ids from redis")
-	}
-	for _, id := range strings.Split(v, ",") {
-		if id != "" {
-			s.AddUnknownClientId(id)
-		}
-	}
-	logInfo("restored unkown client ids from redis: %v", s.unknownClientIds)
-	v, err = s.currentMaster.redis.Get("beetle:clients-last-seen").Result()
-	if err != nil {
-		logInfo("could not load last seen info from redis")
+		logError("could not load last seen info from redis")
 	}
 	for _, x := range strings.Split(v, ",") {
 		if x != "" {
