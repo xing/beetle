@@ -664,27 +664,30 @@ func (s *ServerState) Pong(msg MsgContent) {
 }
 
 func (s *ServerState) ClientStarted(msg MsgContent) {
-	s.ClientSeen(msg.Id)
+	seen := s.ClientSeen(msg.Id)
 	if s.ClientIdIsValid(msg.Id) {
 		logInfo("Received client_started message from id '%s'", msg.Id)
 	} else {
 		s.AddUnknownClientId(msg.Id)
 		msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
 		logError(msg)
-		s.SendNotification(msg)
+		if !seen {
+			s.SendNotification(msg)
+		}
 	}
 }
 
 func (s *ServerState) HeartBeat(msg MsgContent) {
-	s.ClientSeen(msg.Id)
+	seen := s.ClientSeen(msg.Id)
 	if s.ClientIdIsValid(msg.Id) {
 		logDebug("received heartbeat message from id '%s'", msg.Id)
 	} else {
 		s.AddUnknownClientId(msg.Id)
 		msg := fmt.Sprintf("Received heartbeat message from unknown id '%s'", msg.Id)
 		logError(msg)
-		// heart beats are sonet all the time
-		// s.SendNotification(msg)
+		if !seen {
+			s.SendNotification(msg)
+		}
 	}
 }
 
@@ -753,8 +756,12 @@ func (s *ServerState) AddUnknownClientId(id string) {
 	s.unknownClientIds.Add(id)
 }
 
-func (s *ServerState) ClientSeen(id string) {
+// Insert or update client last seen timestamp. Returns true if we
+// have seen client id previously.
+func (s *ServerState) ClientSeen(id string) bool {
+	_, seen := s.clientsLastSeen[id]
 	s.clientsLastSeen[id] = time.Now()
+	return seen
 }
 
 func (s *ServerState) CheckRedisConfiguration() {
