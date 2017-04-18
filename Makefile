@@ -1,4 +1,4 @@
-.PHONY: all clean install uninstall test feature stats world release linux darwin container tag push
+.PHONY: all clean realclean install uninstall test feature stats world release linux darwin container tag push
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
@@ -6,17 +6,21 @@ makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
 BIN_DIR = $(makefile_dir)/bin
 GO_PATH = $(makefile_dir)/go
 GO_DEPS = \
-	github.com/davecgh/go-spew/spew \
 	github.com/jessevdk/go-flags \
 	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
 	gopkg.in/tylerb/graceful.v1 \
-	gopkg.in/yaml.v2 \
-	source.xing.com/olympus/golympus/consul
+	gopkg.in/yaml.v2
+
+# the following dependencies cause got get to return an error code
+EXTRA_DEPS = \
+	github.com/davecgh/go-spew \
+	source.xing.com/olympus/golympus
 
 .godeps:
 	git submodule init
 	git submodule update
+	-$(GO_ENV) go get $(EXTRA_DEPS)
 	$(GO_ENV) go get $(GO_DEPS)
 	touch .godeps
 
@@ -40,13 +44,16 @@ all: $(GO_TARGETS)
 clean:
 	rm -rf go/pkg go/bin $(GO_TARGETS) .godeps
 
+realclean: clean
+	rm -rf $(patsubst %,go/src/%,$(GO_DEPS) $(EXTRA_DEPS))
+
 install: $(GO_INSTALL_TARGETS)
 	$(INSTALL_PROGRAM) $(GO_INSTALL_TARGETS) $(SCRIPTS) $(BIN_DIR)
 
 uninstall:
 	cd $(BIN_DIR) && rm -f $(GO_INSTALL_TARGETS) $(SCRIPTS)
 
-GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go)
+GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go config.go)
 
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) .godeps
 	$(GO_ENV) go build -o $@ $< $(GO_MODULES)

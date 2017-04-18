@@ -39,43 +39,6 @@ var opts struct {
 	MailTo                   string `long:"mail-to" description:"Send notifcation mails to this address."`
 }
 
-func setDefaults() {
-	// If you change any of these values, don't forget to change the description above.
-	if opts.ClientTimeout == 0 {
-		opts.ClientTimeout = 10
-	}
-	if opts.ClientHeartbeatInterval == 0 {
-		opts.ClientHeartbeatInterval = 5
-	}
-	if opts.RedisMasterRetries == 0 {
-		opts.RedisMasterRetries = 3
-	}
-	if opts.RedisMasterRetryInterval == 0 {
-		opts.RedisMasterRetryInterval = 10
-	}
-	if opts.Server == "" {
-		opts.Server = "127.0.0.1"
-	}
-	if opts.Port == 0 {
-		opts.Port = 9650
-	}
-	if opts.GcThreshold == 0 {
-		opts.GcThreshold = 3600 // 1 hour
-	}
-	if opts.GcDatabases == "" {
-		opts.GcDatabases = "4"
-	}
-	if opts.MailTo == "" {
-		opts.MailTo = "root@localhost"
-	}
-	if opts.RedisMasterFile == "" {
-		opts.RedisMasterFile = "/etc/beetle/redis-master"
-	}
-	if opts.ConfigFile == "" {
-		opts.ConfigFile = "/etc/beetle/beetle.yml"
-	}
-}
-
 var Verbose bool
 
 var cmd flags.Commander
@@ -88,11 +51,9 @@ var cmdRunClient CmdRunClient
 
 func (x *CmdRunClient) Execute(args []string) error {
 	return RunConfigurationClient(ClientOptions{
-		Server:            opts.Server,
-		Port:              opts.Port,
-		Id:                opts.Id,
-		RedisMasterFile:   opts.RedisMasterFile,
-		HeartbeatInterval: opts.ClientHeartbeatInterval,
+		Id:           opts.Id,
+		Config:       initialConfig,
+		ConsulClient: getConsulClient(),
 	})
 }
 
@@ -103,14 +64,8 @@ var cmdRunServer CmdRunServer
 
 func (x *CmdRunServer) Execute(args []string) error {
 	return RunConfigurationServer(ServerOptions{
-		Port:                     opts.Port,
-		ClientIds:                opts.ClientIds,
-		ClientTimeout:            opts.ClientTimeout,
-		ClientHeartbeat:          opts.ClientHeartbeatInterval,
-		RedisServers:             opts.RedisServers,
-		RedisMasterFile:          opts.RedisMasterFile,
-		RedisMasterRetries:       opts.RedisMasterRetries,
-		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
+		Config:       initialConfig,
+		ConsulClient: getConsulClient(),
 	})
 }
 
@@ -121,9 +76,9 @@ var cmdRunMailer CmdRunMailer
 
 func (x *CmdRunMailer) Execute(args []string) error {
 	return RunNotificationMailer(MailerOptions{
-		Server:    opts.Server,
-		Port:      opts.Port,
-		Recipient: opts.MailTo,
+		Server:    initialConfig.Server,
+		Port:      initialConfig.Port,
+		Recipient: initialConfig.MailTo,
 	})
 }
 
@@ -133,7 +88,7 @@ type CmdPrintConfig struct{}
 var cmdPrintConfig CmdPrintConfig
 
 func (x *CmdPrintConfig) Execute(args []string) error {
-	fmt.Printf("%+v\n", opts)
+	fmt.Printf("%+v\n", *initialConfig)
 	return nil
 }
 
@@ -144,9 +99,9 @@ var cmdRunGCKeys CmdRunGCKeys
 
 func (x *CmdRunGCKeys) Execute(args []string) error {
 	return RunGarbageCollectKeys(GCOptions{
-		RedisMasterFile: opts.RedisMasterFile,
-		GcThreshold:     opts.GcThreshold,
-		GcDatabases:     opts.GcDatabases,
+		RedisMasterFile: initialConfig.RedisMasterFile,
+		GcThreshold:     initialConfig.GcThreshold,
+		GcDatabases:     initialConfig.GcDatabases,
 	})
 }
 
@@ -232,136 +187,80 @@ func redirectStdoutAndStderr(path string) {
 	syscall.Dup2(int(logFile.Fd()), 2)
 }
 
-type Config struct {
-	Server                   string `yaml:"redis_configuration_server"`
-	Port                     int    `yaml:"redis_configuration_server_port"`
-	RedisServers             string `yaml:"redis_servers"`
-	ClientIds                string `yaml:"redis_configuration_client_ids"`
-	ClientHeartbeat          int    `yaml:"redis_configuration_client_heartbeat"`
-	ClientTimeout            int    `yaml:"redis_configuration_client_timeout"`
-	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
-	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
-	RedisMasterFile          string `yaml:"redis_server"`
-	GcThreshold              int    `yaml:"redis_gc_threshold"`
-	GcDatabases              string `yaml:"redis_gc_databases"`
-	MailTo                   string `yaml:"mail_to"`
-}
-
-func mergeConfig(c Config) {
-	if opts.Server == "" {
-		opts.Server = c.Server
-	}
-	if opts.Port == 0 {
-		opts.Port = c.Port
-	}
-	if opts.RedisServers == "" {
-		opts.RedisServers = c.RedisServers
-	}
-	if opts.ClientIds == "" {
-		opts.ClientIds = c.ClientIds
-	}
-	if opts.ClientTimeout == 0 {
-		opts.ClientTimeout = c.ClientTimeout
-	}
-	if opts.ClientHeartbeatInterval == 0 {
-		opts.ClientHeartbeatInterval = c.ClientHeartbeat
-	}
-	if opts.RedisMasterRetries == 0 {
-		opts.RedisMasterRetries = c.RedisMasterRetries
-	}
-	if opts.RedisMasterRetryInterval == 0 {
-		opts.RedisMasterRetryInterval = c.RedisMasterRetryInterval
-	}
-	if opts.RedisMasterFile == "" {
-		opts.RedisMasterFile = c.RedisMasterFile
-	}
-	if opts.GcThreshold == 0 {
-		opts.GcThreshold = c.GcThreshold
-	}
-	if opts.GcDatabases == "" {
-		opts.GcDatabases = c.GcDatabases
-	}
-	if opts.MailTo == "" {
-		opts.MailTo = c.MailTo
+func getProgramParameters() *Config {
+	return &Config{
+		Server:                   opts.Server,
+		Port:                     opts.Port,
+		RedisServers:             opts.RedisServers,
+		ClientIds:                opts.ClientIds,
+		ClientHeartbeat:          opts.ClientHeartbeatInterval,
+		ClientTimeout:            opts.ClientTimeout,
+		RedisMasterRetries:       opts.RedisMasterRetries,
+		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
+		RedisMasterFile:          opts.RedisMasterFile,
+		GcThreshold:              opts.GcThreshold,
+		GcDatabases:              opts.GcDatabases,
+		MailTo:                   opts.MailTo,
 	}
 }
 
-func readConfigFile() {
-	if opts.ConfigFile == "" {
-		return
+func readConfigFile(configFile string) *Config {
+	if configFile == "" {
+		return nil
 	}
-	var c Config
-	yamlFile, err := ioutil.ReadFile(opts.ConfigFile)
+	yamlFile, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		logInfo("Could not read yaml file: %v", err)
-		return
+		return nil
 	}
+	var c Config
 	err = yaml.Unmarshal(yamlFile, &c)
 	if err != nil {
 		logError("Could not parse config file: %v", err)
 		os.Exit(1)
 	}
-	mergeConfig(c)
+	return &c
 }
 
-func readConsulData() {
-	if opts.ConsulUrl == "" {
-		return
+func readConsulData(consulUrl string) consul.Env {
+	if consulUrl == "" {
+		return nil
 	}
-	logInfo("retrieving config from consul: %s", opts.ConsulUrl)
-	client := consul.NewClient(opts.ConsulUrl, "beetle")
+	logInfo("retrieving config from consul: %s", consulUrl)
+	client := getConsulClient()
 	env, err := client.GetEnv()
 	if err != nil {
 		logInfo("could not retrieve config from consul: %v", err)
-		return
+		return nil
 	}
-	var c Config
-	if v, ok := env["REDIS_CONFIGURATION_SERVER"]; ok {
-		c.Server = v
+	return env
+}
+
+var consulClient *consul.Client
+
+func getConsulClient() *consul.Client {
+	if opts.ConsulUrl != "" && consulClient == nil {
+		consulClient = consul.NewClient(opts.ConsulUrl, "beetle")
 	}
-	if v, ok := env["REDIS_CONFIGURATION_SERVER_PORT"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.Port = d
-		}
-	}
-	if v, ok := env["REDIS_SERVERS"]; ok {
-		c.RedisServers = v
-	}
-	if v, ok := env["REDIS_CONFIGURATION_CLIENT_IDS"]; ok {
-		c.ClientIds = v
-	}
-	if v, ok := env["REDIS_CONFIGURATION_CLIENT_HEARTBEAT"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.ClientHeartbeat = d
-		}
-	}
-	if v, ok := env["REDIS_CONFIGURATION_CLIENT_TIMEOUT"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.ClientTimeout = d
-		}
-	}
-	if v, ok := env["REDIS_GC_THRESHOLD"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.GcThreshold = d
-		}
-	}
-	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRIES"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.RedisMasterRetries = d
-		}
-	}
-	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRY_INTERVAL"]; ok {
-		if d, err := strconv.Atoi(v); err == nil {
-			c.RedisMasterRetryInterval = d
-		}
-	}
-	if v, ok := env["MAIL_TO"]; ok {
-		c.MailTo = v
-	}
-	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
-		c.RedisMasterFile = v
-	}
-	mergeConfig(c)
+	return consulClient
+}
+
+var (
+	configFromParams *Config
+	configFromFile   *Config
+	initialConfig    *Config
+)
+
+func setupConfig() {
+	configFromParams = getProgramParameters()
+	configFromFile = readConfigFile(opts.ConfigFile)
+	consulEnv := readConsulData(opts.ConsulUrl)
+	initialConfig = buildConfig(consulEnv)
+}
+
+func buildConfig(env consul.Env) *Config {
+	consulConfig := configFromConsulEnv(env)
+	return configFromParams.Merge(configFromFile).Merge(consulConfig).SetDefaults()
 }
 
 func main() {
@@ -402,9 +301,7 @@ func main() {
 		}
 	}
 	Verbose = opts.Verbose
-	readConfigFile()
-	readConsulData()
-	setDefaults()
+	setupConfig()
 	installSignalHandler()
 	writePidFile(opts.PidFile)
 	err = cmd.Execute(cmdArgs)

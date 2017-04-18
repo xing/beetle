@@ -16,7 +16,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-var serverTestOptions = ServerOptions{ClientTimeout: 1}
+var serverTestOptions = ServerOptions{Config: &Config{ClientTimeout: 1}}
 
 func startAndWaitForText(cmd *exec.Cmd, text string) {
 	pipe, err := cmd.StdoutPipe()
@@ -145,7 +145,7 @@ func TestClientSeen(t *testing.T) {
 }
 
 func TestUnknownClientIdsSorting(t *testing.T) {
-	fmt.Println("=== TestUnknownClientIdsSortig ===================================")
+	fmt.Println("=== TestUnknownClientIdsSorting ==================================")
 	s := NewServerState(serverTestOptions)
 	s.AddUnknownClientId("yyy")
 	s.AddUnknownClientId("aaa")

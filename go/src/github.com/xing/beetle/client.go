@@ -4,34 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"gopkg.in/gorilla/websocket.v1"
+	"source.xing.com/olympus/golympus/consul"
 )
 
 type ClientOptions struct {
-	Server            string
-	Port              int
-	Id                string
-	RedisMasterFile   string
-	HeartbeatInterval int
+	Id           string
+	Config       *Config
+	ConsulClient *consul.Client
 }
 
 type ClientState struct {
 	opts          ClientOptions
-	url           string
+	mutex         sync.Mutex
 	ws            *websocket.Conn
 	input         chan MsgContent
 	currentMaster *RedisShim
 	currentToken  string
 	writerDone    chan struct{}
 	readerDone    chan struct{}
+	configChanges chan consul.Env
+}
+
+func (s *ClientState) GetConfig() *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.opts.Config
+}
+
+func (s *ClientState) SetConfig(config *Config) *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	oldconfig := s.opts.Config
+	s.opts.Config = config
+	return oldconfig
+}
+
+func (s *ClientState) ServerUrl() string {
+	config := s.GetConfig()
+	addr := fmt.Sprintf("%s:%d", config.Server, config.Port)
+	u := url.URL{Scheme: "ws", Host: addr, Path: "/configuration"}
+	return u.String()
 }
 
 func (s *ClientState) Connect() (err error) {
-	logInfo("connecting to %s", s.url)
-	s.ws, _, err = websocket.DefaultDialer.Dial(s.url, nil)
+	url := s.ServerUrl()
+	logInfo("connecting to %s", url)
+	s.ws, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return
 	}
@@ -104,10 +128,10 @@ func (s *ClientState) NewMaster(server string) {
 }
 
 func (s *ClientState) DetermineInitialMaster() {
-	if !MasterFileExists(opts.RedisMasterFile) {
+	if !MasterFileExists(s.GetConfig().RedisMasterFile) {
 		return
 	}
-	server := ReadRedisMasterFile(opts.RedisMasterFile)
+	server := ReadRedisMasterFile(s.GetConfig().RedisMasterFile)
 	if server != "" {
 		s.NewMaster(server)
 	}
@@ -116,7 +140,7 @@ func (s *ClientState) DetermineInitialMaster() {
 func (s *ClientState) Invalidate(msg MsgContent) error {
 	if s.RedeemToken(msg.Token) && (s.currentMaster == nil || s.currentMaster.Role() != MASTER) {
 		s.currentMaster = nil
-		ClearRedisMasterFile(s.opts.RedisMasterFile)
+		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
 		logInfo("Sending client_invalidated message with id '%s' and token '%s'", s.opts.Id, s.currentToken)
 		return s.SendClientInvalidated()
 	}
@@ -128,9 +152,9 @@ func (s *ClientState) Reconfigure(msg MsgContent) error {
 	if !s.RedeemToken(msg.Token) {
 		logInfo("Received invalid or outdated token: '%s'", msg.Token)
 	}
-	if msg.Server != ReadRedisMasterFile(s.opts.RedisMasterFile) {
+	if msg.Server != ReadRedisMasterFile(s.GetConfig().RedisMasterFile) {
 		s.NewMaster(msg.Server)
-		WriteRedisMasterFile(s.opts.RedisMasterFile, msg.Server)
+		WriteRedisMasterFile(s.GetConfig().RedisMasterFile, msg.Server)
 	}
 	return nil
 }
@@ -173,12 +197,26 @@ func (s *ClientState) Writer() {
 		case msg := <-s.input:
 			err = s.Dispatch(msg)
 		case <-ticker.C:
-			i = (i + 1) % s.opts.HeartbeatInterval
+			i = (i + 1) % s.GetConfig().ClientHeartbeat
 			if i == 0 {
 				err = s.SendHeartBeat()
 			}
 		case <-s.readerDone:
 			return
+		case env := <-s.configChanges:
+			if env != nil {
+				newconfig := buildConfig(env)
+				oldconfig := s.SetConfig(newconfig)
+				if newconfig.RedisMasterFile != oldconfig.RedisMasterFile {
+					if err := os.Rename(oldconfig.RedisMasterFile, newconfig.RedisMasterFile); err != nil {
+						logError("could not rename redis master file to: %s", newconfig.RedisMasterFile)
+					}
+				}
+				if newconfig.ServerUrl() != oldconfig.ServerUrl() {
+					logInfo("restarting client because server url has changed: %s", newconfig.ServerUrl())
+					return
+				}
+			}
 		}
 		if err != nil {
 			return
@@ -205,33 +243,36 @@ func (s *ClientState) Run() error {
 	s.DetermineInitialMaster()
 	if s.currentMaster == nil || !s.currentMaster.IsMaster() {
 		logInfo("clearing master file")
-		ClearRedisMasterFile(s.opts.RedisMasterFile)
+		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
 	}
-
 	if err := s.Connect(); err != nil {
 		return err
 	}
-	if err := VerifyMasterFileString(s.opts.RedisMasterFile); err != nil {
+	if err := VerifyMasterFileString(s.GetConfig().RedisMasterFile); err != nil {
 		return err
 	}
 	if err := s.SendClientStarted(); err != nil {
 		return err
 	}
-
+	if s.opts.ConsulClient != nil {
+		var err error
+		s.configChanges, err = s.opts.ConsulClient.WatchConfig()
+		if err != nil {
+			return err
+		}
+	} else {
+		s.configChanges = make(chan consul.Env)
+	}
 	go s.Reader()
 	s.Writer()
-
 	return nil
 }
 
 func RunConfigurationClient(o ClientOptions) error {
 	logInfo("client started with options: %+v\n", o)
 	for !interrupted {
-		addr := fmt.Sprintf("%s:%d", o.Server, o.Port)
-		u := url.URL{Scheme: "ws", Host: addr, Path: "/configuration"}
 		state := &ClientState{
 			opts:       o,
-			url:        u.String(),
 			readerDone: make(chan struct{}, 1),
 			writerDone: make(chan struct{}, 1),
 		}

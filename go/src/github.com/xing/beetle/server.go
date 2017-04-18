@@ -17,17 +17,12 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"gopkg.in/gorilla/websocket.v1"
 	"gopkg.in/tylerb/graceful.v1"
+	"source.xing.com/olympus/golympus/consul"
 )
 
 type ServerOptions struct {
-	Port                     int
-	ClientIds                string
-	ClientTimeout            int
-	ClientHeartbeat          int
-	RedisServers             string
-	RedisMasterFile          string
-	RedisMasterRetries       int
-	RedisMasterRetryInterval int
+	Config       *Config
+	ConsulClient *consul.Client
 }
 
 type StringChannel chan string
@@ -37,6 +32,7 @@ type TimeSet map[string]time.Time
 
 type ServerState struct {
 	opts                         ServerOptions      // Options passed to the constructor.
+	mutex                        sync.Mutex         // Mutex for changing opts.Config.
 	clientIds                    StringSet          // The list of clients we know and which take part in master election.
 	client_channels              ChannelMap         // Channels we use to communicate with client websocket goroutines.
 	notification_channels        ChannelSet         // Channels we use to communicate with notifier websockets goroutines.
@@ -44,7 +40,7 @@ type ServerState struct {
 	clientsLastSeen              TimeSet            // For any client we have seen, the time when we've last seen him.
 	ws_channel                   chan *WsMsg        // Channel used by websocket go routines to send messages to dispatcher go routine.
 	upgrader                     websocket.Upgrader // Upgrader to use for turning a http connection into a webscoket connection.
-	redis                        *RedisServerInfo   // Cached state of watched redis insiances. Refreshed every opts.RedisMasterRetryInterval seconds.
+	redis                        *RedisServerInfo   // Cached state of watched redis insiances. Refreshed every RedisMasterRetryInterval seconds.
 	currentMaster                *RedisShim         // Current redis master.
 	currentTokenInt              int                // Token to identify election rounds.
 	currentToken                 string             // String representation of current token.
@@ -55,8 +51,23 @@ type ServerState struct {
 	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from all clients (ping/pong).
 	retries                      int                // Count down for checking a master to come back after it has become unreachable.
 	watching                     bool               // Whether we're currently watching a redis master (false during election process).
-	watchTick                    int                // One second tick counter which gets reset every opts.RedisMasterRetryInterval seconds.
+	watchTick                    int                // One second tick counter which gets reset every RedisMasterRetryInterval seconds.
 	waitGroup                    sync.WaitGroup     // Used to organize the shutdown process.
+	configChanges                chan consul.Env    // Environment chnages from consul arrive on this channel.
+}
+
+func (s *ServerState) GetConfig() *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.opts.Config
+}
+
+func (s *ServerState) SetConfig(config *Config) *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	oldconfig := s.opts.Config
+	s.opts.Config = config
+	return oldconfig
 }
 
 type ServerStatus struct {
@@ -108,7 +119,7 @@ func (a PSTA) Swap(i, j int) {
 func (s *ServerState) UnresponsiveClients() []string {
 	res := make([]string, 0)
 	now := time.Now()
-	threshold := now.Add(-(time.Duration(s.opts.ClientTimeout) * time.Second))
+	threshold := now.Add(-(time.Duration(s.GetConfig().ClientTimeout) * time.Second))
 	a := make(PSTA, 0)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
@@ -213,7 +224,7 @@ func (s *ServerState) RemoveNotification(channel StringChannel) {
 }
 
 func (s *ServerState) ClientTimeout() time.Duration {
-	return time.Duration(s.opts.ClientTimeout) * time.Second
+	return time.Duration(s.GetConfig().ClientTimeout) * time.Second
 }
 
 func (s *ServerState) SendToWebSockets(msg *MsgContent) (err error) {
@@ -287,10 +298,14 @@ func (s *ServerState) dispatcher() {
 		case <-s.timer_channel:
 			s.CancelInvalidation()
 		case <-ticker.C:
-			s.watchTick = (s.watchTick + 1) % s.opts.RedisMasterRetryInterval
+			s.watchTick = (s.watchTick + 1) % s.GetConfig().RedisMasterRetryInterval
 			if s.watchTick == 0 {
 				s.CheckRedisAvailability()
 			}
+		case env := <-s.configChanges:
+			newconfig := buildConfig(env)
+			s.SetConfig(newconfig)
+			logInfo("updated server config from consul")
 		}
 	}
 }
@@ -328,7 +343,7 @@ func NewServerState(o ServerOptions) *ServerState {
 	// initialize state
 	s := &ServerState{client_channels: make(ChannelMap), notification_channels: make(ChannelSet)}
 	s.opts = o
-	s.redis = NewRedisServerInfo(opts.RedisServers)
+	s.redis = NewRedisServerInfo(s.GetConfig().RedisServers)
 	s.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -336,7 +351,7 @@ func NewServerState(o ServerOptions) *ServerState {
 	}
 	s.ws_channel = make(chan *WsMsg, 10000)
 	s.clientIds = make(StringSet)
-	for _, id := range strings.Split(opts.ClientIds, ",") {
+	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
 		if id != "" {
 			s.clientIds.Add(id)
 		}
@@ -416,7 +431,17 @@ func RunConfigurationServer(o ServerOptions) error {
 	if Verbose {
 		go state.statsReporter()
 	}
-	state.clientHandler(o.Port)
+	if state.opts.ConsulClient != nil {
+		var err error
+		state.configChanges, err = state.opts.ConsulClient.WatchConfig()
+		if err != nil {
+			return err
+		}
+	} else {
+		state.configChanges = make(chan consul.Env)
+	}
+
+	state.clientHandler(state.GetConfig().Port)
 	logInfo("shutting down")
 	// wait for web socket readers and writers to finish
 	if waitForWaitGrouptWithTimeout(&state.waitGroup, 3*time.Second) {
@@ -655,7 +680,7 @@ func (s *ServerState) wsWriter(clientId string, ws *websocket.Conn, input_from_d
 }
 
 func (s *ServerState) StartAndReloadState() {
-	VerifyMasterFileString(s.opts.RedisMasterFile)
+	VerifyMasterFileString(s.GetConfig().RedisMasterFile)
 	s.CheckRedisConfiguration()
 	s.redis.Refresh()
 	s.DetermineInitialMaster()
@@ -795,8 +820,8 @@ func (s *ServerState) CheckRedisConfiguration() {
 }
 
 func (s *ServerState) DetermineInitialMaster() {
-	if MasterFileExists(s.opts.RedisMasterFile) {
-		s.currentMaster = RedisMasterFromMasterFile(s.opts.RedisMasterFile)
+	if MasterFileExists(s.GetConfig().RedisMasterFile) {
+		s.currentMaster = RedisMasterFromMasterFile(s.GetConfig().RedisMasterFile)
 	}
 	if s.currentMaster != nil {
 		logInfo("initial master from redis master file: %s", s.currentMaster.server)
@@ -808,7 +833,7 @@ func (s *ServerState) DetermineInitialMaster() {
 	} else {
 		s.currentMaster = s.redis.AutoDetectMaster()
 		if s.currentMaster != nil {
-			WriteRedisMasterFile(s.opts.RedisMasterFile, s.currentMaster.server)
+			WriteRedisMasterFile(s.GetConfig().RedisMasterFile, s.currentMaster.server)
 		}
 	}
 }
@@ -902,7 +927,7 @@ func (s *ServerState) SwitchMaster() {
 		logWarn(msg)
 		s.SendNotification(msg)
 		newMaster.MakeMaster()
-		WriteRedisMasterFile(s.opts.RedisMasterFile, newMaster.server)
+		WriteRedisMasterFile(s.GetConfig().RedisMasterFile, newMaster.server)
 		s.currentMaster = newMaster
 	} else {
 		msg := fmt.Sprintf("Redis master could not be switched, no slave available to become new master, promoting old master")
@@ -935,7 +960,7 @@ func (s *ServerState) StartWatcher() {
 	if s.WatcherPaused() {
 		s.watchTick = 0
 		s.watching = true
-		logInfo("Starting watching redis servers every %d seconds", s.opts.RedisMasterRetryInterval)
+		logInfo("Starting watching redis servers every %d seconds", s.GetConfig().RedisMasterRetryInterval)
 	}
 }
 
@@ -952,10 +977,10 @@ func (s *ServerState) CheckRedisAvailability() {
 	if s.MasterIsAvailable() {
 		s.MasterAvailable()
 	} else {
-		retriesLeft := s.opts.RedisMasterRetries - (s.retries + 1)
+		retriesLeft := s.GetConfig().RedisMasterRetries - (s.retries + 1)
 		logWarn("Redis master not available! (Retries left: %d)", retriesLeft)
 		s.retries += 1
-		if s.retries >= s.opts.RedisMasterRetries {
+		if s.retries >= s.GetConfig().RedisMasterRetries {
 			s.retries = 0
 			s.MasterUnavailable()
 		}
