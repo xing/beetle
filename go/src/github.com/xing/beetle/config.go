@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 	"source.xing.com/olympus/golympus/consul"
@@ -39,8 +40,13 @@ func (c *Config) ServerUrl() string {
 	return c.Server + ":" + strconv.Itoa(c.Port)
 }
 
+func (c *Config) Sanitize() {
+	if strings.Contains(c.ClientIds, "\n") {
+		c.ClientIds = strings.Replace(c.ClientIds, "\n", ",", -1)
+	}
+}
+
 func (c *Config) SetDefaults() *Config {
-	// If you change any of these values, don't forget to change the description above.
 	if c.ClientTimeout == 0 {
 		c.ClientTimeout = 10
 	}
@@ -71,6 +77,7 @@ func (c *Config) SetDefaults() *Config {
 	if c.RedisMasterFile == "" {
 		c.RedisMasterFile = "/etc/beetle/redis-master"
 	}
+	c.Sanitize()
 	return c
 }
 
@@ -114,6 +121,7 @@ func (c *Config) Merge(d *Config) *Config {
 	if c.MailTo == "" {
 		c.MailTo = d.MailTo
 	}
+	c.Sanitize()
 	return c
 }
 
@@ -170,5 +178,6 @@ func configFromConsulEnv(env consul.Env) *Config {
 	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
 		c.RedisMasterFile = v
 	}
+	c.Sanitize()
 	return &c
 }
