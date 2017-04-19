@@ -137,6 +137,9 @@ func configFromConsulEnv(env consul.Env) *Config {
 			c.GcThreshold = d
 		}
 	}
+	if v, ok := env["REDIS_GC_DATABASES"]; ok {
+		c.GcDatabases = v
+	}
 	if v, ok := env["REDIS_CONFIGURATION_MASTER_RETRIES"]; ok {
 		if d, err := strconv.Atoi(v); err == nil {
 			c.RedisMasterRetries = d
