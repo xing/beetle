@@ -305,7 +305,7 @@ func (s *ServerState) dispatcher() {
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
 			s.SetConfig(newconfig)
-			logInfo("updated server config from consul")
+			logInfo("updated server config from consul: %+v", s.GetConfig())
 		}
 	}
 }
