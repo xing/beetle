@@ -260,7 +260,7 @@ func setupConfig() {
 
 func buildConfig(env consul.Env) *Config {
 	consulConfig := configFromConsulEnv(env)
-	return configFromParams.Merge(configFromFile).Merge(consulConfig).SetDefaults()
+	return configFromParams.Clone().Merge(configFromFile).Merge(consulConfig).SetDefaults()
 }
 
 func main() {

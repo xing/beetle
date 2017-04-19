@@ -22,6 +22,11 @@ type Config struct {
 	MailTo                   string `yaml:"mail_to"`
 }
 
+func (c *Config) Clone() *Config {
+	d := *c
+	return &d
+}
+
 func (c *Config) String() string {
 	yamlBytes, err := yaml.Marshal(c)
 	if err != nil {
