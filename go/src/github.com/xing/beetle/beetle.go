@@ -88,7 +88,7 @@ type CmdPrintConfig struct{}
 var cmdPrintConfig CmdPrintConfig
 
 func (x *CmdPrintConfig) Execute(args []string) error {
-	fmt.Printf("%+v\n", *initialConfig)
+	fmt.Print(initialConfig.String())
 	return nil
 }
 
