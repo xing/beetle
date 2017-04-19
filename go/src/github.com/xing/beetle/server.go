@@ -305,7 +305,7 @@ func (s *ServerState) dispatcher() {
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
 			s.SetConfig(newconfig)
-			logInfo("updated server config from consul: %+v", s.GetConfig())
+			logInfo("updated server config from consul: %s", s.GetConfig())
 		}
 	}
 }
@@ -423,7 +423,7 @@ func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) boo
 }
 
 func RunConfigurationServer(o ServerOptions) error {
-	fmt.Printf("server: %+v\n", o)
+	logInfo("server started with options: %+v\n", o)
 	state := NewServerState(o)
 	state.StartAndReloadState()
 	// start threads

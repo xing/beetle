@@ -207,7 +207,7 @@ func (s *ClientState) Writer() {
 			if env != nil {
 				newconfig := buildConfig(env)
 				oldconfig := s.SetConfig(newconfig)
-				logInfo("updated server config from consul: %+v", s.GetConfig())
+				logInfo("updated server config from consul: %s", s.GetConfig())
 				if newconfig.RedisMasterFile != oldconfig.RedisMasterFile {
 					if err := os.Rename(oldconfig.RedisMasterFile, newconfig.RedisMasterFile); err != nil {
 						logError("could not rename redis master file to: %s", newconfig.RedisMasterFile)

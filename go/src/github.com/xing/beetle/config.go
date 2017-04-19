@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 
+	"gopkg.in/yaml.v2"
 	"source.xing.com/olympus/golympus/consul"
 )
 
@@ -19,6 +20,14 @@ type Config struct {
 	GcThreshold              int    `yaml:"redis_gc_threshold"`
 	GcDatabases              string `yaml:"redis_gc_databases"`
 	MailTo                   string `yaml:"mail_to"`
+}
+
+func (c *Config) String() string {
+	yamlBytes, err := yaml.Marshal(c)
+	if err != nil {
+		return err.Error()
+	}
+	return string(yamlBytes)
 }
 
 func (c *Config) ServerUrl() string {
