@@ -301,7 +301,9 @@ func main() {
 		}
 	}
 	Verbose = opts.Verbose
+	consul.Verbose = Verbose
 	setupConfig()
+	logDebug("config has been set up")
 	installSignalHandler()
 	writePidFile(opts.PidFile)
 	err = cmd.Execute(cmdArgs)

@@ -29,6 +29,7 @@ func ClearRedisMasterFile(path string) error {
 func ReadRedisMasterFile(path string) string {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
+		logError("could not read redis master file '%s': %v", path, err)
 		return ""
 	}
 	return strings.TrimRight(string(b), "\n")

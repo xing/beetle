@@ -80,6 +80,7 @@ collecting:
 			if cursor == 0 {
 				logInfo("starting SCAN on db %d", db)
 			}
+			logDebug("cursor: %d", cursor)
 			var err error
 			var keys []string
 			keys, cursor, err = s.redis.Scan(cursor, "msgid:*:expires", 1000).Result()
@@ -127,10 +128,14 @@ func (s *GCState) getMaster(db int) bool {
 			s.redis = redis.NewClient(&redis.Options{Addr: server, DB: db})
 		}
 	}
+	if s.redis == nil {
+		logError("could not determine redis master: %v, db: %d", s.currentMaster, db)
+	}
 	return s.redis != nil
 }
 
 func RunGarbageCollectKeys(opts GCOptions) error {
+	logDebug("garbage collecting keys with options: %+v", opts)
 	state := &GCState{opts: opts}
 	state.keySuffixes = []string{"status", "ack_count", "timeout", "delay", "attempts", "exceptions", "mutex", "expires"}
 	for _, s := range strings.Split(opts.GcDatabases, ",") {
