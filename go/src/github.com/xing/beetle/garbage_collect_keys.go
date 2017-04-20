@@ -73,6 +73,9 @@ func (s *GCState) garbageCollectKeys(db int) {
 	ticker := time.NewTicker(1 * time.Second)
 collecting:
 	for _ = range ticker.C {
+		if interrupted {
+			break
+		}
 		if s.getMaster(db) {
 			if cursor == 0 {
 				logInfo("starting SCAN on db %d", db)
@@ -103,7 +106,7 @@ collecting:
 					expired += 1
 				}
 			}
-			if cursor == 0 || interrupted {
+			if cursor == 0 {
 				return
 			}
 		}
@@ -131,6 +134,9 @@ func RunGarbageCollectKeys(opts GCOptions) error {
 	state := &GCState{opts: opts}
 	state.keySuffixes = []string{"status", "ack_count", "timeout", "delay", "attempts", "exceptions", "mutex", "expires"}
 	for _, s := range strings.Split(opts.GcDatabases, ",") {
+		if interrupted {
+			break
+		}
 		if s != "" {
 			db, err := strconv.Atoi(s)
 			if err != nil {
