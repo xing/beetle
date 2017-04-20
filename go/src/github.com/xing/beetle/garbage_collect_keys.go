@@ -115,7 +115,7 @@ collecting:
 }
 
 func (s *GCState) getMaster(db int) bool {
-	server := ReadRedisMasterFile(opts.RedisMasterFile)
+	server := ReadRedisMasterFile(s.opts.RedisMasterFile)
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server
 		s.currentDB = db
