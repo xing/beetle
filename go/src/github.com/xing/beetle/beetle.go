@@ -222,18 +222,18 @@ func readConfigFile(configFile string) *Config {
 	return &c
 }
 
-func readConsulData(consulUrl string) consul.Env {
+func readConsulData(consulUrl string) (consul.Env, error) {
 	if consulUrl == "" {
-		return nil
+		return nil, nil
 	}
 	logInfo("retrieving config from consul: %s", consulUrl)
 	client := getConsulClient()
 	env, err := client.GetEnv()
 	if err != nil {
 		logInfo("could not retrieve config from consul: %v", err)
-		return nil
+		return nil, err
 	}
-	return env
+	return env, nil
 }
 
 var consulClient *consul.Client
@@ -251,11 +251,15 @@ var (
 	initialConfig    *Config
 )
 
-func setupConfig() {
+func setupConfig() error {
 	configFromParams = getProgramParameters()
 	configFromFile = readConfigFile(opts.ConfigFile)
-	consulEnv := readConsulData(opts.ConsulUrl)
+	consulEnv, err := readConsulData(opts.ConsulUrl)
+	if err != nil {
+		return err
+	}
 	initialConfig = buildConfig(consulEnv)
+	return nil
 }
 
 func buildConfig(env consul.Env) *Config {
@@ -302,7 +306,11 @@ func main() {
 	}
 	Verbose = opts.Verbose
 	consul.Verbose = Verbose
-	setupConfig()
+	err = setupConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	logDebug("config has been set up")
 	installSignalHandler()
 	writePidFile(opts.PidFile)
