@@ -75,6 +75,7 @@ world:
 	test `uname -s` = Darwin && $(MAKE) linux container tag push darwin || $(MAKE) darwin linux container tag push
 
 BEETLE_VERSION := v$(shell awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $$4}'  $(GO_SRC)/version.go)
+TAG ?= latest
 
 release:
 	@test "$(shell git status --porcelain)" = "" || test "$(FORCE)" == "1" || (echo "project is dirty, please check in modified files and remove untracked ones (or use FORCE=1)" && false)
@@ -102,7 +103,7 @@ container:
 	docker build -f Dockerfile -t=architects/gobeetle .
 
 tag:
-	docker tag architects/gobeetle docker.dc.xing.com/architects/gobeetle:preview
+	docker tag architects/gobeetle docker.dc.xing.com/architects/gobeetle:$(TAG)
 
 push:
-	docker push docker.dc.xing.com/architects/gobeetle:preview
+	docker push docker.dc.xing.com/architects/gobeetle:$(TAG)
