@@ -302,7 +302,7 @@ func (s *ServerState) dispatcher() {
 			if s.watchTick == 0 {
 				s.CheckRedisAvailability()
 				s.ForgetOldUnknownClientIds()
-				// s.ForgetOldLastSeenEntries()
+				s.ForgetOldLastSeenEntries()
 			}
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
@@ -692,7 +692,7 @@ func (s *ServerState) StartAndReloadState() {
 	}
 	s.LoadState()
 	s.ForgetOldUnknownClientIds()
-	// s.ForgetOldLastSeenEntries()
+	s.ForgetOldLastSeenEntries()
 }
 
 func (s *ServerState) Pong(msg MsgContent) {
