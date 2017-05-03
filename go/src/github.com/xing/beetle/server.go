@@ -824,7 +824,7 @@ func (s *ServerState) ForgetOldLastSeenEntries() {
 	threshold := time.Now().Add(-24 * time.Hour)
 	newLastSeen := make(TimeSet)
 	for id, t := range s.clientsLastSeen {
-		if t.Before(threshold) {
+		if t.After(threshold) {
 			newLastSeen[id] = t
 		}
 	}
