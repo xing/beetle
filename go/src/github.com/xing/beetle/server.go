@@ -301,6 +301,8 @@ func (s *ServerState) dispatcher() {
 			s.watchTick = (s.watchTick + 1) % s.GetConfig().RedisMasterRetryInterval
 			if s.watchTick == 0 {
 				s.CheckRedisAvailability()
+				s.ForgetOldUnknownClientIds()
+				s.ForgetOldLastSeenEntries()
 			}
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
@@ -689,6 +691,8 @@ func (s *ServerState) StartAndReloadState() {
 		os.Exit(1)
 	}
 	s.LoadState()
+	s.ForgetOldUnknownClientIds()
+	s.ForgetOldLastSeenEntries()
 }
 
 func (s *ServerState) Pong(msg MsgContent) {
@@ -802,6 +806,29 @@ func (s *ServerState) AddUnknownClientId(id string) {
 		delete(s.clientsLastSeen, old_id)
 	}
 	s.unknownClientIds.Add(id)
+}
+
+func (s *ServerState) ForgetOldUnknownClientIds() {
+	threshold := time.Now().Add(-24 * time.Hour)
+	newUnknown := make(StringList, 0, len(s.unknownClientIds))
+	for _, id := range s.unknownClientIds {
+		lastSeen, ok := s.clientsLastSeen[id]
+		if ok && lastSeen.After(threshold) {
+			newUnknown = append(newUnknown, id)
+		}
+	}
+	s.unknownClientIds = newUnknown
+}
+
+func (s *ServerState) ForgetOldLastSeenEntries() {
+	threshold := time.Now().Add(-24 * time.Hour)
+	newLastSeen := make(TimeSet)
+	for id, t := range s.clientsLastSeen {
+		if t.Before(threshold) {
+			newLastSeen[id] = t
+		}
+	}
+	s.clientsLastSeen = newLastSeen
 }
 
 // Insert or update client last seen timestamp. Returns true if we
