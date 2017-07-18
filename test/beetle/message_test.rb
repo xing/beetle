@@ -263,7 +263,7 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
 
-      assert_equal nil, @store.get(message.msg_id, :ack_count)
+      assert_nil @store.get(message.msg_id, :ack_count)
       message.process(lambda {|*args|})
       assert message.redundant?
       assert_equal "1", @store.get(message.msg_id, :ack_count)
