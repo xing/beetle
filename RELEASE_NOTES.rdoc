@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 1.0.4
+
+* use amqp protocol version 0.9 by default for publishers
+
 == Version 1.0.3
 
 * fixed that publisher did not allow specifying message properties
