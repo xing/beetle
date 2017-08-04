@@ -14,3 +14,13 @@ tmp/*
 coverage
 dump.rdb
 TAGS
+/beetle
+.godeps
+/release/
+/go/src/github.com/davecgh/go-spew/
+/go/src/github.com/jessevdk/go-flags/
+/go/src/gopkg.in/gorilla/websocket.v1/
+/go/src/gopkg.in/redis.v5/
+/go/src/gopkg.in/tylerb/graceful.v1/
+/go/src/gopkg.in/yaml.v2/
+/go/src/source.xing.com/olympus/golympus/

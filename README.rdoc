@@ -29,10 +29,10 @@ More information can be found on the {project website}[http://xing.github.com/be
 
     # configure exchanges, queues, bindings, messages and handlers
 
-    b.configure do |config|
-      config.queue :test
-      config.message :test
-      config.handler(:test) { |message| puts message.data }
+    b.configure do
+      queue :test
+      message :test
+      handler(:test) { |message| puts message.data }
     end
 
 === Publishing
@@ -72,6 +72,13 @@ You also need a Redis instance running. The default configuration of Redis will 
 
     redis-server
 
+If you want to run the integration tests you need GO installed and you
+will need to build the beetle binary. We provide a Makefile for this
+purpose, so simply running
+
+    make
+
+should suffice.
 
 == Gem Dependencies
 
@@ -127,8 +134,9 @@ Update RELEASE_NOTES.rdoc!
 We use {semantic versioning}[http://semver.org/] and create a git tag
 for each release.
 
-Edit `lib/beetle/version.rb` to set the new version number
-(`Major.Minor.Patch`).
+Edit `lib/beetle/version.rb` and
+`go/src/github.com/xing/beetle/version.go` to set the new version
+number (`Major.Minor.Patch`).
 
 In short (see {semver.org}[http://semver.org] for details):
 
@@ -141,7 +149,7 @@ In short (see {semver.org}[http://semver.org] for details):
   are introduced.
 
 Then use `rake release` which will create the git tag and upload the
-gem to gems.xing.com:
+gem to github.com:
 
     $ bundle exec rake release
 

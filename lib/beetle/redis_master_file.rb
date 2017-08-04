@@ -26,10 +26,5 @@ module Beetle
       config.redis_server
     end
 
-    def verify_redis_master_file_string
-      if master_file =~ /^[0-9a-z.]+:[0-9]+$/
-        raise ConfigurationError.new("To use the redis failover, redis_server config option must point to a file")
-      end
-    end
   end
 end

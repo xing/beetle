@@ -35,9 +35,9 @@ On every worker server runs another daemon, the Redis Configuration Client
 
 If the RCS finds another potential Redis Master, it sends out a message to see
 if all known RCCs are still available (once again to eliminate the risk of a
-partitioned network) and if they agree to the master switch. 
+partitioned network) and if they agree to the master switch.
 
-If all RCCs have answered to that message, the RCS sends out a message which 
+If all RCCs have answered to that message, the RCS sends out a message which
 tells the RCCs to invalidate the current master.
 
 This happens by deleting the contents of a special file which is used
@@ -53,7 +53,7 @@ to the RCCs, which then write that value into their redis master file.
 
 Additionally, the RCS sends reconfigure messages with the current Redis master
 periodically, to allow new RCCs to pick up the current master. Plus it turns
-all other redis servers into slaves of the current master. 
+all other redis servers into slaves of the current master.
 
 === Prerequisites
 
@@ -93,15 +93,11 @@ All command line options can also be given as a yaml configuration file via the 
 
 Start the Redis Configuration Server:
 
-  beetle configuration_server start -- --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
-
-Get help for starting/stopping the server:
-
-  beetle configuration_server -h
+  beetle configuration_server --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
 
 Get help for server options:
 
-  beetle configuration_server start -- -h
+  beetle configuration_server -h
 
 === On every worker server
 
@@ -109,16 +105,12 @@ Start the Redis Configuration Client:
 
 On first worker server:
 
-  beetle configuration_client start -- --client-id rcc-1
+  beetle configuration_client --client-id rcc-1
 
 On second worker server:
 
-  beetle configuration_client start -- --client-id rcc-2
-
-Get help for starting/stopping the client:
-
-  beetle configuration_client -h
+  beetle configuration_client --client-id rcc-2
 
 Get help for client options:
 
-  beetle configuration_client start -- -h
+  beetle configuration_client -h

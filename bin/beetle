@@ -1,9 +1,0 @@
-#!/usr/bin/env ruby
-
-begin
-  require 'beetle/commands'
-rescue LoadError
-  beetle_path = File.expand_path("../../lib", __FILE__)
-  $:.unshift(beetle_path)
-  require 'beetle/commands'
-end

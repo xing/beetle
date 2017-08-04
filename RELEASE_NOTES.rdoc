@@ -1,5 +1,10 @@
 = Release Notes
 
+== Version 2.0.0rc1
+
+* beetle command has been rewritten in GO
+* garbage collecting redis keys now uses the redis SCAN command
+
 == Version 1.0.4
 
 * use amqp protocol version 0.9 by default for publishers
