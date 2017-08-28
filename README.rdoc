@@ -151,6 +151,11 @@ In short (see {semver.org}[http://semver.org] for details):
 Then use `rake release` which will create the git tag and upload the
 gem to github.com:
 
-    $ bundle exec rake release
+    bundle exec rake release
 
 The generated gem is located in the `pkg/` directory.
+
+In order to build go binaries and upload the docker container with the
+beetle GO binary to docker hub, run
+
+    make release
