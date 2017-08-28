@@ -1,6 +1,6 @@
 = Release Notes
 
-== Version 2.0.0rc1
+== Version 2.0.0
 
 * beetle command has been rewritten in GO
 * garbage collecting redis keys now uses the redis SCAN command

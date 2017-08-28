@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const BEETLE_VERSION = "2.0.0rc1"
+const BEETLE_VERSION = "2.0.0"
 
 func ReportVersionIfRequestedAndExit() {
 	for _, a := range os.Args {
