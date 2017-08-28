@@ -24,7 +24,7 @@ read -r -d '' POST_DATA <<EOF
   "name": "$TAG",
   "body": "$DESC",
   "draft": false,
-  "prerelease": true
+  "prerelease": false
 }
 EOF
 
@@ -32,7 +32,7 @@ read -r -d '' PATCH_DATA <<EOF
 {
   "body": "$DESC",
   "draft": false,
-  "prerelease": true
+  "prerelease": false
 }
 EOF
 
