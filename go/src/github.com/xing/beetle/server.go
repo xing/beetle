@@ -100,7 +100,7 @@ func (s *ServerState) GetStatus() *ServerStatus {
 
 type PST struct {
 	c string
-	t int
+	t time.Duration
 }
 type PSTA []PST
 
@@ -119,16 +119,18 @@ func (a PSTA) Swap(i, j int) {
 func (s *ServerState) UnresponsiveClients() []string {
 	res := make([]string, 0)
 	now := time.Now()
-	threshold := now.Add(-(time.Duration(s.GetConfig().ClientTimeout) * time.Second))
+	threshold := now.Add(-(time.Duration(s.GetConfig().ClientTimeout)))
 	a := make(PSTA, 0)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
-			a = append(a, PST{c: c, t: int(now.Sub(t).Seconds())})
+			a = append(a, PST{c: c, t: now.Sub(t)})
 		}
 	}
 	sort.Sort(sort.Reverse(a))
 	for _, x := range a {
-		res = append(res, fmt.Sprintf("%s:%d", x.c, x.t))
+		if rounded := x.t.Truncate(time.Second); rounded > 0 {
+			res = append(res, fmt.Sprintf("%s: last seen %s ago", x.c, rounded))
+		}
 	}
 	return res
 }

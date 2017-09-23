@@ -76,14 +76,14 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 	// add an old client
 	s.clientsLastSeen["b"] = old
 	u = s.UnresponsiveClients()
-	if len(u) != 1 || u[0] != "b:2" {
-		t.Errorf("after adding an old client, UnresponsiveClients() should be '[b:2]', but is: '%v'", u)
+	if len(u) != 1 || u[0] != "b: last seen 2s ago" {
+		t.Errorf("after adding an old client, UnresponsiveClients() should be '[b: last seen 2s ago]', but is: '%v'", u)
 	}
 	// add an older client
 	s.clientsLastSeen["c"] = older
 	u = s.UnresponsiveClients()
-	if len(u) != 2 || u[0] != "c:3" || u[1] != "b:2" {
-		t.Errorf("after adding an old client, UnresponsiveClients() should be '[c:3 b:2]', but is: '%v'", u)
+	if len(u) != 2 || u[0] != "c: last seen 3s ago" || u[1] != "b: last seen 2s ago" {
+		t.Errorf("after adding an old client, UnresponsiveClients() should be '[c:last seen 3s ago 3 b: last seen 2s ago]', but is: '%v'", u)
 	}
 
 }
