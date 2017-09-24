@@ -40,7 +40,8 @@ module TestDaemons
          :ping_command  => lambda{ true },
          :pid_file      => pid_file,
          :log_file      => log_file,
-         :start_timeout => 5,
+         :start_timeout => 10,
+         :stop_timeout => 10,
       )
     end
 
