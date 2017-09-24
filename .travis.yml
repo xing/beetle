@@ -4,7 +4,7 @@ rvm:
 before_script:
   - sudo rm -rf /usr/local/go
   - curl -s https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
-  - export PATH=/usr/local/go:$PATH
+  - export PATH=/usr/local/go/bin:$PATH
 script: "make && bundle exec rake"
 services:
   - redis-server
