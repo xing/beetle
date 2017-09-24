@@ -40,23 +40,25 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
-        with(:body => {
-        "pattern" => "^QUEUE_NAME$",
-        "priority" => 1,
-        "apply-to" => "queues",
-        "definition" => {
-          "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
-          "dead-letter-exchange" => ""
-        }}.to_json).
-        to_return(:status => 204)
+      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^QUEUE_NAME$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
+                 "dead-letter-exchange" => ""
+               }}.to_json)
+        .to_return(:status => 204)
 
       @dead_lettering.set_dead_letter_policy!(@server, @queue_name)
     end
 
     test "raises exception when policy couldn't successfully be created" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
-        to_return(:status => [405])
+      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => [405])
 
       assert_raises DeadLettering::FailedRabbitRequest do
         @dead_lettering.set_dead_letter_policy!(@server, @queue_name)
@@ -64,32 +66,34 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/%2F/QUEUE_NAME_policy").
-        with(:body => {
-        "pattern" => "^QUEUE_NAME$",
-        "priority" => 1,
-        "apply-to" => "queues",
-        "definition" => {
-          "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
-          "dead-letter-exchange" => "",
-          "message-ttl" => 10000
-        }}.to_json).
-        to_return(:status => 204)
+      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+                "pattern" => "^QUEUE_NAME$",
+                "priority" => 1,
+                "apply-to" => "queues",
+                "definition" => {
+                  "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
+                  "dead-letter-exchange" => "",
+                  "message-ttl" => 10000
+                }}.to_json)
+        .to_return(:status => 204)
 
       @dead_lettering.set_dead_letter_policy!(@server, @queue_name, :message_ttl => 10000)
     end
 
     test "properly encodes the vhost from the configuration" do
-      stub_request(:put, "http://guest:guest@localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy").
-        with(:body => {
-        "pattern" => "^QUEUE_NAME$",
-        "priority" => 1,
-        "apply-to" => "queues",
-        "definition" => {
-          "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
-          "dead-letter-exchange" => ""
-        }}.to_json).
-        to_return(:status => 204)
+      stub_request(:put, "http://localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^QUEUE_NAME$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
+                 "dead-letter-exchange" => ""
+               }}.to_json)
+        .to_return(:status => 204)
 
       @config.vhost = "foo/"
 

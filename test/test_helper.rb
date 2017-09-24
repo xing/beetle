@@ -17,6 +17,7 @@ class Minitest::Test
   require "active_support/testing/declarative"
   extend ActiveSupport::Testing::Declarative
   require "webmock"
+  WebMock.enable!
   include WebMock::API
   def assert_nothing_raised(*)
     yield
