@@ -146,6 +146,7 @@ func installSignalHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
+		logInfo("received TERM signal")
 		interrupted = true
 		signal.Stop(c)
 	}()
