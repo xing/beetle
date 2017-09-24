@@ -46,9 +46,10 @@ class Redis #:nodoc:
     info["role"] == "slave" && info["master_host"] == host && info["master_port"] == port.to_s
   end
 
-  # compatibility layer for redis 2.2.2
-  # remove this once all our apps have upgraded to 3.x
   if Redis::VERSION < "3.0"
+
+    # compatibility layer for redis 2.2.2
+    # remove this once all our apps have upgraded to 3.x
 
     # Redis 2 tries to establish a connection on inspect. this is evil!
     def inspect
@@ -77,5 +78,19 @@ class Redis #:nodoc:
     def msetnx(*values)
       super != 0
     end
+
+  elsif Redis::VERSION >= "4.0.0"
+
+    # redis 4.0.0 has a shutdown method which raises if a connection to the redis server
+    # cannot be established.
+    module SaneShutdown
+      def shutdown
+        super
+      rescue CannotConnectError
+        nil
+      end
+    end
+    prepend SaneShutdown
+
   end
 end

@@ -80,10 +80,17 @@ module Beetle
         @r.shutdown
       end
 
-    else
+    elsif Redis::VERSION < "4.0"
 
       test "redis shutdown implementation should call :shutdown and return nil" do
         @r.client.expects(:call).with([:shutdown]).once.raises(Redis::ConnectionError)
+        assert_nil @r.shutdown
+      end
+
+    else
+
+      test "patched redis shutdown implementation should not raise connection refused but return nil" do
+        # note that we do not have redis running on port 6390
         assert_nil @r.shutdown
       end
 
