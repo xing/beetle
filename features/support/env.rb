@@ -27,7 +27,7 @@ def cleanup_test_env
   `rm -f #{redis_master_files}`
 
   `ruby features/support/system_notification_logger stop`
-  `rm -f #{system_notification_log_path}`
+  # `rm -f #{system_notification_log_path}`
 
   TestDaemons::Redis.stop_all
 end
