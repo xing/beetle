@@ -126,17 +126,20 @@ end
 
 Then /^a system notification for "([^\"]*)" not being available should be sent$/ do |redis_name|
   text = "Redis master '#{TestDaemons::Redis[redis_name].ip_with_port}' not available"
-  assert_match /#{text}/, File.readlines(system_notification_log_path).last
+  lines = File.readlines(system_notification_log_path)
+  assert_match /#{text}/, lines[-2..-1].join(' ')
 end
 
 Then /^a system notification for switching from "([^\"]*)" to "([^\"]*)" should be sent$/ do |old_redis_master_name, new_redis_master_name|
   text = "Setting redis master to '#{TestDaemons::Redis[new_redis_master_name].ip_with_port}' (was '#{TestDaemons::Redis[old_redis_master_name].ip_with_port}')"
-  assert_match /#{Regexp.escape(text)}/, File.read(system_notification_log_path)
+  lines = File.readlines(system_notification_log_path)
+  assert_match /#{Regexp.escape(text)}/, lines.last
 end
 
 Then /^a system notification for no slave available to become new master should be sent$/ do
   text = "Redis master could not be switched, no slave available to become new master"
-  assert_match /#{text}/, File.readlines(system_notification_log_path).last
+  lines = File.readlines(system_notification_log_path)
+  assert_match /#{text}/, lines.last
 end
 
 Then /^the redis configuration server should answer http requests$/ do

@@ -9,7 +9,7 @@ require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
 system_notification_log_file_path = "#{tmp_path}/system_notifications.log"
 
-DEBUG = true
+DEBUG = false
 
 Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
   Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
@@ -34,11 +34,11 @@ Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode =>
       end
       ws.onclose do
         puts "server closed connection" if DEBUG && !@interrupted
-        EM.add_timer(1){ EM.stop_event_loop }
+        EM.add_timer(0){ EM.stop_event_loop }
       end
       ws.onmessage do |text|
         puts "writing message to #{system_notification_log_file_path}: #{text}"
-        log_file << text
+        log_file << (text + "\n")
       end
       puts "Started system notification logger"
       trap("INT") {  shutdown(ws) }
