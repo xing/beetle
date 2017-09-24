@@ -74,10 +74,8 @@ module TestDaemons
       false
     end
 
-    HTTP_SERVER_PORT = RUBY_PLATFORM =~ /darwin/ ? 9650 : 8080
-
     def self.get_status(path, content_type)
-      uri = URI.parse("http://127.0.0.1:#{HTTP_SERVER_PORT}#{path}")
+      uri = URI.parse("http://127.0.0.1:9650/#{path}")
       http = Net::HTTP.new(uri.host, uri.port)
       request = Net::HTTP::Get.new(uri.request_uri)
       request['Accept'] = content_type
