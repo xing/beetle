@@ -85,6 +85,8 @@ Cucumber::Rake::Task.new(:cucumber) do |t|
   t.cucumber_opts = "features --format progress"
 end
 
+task :cucumber => :clean
+
 task :default do
   Rake::Task[:test].invoke
   Rake::Task[:cucumber].invoke
