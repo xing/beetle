@@ -29,7 +29,7 @@ module TestDaemons
          :ping_command  => lambda{ answers_text_requests? },
          :pid_file      => pid_file,
          :log_file      => log_file,
-         :start_timeout => 10
+         :start_timeout => 5
       )
     end
 
