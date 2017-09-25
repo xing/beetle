@@ -127,7 +127,8 @@ end
 Then /^a system notification for "([^\"]*)" not being available should be sent$/ do |redis_name|
   text = "Redis master '#{TestDaemons::Redis[redis_name].ip_with_port}' not available"
   lines = File.readlines(system_notification_log_path)
-  assert_match /#{text}/, lines[-3..-1].join(' ')
+  tail = lines[-3..-1].join(' ') rescue nil
+  assert_match /#{text}/, tail
 end
 
 Then /^a system notification for switching from "([^\"]*)" to "([^\"]*)" should be sent$/ do |old_redis_master_name, new_redis_master_name|
