@@ -159,3 +159,13 @@ In order to build go binaries and upload the docker container with the
 beetle GO binary to docker hub, run
 
     make release
+
+This will upload the go binaries to https://github.com/xing/beetle/
+and push the beetle container to
+https://hub.docker.com/r/xingarchitects/gobeetle/.
+
+Run
+
+    make tag push TAG=vX.X.X
+
+to tag and push the container with a specific version number.
