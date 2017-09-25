@@ -43,16 +43,26 @@ module TestDaemons
       create_config
       daemon_controller.stop if running?
       sleep delay
-      daemon_controller.start
+      tries = 3
+      begin
+        daemon_controller.start
+      rescue DaemonController::StartError => e
+        puts "?????????? redis-server failed to start: #{e}"
+        retry if (tries -= 1) > 0
+      rescue DaemonController::AlreadyStarted => e
+        puts "?????????? redis-server already startes: #{e}"
+      end
     end
 
     def stop
       return unless running?
       # TODO: Might need to be moved into RedisConfigurationServer
-      #     10.times do
-      #       break if (redis.info["bgsave_in_progress"]) == 0 rescue false
-      #       sleep 1
-      #     end
+      10.times do
+        rdb_bgsave_in_progress, aof_rewrite_in_progress = redis.info_with_rescue.values_at("rdb_bgsave_in_progress", "aof_rewrite_in_progress")
+        break if rdb_bgsave_in_progress == "0" && aof_rewrite_in_progress == "0"
+        puts "#{Time.now} redis #{name} is still saving to disk"
+        sleep 1
+      end
       daemon_controller.stop
       raise "FAILED TO STOP redis server on port #{port}" if running?
     ensure
