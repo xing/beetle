@@ -1,8 +1,14 @@
 = Release Notes
 
+== Version 2.0.1
+
+* fix for beetle command not geting stuck when connecting to
+  configuration server
+* configuration server displays last seen times in a human readable format
+
 == Version 2.0.0
 
-* beetle command has been rewritten in GO
+* beetle command has been rewritten in Go
 * garbage collecting redis keys now uses the redis SCAN command
 
 == Version 1.0.4
