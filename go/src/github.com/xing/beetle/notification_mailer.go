@@ -11,9 +11,10 @@ import (
 )
 
 type MailerOptions struct {
-	Server    string
-	Port      int
-	Recipient string
+	Server      string
+	Port        int
+	Recipient   string
+	DialTimeout int
 }
 
 type MailerState struct {
@@ -26,7 +27,7 @@ type MailerState struct {
 
 func (s *MailerState) Connect() (err error) {
 	logInfo("connecting to %s", s.url)
-	websocket.DefaultDialer.HandshakeTimeout = 5 * time.Second
+	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.opts.DialTimeout) * time.Second
 	s.ws, _, err = websocket.DefaultDialer.Dial(s.url, nil)
 	if err != nil {
 		return

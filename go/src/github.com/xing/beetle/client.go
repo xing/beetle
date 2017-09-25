@@ -54,7 +54,7 @@ func (s *ClientState) ServerUrl() string {
 
 func (s *ClientState) Connect() (err error) {
 	url := s.ServerUrl()
-	websocket.DefaultDialer.HandshakeTimeout = 5 * time.Second
+	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.GetConfig().DialTimeout) * time.Second
 	logInfo("connecting to %s, timeout: %s", url, websocket.DefaultDialer.HandshakeTimeout)
 	s.ws, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {

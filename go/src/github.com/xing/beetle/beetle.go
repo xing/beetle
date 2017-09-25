@@ -37,6 +37,7 @@ var opts struct {
 	GcThreshold              int    `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
 	GcDatabases              string `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
 	MailTo                   string `long:"mail-to" description:"Send notifcation mails to this address."`
+	DialTimeout              int    `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
 }
 
 var Verbose bool
@@ -76,9 +77,10 @@ var cmdRunMailer CmdRunMailer
 
 func (x *CmdRunMailer) Execute(args []string) error {
 	return RunNotificationMailer(MailerOptions{
-		Server:    initialConfig.Server,
-		Port:      initialConfig.Port,
-		Recipient: initialConfig.MailTo,
+		Server:      initialConfig.Server,
+		Port:        initialConfig.Port,
+		Recipient:   initialConfig.MailTo,
+		DialTimeout: initialConfig.DialTimeout,
 	})
 }
 
@@ -202,6 +204,7 @@ func getProgramParameters() *Config {
 		GcThreshold:              opts.GcThreshold,
 		GcDatabases:              opts.GcDatabases,
 		MailTo:                   opts.MailTo,
+		DialTimeout:              opts.DialTimeout,
 	}
 }
 

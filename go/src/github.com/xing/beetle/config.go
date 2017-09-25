@@ -21,6 +21,7 @@ type Config struct {
 	GcThreshold              int    `yaml:"redis_gc_threshold"`
 	GcDatabases              string `yaml:"redis_gc_databases"`
 	MailTo                   string `yaml:"mail_to"`
+	DialTimeout              int    `yaml:"dial_timeout"`
 }
 
 func (c *Config) Clone() *Config {
@@ -77,6 +78,9 @@ func (c *Config) SetDefaults() *Config {
 	if c.RedisMasterFile == "" {
 		c.RedisMasterFile = "/etc/beetle/redis-master"
 	}
+	if c.DialTimeout == 0 {
+		c.DialTimeout = 5
+	}
 	c.Sanitize()
 	return c
 }
@@ -120,6 +124,9 @@ func (c *Config) Merge(d *Config) *Config {
 	}
 	if c.MailTo == "" {
 		c.MailTo = d.MailTo
+	}
+	if c.DialTimeout == 0 {
+		c.DialTimeout = d.DialTimeout
 	}
 	c.Sanitize()
 	return c
@@ -177,6 +184,11 @@ func configFromConsulEnv(env consul.Env) *Config {
 	}
 	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
 		c.RedisMasterFile = v
+	}
+	if v, ok := env["BEETLE_DIAL_TIMEOUT"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.DialTimeout = d
+		}
 	}
 	c.Sanitize()
 	return &c
