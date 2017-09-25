@@ -2,6 +2,11 @@
 
 == Version 2.0.1
 
+* fixed incorrect computation of responsiveness threshold in
+  configuration server
+
+== Version 2.0.1
+
 * fix for beetle command not geting stuck when connecting to
   configuration server
 * configuration server displays last seen times in a human readable format
