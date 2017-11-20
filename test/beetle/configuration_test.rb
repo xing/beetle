@@ -33,9 +33,47 @@ module Beetle
       config.logger
     end
 
+    test "#redis_server default value" do
+      Object.stub_const('ENV', ENV.to_hash.except('REDIS_HOST')) do
+        config = Configuration.new
+        assert_equal("localhost:6379", config.redis_server)
+      end
+    end
+
+    test "#redis_server from ENV" do
+      Object.stub_const('ENV', ENV.to_hash.merge('REDIS_HOST' => 'dear_catastrophe_waitress',
+                                                 'REDIS_PORT' => 666)) do
+        config = Configuration.new
+        assert_equal("dear_catastrophe_waitress:666", config.redis_server)
+      end
+    end
+
+    test "#redis_db default value" do
+      Object.stub_const('ENV', ENV.to_hash.except('REDIS_PORT')) do
+        config = Configuration.new
+        assert_equal(4, config.redis_db)
+      end
+    end
+
+    test "#redis_db from ENV" do
+      Object.stub_const('ENV', ENV.to_hash.merge('REDIS_DB' => 7)) do
+        config = Configuration.new
+        assert_equal(7, config.redis_db)
+      end
+    end
+
     test "#brokers returns a hash of the configured brokers" do
-      config = Configuration.new
-      assert_equal({"servers"=>"localhost:5672", "additional_subscription_servers"=>""}, config.brokers)
+      Object.stub_const('ENV', ENV.to_hash.except('RABBITMQ_HOST')) do
+        config = Configuration.new
+        assert_equal({"servers"=>"localhost:5672", "additional_subscription_servers"=>""}, config.brokers)
+      end
+    end
+
+    test "#brokers returns a hash of the configured brokers from ENV" do
+      Object.stub_const('ENV', ENV.to_hash.merge('RABBITMQ_HOST' => 'dear_catastrophe_waitress')) do
+        config = Configuration.new
+        assert_equal({"servers"=>"dear_catastrophe_waitress:5672", "additional_subscription_servers"=>""}, config.brokers)
+      end
     end
 
     test "#config_file can be a JSON file" do
