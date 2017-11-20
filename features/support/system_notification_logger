@@ -12,7 +12,7 @@ system_notification_log_file_path = "#{tmp_path}/system_notifications.log"
 DEBUG = false
 
 Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
-  Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
+  Beetle.config.servers = "#{ENV['RABBITMQ_HOST'] || '127.0.0.1'}:#{ENV['RABBITMQ_PORT'] || 5672}" # rabbitmq
 
   # set Beetle log level to info, less noisy than debug
   Beetle.config.logger.level = Logger::DEBUG

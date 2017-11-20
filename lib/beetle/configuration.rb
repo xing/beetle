@@ -108,9 +108,9 @@ module Beetle
       self.system_name = "system"
 
       self.gc_threshold = 1.hour.to_i
-      self.redis_server = "localhost:6379"
+      self.redis_server = "#{ENV['REDIS_HOST'] || 'localhost'}:#{ENV['REDIS_PORT'] || 6379}"
       self.redis_servers = ""
-      self.redis_db = 4
+      self.redis_db = ENV['REDIS_DB'] || 4
       self.redis_failover_timeout = 180.seconds
       self.redis_failover_client_heartbeat_interval = 10.seconds
       self.redis_failover_client_dead_interval = 60.seconds
@@ -120,12 +120,12 @@ module Beetle
       self.redis_configuration_client_timeout = 5.seconds
       self.redis_configuration_client_ids = ""
 
-      self.servers = "localhost:5672"
+      self.servers = "#{ENV['RABBITMQ_HOST'] || 'localhost'}:#{ENV['RABBITMQ_PORT'] || 5672}"
       self.additional_subscription_servers = ""
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
-      self.api_port = 15672
+      self.api_port = ENV['RABBITMQ_API_PORT'] || 15672
       self.frame_max = 131072
       self.prefetch_count = 1
 

@@ -1,6 +1,8 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
+  RABBITMQ_API_TESTSERVER = "localhost:15672".freeze
+
   class SetDeadLetteringsTest < Minitest::Test
     def setup
       @dead_lettering = DeadLettering.new(Configuration.new)
@@ -20,7 +22,7 @@ module Beetle
 
   class SetDeadLetterPolicyTest < Minitest::Test
     def setup
-      @server = "localhost:15672"
+      @server = Beetle::RABBITMQ_API_TESTSERVER
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
@@ -40,7 +42,7 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{Beetle::RABBITMQ_API_TESTSERVER}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
@@ -56,7 +58,7 @@ module Beetle
     end
 
     test "raises exception when policy couldn't successfully be created" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{Beetle::RABBITMQ_API_TESTSERVER}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .to_return(:status => [405])
 
@@ -66,7 +68,7 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{Beetle::RABBITMQ_API_TESTSERVER}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                 "pattern" => "^QUEUE_NAME$",
@@ -83,7 +85,7 @@ module Beetle
     end
 
     test "properly encodes the vhost from the configuration" do
-      stub_request(:put, "http://localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{Beetle::RABBITMQ_API_TESTSERVER}/api/policies/foo%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
@@ -107,7 +109,7 @@ module Beetle
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
       @dead_lettering = DeadLettering.new(@config)
-      @servers = ["localhost:55672"]
+      @servers = ["#{ENV['RABBITMQ_HOST'] || 'localhost'}:55672"]
     end
 
     test "is turned off by default" do

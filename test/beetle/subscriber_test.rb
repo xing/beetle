@@ -122,13 +122,14 @@ module Beetle
   class AdditionalSubscriptionServersTest < Minitest::Test
     def setup
       @config = Configuration.new
-      @config.additional_subscription_servers = "localhost:1234"
+      @config.servers = "fetz:4321"
+      @config.additional_subscription_servers = "braun:1234"
       @client = Client.new(@config)
       @sub = @client.send(:subscriber)
     end
 
     test "subscribers server list should contain addtional subcription hosts" do
-      assert_equal ["localhost:5672", "localhost:1234"], @sub.servers
+      assert_equal ["fetz:4321", "braun:1234"], @sub.servers
     end
   end
 
@@ -220,7 +221,6 @@ module Beetle
       @sub.send(:create_exchanges, %w(duck mickey))
     end
   end
-
 
   class DeadLetteringCallBackExecutionTest < Minitest::Test
     def setup
