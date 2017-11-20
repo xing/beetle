@@ -2,6 +2,8 @@ require File.expand_path('../../../lib/beetle', __FILE__)
 
 # See https://github.com/cucumber/cucumber/wiki/Using-MiniTest
 require 'minitest/spec'
+require 'byebug'
+
 World do
   extend MiniTest::Assertions
 end

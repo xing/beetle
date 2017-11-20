@@ -16,7 +16,7 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
 
   opts.parse!(ARGV - ["start", "--"])
 
-  Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
+  Beetle.config.servers = "#{ENV['RABBITMQ_HOST'] || '127.0.0.1'}:#{ENV['RABBITMQ_PORT'] || 5672}" # rabbitmq
 
   # set Beetle log level to info, less noisy than debug
   Beetle.config.logger.level = Logger::INFO
