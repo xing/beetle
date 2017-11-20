@@ -176,7 +176,7 @@ module Beetle
             if @client.config.dead_lettering_enabled?
               header.reject(:requeue => false)
             else
-              sleep 1
+              sleep 0.1
               header.reject(:requeue => true)
             end
           elsif reply_to = header.attributes[:reply_to]

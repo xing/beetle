@@ -292,7 +292,7 @@ module Beetle
       result = mock("result")
       result.expects(:reject?).returns(true)
       Message.any_instance.expects(:process).returns(result)
-      @sub.expects(:sleep).with(1)
+      @sub.expects(:sleep).with(0.1)
       mq = mock("MQ")
       mq.expects(:closing?).returns(false)
       @sub.expects(:channel).with(@sub.server).returns(mq)
