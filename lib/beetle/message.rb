@@ -13,14 +13,14 @@ module Beetle
     # flag for encoding redundant messages
     FLAG_REDUNDANT = 1
     # default lifetime of messages
-    DEFAULT_TTL = 1.day
+    DEFAULT_TTL = 86_400
     # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
-    DEFAULT_HANDLER_TIMEOUT = 600.seconds
+    DEFAULT_HANDLER_TIMEOUT = 600.0
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     # how many seconds we should wait before retrying handler execution
-    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.0
     # how many exceptions should be tolerated before giving up
     DEFAULT_EXCEPTION_LIMIT = 0
 
@@ -67,6 +67,7 @@ module Beetle
       @server           = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
+      @exp_bo           = !!opts[:exponential_back_off]
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
@@ -126,12 +127,12 @@ module Beetle
 
     # current time (UNIX timestamp)
     def now #:nodoc:
-      Time.now.to_i
+      Time.now.to_f
     end
 
     # current time (UNIX timestamp)
     def self.now #:nodoc:
-      Time.now.to_i
+      Time.now.to_f
     end
 
     # a message has expired if the header expiration timestamp is msaller than the current time
@@ -161,7 +162,7 @@ module Beetle
 
     # handler timed out?
     def timed_out?
-      (t = @store.get(msg_id, :timeout)) && t.to_i < now
+      (t = @store.get(msg_id, :timeout)) && t.to_f < now
     end
 
     # reset handler timeout in the deduplication store
@@ -181,12 +182,13 @@ module Beetle
 
     # whether we should wait before running the handler
     def delayed?
-      (t = @store.get(msg_id, :delay)) && t.to_i > now
+      (t = @store.get(msg_id, :delay)) && t.to_f > now
     end
 
     # store delay value in the deduplication store
     def set_delay!
-      @store.set(msg_id, :delay, now + delay)
+      next_delay = calculate_next_delay(attempts, delay)
+      @store.set(msg_id, :delay, now + next_delay)
     end
 
     # how many times we already tried running the handler
@@ -281,10 +283,10 @@ module Beetle
         if status == "completed"
           ack!
           RC::OK
-        elsif delay && delay.to_i > now
+        elsif delay && delay.to_f > now
           logger.warn "Beetle: ignored delayed message (#{msg_id})!"
           RC::Delayed
-        elsif !(timeout && timeout.to_i < now)
+        elsif !(timeout && timeout.to_f < now)
           RC::HandlerNotYetTimedOut
         elsif attempts.to_i >= attempts_limit
           completed!
@@ -360,6 +362,19 @@ module Beetle
       return if simple? # simple messages don't use the deduplication store
       if !redundant? || @store.incr(msg_id, :ack_count) == 2
         @store.del_keys(msg_id)
+      end
+    end
+
+    def exponential_back_off?
+      @exp_bo
+    end
+
+    def calculate_next_delay(n, base_delay)
+      unless exponential_back_off?
+        base_delay
+      else
+        base_delay_n = base_delay * (2**n)
+        rand((base_delay_n - base_delay_n / 4.0)..(base_delay_n + base_delay_n / 2.0))
       end
     end
   end
