@@ -3,10 +3,9 @@ set -euxo pipefail
 
 SERVICE=beetle-shell
 
-docker-compose -f docker-dev/docker-compose.yml up --no-recreate -d ${SERVICE}
+docker-compose -f docker-dev/docker-compose.development.yml up --no-recreate -d ${SERVICE}
 
 COMMAND=${@:-bash}
 echo Run \'$COMMAND\' in container context
 
 docker exec -ti ${SERVICE} ${COMMAND}
-

@@ -31,8 +31,10 @@ services:
   beetle-redis-master:
     container_name: beetle-redis-master
     image: docker.dc.xing.com/xingbox/redis
+    command: redis-server /etc/redis.conf
     volumes:
-      - ${PWD}/../etc/redis-master.conf:/etc/redis.conf
+      - ${PWD}/etc/redis-master.conf:/etc/redis.conf
+      - ../tmp:/data/tmp
     ports:
       - 6379
     networks:
@@ -41,11 +43,14 @@ services:
   beetle-redis-slave:
     container_name: beetle-redis-slave
     image: docker.dc.xing.com/xingbox/redis
-    command: redis-server --slaveof beetle-redis-master 6379
+    command: redis-server /etc/redis.conf --slaveof beetle-redis-master 6379
     volumes:
-      - ${PWD}/../etc/redis-slave.conf:/etc/redis.conf
+      - ${PWD}/etc/redis-slave.conf:/etc/redis.conf # port 6380 is configured here
+      - ../tmp:/data/tmp
     ports:
       - 6380
+    depends_on:
+      - beetle-redis-master
     networks:
       - beetle-net
 
