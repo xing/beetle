@@ -61,6 +61,6 @@ WORKDIR $BEETLE_HOME
 ADD . $BEETLE_HOME
 
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN gem install bundler --version $BUNDLER_VERSION && (bundle install -j 4 || true)
+RUN gem install bundler --version $BUNDLER_VERSION && (bundle install -j 4 --retry 3 || true)
 
-CMD bash
+CMD bash tail -f /dev/null # keeps the container around waiting for someone connecting into it

@@ -1,13 +1,13 @@
-version: '2'
+version: '3'
 services:
 
   beetle-shell: &default
     container_name: beetle-shell
     build:
-      context: ..
-      dockerfile: docker-dev/Dockerfile
+      context: ../
+      dockerfile: docker-dev/Dockerfile.development
     tty: true
-    command: bash
+    entrypoint: docker-dev/script/check_broker.sh
     working_dir: /usr/src/beetle
     volumes:
       - ..:/usr/src/beetle
@@ -32,7 +32,7 @@ services:
     container_name: beetle-redis-master
     image: docker.dc.xing.com/xingbox/redis
     volumes:
-      - ${PWD}/etc/redis-master.conf:/etc/redis.conf
+      - ${PWD}/../etc/redis-master.conf:/etc/redis.conf
     ports:
       - 6379
     networks:
@@ -43,7 +43,7 @@ services:
     image: docker.dc.xing.com/xingbox/redis
     command: redis-server --slaveof beetle-redis-master 6379
     volumes:
-      - ${PWD}/etc/redis-slave.conf:/etc/redis.conf
+      - ${PWD}/../etc/redis-slave.conf:/etc/redis.conf
     ports:
       - 6380
     networks:
