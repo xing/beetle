@@ -2,6 +2,12 @@
 set -euxo pipefail
 
 SERVICE=beetle-shell
+VOLUME=beetle-ruby-bundle
+
+if ! docker volume ls | grep ${VOLUME} >/dev/null
+then
+  docker volume create --name ${VOLUME}
+fi
 
 docker-compose -f docker-dev/docker-compose.development.yml up --no-recreate -d ${SERVICE}
 

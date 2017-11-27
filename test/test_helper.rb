@@ -10,7 +10,6 @@ require 'minitest/unit'
 require 'minitest/pride' if ENV['RAINBOW_COLORED_TESTS'] == "1" && $stdout.tty?
 require 'minitest/stub_const'
 require 'mocha/setup'
-require 'byebug'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require 'eventmachine'
