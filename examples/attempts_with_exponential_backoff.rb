@@ -45,8 +45,8 @@ class Handler < Beetle::Handler
   end
 end
 
-# register our handler to the message, configure it to our max_attempts limit, we configure a (base) delay of 0.5
-client.register_handler(:test, Handler, exceptions: $exceptions_limit, delay: 0.2, exponential_back_off: true)
+# register our handler to the message, configure it to our max_attempts limit, we configure a (base) delay of 1
+client.register_handler(:test, Handler, exceptions: $exceptions_limit, delay: 1, exponential_back_off: true)
 
 # publish test messages
 client.publish(:test, 1) # publish returns the number of servers the message has been sent to

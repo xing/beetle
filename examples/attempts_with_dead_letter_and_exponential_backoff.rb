@@ -12,7 +12,7 @@ Beetle.config.logger.level = Logger::INFO
 # setup client with dead lettering enabled
 config = Beetle::Configuration.new
 config.dead_lettering_enabled = true
-config.dead_lettering_msg_ttl = 100 # millis
+config.dead_lettering_msg_ttl = 1000 # millis
 client = Beetle::Client.new(config)
 client.register_queue(:test)
 client.register_message(:test)
@@ -25,7 +25,7 @@ client.deduplication_store.flushdb
 
 # setup our counter
 $completed = 0
-$exceptions_limit = 5
+$exceptions_limit = 4
 
 # store the start time
 $start_time = Time.now.to_f
@@ -48,7 +48,7 @@ class Handler < Beetle::Handler
 end
 
 # register our handler to the message, configure it to our max_attempts limit, we configure a (base) delay of 0.5
-client.register_handler(:test, Handler, exceptions: $exceptions_limit, delay: 0.2, exponential_back_off: true)
+client.register_handler(:test, Handler, exceptions: $exceptions_limit, delay: 1, exponential_back_off: true)
 # publish test messages
 client.publish(:test, 1) # publish returns the number of servers the message has been sent to
 puts "published 1 test message"
