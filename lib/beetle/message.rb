@@ -16,11 +16,11 @@ module Beetle
     DEFAULT_TTL = 1.day
     # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
-    DEFAULT_HANDLER_TIMEOUT = 600.seconds
+    DEFAULT_HANDLER_TIMEOUT = 600
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     # how many seconds we should wait before retrying handler execution
-    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
+    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10
     # how many exceptions should be tolerated before giving up
     DEFAULT_EXCEPTION_LIMIT = 0
 
@@ -67,6 +67,7 @@ module Beetle
       @server           = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
       @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
+      @max_exp_bo       = opts[:exponential_back_off]&.to_i
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
@@ -186,7 +187,8 @@ module Beetle
 
     # store delay value in the deduplication store
     def set_delay!
-      @store.set(msg_id, :delay, now + delay)
+      next_delay = calculate_next_delay(attempts, delay)
+      @store.set(msg_id, :delay, now + next_delay)
     end
 
     # how many times we already tried running the handler
@@ -360,6 +362,22 @@ module Beetle
       return if simple? # simple messages don't use the deduplication store
       if !redundant? || @store.incr(msg_id, :ack_count) == 2
         @store.del_keys(msg_id)
+      end
+    end
+
+    def exponential_back_off?
+      @max_exp_bo.present?
+    end
+
+    def max_exp_bo_delay
+      @max_exp_bo
+    end
+
+    def calculate_next_delay(n, base_delay)
+      unless exponential_back_off?
+        base_delay
+      else
+        [base_delay * (2**n), max_exp_bo_delay].min
       end
     end
   end
