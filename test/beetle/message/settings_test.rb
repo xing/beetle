@@ -27,7 +27,7 @@ module Beetle
     end
 
     test "set_delay! should store the current time plus the exponential delay offset in the database" do
-      message = Message.new("somequeue", header_with_params, 'foo', :delay => 3, :exponential_back_off => 30, :store => @store)
+      message = Message.new("somequeue", header_with_params, 'foo', :delay => 3, :max_delay => 30, :store => @store)
       message.stubs(:now).returns(1)
 
       [4, 7, 13, 25].each do |exp_delay|
@@ -38,7 +38,7 @@ module Beetle
     end
 
     test "set_delay! should store the current time plus the exponential delay offset in the database up to given max value" do
-      message = Message.new("somequeue", header_with_params, 'foo', :delay => 3, :exponential_back_off => 10, :store => @store)
+      message = Message.new("somequeue", header_with_params, 'foo', :delay => 3, :max_delay => 10, :store => @store)
       message.stubs(:now).returns(1)
 
       [4, 7, 11, 11].each do |exp_delay|
@@ -50,7 +50,7 @@ module Beetle
 
     test "set_delay! should store the current time plus the linear delay offset in the database" do
       delay = 32
-      message = Message.new("somequeue", header_with_params, 'foo', :delay => delay, :exponential_back_off => nil, :store => @store)
+      message = Message.new("somequeue", header_with_params, 'foo', :delay => delay, :store => @store)
       [3, 5, 6].each do |now_offset|
         message.stubs(:now).returns(now_offset)
         message.set_delay!
