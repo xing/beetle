@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 2.1.0
+
+* Support exponential backoff when delaying messages using 'max_delay: int' option.
+
 == Version 2.0.1
 
 * fixed incorrect computation of responsiveness threshold in
