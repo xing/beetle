@@ -412,7 +412,7 @@ func (s *ServerState) LoadState() {
 	logInfo("restored client last seen info from redis: %v", s.clientsLastSeen)
 }
 
-func waitForWaitGrouptWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+func waitForWaitGroupWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
@@ -448,7 +448,7 @@ func RunConfigurationServer(o ServerOptions) error {
 	state.clientHandler(state.GetConfig().Port)
 	logInfo("shutting down")
 	// wait for web socket readers and writers to finish
-	if waitForWaitGrouptWithTimeout(&state.waitGroup, 3*time.Second) {
+	if waitForWaitGroupWithTimeout(&state.waitGroup, 3*time.Second) {
 		logInfo("websocket readers and writers shut down timed out")
 	} else {
 		logInfo("websocket readers and writers finished cleanly")
