@@ -38,6 +38,7 @@ var opts struct {
 	GcDatabases              string `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
 	MailTo                   string `long:"mail-to" description:"Send notifcation mails to this address."`
 	DialTimeout              int    `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
+	ConfidenceLevel          string `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
 }
 
 // Verbose stores verbosity or logging purposoes.
@@ -204,6 +205,7 @@ func getProgramParameters() *Config {
 		ClientIds:                opts.ClientIds,
 		ClientHeartbeat:          opts.ClientHeartbeatInterval,
 		ClientTimeout:            opts.ClientTimeout,
+		ConfidenceLevel:          opts.ConfidenceLevel,
 		RedisMasterRetries:       opts.RedisMasterRetries,
 		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
 		RedisMasterFile:          opts.RedisMasterFile,

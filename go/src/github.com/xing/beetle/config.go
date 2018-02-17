@@ -23,6 +23,7 @@ type Config struct {
 	GcDatabases              string `yaml:"redis_gc_databases"`
 	MailTo                   string `yaml:"mail_to"`
 	DialTimeout              int    `yaml:"dial_timeout"`
+	ConfidenceLevel          string `yaml:"redis_failover_confidence_level"`
 }
 
 // Clone copies a give config.
@@ -53,7 +54,8 @@ func (c *Config) Sanitize() {
 	}
 }
 
-// SetDefaults sets default values for all config options.
+// SetDefaults sets default values for all config options. It is called as the
+// last step to set up a Config.
 func (c *Config) SetDefaults() *Config {
 	if c.ClientTimeout == 0 {
 		c.ClientTimeout = 10
@@ -87,6 +89,9 @@ func (c *Config) SetDefaults() *Config {
 	}
 	if c.DialTimeout == 0 {
 		c.DialTimeout = 5
+	}
+	if c.ConfidenceLevel == "" {
+		c.ConfidenceLevel = "100"
 	}
 	c.Sanitize()
 	return c
@@ -135,6 +140,12 @@ func (c *Config) Merge(d *Config) *Config {
 	}
 	if c.DialTimeout == 0 {
 		c.DialTimeout = d.DialTimeout
+	}
+	if c.DialTimeout == 0 {
+		c.DialTimeout = d.DialTimeout
+	}
+	if c.ConfidenceLevel == "" {
+		c.ConfidenceLevel = d.ConfidenceLevel
 	}
 	c.Sanitize()
 	return c
@@ -198,6 +209,9 @@ func configFromConsulEnv(env consul.Env) *Config {
 		if d, err := strconv.Atoi(v); err == nil {
 			c.DialTimeout = d
 		}
+	}
+	if v, ok := env["REDIS_FAILOVER_CONFIDENCE_LEVEL"]; ok {
+		c.ConfidenceLevel = v
 	}
 	c.Sanitize()
 	return &c

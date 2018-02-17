@@ -21,9 +21,9 @@ Given /^redis server "([^\"]*)" is slave of "([^\"]*)"$/ do |redis_name, redis_m
   end while !slave.slave_of?(master.host, master.port)
 end
 
-Given /^a redis configuration server using redis servers "([^\"]*)" with clients "([^\"]*)" exists$/ do |redis_names, redis_configuration_client_names|
+Given /^a redis configuration server using redis servers "([^\"]*)" with clients "([^\"]*)" (?:and confidence level "([^\"]*)" )?exists$/ do |redis_names, redis_configuration_client_names, confidence_level|
   redis_servers = redis_names.split(",").map { |redis_name| TestDaemons::Redis[redis_name].ip_with_port }.join(",")
-  TestDaemons::RedisConfigurationServer.start(redis_servers, redis_configuration_client_names)
+  TestDaemons::RedisConfigurationServer.start(redis_servers, redis_configuration_client_names, (confidence_level || 100).to_i)
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
@@ -35,6 +35,10 @@ end
 
 Given /^redis server "([^\"]*)" is down$/ do |redis_name|
   TestDaemons::Redis[redis_name].stop
+end
+
+Given /^redis configuration client "([^\"]*)" is down$/ do |redis_configuration_client_name|
+  TestDaemons::RedisConfigurationClient[redis_configuration_client_name].stop
 end
 
 Given /^the retry timeout for the redis master check is reached$/ do

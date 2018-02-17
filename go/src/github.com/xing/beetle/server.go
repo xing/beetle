@@ -66,16 +66,19 @@ type ServerState struct {
 	currentMaster                *RedisShim         // Current redis master.
 	currentTokenInt              int                // Token to identify election rounds.
 	currentToken                 string             // String representation of current token.
+	pinging                      bool               // Whether or not we're waiting for pings
 	clientPongIdsReceived        StringSet          // During a pong phase, the set of clients which have answered.
+	invalidating                 bool               // Whether or not we're waiting for invalidations.
 	clientInvalidatedIdsReceived StringSet          // During the invalidation phase, the set of clients which have answered.
 	timerChannel                 chan string        // Channel used to send an abort message to the dispatcher go routine.
-	invalidateTimer              *time.Timer        // Timer used to abort waiting for answers from all clients (invalidate/invalidated).
-	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from all clients (ping/pong).
+	invalidateTimer              *time.Timer        // Timer used to abort waiting for answers from clients (invalidate/invalidated).
+	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from clients (ping/pong).
 	retries                      int                // Count down for checking a master to come back after it has become unreachable.
 	watching                     bool               // Whether we're currently watching a redis master (false during election process).
 	watchTick                    int                // One second tick counter which gets reset every RedisMasterRetryInterval seconds.
 	waitGroup                    sync.WaitGroup     // Used to organize the shutdown process.
 	configChanges                chan consul.Env    // Environment chnages from consul arrive on this channel.
+	failoverConfidenceLevel      float64            // Failover confidence level, normalized to the interval [0,1.0]
 }
 
 // GetConfig returns the server state in a thread safe manner.
@@ -92,6 +95,19 @@ func (s *ServerState) SetConfig(config *Config) *Config {
 	oldconfig := s.opts.Config
 	s.opts.Config = config
 	return oldconfig
+}
+
+func (s *ServerState) determineFailoverConfidenceLevel() {
+	config := s.GetConfig()
+	level, err := strconv.Atoi(config.ConfidenceLevel)
+	if err != nil {
+		level = 100
+	} else if level < 0 {
+		level = 0
+	} else if level > 100 {
+		level = 100
+	}
+	s.failoverConfidenceLevel = float64(level) / 100.0
 }
 
 // ServerStatus is used to faciliate JSON conversion of parts of the server state.
@@ -230,6 +246,17 @@ func (l StringSet) Equals(s StringSet) bool {
 	return true
 }
 
+// Intersect computes the intersection of two string sets
+func (l StringSet) Intersect(r StringSet) StringSet {
+	intersection := make(StringSet)
+	for s := range l {
+		if r[s] {
+			intersection[s] = true
+		}
+	}
+	return intersection
+}
+
 // StringList implements convenience functions on string slices.
 type StringList []string
 
@@ -361,6 +388,7 @@ func (s *ServerState) dispatcher() {
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
 			s.SetConfig(newconfig)
+			s.determineFailoverConfidenceLevel()
 			logInfo("updated server config from consul: %s", s.GetConfig())
 		}
 	}
@@ -399,6 +427,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 func NewServerState(o ServerOptions) *ServerState {
 	s := &ServerState{clientChannels: make(ChannelMap), notificationChannels: make(ChannelSet)}
 	s.opts = o
+	s.determineFailoverConfidenceLevel()
 	s.redis = NewRedisServerInfo(s.GetConfig().RedisServers)
 	s.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -766,8 +795,10 @@ func (s *ServerState) Pong(msg MsgBody) {
 		return
 	}
 	s.clientPongIdsReceived.Add(msg.Id)
-	if s.AllClientPongIdsReceived() {
-		logInfo("All client pong ids received!")
+	level, enough := s.ReceivedEnoughClientPongIds()
+	if s.pinging && enough {
+		logInfo("Received a sufficient number of pong ids!. Confidence level: %f.", level)
+		s.pinging = false
 		if s.availabilityTimer != nil {
 			s.availabilityTimer.Stop()
 			s.availabilityTimer = nil
@@ -814,8 +845,10 @@ func (s *ServerState) ClientInvalidated(msg MsgBody) {
 	}
 	logInfo("Received client_invalidated message from id '%s' with token '%s'", msg.Id, msg.Token)
 	s.clientInvalidatedIdsReceived.Add(msg.Id)
-	if s.AllClientInvalidatedIdsReceived() {
-		logInfo("All client invalidated ids received")
+	level, enough := s.ReceivedEnoughClientInvalidatedIds()
+	if s.invalidating && enough {
+		logInfo("Received a sufficient number of client invalidated ids! Confidence level: %f.", level)
+		s.invalidating = false
 		if s.invalidateTimer != nil {
 			s.invalidateTimer.Stop()
 			s.invalidateTimer = nil
@@ -1009,11 +1042,13 @@ func (s *ServerState) GenerateNewToken() {
 func (s *ServerState) StartInvalidation() {
 	s.clientPongIdsReceived = make(StringSet)
 	s.clientInvalidatedIdsReceived = make(StringSet)
-	s.CheckAllClientsAvailable()
+	s.pinging = true
+	s.invalidating = false
+	s.CheckEnoughClientsAvailable()
 }
 
-// CheckAllClientsAvailable sends a PING message to all connected clients.
-func (s *ServerState) CheckAllClientsAvailable() {
+// CheckEnoughClientsAvailable sends a PING message to all connected clients.
+func (s *ServerState) CheckEnoughClientsAvailable() {
 	s.GenerateNewToken()
 	logInfo("Sending ping messages with token '%s'", s.currentToken)
 	msg := &MsgBody{Name: PING, Token: s.currentToken}
@@ -1028,6 +1063,7 @@ func (s *ServerState) CheckAllClientsAvailable() {
 // clients.
 func (s *ServerState) InvalidateCurrentMaster() {
 	s.GenerateNewToken()
+	s.invalidating = true
 	logInfo("Sending invalidate messages with token '%s'", s.currentToken)
 	msg := &MsgBody{Name: INVALIDATE, Token: s.currentToken}
 	s.SendToWebSockets(msg)
@@ -1040,20 +1076,26 @@ func (s *ServerState) InvalidateCurrentMaster() {
 // CancelInvalidation generates a new token to the next vote and unpauses the
 // watcher.
 func (s *ServerState) CancelInvalidation() {
+	s.pinging = false
+	s.invalidating = false
 	s.GenerateNewToken()
 	s.StartWatcher()
 }
 
-// AllClientPongIdsReceived checks whether all client's have answered the PING
-// message by sending a PONG.
-func (s *ServerState) AllClientPongIdsReceived() bool {
-	return s.clientIds.Equals(s.clientPongIdsReceived)
+// ReceivedEnoughClientPongIds checks whether a sufficient number of client's have
+// answered the PING message by sending a PONG.
+func (s *ServerState) ReceivedEnoughClientPongIds() (float64, bool) {
+	received := s.clientPongIdsReceived.Intersect(s.clientIds)
+	level := float64(len(received)) / float64(len(s.clientIds))
+	return level, level >= s.failoverConfidenceLevel
 }
 
-// AllClientInvalidatedIdsReceived checks whether all client's have answered the
+// ReceivedEnoughClientInvalidatedIds checks whether all client's have answered the
 // INVALIDATE message by sending a CLIENT_INVALIDATED message back.
-func (s *ServerState) AllClientInvalidatedIdsReceived() bool {
-	return s.clientIds.Equals(s.clientInvalidatedIdsReceived)
+func (s *ServerState) ReceivedEnoughClientInvalidatedIds() (float64, bool) {
+	received := s.clientInvalidatedIdsReceived.Intersect(s.clientIds)
+	level := float64(len(received)) / float64(len(s.clientIds))
+	return level, level >= s.failoverConfidenceLevel
 }
 
 // SwitchMaster is called after a successfully completed vote and performs a

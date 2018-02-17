@@ -42,6 +42,22 @@ Feature: Redis auto failover
     And the retry timeout for the redis master check is reached
     Then the role of redis server "redis-2" should be "slave"
 
+  Scenario: Not all redis configuration clients available (successful switch using confidence level 50)
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" and confidence level "50" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And redis configuration client "rc-client-2" is down
+    And redis server "redis-1" is down
+    And the retry timeout for the redis master check is reached
+    Then a system notification for "redis-1" not being available should be sent
+    And the role of redis server "redis-2" should be "master"
+    And the redis master file of the redis configuration server should contain "redis-2"
+    And the redis master of "rc-client-1" should be "redis-2"
+    And the redis master of the beetle handler should be "redis-2"
+    And a system notification for switching from "redis-1" to "redis-2" should be sent
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
+
   Scenario: No redis slave available to become new master (no switch possible)
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
