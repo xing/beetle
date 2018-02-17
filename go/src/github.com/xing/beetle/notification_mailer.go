@@ -10,6 +10,9 @@ import (
 	"gopkg.in/gorilla/websocket.v1"
 )
 
+// MailerOptions contain a server addres for a listening websocket and a
+// recipient address for notification emails, as well as timeout interval for
+// websocket connections.
 type MailerOptions struct {
 	Server      string
 	Port        int
@@ -17,6 +20,7 @@ type MailerOptions struct {
 	DialTimeout int
 }
 
+// MailerState contains mailer options and state variables.
 type MailerState struct {
 	opts       MailerOptions
 	url        string
@@ -25,6 +29,7 @@ type MailerState struct {
 	readerDone chan error
 }
 
+// Connect connects to a websocket for reading notifcation messages.
 func (s *MailerState) Connect() (err error) {
 	logInfo("connecting to %s", s.url)
 	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.opts.DialTimeout) * time.Second
@@ -36,6 +41,7 @@ func (s *MailerState) Connect() (err error) {
 	return
 }
 
+// Close sends a Close message on the websocket and closes it.
 func (s *MailerState) Close() {
 	defer s.ws.Close()
 	err := s.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -44,6 +50,8 @@ func (s *MailerState) Close() {
 	}
 }
 
+// SendMail sends a notification mail with a given text as body. It opens a pipe
+// to a sendmail process.
 func (s *MailerState) SendMail(text string) {
 	logInfo("forking sendmail process")
 	logInfo("sending message: %s", text)
@@ -76,6 +84,8 @@ func (s *MailerState) SendMail(text string) {
 	logInfo("sendmail finished!")
 }
 
+// Reader reads notification messages from a websocket and forwards them on an
+// internal channel.
 func (s *MailerState) Reader() {
 	for !interrupted {
 		logDebug("reading message")
@@ -92,6 +102,9 @@ func (s *MailerState) Reader() {
 	close(s.readerDone)
 }
 
+// RunMailer starts a reader which listens on a websocket for notification
+// messages and sends notification emails. It exits when a TERM signal has been
+// received or wthe the reader as terminated.
 func (s *MailerState) RunMailer() error {
 	err := s.Connect()
 	if err != nil {
@@ -103,9 +116,9 @@ func (s *MailerState) RunMailer() error {
 	for !interrupted {
 		select {
 		case msg := <-s.messages:
-			// Run sendmail in a separate goroutine, because it can
-			// take a while and we don't want to miss
-			// notifications. And we want to ext cleanly and quickly.
+			// Run sendmail in a separate goroutine, because it can take a while
+			// and we don't want to miss notifications. And we want to ext
+			// cleanly and quickly.
 			go s.SendMail(msg)
 		case err := <-s.readerDone:
 			// If the reader has terminated, so should we.
@@ -117,6 +130,8 @@ func (s *MailerState) RunMailer() error {
 	return nil
 }
 
+// RunNotificationMailer runs a mailer, supervises and restarts it when it
+// exits, until a TERM signal has been received.
 func RunNotificationMailer(o MailerOptions) error {
 	logInfo("notification mailer started with options: %+v\n", o)
 	for !interrupted {

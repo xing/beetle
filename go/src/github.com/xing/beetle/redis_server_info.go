@@ -7,8 +7,11 @@ import (
 	"gopkg.in/redis.v5"
 )
 
+// RedisShims is a slice of RedisShim objects.
 type RedisShims []*RedisShim
 
+// Include checks whether a given slice of Redis shimes contains a given redis
+// server string.
 func (shims RedisShims) Include(r *RedisShim) bool {
 	for _, x := range shims {
 		if x.server == r.server {
@@ -18,6 +21,7 @@ func (shims RedisShims) Include(r *RedisShim) bool {
 	return false
 }
 
+// Servers returns a slice od server strings (host:port format).
 func (shims RedisShims) Servers() []string {
 	servers := make([]string, 0)
 	for _, x := range shims {
@@ -26,11 +30,15 @@ func (shims RedisShims) Servers() []string {
 	return servers
 }
 
+// RedisServerInfo contans a list slice of RedisShim objects and a lookup index
+// on server strings (host:port format).
 type RedisServerInfo struct {
 	instances  RedisShims
 	serverInfo map[string]RedisShims
 }
 
+// NewRedisServerInfo creates a new RedisServerInfo from a comma separated list
+// of servers (host:port format).
 func NewRedisServerInfo(servers string) *RedisServerInfo {
 	si := &RedisServerInfo{}
 	si.instances = make(RedisShims, 0)
@@ -45,10 +53,12 @@ func NewRedisServerInfo(servers string) *RedisServerInfo {
 	return si
 }
 
+// NumServers returns the number of servers.
 func (si *RedisServerInfo) NumServers() int {
 	return len(si.instances)
 }
 
+// Reset clears all info.
 func (si *RedisServerInfo) Reset() {
 	m := make(map[string]RedisShims)
 	m[MASTER] = make(RedisShims, 0)
@@ -57,6 +67,7 @@ func (si *RedisServerInfo) Reset() {
 	si.serverInfo = m
 }
 
+// Refresh contacts all redis servers and dtermines their current role.
 func (si *RedisServerInfo) Refresh() {
 	logDebug("refreshing server info")
 	si.Reset()
@@ -68,6 +79,7 @@ func (si *RedisServerInfo) Refresh() {
 	// spew.Dump(si)
 }
 
+// Find returns the redis client instance for a given server specification.
 func (si *RedisServerInfo) Find(server string) *redis.Client {
 	for _, r := range si.instances {
 		if r.server == server {
@@ -77,18 +89,22 @@ func (si *RedisServerInfo) Find(server string) *redis.Client {
 	return nil
 }
 
+// Masters returns all shims with role 'master'.
 func (si *RedisServerInfo) Masters() RedisShims {
 	return si.serverInfo[MASTER]
 }
 
+// Slaves returns all shims with role 'slave'.
 func (si *RedisServerInfo) Slaves() RedisShims {
 	return si.serverInfo[SLAVE]
 }
 
+// Unknowns returns all shims with role 'unknown'.
 func (si *RedisServerInfo) Unknowns() RedisShims {
 	return si.serverInfo[UNKNOWN]
 }
 
+// SlavesOf returns all shims for servers which are salves of the given server.
 func (si *RedisServerInfo) SlavesOf(master *RedisShim) RedisShims {
 	slaves := make(RedisShims, 0)
 	for _, s := range si.Slaves() {
@@ -99,6 +115,7 @@ func (si *RedisServerInfo) SlavesOf(master *RedisShim) RedisShims {
 	return slaves
 }
 
+// AutoDetectMaster returns the current master, if it is reachable.
 func (si *RedisServerInfo) AutoDetectMaster() *RedisShim {
 	if !si.MasterAndSlavesReachable() {
 		return nil
@@ -106,6 +123,8 @@ func (si *RedisServerInfo) AutoDetectMaster() *RedisShim {
 	return si.Masters()[0]
 }
 
+// MasterAndSlavesReachable checks whether the master and all its slaves are
+// reachable.
 func (si *RedisServerInfo) MasterAndSlavesReachable() bool {
 	return len(si.Masters()) == 1 && len(si.Slaves()) == len(si.instances)-1
 }

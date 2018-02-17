@@ -20,25 +20,47 @@ import (
 	"gopkg.in/tylerb/graceful.v1"
 )
 
+// ServerOptions for our server.
 type ServerOptions struct {
 	Config       *Config
 	ConsulClient *consul.Client
 }
 
+// StringChannel is a channel for strings.
 type StringChannel chan string
+
+// ChannelMap maps client ids to string channels.
 type ChannelMap map[string]StringChannel
+
+// ChannelSet is a set of StringChannels.
 type ChannelSet map[StringChannel]StringChannel
+
+// TimeSet maps client ids to last seen times.
 type TimeSet map[string]time.Time
 
+// Equal checks whether two timesets are identical.
+func (s1 TimeSet) Equal(s2 TimeSet) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	for k, v := range s1 {
+		if !v.Equal(s2[k]) {
+			return false
+		}
+	}
+	return true
+}
+
+// ServerState holds the server state. TODO: this beast has too many variables.
 type ServerState struct {
 	opts                         ServerOptions      // Options passed to the constructor.
 	mutex                        sync.Mutex         // Mutex for changing opts.Config.
 	clientIds                    StringSet          // The list of clients we know and which take part in master election.
-	client_channels              ChannelMap         // Channels we use to communicate with client websocket goroutines.
-	notification_channels        ChannelSet         // Channels we use to communicate with notifier websockets goroutines.
+	clientChannels               ChannelMap         // Channels we use to communicate with client websocket goroutines.
+	notificationChannels         ChannelSet         // Channels we use to communicate with notifier websockets goroutines.
 	unknownClientIds             StringList         // List of clients we have seen, but don't know.
 	clientsLastSeen              TimeSet            // For any client we have seen, the time when we've last seen him.
-	ws_channel                   chan *WsMsg        // Channel used by websocket go routines to send messages to dispatcher go routine.
+	wsChannel                    chan *WsMsg        // Channel used by websocket go routines to send messages to dispatcher go routine.
 	upgrader                     websocket.Upgrader // Upgrader to use for turning a http connection into a webscoket connection.
 	redis                        *RedisServerInfo   // Cached state of watched redis insiances. Refreshed every RedisMasterRetryInterval seconds.
 	currentMaster                *RedisShim         // Current redis master.
@@ -46,7 +68,7 @@ type ServerState struct {
 	currentToken                 string             // String representation of current token.
 	clientPongIdsReceived        StringSet          // During a pong phase, the set of clients which have answered.
 	clientInvalidatedIdsReceived StringSet          // During the invalidation phase, the set of clients which have answered.
-	timer_channel                chan string        // Channel used to send an abort message to the dispatcher go routine.
+	timerChannel                 chan string        // Channel used to send an abort message to the dispatcher go routine.
 	invalidateTimer              *time.Timer        // Timer used to abort waiting for answers from all clients (invalidate/invalidated).
 	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from all clients (ping/pong).
 	retries                      int                // Count down for checking a master to come back after it has become unreachable.
@@ -56,12 +78,14 @@ type ServerState struct {
 	configChanges                chan consul.Env    // Environment chnages from consul arrive on this channel.
 }
 
+// GetConfig returns the server state in a thread safe manner.
 func (s *ServerState) GetConfig() *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.opts.Config
 }
 
+// SetConfig sets the server state in a thread safe manner.
 func (s *ServerState) SetConfig(config *Config) *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -70,6 +94,7 @@ func (s *ServerState) SetConfig(config *Config) *Config {
 	return oldconfig
 }
 
+// ServerStatus is used to faciliate JSON conversion of parts of the server state.
 type ServerStatus struct {
 	BeetleVersion          string   `json:"beetle_version"`
 	ConfiguredClientIds    []string `json:"configured_client_ids"`
@@ -83,6 +108,7 @@ type ServerStatus struct {
 	UnseenClientIds        []string `json:"unseen_client_ids"`
 }
 
+// GetStatus creates a ServerStatus from the curretn server state.
 func (s *ServerState) GetStatus() *ServerStatus {
 	return &ServerStatus{
 		BeetleVersion:          BEETLE_VERSION,
@@ -98,32 +124,36 @@ func (s *ServerState) GetStatus() *ServerStatus {
 	}
 }
 
-type PST struct {
+// pst and psta facilitate sorting of (string, time.Duration pairs) by duration,
+// then string value.
+type pst struct {
 	c string
 	t time.Duration
 }
-type PSTA []PST
+type psta []pst
 
-func (a PSTA) Len() int {
+func (a psta) Len() int {
 	return len(a)
 }
 
-func (a PSTA) Less(i, j int) bool {
+func (a psta) Less(i, j int) bool {
 	return a[i].t < a[j].t || (a[i].t == a[j].t && a[i].c < a[j].c)
 }
 
-func (a PSTA) Swap(i, j int) {
+func (a psta) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
 
+// UnresponsiveClients returns a list of client ids from which we haven't heard
+// for longer than the configured client timeout.
 func (s *ServerState) UnresponsiveClients() []string {
 	res := make([]string, 0)
 	now := time.Now()
 	threshold := now.Add(-(time.Duration(s.GetConfig().ClientTimeout) * time.Second))
-	a := make(PSTA, 0)
+	a := make(psta, 0)
 	for c, t := range s.clientsLastSeen {
 		if t.Before(threshold) {
-			a = append(a, PST{c: c, t: now.Sub(t)})
+			a = append(a, pst{c: c, t: now.Sub(t)})
 		}
 	}
 	sort.Sort(sort.Reverse(a))
@@ -135,6 +165,8 @@ func (s *ServerState) UnresponsiveClients() []string {
 	return res
 }
 
+// UnseenClientIds returns a list of client ids which have been configured, but
+// never sent us anything.
 func (s *ServerState) UnseenClientIds() []string {
 	res := make([]string, 0)
 	for x := range s.clientIds {
@@ -147,6 +179,8 @@ func (s *ServerState) UnseenClientIds() []string {
 	return res
 }
 
+// UnknownClientIds returns a list of client ids which we have senn, but which
+// aren't configured.
 func (s *ServerState) UnknownClientIds() []string {
 	l := len(s.unknownClientIds)
 	res := make([]string, l, l)
@@ -155,10 +189,12 @@ func (s *ServerState) UnknownClientIds() []string {
 	return res
 }
 
-var channelBlocked = errors.New("channel blocked")
+var errChannelBlocked = errors.New("channel blocked")
 
+// StringSet implements convenient set abstractions.
 type StringSet map[string]bool
 
+// Keys returns the keys of a StringSet as a sorted string slice.
 func (l *StringSet) Keys() []string {
 	keys := make([]string, 0, len(*l))
 	for k := range *l {
@@ -168,22 +204,25 @@ func (l *StringSet) Keys() []string {
 	return keys
 }
 
+// Include checks whether a given string s is in the set l.
 func (l *StringSet) Include(s string) bool {
 	_, ok := (*l)[s]
 	return ok
 }
 
+// Add adds a string s to stringset l.
 func (l *StringSet) Add(s string) {
 	if !l.Include(s) {
 		(*l)[s] = true
 	}
 }
 
+// Equals checks whether two string sets are equal.
 func (l StringSet) Equals(s StringSet) bool {
 	if len(l) != len(s) {
 		return false
 	}
-	for x, _ := range l {
+	for x := range l {
 		if !s.Include(x) {
 			return false
 		}
@@ -191,8 +230,10 @@ func (l StringSet) Equals(s StringSet) bool {
 	return true
 }
 
+// StringList implements convenience functions on string slices.
 type StringList []string
 
+// Include check whether a given string s is included in string slice l.
 func (l *StringList) Include(s string) bool {
 	for _, x := range *l {
 		if x == s {
@@ -202,6 +243,7 @@ func (l *StringList) Include(s string) bool {
 	return false
 }
 
+// Add adds a given string s to the end of string slice l.
 func (l *StringList) Add(s string) {
 	if (*l).Include(s) {
 		return
@@ -209,55 +251,63 @@ func (l *StringList) Add(s string) {
 	*l = append(*l, s)
 }
 
+// AddClient registers a communication channel for a given client id.
 func (s *ServerState) AddClient(name string, channel StringChannel) {
-	s.client_channels[name] = channel
+	s.clientChannels[name] = channel
 }
 
+// RemoveClient unregisters a communication channel for a given client id.
 func (s *ServerState) RemoveClient(name string) {
-	delete(s.client_channels, name)
+	delete(s.clientChannels, name)
 }
 
+// AddNotification registers a notification channel.
 func (s *ServerState) AddNotification(channel StringChannel) {
-	s.notification_channels[channel] = channel
+	s.notificationChannels[channel] = channel
 }
 
+// RemoveNotification unregisters a notification channel.
 func (s *ServerState) RemoveNotification(channel StringChannel) {
-	delete(s.notification_channels, channel)
+	delete(s.notificationChannels, channel)
 }
 
+// ClientTimeout returns the client timeout as a time.Duration.
 func (s *ServerState) ClientTimeout() time.Duration {
 	return time.Duration(s.GetConfig().ClientTimeout) * time.Second
 }
 
-func (s *ServerState) SendToWebSockets(msg *MsgContent) (err error) {
+// SendToWebSockets sends a message to all registered clients channels.
+func (s *ServerState) SendToWebSockets(msg *MsgBody) (err error) {
 	data, err := json.Marshal(msg)
 	if err != nil {
 		logError("Could not marshal message")
 		return
 	}
-	logDebug("Sending message to %d clients: %s", len(s.client_channels), string(data))
-	for _, c := range s.client_channels {
+	logDebug("Sending message to %d clients: %s", len(s.clientChannels), string(data))
+	for _, c := range s.clientChannels {
 		select {
 		case c <- string(data):
 		default:
-			err = channelBlocked
+			err = errChannelBlocked
 		}
 	}
 	return
 }
 
+// SendNotification sends a notifcation on all registered notifcation channels.
 func (s *ServerState) SendNotification(text string) (err error) {
-	logInfo("Sending notification to %d subscribers", len(s.notification_channels))
-	for c := range s.notification_channels {
+	logInfo("Sending notification to %d subscribers", len(s.notificationChannels))
+	for c := range s.notificationChannels {
 		select {
 		case c <- text:
 		default:
-			err = channelBlocked
+			err = errChannelBlocked
 		}
 	}
 	return
 }
 
+// String constants used as message identifiers.
 const (
 	// internal messages
 	UNSUBSCRIBE = "unsubscribe"
@@ -278,15 +328,17 @@ const (
 	CHECK_AVAILABILITY  = "check_availability"
 )
 
-type MsgContent struct {
+// MsgBody facilitates JSON conversion for messages sent btween client and server.
+type MsgBody struct {
 	Name   string `json:"name"`
 	Id     string `json:"id,omitempty"`
 	Token  string `json:"token,omitempty"`
 	Server string `json:"server,omitempty"`
 }
 
+// WsMsg bundles a MsgBody and a string channel.
 type WsMsg struct {
-	body    MsgContent
+	body    MsgBody
 	channel chan string
 }
 
@@ -295,9 +347,9 @@ func (s *ServerState) dispatcher() {
 	s.StartWatcher()
 	for !interrupted {
 		select {
-		case msg := <-s.ws_channel:
+		case msg := <-s.wsChannel:
 			s.handleWebSocketMsg(msg)
-		case <-s.timer_channel:
+		case <-s.timerChannel:
 			s.CancelInvalidation()
 		case <-ticker.C:
 			s.watchTick = (s.watchTick + 1) % s.GetConfig().RedisMasterRetryInterval
@@ -333,7 +385,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 		s.RemoveNotification(msg.channel)
 		close(msg.channel)
 	case HEARTBEAT:
-		s.HeartBeat(msg.body)
+		s.Heartbeat(msg.body)
 	case PONG:
 		s.Pong(msg.body)
 	case CLIENT_INVALIDATED:
@@ -343,9 +395,9 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	}
 }
 
+// NewServerState creates partially initialized ServerState.
 func NewServerState(o ServerOptions) *ServerState {
-	// initialize state
-	s := &ServerState{client_channels: make(ChannelMap), notification_channels: make(ChannelSet)}
+	s := &ServerState{clientChannels: make(ChannelMap), notificationChannels: make(ChannelSet)}
 	s.opts = o
 	s.redis = NewRedisServerInfo(s.GetConfig().RedisServers)
 	s.upgrader = websocket.Upgrader{
@@ -353,7 +405,7 @@ func NewServerState(o ServerOptions) *ServerState {
 		WriteBufferSize: 1024,
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
-	s.ws_channel = make(chan *WsMsg, 10000)
+	s.wsChannel = make(chan *WsMsg, 10000)
 	s.clientIds = make(StringSet)
 	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
 		if id != "" {
@@ -369,8 +421,8 @@ func NewServerState(o ServerOptions) *ServerState {
 	return s
 }
 
-// Store some aspects of state in redis to avoid resending
-// notifications on restart.
+// SaveState stores some aspects of the server state to the current redis master
+// to avoid re-sending notifications on restart.
 func (s *ServerState) SaveState() {
 	if s.currentMaster == nil {
 		logError("could not save state because no redis master is available")
@@ -388,6 +440,7 @@ func (s *ServerState) SaveState() {
 	logDebug("saved last seen info to redis: %s", lastSeenStr)
 }
 
+// LoadState loads previously saved state from current redis master.
 func (s *ServerState) LoadState() {
 	if s.currentMaster == nil {
 		logError("could not restore state because we have no redis master")
@@ -412,6 +465,7 @@ func (s *ServerState) LoadState() {
 	logInfo("restored client last seen info from redis: %v", s.clientsLastSeen)
 }
 
+// waits on a sync.WaitGroup, but times out after given duration.
 func waitForWaitGroupWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {
@@ -426,10 +480,11 @@ func waitForWaitGroupWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool
 	}
 }
 
+// RunConfigurationServer implements the main server loop.
 func RunConfigurationServer(o ServerOptions) error {
 	logInfo("server started with options: %+v\n", o)
 	state := NewServerState(o)
-	state.StartAndReloadState()
+	state.Initialize()
 	// start threads
 	go state.dispatcher()
 	if Verbose {
@@ -457,16 +512,16 @@ func RunConfigurationServer(o ServerOptions) error {
 }
 
 var (
-	processed      int64
-	ws_connections int64
+	processed     int64
+	wsConnections int64
 )
 
-func (s *ServerState) clientHandler(web_socket_port int) {
+func (s *ServerState) clientHandler(webSocketPort int) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.dispatchRequest)
-	logInfo("Starting web socket server on port %d", web_socket_port)
-	web_socket_spec := ":" + strconv.Itoa(web_socket_port)
-	graceful.Run(web_socket_spec, 10*time.Second, mux)
+	logInfo("Starting web socket server on port %d", webSocketPort)
+	webSocketSpec := ":" + strconv.Itoa(webSocketPort)
+	graceful.Run(webSocketSpec, 10*time.Second, mux)
 }
 
 func (s *ServerState) serveNotifications(w http.ResponseWriter, r *http.Request) {
@@ -483,10 +538,10 @@ func (s *ServerState) serveNotifications(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *ServerState) notificationReader(ws *websocket.Conn) {
-	var dispatcher_input = make(chan string, 1000)
+	var dispatcherInput = make(chan string, 1000)
 	// channel dispatcher_input will be closed by dispatcher, to avoid sending on a closed channel
-	s.ws_channel <- &WsMsg{body: MsgContent{Name: START_NOTIFY}, channel: dispatcher_input}
-	go s.notificationWriter(ws, dispatcher_input)
+	s.wsChannel <- &WsMsg{body: MsgBody{Name: START_NOTIFY}, channel: dispatcherInput}
+	go s.notificationWriter(ws, dispatcherInput)
 	for !interrupted {
 		msgType, bytes, err := ws.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
@@ -495,15 +550,15 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 		}
 		logInfo("ignored message from notification subscriber: %s", string(bytes))
 	}
-	s.ws_channel <- &WsMsg{body: MsgContent{Name: STOP_NOTIFY}, channel: dispatcher_input}
+	s.wsChannel <- &WsMsg{body: MsgBody{Name: STOP_NOTIFY}, channel: dispatcherInput}
 }
 
-func (s *ServerState) notificationWriter(ws *websocket.Conn, input_from_dispatcher chan string) {
+func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher chan string) {
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
 	for !interrupted {
 		select {
-		case data, ok := <-input_from_dispatcher:
+		case data, ok := <-inputFromDispatcher:
 			if !ok {
 				logInfo("Terminating notification websocket writer")
 				return
@@ -517,7 +572,7 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, input_from_dispatch
 
 func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
 	logDebug("received web socket request")
-	atomic.AddInt64(&ws_connections, 1)
+	atomic.AddInt64(&wsConnections, 1)
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
@@ -527,11 +582,12 @@ func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 	defer (func() {
-		atomic.AddInt64(&ws_connections, -1)
+		atomic.AddInt64(&wsConnections, -1)
 	})()
 	s.wsReader(ws)
 }
 
+// HtmlTemplate defines how the web UI looks.
 const HtmlTemplate = `
 <!doctype html>
 <html><head><title>Beetle Configuration Server Status</title>
@@ -634,12 +690,12 @@ func (s *ServerState) initiateMasterSwitch(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *ServerState) wsReader(ws *websocket.Conn) {
-	var dispatcher_input = make(chan string, 1000)
+	var dispatcherInput = make(chan string, 1000)
 	// channel will be closed by dispatcher, to avoid sending on a closed channel
 
-	var channel_name string
+	var channelName string
 	writerStarted := false
-	var body MsgContent
+	var body MsgBody
 
 	for !interrupted {
 		msgType, bytes, err := ws.ReadMessage()
@@ -654,26 +710,26 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 			break
 		}
 		if !writerStarted {
-			channel_name = body.Id
+			channelName = body.Id
 			logInfo("starting web socket writer for client %s", body.Id)
-			go s.wsWriter(channel_name, ws, dispatcher_input)
+			go s.wsWriter(channelName, ws, dispatcherInput)
 			writerStarted = true
 		}
 		logDebug("received %s", string(bytes))
-		s.ws_channel <- &WsMsg{body: body, channel: dispatcher_input}
+		s.wsChannel <- &WsMsg{body: body, channel: dispatcherInput}
 	}
-	s.ws_channel <- &WsMsg{body: MsgContent{Name: UNSUBSCRIBE, Id: channel_name}, channel: dispatcher_input}
+	s.wsChannel <- &WsMsg{body: MsgBody{Name: UNSUBSCRIBE, Id: channelName}, channel: dispatcherInput}
 }
 
-func (s *ServerState) wsWriter(clientId string, ws *websocket.Conn, input_from_dispatcher chan string) {
+func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDispatcher chan string) {
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
 	defer ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
 	for !interrupted {
 		select {
-		case data, ok := <-input_from_dispatcher:
+		case data, ok := <-inputFromDispatcher:
 			if !ok {
-				logInfo("Closed channel for %s", clientId)
+				logInfo("Closed channel for %s", clientID)
 				return
 			}
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
@@ -683,7 +739,9 @@ func (s *ServerState) wsWriter(clientId string, ws *websocket.Conn, input_from_d
 	}
 }
 
-func (s *ServerState) StartAndReloadState() {
+// Initialize completes the state initialization by checking redis connectivity
+// and loading saved state.
+func (s *ServerState) Initialize() {
 	VerifyMasterFileString(s.GetConfig().RedisMasterFile)
 	s.CheckRedisConfiguration()
 	s.redis.Refresh()
@@ -697,7 +755,8 @@ func (s *ServerState) StartAndReloadState() {
 	s.ForgetOldLastSeenEntries()
 }
 
-func (s *ServerState) Pong(msg MsgContent) {
+// Pong handles a client's reply to the PING message.
+func (s *ServerState) Pong(msg MsgBody) {
 	s.ClientSeen(msg.Id)
 	if !s.ValidatePongClientId(msg.Id) {
 		return
@@ -717,7 +776,8 @@ func (s *ServerState) Pong(msg MsgContent) {
 	}
 }
 
-func (s *ServerState) ClientStarted(msg MsgContent) {
+// ClientStarted handles a client's CLIENT_STARTED message.
+func (s *ServerState) ClientStarted(msg MsgBody) {
 	seen := s.ClientSeen(msg.Id)
 	if s.ClientIdIsValid(msg.Id) {
 		logInfo("Received client_started message from id '%s'", msg.Id)
@@ -731,7 +791,8 @@ func (s *ServerState) ClientStarted(msg MsgContent) {
 	}
 }
 
-func (s *ServerState) HeartBeat(msg MsgContent) {
+// Heartbeat handles a client's HEARTBEAT message.
+func (s *ServerState) Heartbeat(msg MsgBody) {
 	seen := s.ClientSeen(msg.Id)
 	if s.ClientIdIsValid(msg.Id) {
 		logDebug("received heartbeat message from id '%s'", msg.Id)
@@ -745,7 +806,8 @@ func (s *ServerState) HeartBeat(msg MsgContent) {
 	}
 }
 
-func (s *ServerState) ClientInvalidated(msg MsgContent) {
+// ClientInvalidated handles a client's CLIENT_INVALIDATED message.
+func (s *ServerState) ClientInvalidated(msg MsgBody) {
 	s.ClientSeen(msg.Id)
 	if !s.ClientIdIsValid(msg.Id) {
 		s.AddUnknownClientId(msg.Id)
@@ -762,6 +824,10 @@ func (s *ServerState) ClientInvalidated(msg MsgContent) {
 	}
 }
 
+// MasterUnavailable pauses the redis watcher, sends a nofication that the redis
+// master has become unavailable and starts the voting process on whether to
+// switch or not. If no client ids have been configured, it switches the master
+// immediately.
 func (s *ServerState) MasterUnavailable() {
 	s.PauseWatcher()
 	msg := fmt.Sprintf("Redis master '%s' not available", s.currentMaster.server)
@@ -774,21 +840,30 @@ func (s *ServerState) MasterUnavailable() {
 	}
 }
 
+// MasterAvailable send current master info to all connected clients and
+// reconfigures remaining redis servers as slaves of the (new) master.
 func (s *ServerState) MasterAvailable() {
 	s.PublishMaster(s.currentMaster.server)
 	s.ConfigureSlaves(s.currentMaster)
 	s.SaveState()
 }
 
+// MasterIsAvailable uses the cached redis information to determine whether the
+// currently configured master is in fact available.
 func (s *ServerState) MasterIsAvailable() bool {
 	logDebug("Checking master availability. currentMaster: '%+v'", s.currentMaster)
 	return s.redis.Masters().Include(s.currentMaster)
 }
 
+// AvailableSlaves retrieves the list of slaves from the cached redis
+// information.
 func (s *ServerState) AvailableSlaves() RedisShims {
 	return s.redis.Slaves()
 }
 
+// InitiateMasterSwitch refreshes the cached redis information and starts a vote
+// on a new redis server, unless there is already a vote in progress or the
+// currently configured redis master is available.
 func (s *ServerState) InitiateMasterSwitch() bool {
 	s.redis.Refresh()
 	available, switchInProgress := s.MasterIsAvailable(), s.WatcherPaused()
@@ -799,17 +874,24 @@ func (s *ServerState) InitiateMasterSwitch() bool {
 	return !available || switchInProgress
 }
 
-const MAX_UNKNOWN_CLIENT_IDS = 1000
+// MaxUnknownClientIds specifies the maximum number of unknown clients we keep
+// information on.
+const MaxUnknownClientIds = 1000
 
+// AddUnknownClientId adds a client id to the unknown clients list. It removes
+// old entries from the list if the list ist longer than desired, in order to
+// protect against memeory overflows caused by client programming errors.
 func (s *ServerState) AddUnknownClientId(id string) {
-	for len(s.unknownClientIds) >= MAX_UNKNOWN_CLIENT_IDS {
-		old_id := s.unknownClientIds[0]
+	for len(s.unknownClientIds) >= MaxUnknownClientIds {
+		oldId := s.unknownClientIds[0]
 		s.unknownClientIds = s.unknownClientIds[1:len(s.unknownClientIds)]
-		delete(s.clientsLastSeen, old_id)
+		delete(s.clientsLastSeen, oldId)
 	}
 	s.unknownClientIds.Add(id)
 }
 
+// ForgetOldUnknownClientIds removes entries from the set of unknown client ids
+// from which we haven't heard for at least 24 hours.
 func (s *ServerState) ForgetOldUnknownClientIds() {
 	threshold := time.Now().Add(-24 * time.Hour)
 	newUnknown := make(StringList, 0, len(s.unknownClientIds))
@@ -822,6 +904,8 @@ func (s *ServerState) ForgetOldUnknownClientIds() {
 	s.unknownClientIds = newUnknown
 }
 
+// ForgetOldLastSeenEntries removes entries from the set of unknown client ids
+// from which we haven't heard for at least 24 hours.
 func (s *ServerState) ForgetOldLastSeenEntries() {
 	threshold := time.Now().Add(-24 * time.Hour)
 	newLastSeen := make(TimeSet)
@@ -833,14 +917,15 @@ func (s *ServerState) ForgetOldLastSeenEntries() {
 	s.clientsLastSeen = newLastSeen
 }
 
-// Insert or update client last seen timestamp. Returns true if we
-// have seen client id previously.
+// ClientSeen inserts or updates client last seen timestamp. Returns true if we
+// have seen the client id previously.
 func (s *ServerState) ClientSeen(id string) bool {
 	_, seen := s.clientsLastSeen[id]
 	s.clientsLastSeen[id] = time.Now()
 	return seen
 }
 
+// CheckRedisConfiguration checks whether we have at leats two redis servers.
 func (s *ServerState) CheckRedisConfiguration() {
 	if s.redis.NumServers() < 2 {
 		logError("Redis failover needs at least two redis servers")
@@ -848,6 +933,9 @@ func (s *ServerState) CheckRedisConfiguration() {
 	}
 }
 
+// DetermineInitialMaster either uses information from the master file on disk
+// or tries to auto detect an inital redis master and writes it to disk. If no
+// master can be determined, the main server loop will start a vote later on.
 func (s *ServerState) DetermineInitialMaster() {
 	if MasterFileExists(s.GetConfig().RedisMasterFile) {
 		s.currentMaster = RedisMasterFromMasterFile(s.GetConfig().RedisMasterFile)
@@ -867,19 +955,23 @@ func (s *ServerState) DetermineInitialMaster() {
 	}
 }
 
+// DetermineNewMaster uses the cached redis information to either select a new
+// master from slaves of the current master or simply returns the current
+// master, if it can still be reached.
 func (s *ServerState) DetermineNewMaster() *RedisShim {
 	if s.redis.Unknowns().Include(s.currentMaster) {
 		slaves := s.redis.SlavesOf(s.currentMaster)
 		if len(slaves) == 0 {
 			return nil
-		} else {
-			return slaves[0]
 		}
-	} else {
-		return s.currentMaster
+		return slaves[0]
 	}
+	return s.currentMaster
 }
 
+// ValidatePongClientId checks whether the given client id has been configured
+// as a known id. If it's not, it is added to the set of unknown client ids and
+// a notification is sent.
 func (s *ServerState) ValidatePongClientId(id string) bool {
 	if s.ClientIdIsValid(id) {
 		return true
@@ -891,10 +983,12 @@ func (s *ServerState) ValidatePongClientId(id string) bool {
 	return false
 }
 
+// ClientIdIsValid checks whether the given client id has been configured.
 func (s *ServerState) ClientIdIsValid(id string) bool {
 	return s.clientIds.Include(id)
 }
 
+// RedeemToken checks whether the given token is valid for the current vote.
 func (s *ServerState) RedeemToken(token string) bool {
 	if token == s.currentToken {
 		return true
@@ -903,52 +997,69 @@ func (s *ServerState) RedeemToken(token string) bool {
 	return false
 }
 
+// GenerateNewToken generates a new token by incrementing a counter maintained
+// in the server state.
 func (s *ServerState) GenerateNewToken() {
-	s.currentTokenInt += 1
+	s.currentTokenInt++
 	s.currentToken = strconv.Itoa(s.currentTokenInt)
 }
 
+// StartInvalidation resets the state information used to keep track of the an
+// ongoing vote and starts a new vote.
 func (s *ServerState) StartInvalidation() {
 	s.clientPongIdsReceived = make(StringSet)
 	s.clientInvalidatedIdsReceived = make(StringSet)
-	s.CheckAllClientsAvailabe()
+	s.CheckAllClientsAvailable()
 }
 
-func (s *ServerState) CheckAllClientsAvailabe() {
+// CheckAllClientsAvailable sends a PING message to all connected clients.
+func (s *ServerState) CheckAllClientsAvailable() {
 	s.GenerateNewToken()
 	logInfo("Sending ping messages with token '%s'", s.currentToken)
-	msg := &MsgContent{Name: PING, Token: s.currentToken}
+	msg := &MsgBody{Name: PING, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 	s.availabilityTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.availabilityTimer = nil
-		s.timer_channel <- CANCEL_INVALIDATION
+		s.timerChannel <- CANCEL_INVALIDATION
 	})
 }
 
+// InvalidateCurrentMaster sends the INVALIDATE message to all connected
+// clients.
 func (s *ServerState) InvalidateCurrentMaster() {
 	s.GenerateNewToken()
 	logInfo("Sending invalidate messages with token '%s'", s.currentToken)
-	msg := &MsgContent{Name: INVALIDATE, Token: s.currentToken}
+	msg := &MsgBody{Name: INVALIDATE, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 	s.invalidateTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.invalidateTimer = nil
-		s.timer_channel <- CANCEL_INVALIDATION
+		s.timerChannel <- CANCEL_INVALIDATION
 	})
 }
 
+// CancelInvalidation generates a new token to the next vote and unpauses the
+// watcher.
 func (s *ServerState) CancelInvalidation() {
 	s.GenerateNewToken()
 	s.StartWatcher()
 }
 
+// AllClientPongIdsReceived checks whether all client's have answered the PING
+// message by sending a PONG.
 func (s *ServerState) AllClientPongIdsReceived() bool {
 	return s.clientIds.Equals(s.clientPongIdsReceived)
 }
 
+// AllClientInvalidatedIdsReceived checks whether all client's have answered the
+// INVALIDATE message by sending a CLIENT_INVALIDATED message back.
 func (s *ServerState) AllClientInvalidatedIdsReceived() bool {
 	return s.clientIds.Equals(s.clientInvalidatedIdsReceived)
 }
 
+// SwitchMaster is called after a successfully completed vote and performs a
+// switch to a new master, if possible. If no new master can be determined, it
+// starts watching the old master again. In either case, a notification message
+// is sent out.
 func (s *ServerState) SwitchMaster() {
 	newMaster := s.DetermineNewMaster()
 	if newMaster != nil {
@@ -967,24 +1078,30 @@ func (s *ServerState) SwitchMaster() {
 	s.StartWatcher()
 }
 
+// PublishMaster sends the RECONFIGURE message to all connected clients.
 func (s *ServerState) PublishMaster(server string) {
 	logInfo("Sending reconfigure message with server '%s' and token: '%s'", server, s.currentToken)
-	msg := &MsgContent{Name: RECONFIGURE, Server: server, Token: s.currentToken}
+	msg := &MsgBody{Name: RECONFIGURE, Server: server, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 }
 
+// ConfigureSlaves turns all masters which are not the currently configured
+// master into slaves of the current master.
 func (s *ServerState) ConfigureSlaves(master *RedisShim) {
 	for _, r := range s.redis.Masters() {
 		if r.server != master.server {
 			r.redis.SlaveOf(master.host, strconv.Itoa(master.port))
 		}
 	}
+	// TODO: shouldn't we also make sure all slaves are slaves of the correct master?
 }
 
+// WatcherPaused checks whether the redis watcher has been paused.
 func (s *ServerState) WatcherPaused() bool {
 	return !s.watching
 }
 
+// StartWatcher starts watching the redis server status.
 func (s *ServerState) StartWatcher() {
 	if s.WatcherPaused() {
 		s.watchTick = 0
@@ -993,6 +1110,7 @@ func (s *ServerState) StartWatcher() {
 	}
 }
 
+// PauseWatcher starts watching the redis server status.
 func (s *ServerState) PauseWatcher() {
 	if s.WatcherPaused() {
 		return
@@ -1001,6 +1119,7 @@ func (s *ServerState) PauseWatcher() {
 	s.watching = false
 }
 
+// CheckRedisAvailability uses
 func (s *ServerState) CheckRedisAvailability() {
 	s.redis.Refresh()
 	if s.MasterIsAvailable() {
@@ -1008,7 +1127,7 @@ func (s *ServerState) CheckRedisAvailability() {
 	} else {
 		retriesLeft := s.GetConfig().RedisMasterRetries - (s.retries + 1)
 		logWarn("Redis master not available! (Retries left: %d)", retriesLeft)
-		s.retries += 1
+		s.retries++
 		if s.retries >= s.GetConfig().RedisMasterRetries {
 			s.retries = 0
 			s.MasterUnavailable()

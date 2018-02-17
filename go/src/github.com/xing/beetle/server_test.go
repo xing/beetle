@@ -129,7 +129,9 @@ func TestSavingAndLoadingState(t *testing.T) {
 	oldLastSeen := s.clientsLastSeen
 	s.clientsLastSeen = make(TimeSet)
 	s.LoadState()
-	checkEqual(t, s.clientsLastSeen, oldLastSeen)
+	if !s.clientsLastSeen.Equal(oldLastSeen) {
+		t.Errorf("Could not load clients last seen state properly")
+	}
 }
 
 func TestClientSeen(t *testing.T) {

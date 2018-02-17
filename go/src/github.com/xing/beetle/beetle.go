@@ -40,16 +40,18 @@ var opts struct {
 	DialTimeout              int    `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
 }
 
+// Verbose stores verbosity or logging purposoes.
 var Verbose bool
 
 var cmd flags.Commander
 var cmdArgs []string
 
-// run client
+// CmdRunClient is used when the program arguments tell us run a client.
 type CmdRunClient struct{}
 
 var cmdRunClient CmdRunClient
 
+// Execute runs a configuration client.
 func (x *CmdRunClient) Execute(args []string) error {
 	return RunConfigurationClient(ClientOptions{
 		Id:           opts.Id,
@@ -58,11 +60,12 @@ func (x *CmdRunClient) Execute(args []string) error {
 	})
 }
 
-// run server
+// CmdRunServer is used when the program arguments tell us to run a server.
 type CmdRunServer struct{}
 
 var cmdRunServer CmdRunServer
 
+// Execute runs a configuration server.
 func (x *CmdRunServer) Execute(args []string) error {
 	return RunConfigurationServer(ServerOptions{
 		Config:       initialConfig,
@@ -70,11 +73,12 @@ func (x *CmdRunServer) Execute(args []string) error {
 	})
 }
 
-// run mailer
+// CmdRunMailer is used when the program arguments tell us to run a mailer.
 type CmdRunMailer struct{}
 
 var cmdRunMailer CmdRunMailer
 
+// Execute runs a mailer.
 func (x *CmdRunMailer) Execute(args []string) error {
 	return RunNotificationMailer(MailerOptions{
 		Server:      initialConfig.Server,
@@ -84,21 +88,23 @@ func (x *CmdRunMailer) Execute(args []string) error {
 	})
 }
 
-// print config
+// CmdPrintConfig is used when the program arguments tell us to print the configuration.
 type CmdPrintConfig struct{}
 
 var cmdPrintConfig CmdPrintConfig
 
+// Execute prints the configuration.
 func (x *CmdPrintConfig) Execute(args []string) error {
 	fmt.Print(initialConfig.String())
 	return nil
 }
 
-// garbage collect keys
+// CmdRunGCKeys is used when the program arguments tell us to garbage collect redis keys.
 type CmdRunGCKeys struct{}
 
 var cmdRunGCKeys CmdRunGCKeys
 
+// Execute garbage collects redis keys.
 func (x *CmdRunGCKeys) Execute(args []string) error {
 	return RunGarbageCollectKeys(GCOptions{
 		RedisMasterFile: initialConfig.RedisMasterFile,

@@ -15,15 +15,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Verbose defines the verbosity level
 var Verbose = false
 
+// Env is a string map
 type Env map[string]string
 
+// Entry is akey value pair
 type Entry struct {
 	Key   string
 	Value string
 }
 
+// Entries is a slice of Entry objects used for sorting
 type Entries []Entry
 
 func (es Entries) Len() int {
@@ -36,31 +40,30 @@ func (es Entries) Swap(i, j int) {
 	es[i], es[j] = es[j], es[i]
 }
 
+// Space represents a space in consul
 type Space struct {
 	prefix      string
 	modifyIndex int
 	entries     Entries
 }
 
+// Client is used to access consul
 type Client struct {
 	consulUrl    string
 	appName      string
 	appConfig    Space
 	sharedConfig Space
-	appKeys      Space
-	sharedKeys   Space
 	dataCenter   string
 	dataCenters  []string
 }
 
+// NewClient creates a new consul client
 func NewClient(consulUrl string, appName string) *Client {
 	client := Client{
 		consulUrl:    consulUrl,
 		appName:      appName,
 		appConfig:    Space{prefix: "apps/" + appName + "/config/"},
-		appKeys:      Space{prefix: "apps/" + appName + "/keys/"},
 		sharedConfig: Space{prefix: "shared/config/"},
-		sharedKeys:   Space{prefix: "shared/keys/"},
 	}
 	n := len(client.consulUrl)
 	if n > 0 && client.consulUrl[n-1] != '/' {
@@ -69,6 +72,8 @@ func NewClient(consulUrl string, appName string) *Client {
 	return &client
 }
 
+// Initialize determines the list of known datacenters and the datacenter we run
+// in.
 func (c *Client) Initialize() error {
 	if err := c.GetDataCenters(); err != nil {
 		return err
@@ -80,6 +85,7 @@ func (c *Client) Initialize() error {
 	return nil
 }
 
+// GetDC retrieves the datacenter we run in
 func (c *Client) GetDC() {
 	fqdn := getFQDN()
 	for _, dc := range c.dataCenters {
@@ -93,6 +99,7 @@ func (c *Client) kvUrl(key string) string {
 	return c.consulUrl + "v1/kv/" + key
 }
 
+// GetDataCenters retrieves the list of known datacenters from consul
 func (c *Client) GetDataCenters() error {
 	fullUrl := c.kvUrl("datacenters") + "?raw"
 	if Verbose {
@@ -118,6 +125,7 @@ func (c *Client) GetDataCenters() error {
 	return nil
 }
 
+// GetData loads a key/value space from consul
 func (c *Client) GetData(space *Space, useIndex bool) error {
 	fullUrl := c.kvUrl(space.prefix) + "?recurse"
 	if useIndex {
@@ -160,6 +168,8 @@ func (c *Client) GetData(space *Space, useIndex bool) error {
 	return nil
 }
 
+// GetEnv loads shared and app specific config from consul and returns it as a
+// string map
 func (c *Client) GetEnv() (env Env, err error) {
 	if Verbose {
 		log.Printf("Retrieving config hierarchies for %s from consul %s\n", c.appName, c.consulUrl)
@@ -174,22 +184,8 @@ func (c *Client) GetEnv() (env Env, err error) {
 	return
 }
 
-func (c *Client) GetKeys() (env Env, err error) {
-	if Verbose {
-		log.Printf("Retrieving encryption key hierarchies for %s from consul %s\n", c.appName, c.consulUrl)
-	}
-	if err = c.GetData(&c.sharedKeys, false); err != nil {
-		return
-	}
-	if err = c.GetData(&c.appKeys, false); err != nil {
-		log.Printf("app does not have encryption keys")
-	}
-	env = c.CombineKeys()
-	return
-}
-
-// Watch for consul changes in the background. Returns a channel on
-// which to listen for new environments.
+// WatchConfig watches for consul changes in the background. Returns a channel
+// on which to listen for new environments.
 func (c *Client) WatchConfig() (chan Env, error) {
 	changes := make(chan Env, 10)
 	// Ensure we retrieve configs and keys at least once before launching go
@@ -205,8 +201,8 @@ func (c *Client) WatchConfig() (chan Env, error) {
 	return changes, nil
 }
 
-// Watches run forever. We rely on sockets being closed automatically
-// when the program terminates.
+// Watches run forever. We rely on sockets being closed automatically when the
+// program terminates.
 func (c *Client) watchSpace(space *Space, channel chan Env) {
 	for {
 		oldIndex := space.modifyIndex
@@ -229,9 +225,8 @@ func (c *Client) transformKeyAccordingToDC(key string) string {
 		if strings.HasPrefix(key, dcPrefix) {
 			if dc == c.dataCenter {
 				return strings.Replace(key, dcPrefix, "", 1)
-			} else {
-				return ""
 			}
+			return ""
 		}
 	}
 	return key
@@ -260,17 +255,11 @@ func (c *Client) addEntriesToEnv(space *Space, env Env) (err error) {
 	return
 }
 
+// CombineConfigs combines shared config with app specific config
 func (c *Client) CombineConfigs() (env Env) {
 	env = make(Env)
 	c.addEntriesToEnv(&c.sharedConfig, env)
 	c.addEntriesToEnv(&c.appConfig, env)
-	return
-}
-
-func (c *Client) CombineKeys() (env Env) {
-	env = make(Env)
-	c.addEntriesToEnv(&c.sharedKeys, env)
-	c.addEntriesToEnv(&c.appKeys, env)
 	return
 }
 

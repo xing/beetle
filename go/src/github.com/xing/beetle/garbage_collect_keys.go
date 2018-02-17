@@ -10,11 +10,15 @@ import (
 	"gopkg.in/redis.v5"
 )
 
+// GCOptions are provided by the caller of RunGarbageCollectKeys.
 type GCOptions struct {
-	RedisMasterFile string
-	GcThreshold     int
-	GcDatabases     string
+	RedisMasterFile string // Path to the redis master file.
+	GcThreshold     int    // Number of seconds after which a key should be considered collectible.
+	GcDatabases     string // List of databases to scan.
 }
+
+// GCState holds options and collector state, most importantly the current redis
+// connection and database.
 type GCState struct {
 	opts          GCOptions
 	currentMaster string
@@ -134,6 +138,10 @@ func (s *GCState) getMaster(db int) bool {
 	return s.redis != nil
 }
 
+// RunGarbageCollectKeys runs a garbage collection on the redis master using the
+// redis SCAN operation. Restarts from the beginning, should the master change
+// while running the scan. Terminates as soon as a full scan has been performed
+// on all databases which need GC.
 func RunGarbageCollectKeys(opts GCOptions) error {
 	logDebug("garbage collecting keys with options: %+v", opts)
 	state := &GCState{opts: opts}

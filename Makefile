@@ -1,4 +1,4 @@
-.PHONY: all clean realclean install uninstall test test-main test-server test-consul feature stats world release linux darwin container tag push
+.PHONY: all clean realclean install uninstall test test-main test-server test-consul feature stats world release linux darwin container tag push lint
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
@@ -68,6 +68,10 @@ test-server:
 
 test-consul:
 	cd go/src/$(GO_PKG)/consul && $(GO_ENV) go test
+
+lint:
+	@golint -min_confidence 1.0 $(GO_SRC)/*.go
+	@cd $(GO_SRC)/consul && golint -min_confidence 1.0 *.go
 
 feature:
 	cucumber features/redis_auto_failover.feature:9

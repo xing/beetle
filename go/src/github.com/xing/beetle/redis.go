@@ -9,11 +9,14 @@ import (
 	"strings"
 )
 
+// MasterFileExists checks whether the give path exists on disk.
 func MasterFileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
 
+// RedisMasterFromMasterFile creates a redis shim from the give file
+// path. Returns nil if the file does not exist or is empty.
 func RedisMasterFromMasterFile(path string) *RedisShim {
 	s := ReadRedisMasterFile(path)
 	if s == "" {
@@ -22,10 +25,13 @@ func RedisMasterFromMasterFile(path string) *RedisShim {
 	return NewRedisShim(s)
 }
 
+// ClearRedisMasterFile empties the file at the given path.
 func ClearRedisMasterFile(path string) error {
 	return WriteRedisMasterFile(path, "")
 }
 
+// ReadRedisMasterFile reads the file at the given path, stripping newlines from
+// the last line read.
 func ReadRedisMasterFile(path string) string {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -35,6 +41,8 @@ func ReadRedisMasterFile(path string) string {
 	return strings.TrimRight(string(b), "\n")
 }
 
+// WriteRedisMasterFile writes given string into file at given path, creating it
+// if necessary. Returns an error if the file cannot be created.
 func WriteRedisMasterFile(path string, content string) error {
 	logInfo("writing '%s' to redis master file '%s'", content, path)
 	f, err := os.Create(path)
@@ -50,6 +58,8 @@ func WriteRedisMasterFile(path string, content string) error {
 	return nil
 }
 
+// VerifyMasterFileString checks that the given path does not look like a
+// server:port combination.
 func VerifyMasterFileString(path string) error {
 	matched, err := regexp.MatchString("^[0-9a-z.]+:[0-9]+$", path)
 	if err != nil {

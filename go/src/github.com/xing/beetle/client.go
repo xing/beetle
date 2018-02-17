@@ -13,17 +13,20 @@ import (
 	"gopkg.in/gorilla/websocket.v1"
 )
 
+// ClientOptions consist of the id by which the client identifies itself with
+// the server, the overall configuration and pointer to a ConsulClient.
 type ClientOptions struct {
 	Id           string
 	Config       *Config
 	ConsulClient *consul.Client
 }
 
+// ClientState holds the client state.
 type ClientState struct {
 	opts          ClientOptions
 	mutex         sync.Mutex
 	ws            *websocket.Conn
-	input         chan MsgContent
+	input         chan MsgBody
 	currentMaster *RedisShim
 	currentToken  string
 	writerDone    chan struct{}
@@ -31,12 +34,15 @@ type ClientState struct {
 	configChanges chan consul.Env
 }
 
+// GetConfig returns the client configuration in a thread safe way.
 func (s *ClientState) GetConfig() *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.opts.Config
 }
 
+// SetConfig sets replaces the current config with a new one in athread safe way
+// and returns the old config.
 func (s *ClientState) SetConfig(config *Config) *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -45,6 +51,7 @@ func (s *ClientState) SetConfig(config *Config) *Config {
 	return oldconfig
 }
 
+// ServerUrl constructs the webesocker URL to contact the server.
 func (s *ClientState) ServerUrl() string {
 	config := s.GetConfig()
 	addr := fmt.Sprintf("%s:%d", config.Server, config.Port)
@@ -52,6 +59,7 @@ func (s *ClientState) ServerUrl() string {
 	return u.String()
 }
 
+// Connect establishes a webscket connection to the server.
 func (s *ClientState) Connect() (err error) {
 	url := s.ServerUrl()
 	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.GetConfig().DialTimeout) * time.Second
@@ -64,6 +72,7 @@ func (s *ClientState) Connect() (err error) {
 	return
 }
 
+// Close sends a Close message to the server and closed the connection.
 func (s *ClientState) Close() {
 	defer s.ws.Close()
 	err := s.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
@@ -72,7 +81,8 @@ func (s *ClientState) Close() {
 	}
 }
 
-func (s *ClientState) send(msg MsgContent) error {
+// Send a message to the server.
+func (s *ClientState) send(msg MsgBody) error {
 	b, err := json.Marshal(msg)
 	if err != nil {
 		logError("could not marshal message: %s", err)
@@ -88,11 +98,13 @@ func (s *ClientState) send(msg MsgContent) error {
 	return nil
 }
 
+// SendHeartBeat sneds a heartbeat message to the server.
 func (s *ClientState) SendHeartBeat() error {
-	return s.send(MsgContent{Name: HEARTBEAT, Id: s.opts.Id})
+	return s.send(MsgBody{Name: HEARTBEAT, Id: s.opts.Id})
 }
 
-func (s *ClientState) Ping(pingMsg MsgContent) error {
+// Ping sends a PING message to the server.
+func (s *ClientState) Ping(pingMsg MsgBody) error {
 	logInfo("Received ping message")
 	if s.RedeemToken(pingMsg.Token) {
 		return s.SendPong()
@@ -100,6 +112,7 @@ func (s *ClientState) Ping(pingMsg MsgContent) error {
 	return nil
 }
 
+// RedeemToken checks the validity of the given token.
 func (s *ClientState) RedeemToken(token string) bool {
 	if s.currentToken == "" || token > s.currentToken {
 		s.currentToken = token
@@ -111,23 +124,29 @@ func (s *ClientState) RedeemToken(token string) bool {
 	return tokenValid
 }
 
+// SendPong sends a PONG message to the server.
 func (s *ClientState) SendPong() error {
-	return s.send(MsgContent{Name: PONG, Id: s.opts.Id, Token: s.currentToken})
+	return s.send(MsgBody{Name: PONG, Id: s.opts.Id, Token: s.currentToken})
 }
 
+// SendClientInvalidated sends a CLIENT_INVALIDATED message to the server.
 func (s *ClientState) SendClientInvalidated() error {
-	return s.send(MsgContent{Name: CLIENT_INVALIDATED, Id: s.opts.Id, Token: s.currentToken})
+	return s.send(MsgBody{Name: CLIENT_INVALIDATED, Id: s.opts.Id, Token: s.currentToken})
 }
 
+// SendClientStarted sends a CLIENT_STARTED message to the server.
 func (s *ClientState) SendClientStarted() error {
-	return s.send(MsgContent{Name: CLIENT_STARTED, Id: s.opts.Id})
+	return s.send(MsgBody{Name: CLIENT_STARTED, Id: s.opts.Id})
 }
 
+// NewMaster modifies the client state by setting the current master to a new
+// one.
 func (s *ClientState) NewMaster(server string) {
 	logInfo("setting new master: %s", server)
 	s.currentMaster = NewRedisShim(server)
 }
 
+// DetermineInitialMaster tries to read the current master from disk.
 func (s *ClientState) DetermineInitialMaster() {
 	if !MasterFileExists(s.GetConfig().RedisMasterFile) {
 		return
@@ -138,7 +157,10 @@ func (s *ClientState) DetermineInitialMaster() {
 	}
 }
 
-func (s *ClientState) Invalidate(msg MsgContent) error {
+// Invalidate clears the redis master file contents and sends a
+// CLIENT_INVALIDATED message to the server, provided the token sent with the
+// message is valid.
+func (s *ClientState) Invalidate(msg MsgBody) error {
 	if s.RedeemToken(msg.Token) && (s.currentMaster == nil || s.currentMaster.Role() != MASTER) {
 		s.currentMaster = nil
 		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
@@ -148,7 +170,9 @@ func (s *ClientState) Invalidate(msg MsgContent) error {
 	return nil
 }
 
-func (s *ClientState) Reconfigure(msg MsgContent) error {
+// Reconfigure updates the redis mater file on disk, provided the token sent
+// with the message is valid.
+func (s *ClientState) Reconfigure(msg MsgBody) error {
 	logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
 	if !s.RedeemToken(msg.Token) {
 		logInfo("Received invalid or outdated token: '%s'", msg.Token)
@@ -160,6 +184,9 @@ func (s *ClientState) Reconfigure(msg MsgContent) error {
 	return nil
 }
 
+// Reader reads messages from the server and forwards them on an internal
+// channel to the Writer, which acts as a message dispatcher. It exits when
+// reading results in an error or when the server closes the socket.
 func (s *ClientState) Reader() {
 	defer func() { s.readerDone <- struct{}{} }()
 	for !interrupted {
@@ -176,7 +203,7 @@ func (s *ClientState) Reader() {
 			return
 		}
 		logDebug("received: %s", string(bytes))
-		var body MsgContent
+		var body MsgBody
 		err = json.Unmarshal(bytes, &body)
 		if err != nil {
 			logError("reader: could not parse msg: %s", err)
@@ -186,6 +213,11 @@ func (s *ClientState) Reader() {
 	}
 }
 
+// Writer reads messages from an internal channel and dispatches them. It
+// peridocally sends a HERATBEAT message to the server. It if receives a config
+// change message, it replaces the current config with the new one. If the
+// config change implies that the server URL has changed it exits, relying on
+// the outer loop to restart the client.
 func (s *ClientState) Writer() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer s.Close()
@@ -226,7 +258,8 @@ func (s *ClientState) Writer() {
 	}
 }
 
-func (s *ClientState) Dispatch(msg MsgContent) error {
+// Dispatch dispatches matches rceived from the server to appropriate methods.
+func (s *ClientState) Dispatch(msg MsgBody) error {
 	logDebug("dispatcher received: %+v", msg)
 	switch msg.Name {
 	case RECONFIGURE:
@@ -241,6 +274,9 @@ func (s *ClientState) Dispatch(msg MsgContent) error {
 	return nil
 }
 
+// Run establishes a websocket connection to the server, starts reader and
+// writer routines and a consul watcher for config changes. It exits when the
+// writer exits.
 func (s *ClientState) Run() error {
 	s.DetermineInitialMaster()
 	if s.currentMaster == nil || !s.currentMaster.IsMaster() {
@@ -270,6 +306,8 @@ func (s *ClientState) Run() error {
 	return nil
 }
 
+// RunConfigurationClient keeps a client running until the process receives an
+// INT or a TERM signal.
 func RunConfigurationClient(o ClientOptions) error {
 	logInfo("client started with options: %+v\n", o)
 	for !interrupted {
@@ -278,11 +316,12 @@ func RunConfigurationClient(o ClientOptions) error {
 			readerDone: make(chan struct{}, 1),
 			writerDone: make(chan struct{}, 1),
 		}
-		state.input = make(chan MsgContent, 1000)
+		state.input = make(chan MsgBody, 1000)
 		err := state.Run()
 		if err != nil {
 			logError("%s", err)
 			if !interrupted {
+				// TODO: exponential backoff with jitter.
 				time.Sleep(1 * time.Second)
 			}
 		}

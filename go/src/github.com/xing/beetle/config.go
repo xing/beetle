@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Config holds externally configurable options.
 type Config struct {
 	Server                   string `yaml:"redis_configuration_server"`
 	Port                     int    `yaml:"redis_configuration_server_port"`
@@ -24,11 +25,13 @@ type Config struct {
 	DialTimeout              int    `yaml:"dial_timeout"`
 }
 
+// Clone copies a give config.
 func (c *Config) Clone() *Config {
 	d := *c
 	return &d
 }
 
+// String converts a Config into its YAML representation.
 func (c *Config) String() string {
 	yamlBytes, err := yaml.Marshal(c)
 	if err != nil {
@@ -37,16 +40,20 @@ func (c *Config) String() string {
 	return string(yamlBytes)
 }
 
+// ServerUrl constructs a server URL hostname and port.
 func (c *Config) ServerUrl() string {
 	return c.Server + ":" + strconv.Itoa(c.Port)
 }
 
+// Sanitize replaces newlines by commas. Used to support newlines in consul
+// definitions.
 func (c *Config) Sanitize() {
 	if strings.Contains(c.ClientIds, "\n") {
 		c.ClientIds = strings.Replace(c.ClientIds, "\n", ",", -1)
 	}
 }
 
+// SetDefaults sets default values for all config options.
 func (c *Config) SetDefaults() *Config {
 	if c.ClientTimeout == 0 {
 		c.ClientTimeout = 10
@@ -85,6 +92,7 @@ func (c *Config) SetDefaults() *Config {
 	return c
 }
 
+// Merge merges two configs c and d. Settings in c have precedence over those in d.
 func (c *Config) Merge(d *Config) *Config {
 	if d == nil {
 		return c
@@ -132,6 +140,7 @@ func (c *Config) Merge(d *Config) *Config {
 	return c
 }
 
+// create a config from a consul Env object.
 func configFromConsulEnv(env consul.Env) *Config {
 	if env == nil {
 		return nil
