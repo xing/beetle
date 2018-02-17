@@ -1,9 +1,10 @@
 rvm:
-  - 2.3.5
-  - 2.4.2
+  - 2.3.6
+  - 2.4.3
+  - 2.5.0
 before_script:
   - sudo rm -rf /usr/local/go
-  - curl -s https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
+  - curl -s https://dl.google.com/go/go1.9.4.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
   - export GOROOT=/usr/local/go
   - export PATH=/usr/local/go/bin:$PATH
 script: "make && bundle exec rake || (tail -n +1 tmp/*.{log,output}; false)"
