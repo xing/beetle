@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 2.1.1
+
+* Support redis failover with less than 100% acknolegment from failover clients.
+
 == Version 2.1.0
 
 * Support exponential backoff when delaying messages using 'max_delay: int' option.
