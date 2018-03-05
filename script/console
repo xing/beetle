@@ -10,8 +10,7 @@ OptionParser.new do |opt|
 end
 
 libs =  " -r irb/completion"
-libs << %( -r ubygems)
-libs << %( -r #{File.expand_path("../../lib/beetle.rb",__FILE__)})
+libs << %( -r #{Fileexpand_path("../../lib/beetle.rb",__FILE__)})
 
 if options[:debugger]
   begin

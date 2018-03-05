@@ -40,7 +40,7 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{@server}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
@@ -56,7 +56,7 @@ module Beetle
     end
 
     test "raises exception when policy couldn't successfully be created" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{@server}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .to_return(:status => [405])
 
@@ -66,7 +66,7 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{@server}/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                 "pattern" => "^QUEUE_NAME$",
@@ -83,7 +83,7 @@ module Beetle
     end
 
     test "properly encodes the vhost from the configuration" do
-      stub_request(:put, "http://localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy")
+      stub_request(:put, "http://#{@server}/api/policies/foo%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
@@ -107,7 +107,7 @@ module Beetle
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
       @dead_lettering = DeadLettering.new(@config)
-      @servers = ["localhost:55672"]
+      @servers = ["#{ENV['RABBITMQ_HOST'] || 'localhost'}:55672"]
     end
 
     test "is turned off by default" do

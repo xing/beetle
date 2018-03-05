@@ -1,0 +1,66 @@
+FROM ubuntu:trusty
+
+ENV BEETLE_HOME /usr/src/beetle
+ENV RUBY_VERSION_MAJOR 2.4
+ENV RUBY_VERSION $RUBY_VERSION_MAJOR.2
+ENV BUNDLER_VERSION 1.16.0
+ENV BUNDLE_PATH /usr/src/.bundle/ruby/$RUBY_VERSION
+ENV GEM_PATH $BUNDLE_PATH
+ENV GEM_HOME $GEM_PATH
+ENV PATH $BEETLE_HOME/bin:$PATH
+ENV PATH $BUNDLE_PATH/bin:$PATH
+
+RUN echo Europe/Berlin | sudo tee /etc/timezone && sudo dpkg-reconfigure --frontend noninteractive tzdata
+
+# ----------------------------
+# install base packages
+# ----------------------------
+RUN apt-get update; \
+    apt-get upgrade; \
+    apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        ca-certificates \
+        curl \
+        g++ \
+        gawk \
+        git \
+        git-core \
+        htop \
+        libcurl4-openssl-dev \
+        libffi-dev \
+        libgdbm-dev \
+        libgmp-dev \
+        libicu-dev \
+        libmysqlclient-dev \
+        libncurses5-dev\
+        libossp-uuid-dev \
+        libreadline-dev \
+        libsqlite3-dev\
+        libssl-dev \
+        libtool \
+        libxml2-dev \
+        libxslt-dev \
+        libyaml-dev \
+        lsof \
+        make \
+        patch \
+        pkg-config \
+        software-properties-common \
+        sudo \
+        wget \
+        vim \
+        zlib1g-dev
+RUN locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8
+
+RUN add-apt-repository -y ppa:brightbox/ruby-ng && apt-get update && apt-get install -y ruby$RUBY_VERSION_MAJOR ruby$RUBY_VERSION_MAJOR-dev
+
+RUN mkdir -p $BEETLE_HOME
+WORKDIR $BEETLE_HOME
+ADD . $BEETLE_HOME
+
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+RUN gem install bundler --version $BUNDLER_VERSION && (bundle install -j 4 --retry 3 || true)
+
+CMD bash tail -f /dev/null # keeps the container around waiting for someone connecting into it

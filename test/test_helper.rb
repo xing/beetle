@@ -8,6 +8,7 @@ end
 require 'minitest/autorun'
 require 'minitest/unit'
 require 'minitest/pride' if ENV['RAINBOW_COLORED_TESTS'] == "1" && $stdout.tty?
+require 'minitest/stub_const'
 require 'mocha/setup'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
@@ -25,11 +26,6 @@ class Minitest::Test
 end
 
 I18n.enforce_available_locales = false
-
-Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
-Beetle.config.redis_server = "localhost:6379"
-Beetle.config.redis_servers = "localhost:6379,localhost:6380"
-
 
 def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)

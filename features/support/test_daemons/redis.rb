@@ -111,7 +111,7 @@ module TestDaemons
     def slave_of(master_port)
       tries = 0
       begin
-        redis.slave_of!("127.0.0.1", master_port)
+        redis.slave_of!(host, master_port)
       rescue Errno::ECONNREFUSED, Errno::EAGAIN
         puts "slave role setting for #{name} failed: #{$!}"
         sleep 1
@@ -121,11 +121,15 @@ module TestDaemons
     end
 
     def ip_with_port
-      "127.0.0.1:#{port}"
+      "#{host}:#{port}"
     end
 
     def redis
-      @redis ||= ::Redis.new(:host => "127.0.0.1", :port => port)
+      @redis ||= ::Redis.new(:host => host, :port => port)
+    end
+
+    def host
+      '127.0.0.1'
     end
 
     private

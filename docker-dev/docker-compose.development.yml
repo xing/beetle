@@ -1,0 +1,83 @@
+version: '3'
+services:
+
+  beetle-shell: &default
+    container_name: beetle-shell
+    build:
+      context: ../
+      dockerfile: docker-dev/Dockerfile.development
+    tty: true
+    entrypoint: docker-dev/script/check_broker.sh
+    working_dir: /usr/src/beetle
+    volumes:
+      - ..:/usr/src/beetle
+      - beetle-ruby-bundle:/usr/src/.bundle
+    environment: # I'd love to see this solved via environment files from within the gem to get rid of the gazillion
+                 # code spots with 'localhost' and '127.0.0.1' etc.
+      - REDIS_HOST=beetle-redis-master
+      - REDIS_PORT=6379
+      - REDIS_SLAVE_HOST=beetle-redis-slave
+      - REDIS_SLAVE_PORT=6380
+      - RABBITMQ_HOST=beetle-rabbitmq
+      - MYSQL_HOST=beetle-mysql-db
+    depends_on:
+      - beetle-mysql-db
+      - beetle-redis-master
+      - beetle-redis-slave
+      - beetle-rabbitmq
+    networks:
+      - beetle-net
+
+  beetle-redis-master:
+    container_name: beetle-redis-master
+    image: docker.dc.xing.com/xingbox/redis
+    command: redis-server /etc/redis.conf
+    volumes:
+      - ${PWD}/etc/redis-master.conf:/etc/redis.conf
+      - ../tmp:/data/tmp
+    ports:
+      - 6379
+    networks:
+      - beetle-net
+
+  beetle-redis-slave:
+    container_name: beetle-redis-slave
+    image: docker.dc.xing.com/xingbox/redis
+    command: redis-server /etc/redis.conf --slaveof beetle-redis-master 6379
+    volumes:
+      - ${PWD}/etc/redis-slave.conf:/etc/redis.conf # port 6380 is configured here
+      - ../tmp:/data/tmp
+    ports:
+      - 6380
+    depends_on:
+      - beetle-redis-master
+    networks:
+      - beetle-net
+
+  beetle-mysql-db:
+    container_name: beetle-mysql-db
+    image: docker.dc.xing.com/xingbox/mysql:xingbox
+    ports:
+      - 3306
+    networks:
+      - beetle-net
+
+  beetle-rabbitmq:
+    container_name: beetle-rabbitmq
+    environment:
+      SERVICE_15672_NAME: rabbitmq-management
+      SERVICE_5672_NAME: rabbitmq
+    image: docker.dc.xing.com/xingbox/rabbitmq:xingbox
+    ports:
+      - 15672
+      - 5672
+    networks:
+      - beetle-net
+
+networks:
+  beetle-net:
+    driver: bridge
+
+volumes:
+  beetle-ruby-bundle:
+    external: true

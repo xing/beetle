@@ -8,7 +8,7 @@ module Beetle
     end
 
     test "should have a default server" do
-      assert_equal ["localhost:5672"], @client.servers
+      assert_equal ["#{ENV['RABBITMQ_HOST'] || 'localhost'}:5672"], @client.servers
     end
 
     test "should have no additional subscription servers" do

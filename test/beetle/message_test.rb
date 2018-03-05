@@ -647,8 +647,8 @@ module Beetle
         adapter:  "mysql2",
         username: "root",
         encoding: "utf8",
-        host: "127.0.0.1",
-        port: 3306
+        host: ENV['MYSQL_HOST'] || "127.0.0.1",
+        port: ENV['MYSQL_PORT'] || 3306
       )
     end
 
