@@ -1,7 +1,7 @@
 require "timeout"
 
 module Beetle
-  # Instances of class Message are created when a scubscription callback fires. Class
+  # Instances of class Message are created when a subscription callback fires. Class
   # Message contains the code responsible for message deduplication and determining if it
   # should retry executing the message handler after a handler has crashed (or forcefully
   # aborted).
@@ -46,12 +46,16 @@ module Beetle
     attr_reader :timeout
     # how long to wait before retrying the message handler
     attr_reader :delay
+    # how long to wait before even starting the message handler
+    attr_reader :defer
     # maximum wait time for message handler retries (uses exponential backoff)
     attr_reader :max_delay
     # how many times we should try to run the handler
     attr_reader :attempts_limit
     # how many exceptions we should tolerate before giving up
     attr_reader :exceptions_limit
+    # array of exceptions accepted to be rescued and retried
+    attr_reader :on_exceptions
     # exception raised by handler execution
     attr_reader :exception
     # value returned by handler execution
@@ -72,6 +76,7 @@ module Beetle
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
+      @on_exceptions    = opts[:on_exceptions] || nil
       @store            = opts[:store]
       max_delay         = opts[:max_delay] || @delay
       @max_delay        = max_delay if max_delay >= 2*@delay
@@ -87,6 +92,8 @@ module Beetle
       @format_version = headers[:format_version].to_i
       @flags = headers[:flags].to_i
       @expires_at = headers[:expires_at].to_i
+      @defer = headers[:defer].to_i
+      set_defer!
     rescue Exception => @exception
       Beetle::reraise_expectation_errors!
       logger.error "Could not decode message. #{self.inspect}"
@@ -138,7 +145,7 @@ module Beetle
       Time.now.to_i
     end
 
-    # a message has expired if the header expiration timestamp is msaller than the current time
+    # a message has expired if the header expiration timestamp is smaller than the current time
     def expired?
       @expires_at < now
     end
@@ -193,6 +200,16 @@ module Beetle
       @store.set(msg_id, :delay, now + next_delay(attempts))
     end
 
+    # whether we should wait before running the handler
+    def deferred?
+      (t = @store.get(msg_id, :defer)) && t.to_i > now
+    end
+
+    # store delay value in the deduplication store
+    def set_defer!
+      @store.setnx(msg_id, :defer, now + defer)
+    end
+
     # how many times we already tried running the handler
     def attempts
       @store.get(msg_id, :attempts).to_i
@@ -216,6 +233,10 @@ module Beetle
     # whether the number of exceptions has exceeded the limit set when the handler was registered
     def exceptions_limit_reached?
       @store.get(msg_id, :exceptions).to_i > exceptions_limit
+    end
+
+    def exception_registered?
+      on_exceptions.nil? || @exception.class.in?(on_exceptions)
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
@@ -275,6 +296,9 @@ module Beetle
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
         RC::Ancient
+      elsif deferred?
+        logger.warn "Beetle: ignored deferred message (#{msg_id})!"
+        RC::Deferred
       elsif simple?
         ack!
         run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
@@ -347,6 +371,11 @@ module Beetle
         ack!
         logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
         RC::ExceptionsLimitReached
+      elsif !exception_registered?
+        completed!
+        ack!
+        logger.debug "Beetle: `#{@exception.class.name}` not included in `on_exceptions` (#{on_exceptions.join(',')}) on #{msg_id}"
+        RC::ExceptionNotRegistered
       else
         delete_mutex!
         timed_out!

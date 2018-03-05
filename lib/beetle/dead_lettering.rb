@@ -47,7 +47,7 @@ module Beetle
         "apply-to" => "queues",
         "definition" => {
           "dead-letter-routing-key" => dead_letter_routing_key(queue_name, options),
-          "dead-letter-exchange" => ""
+          "dead-letter-exchange" => dead_letter_exchange(options),
         }
       }
 
@@ -67,6 +67,10 @@ module Beetle
 
     def dead_letter_routing_key(queue_name, options)
       options.fetch(:routing_key) { dead_letter_queue_name(queue_name) }
+    end
+
+    def dead_letter_exchange(options)
+      options.fetch(:exchange) { "" }
     end
 
     def dead_letter_queue_name(queue_name)

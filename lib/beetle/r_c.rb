@@ -30,6 +30,8 @@ module Beetle
     rc :Ancient
     rc :AttemptsLimitReached, :failure
     rc :ExceptionsLimitReached, :failure
+    rc :ExceptionNotRegistered, :failure
+    rc :Deferred, :reject
     rc :Delayed, :reject
     rc :HandlerCrash, :reject
     rc :HandlerNotYetTimedOut, :reject
