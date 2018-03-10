@@ -377,6 +377,25 @@ module Beetle
       assert_equal RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
     end
 
+    test "a message should be acked if the handler crashes and the exception has not been registered" do
+      header = header_with_params({})
+      RegisteredException = Class.new(StandardError)
+      OtherException = Class.new(StandardError)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
+                            :on_exceptions => [RegisteredException], :store => @store)
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !message.timed_out?
+      assert !message.simple?
+      assert message.exception_accepted? # @exception yet nil, hence 'accepted'
+
+      proc = lambda {|*args| raise OtherException, "crash"}
+      s = sequence("s")
+      message.expects(:completed!).once
+      header.expects(:ack)
+      assert_equal RC::ExceptionNotAccepted, message.__send__(:process_internal, proc)
+    end
+
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :attempts => 2, :store => @store)
