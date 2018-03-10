@@ -82,7 +82,6 @@ module Beetle
 
     # extracts various values from the AMQP header properties
     def decode #:nodoc:
-      # p header.attributes
       amqp_headers = header.attributes
       @uuid = amqp_headers[:message_id]
       @timestamp = amqp_headers[:timestamp]
@@ -222,7 +221,7 @@ module Beetle
     end
 
     def exception_accepted?
-      on_exceptions.nil? || on_exceptions.any?{ |klass| @exception.is_a? klass}
+      @exception.nil? || on_exceptions.nil? || on_exceptions.any?{ |klass| @exception.is_a? klass}
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
