@@ -36,7 +36,7 @@ class Handler < Beetle::Handler
   # called when the handler receives the message, fails on first two attempts
   # succeeds on the next and counts up our counter
   def process
-    logger.info "Attempts: #{message.attempts}, Base Delay: #{message.delay}, Processed at: #{Time.now.to_f - $start_time}"
+    logger.info "Attempts: #{message.attempts} for `#{message.data}`, Base Delay: #{message.delay}, Processed at: #{Time.now.to_f - $start_time}"
     raise "attempt #{message.attempts} for message #{message.data}" if message.attempts < $exceptions_limit
     logger.info "processing of message #{message.data} succeeded on attempt #{message.attempts}. completed: #{$completed += 1}"
   end
@@ -49,9 +49,10 @@ end
 
 # register our handler to the message, configure it to our max_attempts limit, we configure a (base) delay of 0.5
 client.register_handler(:test, Handler, exceptions: $exceptions_limit, delay: 1, max_delay: 10)
+puts "publish 2 test messages with payload `FIRST` and `SECOND`"
 # publish test messages
-client.publish(:test, 1) # publish returns the number of servers the message has been sent to
-puts "published 1 test message"
+client.publish(:test, "FIRST")
+client.publish(:test, "SECOND")
 
 # start the listening loop
 client.listen do
@@ -59,7 +60,7 @@ client.listen do
   trap("INT") { client.stop_listening }
   # we're adding a periodic timer to check whether all 10 messages have been processed without exceptions
   timer = EM.add_periodic_timer(1) do
-    if $completed == 1
+    if $completed == 2
       timer.cancel
       client.stop_listening
     end
@@ -67,6 +68,6 @@ client.listen do
 end
 
 puts "Handled #{$completed} messages"
-if $completed != 1
+if $completed != 2
   raise "Did not handle the correct number of messages"
 end
