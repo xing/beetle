@@ -8,7 +8,7 @@
 
 * Support exponential backoff when delaying messages using 'max_delay: int' option.
 
-== Version 2.0.1
+== Version 2.0.2
 
 * fixed incorrect computation of responsiveness threshold in
   configuration server
