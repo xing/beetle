@@ -57,11 +57,12 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	t := time.Duration(expires-threshold) * time.Second
 	if expires >= threshold {
+		t := time.Duration(expires-threshold) * time.Second
 		logDebug("key %s expires in %s", key, t)
 		return false, err
 	}
+	t := time.Duration(threshold-expires) * time.Second
 	logDebug("key %s has expired %s ago", key, t)
 	msgId := s.msgId(key)
 	keys := s.keys(msgId)
@@ -87,7 +88,7 @@ collecting:
 			logDebug("cursor: %d", cursor)
 			var err error
 			var keys []string
-			keys, cursor, err = s.redis.Scan(cursor, "msgid:*:expires", 1000).Result()
+			keys, cursor, err = s.redis.Scan(cursor, "msgid:*:expires", 10000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
 				cursor = 0
