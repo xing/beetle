@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ type GCOptions struct {
 	RedisMasterFile string // Path to the redis master file.
 	GcThreshold     int    // Number of seconds after which a key should be considered collectible.
 	GcDatabases     string // List of databases to scan.
+	GcKeyFile       string // Name of file containing keys to collect.
 }
 
 // GCState holds options and collector state, most importantly the current redis
@@ -51,6 +54,10 @@ func (s *GCState) msgId(key string) string {
 func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	v, err := s.redis.Get(key).Result()
 	if err != nil {
+		if err == redis.Nil {
+			logDebug("key not found: %s", key)
+			return false, nil
+		}
 		return false, err
 	}
 	expires, err := strconv.ParseUint(v, 10, 64)
@@ -74,7 +81,7 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 func (s *GCState) garbageCollectKeys(db int) {
 	var total, expired int
 	var cursor uint64
-	defer logInfo("expired %d keys out of %d in db %d", expired, total, db)
+	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
 	ticker := time.NewTicker(1 * time.Second)
 collecting:
 	for _ = range ticker.C {
@@ -109,13 +116,52 @@ collecting:
 					goto collecting
 				}
 				if collected {
-					expired += 1
+					expired++
 				}
 			}
 			if cursor == 0 {
 				return
 			}
 		}
+	}
+}
+
+func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
+	var total, expired int
+	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		logError("%v", err)
+		return
+	}
+	defer file.Close()
+
+	s.getMaster(db)
+
+	threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
+	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]+):expires$")
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if interrupted {
+			break
+		}
+		line := scanner.Text()
+		if !re.MatchString(line) {
+			continue
+		}
+		total++
+		collected, err := s.gcKey(line, uint64(threshold))
+		if err != nil {
+			logError("could not collect %s: %v", line, err)
+			continue
+		}
+		if collected {
+			expired++
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		logError("%v", err)
 	}
 }
 
@@ -157,7 +203,11 @@ func RunGarbageCollectKeys(opts GCOptions) error {
 				logError("%v", err)
 				continue
 			}
-			state.garbageCollectKeys(db)
+			if opts.GcKeyFile == "" {
+				state.garbageCollectKeys(db)
+			} else {
+				state.garbageCollectKeysFromFile(db, opts.GcKeyFile)
+			}
 		}
 	}
 	if state.redis != nil {

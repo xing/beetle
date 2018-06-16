@@ -36,6 +36,7 @@ var opts struct {
 	ConsulUrl                string `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
 	GcThreshold              int    `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
 	GcDatabases              string `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
+	GcKeyFile                string `long:"gc-key-file" description:"File with keys to collect."`
 	MailTo                   string `long:"mail-to" description:"Send notifcation mails to this address."`
 	DialTimeout              int    `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
 	ConfidenceLevel          string `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
@@ -111,6 +112,7 @@ func (x *CmdRunGCKeys) Execute(args []string) error {
 		RedisMasterFile: initialConfig.RedisMasterFile,
 		GcThreshold:     initialConfig.GcThreshold,
 		GcDatabases:     initialConfig.GcDatabases,
+		GcKeyFile:       opts.GcKeyFile,
 	})
 }
 
