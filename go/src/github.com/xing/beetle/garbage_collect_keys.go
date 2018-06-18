@@ -46,7 +46,8 @@ func (s *GCState) msgId(key string) string {
 	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]+):.*$")
 	matches := re.FindStringSubmatch(key)
 	if len(matches) == 0 {
-		panic(fmt.Errorf("msgid could not be extracted from key '%s'", key))
+		logError("msgid could not be extracted from key '%s'", key)
+		return ""
 	}
 	return matches[1]
 }
@@ -71,8 +72,11 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	}
 	t := time.Duration(threshold-expires) * time.Second
 	logDebug("key %s has expired %s ago", key, t)
-	msgId := s.msgId(key)
-	keys := s.keys(msgId)
+	msgID := s.msgId(key)
+	if msgID == "" {
+		return false, nil
+	}
+	keys := s.keys(msgID)
 	// logDebug("deleting keys: %s", strings.Join(keys, ", "))
 	_, err = s.redis.Del(keys...).Result()
 	return err == nil, err
