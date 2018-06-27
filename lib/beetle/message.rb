@@ -53,7 +53,7 @@ module Beetle
     # how many exceptions we should tolerate before giving up
     attr_reader :exceptions_limit
     # array of exceptions accepted to be rescued and retried
-    attr_reader :on_exceptions
+    attr_reader :retry_on
     # exception raised by handler execution
     attr_reader :exception
     # value returned by handler execution
@@ -74,7 +74,7 @@ module Beetle
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
-      @on_exceptions    = opts[:on_exceptions] || nil
+      @retry_on         = opts[:retry_on] || nil
       @store            = opts[:store]
       max_delay         = opts[:max_delay] || @delay
       @max_delay        = max_delay if max_delay >= 2*@delay
@@ -221,7 +221,7 @@ module Beetle
     end
 
     def exception_accepted?
-      @exception.nil? || on_exceptions.nil? || on_exceptions.any?{ |klass| @exception.is_a? klass}
+      @exception.nil? || retry_on.nil? || retry_on.any?{ |klass| @exception.is_a? klass}
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
@@ -356,7 +356,7 @@ module Beetle
       elsif !exception_accepted?
         completed!
         ack!
-        logger.debug "Beetle: `#{@exception.class.name}` not accepted: `on_exceptions`=[#{on_exceptions.join(',')}] on #{msg_id}"
+        logger.debug "Beetle: `#{@exception.class.name}` not accepted: `retry_on`=[#{retry_on.join(',')}] on #{msg_id}"
         RC::ExceptionNotAccepted
       else
         delete_mutex!

@@ -381,7 +381,7 @@ module Beetle
       header = header_with_params({})
       RegisteredException = Class.new(StandardError)
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
-                            :on_exceptions => [RegisteredException], :store => @store)
+                            :retry_on => [RegisteredException], :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -399,7 +399,7 @@ module Beetle
       RegisteredException = Class.new(StandardError)
       OtherException = Class.new(StandardError)
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
-                            :on_exceptions => [RegisteredException], :store => @store)
+                            :retry_on => [RegisteredException], :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -682,8 +682,8 @@ module Beetle
         adapter:  "mysql2",
         username: "root",
         encoding: "utf8",
-        host: "127.0.0.1",
-        port: 3306
+        host: ENV['MYSQL_HOST'] || "127.0.0.1",
+        port: ENV['MYSQL_PORT'] || 3306
       )
     end
 
