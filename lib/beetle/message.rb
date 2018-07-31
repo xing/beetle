@@ -1,7 +1,7 @@
 require "timeout"
 
 module Beetle
-  # Instances of class Message are created when a scubscription callback fires. Class
+  # Instances of class Message are created when a subscription callback fires. Class
   # Message contains the code responsible for message deduplication and determining if it
   # should retry executing the message handler after a handler has crashed (or forcefully
   # aborted).
@@ -52,6 +52,8 @@ module Beetle
     attr_reader :attempts_limit
     # how many exceptions we should tolerate before giving up
     attr_reader :exceptions_limit
+    # array of exceptions accepted to be rescued and retried
+    attr_reader :retry_on
     # exception raised by handler execution
     attr_reader :exception
     # value returned by handler execution
@@ -72,6 +74,7 @@ module Beetle
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
+      @retry_on         = opts[:retry_on] || nil
       @store            = opts[:store]
       max_delay         = opts[:max_delay] || @delay
       @max_delay        = max_delay if max_delay >= 2*@delay
@@ -79,7 +82,6 @@ module Beetle
 
     # extracts various values from the AMQP header properties
     def decode #:nodoc:
-      # p header.attributes
       amqp_headers = header.attributes
       @uuid = amqp_headers[:message_id]
       @timestamp = amqp_headers[:timestamp]
@@ -138,7 +140,7 @@ module Beetle
       Time.now.to_i
     end
 
-    # a message has expired if the header expiration timestamp is msaller than the current time
+    # a message has expired if the header expiration timestamp is smaller than the current time
     def expired?
       @expires_at < now
     end
@@ -216,6 +218,10 @@ module Beetle
     # whether the number of exceptions has exceeded the limit set when the handler was registered
     def exceptions_limit_reached?
       @store.get(msg_id, :exceptions).to_i > exceptions_limit
+    end
+
+    def exception_accepted?
+      @exception.nil? || retry_on.nil? || retry_on.any?{ |klass| @exception.is_a? klass}
     end
 
     # have we already seen this message? if not, set the status to "incomplete" and store
@@ -347,6 +353,11 @@ module Beetle
         ack!
         logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
         RC::ExceptionsLimitReached
+      elsif !exception_accepted?
+        completed!
+        ack!
+        logger.debug "Beetle: `#{@exception.class.name}` not accepted: `retry_on`=[#{retry_on.join(',')}] on #{msg_id}"
+        RC::ExceptionNotAccepted
       else
         delete_mutex!
         timed_out!

@@ -345,7 +345,7 @@ module Beetle
       assert_equal "52", @store.get(message.msg_id, :delay)
     end
 
-    test "a message should delete the mutex before resetting the timer if attempts and exception limits havn't been reached" do
+    test "a message should delete the mutex before resetting the timer if attempts and exception limits haven't been reached" do
       Message.stubs(:now).returns(9)
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :delay => 42, :timeout => 10.seconds, :exceptions => 1, :store => @store)
@@ -375,6 +375,41 @@ module Beetle
       message.expects(:completed!).once
       header.expects(:ack)
       assert_equal RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
+    end
+
+    test "a message should not be acked if the handler crashes and the exception has been registered" do
+      header = header_with_params({})
+      RegisteredException = Class.new(StandardError)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
+                            :retry_on => [RegisteredException], :store => @store)
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !message.timed_out?
+      assert !message.simple?
+      assert message.exception_accepted? # @exception yet nil, hence 'accepted'
+
+      proc = lambda {|_| raise RegisteredException, "crash"}
+      message.expects(:completed!).never
+      header.expects(:ack).never
+      assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
+    end
+
+    test "a message should be acked if the handler crashes and the exception has not been registered" do
+      header = header_with_params({})
+      RegisteredException = Class.new(StandardError)
+      OtherException = Class.new(StandardError)
+      message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
+                            :retry_on => [RegisteredException], :store => @store)
+      assert !message.attempts_limit_reached?
+      assert !message.exceptions_limit_reached?
+      assert !message.timed_out?
+      assert !message.simple?
+      assert message.exception_accepted? # @exception yet nil, hence 'accepted'
+
+      proc = lambda {|_| raise OtherException, "crash"}
+      message.expects(:completed!).once
+      header.expects(:ack)
+      assert_equal RC::ExceptionNotAccepted, message.__send__(:process_internal, proc)
     end
 
     test "a message should be acked if the handler crashes and the attempts limit has been reached" do
@@ -647,8 +682,8 @@ module Beetle
         adapter:  "mysql2",
         username: "root",
         encoding: "utf8",
-        host: "127.0.0.1",
-        port: 3306
+        host: ENV['MYSQL_HOST'] || "127.0.0.1",
+        port: ENV['MYSQL_PORT'] || 3306
       )
     end
 
