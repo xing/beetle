@@ -1,5 +1,11 @@
 = Release Notes
 
+== Version 2.2.0
+
+* Support specifying a whitelist of retriable exceptions when registering a
+  message handler. Exceptions which are not on the list will be regarded as
+  irrecoverable failures.
+
 == Version 2.1.2
 
 * Fixed that redis key GC would never complete when a key scheduled
