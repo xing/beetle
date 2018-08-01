@@ -19,6 +19,9 @@ Gem::Specification.new do |s|
   s.rdoc_options       = ["--charset=UTF-8"]
   s.require_paths      = ["lib"]
   s.test_files         = Dir['test/**/*.rb']
+  s.metadata = {
+    "changelog_uri"    => "https://github.com/xing/beetle/blob/master/RELEASE_NOTES.rdoc"
+  }
 
   s.specification_version = 3
   s.add_runtime_dependency "uuid4r",                  ">= 0.1.2"
