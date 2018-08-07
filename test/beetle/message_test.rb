@@ -377,9 +377,10 @@ module Beetle
       assert_equal RC::ExceptionsLimitReached, message.__send__(:process_internal, proc)
     end
 
+    class RegisteredException < StandardError; end
+
     test "a message should not be acked if the handler crashes and the exception has been registered" do
       header = header_with_params({})
-      RegisteredException = Class.new(StandardError)
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
                             :retry_on => [RegisteredException], :store => @store)
       assert !message.attempts_limit_reached?
@@ -394,10 +395,10 @@ module Beetle
       assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
     end
 
+    class OtherException < StandardError; end
+
     test "a message should be acked if the handler crashes and the exception has not been registered" do
       header = header_with_params({})
-      RegisteredException = Class.new(StandardError)
-      OtherException = Class.new(StandardError)
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :exceptions => 2,
                             :retry_on => [RegisteredException], :store => @store)
       assert !message.attempts_limit_reached?
