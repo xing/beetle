@@ -428,6 +428,13 @@ module Beetle
       cb.call(@settings)
     end
 
+    test "possible authentication failure causes subscriber to exit" do
+      cb = @sub.send(:on_possible_authentication_failure)
+      @sub.expects(:stop!)
+      @sub.logger.expects(:error).with("Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down!")
+      cb.call({:host => "mickey", :port => 42})
+    end
+
     test "tcp connection loss handler tries to reconnect" do
       connection = mock("connection")
       connection.expects(:reconnect).with(false, 10)

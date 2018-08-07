@@ -217,7 +217,8 @@ module Beetle
       {
         :host => current_host, :port => current_port, :logging => false,
         :user => @client.config.user, :pass => @client.config.password, :vhost => @client.config.vhost,
-        :on_tcp_connection_failure => on_tcp_connection_failure
+        :on_tcp_connection_failure => on_tcp_connection_failure,
+        :on_possible_authentication_failure => on_possible_authentication_failure,
       }
     end
 
@@ -225,6 +226,13 @@ module Beetle
       Proc.new do |settings|
         logger.warn "Beetle: connection failed: #{server_from_settings(settings)}"
         EM::Timer.new(10) { connect_server(settings) }
+      end
+    end
+
+    def on_possible_authentication_failure
+      Proc.new do |settings|
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down!"
+        stop!
       end
     end
 
