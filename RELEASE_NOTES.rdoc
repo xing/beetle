@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 2.2.1
+* Subscriber exits with meaningful error log on possible authentication failures.
+
 == Version 2.2.0
 
 * Support specifying a whitelist of retriable exceptions when registering a
