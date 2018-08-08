@@ -8,19 +8,15 @@ GO_PATH = $(makefile_dir)/go
 GO_DEPS = \
 	github.com/jessevdk/go-flags \
 	github.com/pkg/errors \
+	github.com/davecgh/go-spew... \
 	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
 	gopkg.in/tylerb/graceful.v1 \
 	gopkg.in/yaml.v2
 
-# the following dependencies cause go get to return an error code
-EXTRA_DEPS = \
-	github.com/davecgh/go-spew
-
 .godeps:
 	git submodule init
 	git submodule update
-	-$(GO_ENV) go get $(EXTRA_DEPS)
 	$(GO_ENV) go get $(GO_DEPS)
 	touch .godeps
 
@@ -45,7 +41,7 @@ clean:
 	rm -rf go/pkg go/bin $(GO_TARGETS) .godeps
 
 realclean: clean
-	rm -rf $(patsubst %,go/src/%,$(GO_DEPS) $(EXTRA_DEPS))
+	rm -rf $(patsubst %,go/src/%,$(GO_DEPS))
 
 install: $(GO_INSTALL_TARGETS)
 	$(INSTALL_PROGRAM) $(GO_INSTALL_TARGETS) $(SCRIPTS) $(BIN_DIR)
