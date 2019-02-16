@@ -112,5 +112,5 @@ RDoc::Task.new do |rdoc|
 end
 
 task :clean do
-  system('rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid')
+  system('rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid test.log')
 end
