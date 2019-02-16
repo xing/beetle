@@ -166,6 +166,7 @@ module Beetle
         :pass           => @client.config.password,
         :vhost          => @client.config.vhost,
         :frame_max      => @client.config.frame_max,
+        :channel_max    => @client.config.channel_max,
         :socket_timeout => @client.config.publishing_timeout,
         :spec => '09')
       b.start

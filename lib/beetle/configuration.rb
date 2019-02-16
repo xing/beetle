@@ -55,8 +55,12 @@ module Beetle
     attr_accessor :user
     # the password to use when connectiong to the AMQP servers (defaults to <tt>"guest"</tt>)
     attr_accessor :password
-    # the maximum permissible size of a frame (in bytes). Defaults to 128 KB
+    # the maximum permissible size of a frame (in bytes). defaults to 128 KB
     attr_accessor :frame_max
+    # the max number of channels the publisher tries to negotiate with the server.  Defaults
+    # to 2047, which is the RabbitMQ default in 3.7.  We can't set this to 0 because of a bug
+    # in bunny.
+    attr_accessor :channel_max
 
     # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
     # throughput degradation (when rejected messages block the processing of other messages
@@ -127,6 +131,7 @@ module Beetle
       self.password = "guest"
       self.api_port = 15672
       self.frame_max = 131072
+      self.channel_max = 2047
       self.prefetch_count = 1
 
       self.dead_lettering_enabled = false
