@@ -88,7 +88,7 @@ func (s *GCState) garbageCollectKeys(db int) {
 	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
 	ticker := time.NewTicker(1 * time.Second)
 collecting:
-	for _ = range ticker.C {
+	for range ticker.C {
 		if interrupted {
 			break
 		}
