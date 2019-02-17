@@ -1,5 +1,13 @@
 = Release Notes
 
+== Version 2.2.2
+
+* Reset redis configuration server state when master becomes available during
+  pinging or invalidating.  Unlike the former ruby implementation, the go code
+  continues checking redis availability during pinging or invalidating. However,
+  the code did not reset state properly, leading the UI to display 'switch in
+  progress' when in fact there wasn't.
+
 == Version 2.2.1
 * Subscriber exits with meaningful error log on possible authentication failures.
 
