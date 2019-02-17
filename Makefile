@@ -8,7 +8,7 @@ GO_PATH = $(makefile_dir)/go
 GO_DEPS = \
 	github.com/jessevdk/go-flags \
 	github.com/pkg/errors \
-	github.com/davecgh/go-spew... \
+	github.com/davecgh/go-spew/spew \
 	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
 	gopkg.in/tylerb/graceful.v1 \
