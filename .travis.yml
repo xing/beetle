@@ -8,7 +8,7 @@ before_script:
   - curl -s https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
   - export GOROOT=/usr/local/go
   - export PATH=/usr/local/go/bin:$PATH
-script: "make && bundle exec rake || (tail -n +1 tmp/*.{log,output}; false)"
+script: "make && (bundle exec rake || (tail -n +1 tmp/*.{log,output}; false))"
 services:
   - redis-server
   - rabbitmq
