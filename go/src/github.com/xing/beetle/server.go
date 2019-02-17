@@ -798,12 +798,18 @@ func (s *ServerState) Pong(msg MsgBody) {
 	level, enough := s.ReceivedEnoughClientPongIds()
 	if s.pinging && enough {
 		logInfo("Received a sufficient number of pong ids!. Confidence level: %f.", level)
-		s.pinging = false
-		if s.availabilityTimer != nil {
-			s.availabilityTimer.Stop()
-			s.availabilityTimer = nil
-		}
+		s.StopPinging()
 		s.InvalidateCurrentMaster()
+	}
+}
+
+// StopPinging changes the current state to 'not pinging' and cancels the
+// inavailability timer if one is active.
+func (s *ServerState) StopPinging() {
+	s.pinging = false
+	if s.availabilityTimer != nil {
+		s.availabilityTimer.Stop()
+		s.availabilityTimer = nil
 	}
 }
 
@@ -848,12 +854,18 @@ func (s *ServerState) ClientInvalidated(msg MsgBody) {
 	level, enough := s.ReceivedEnoughClientInvalidatedIds()
 	if s.invalidating && enough {
 		logInfo("Received a sufficient number of client invalidated ids! Confidence level: %f.", level)
-		s.invalidating = false
-		if s.invalidateTimer != nil {
-			s.invalidateTimer.Stop()
-			s.invalidateTimer = nil
-		}
+		s.StopInvalidating()
 		s.SwitchMaster()
+	}
+}
+
+// StopInvalidating changes the state to 'not invalidating' and cancels the
+// invalidation timer if one is active.
+func (s *ServerState) StopInvalidating() {
+	s.invalidating = false
+	if s.invalidateTimer != nil {
+		s.invalidateTimer.Stop()
+		s.invalidateTimer = nil
 	}
 }
 
@@ -873,7 +885,7 @@ func (s *ServerState) MasterUnavailable() {
 	}
 }
 
-// MasterAvailable send current master info to all connected clients and
+// MasterAvailable sends current master info to all connected clients and
 // reconfigures remaining redis servers as slaves of the (new) master.
 func (s *ServerState) MasterAvailable() {
 	s.PublishMaster(s.currentMaster.server)
@@ -1154,17 +1166,25 @@ func (s *ServerState) StartWatcher() {
 
 // PauseWatcher starts watching the redis server status.
 func (s *ServerState) PauseWatcher() {
-	if s.WatcherPaused() {
-		return
+	if !s.WatcherPaused() {
+		s.watching = false
+		logInfo("Paused checking availability of redis servers")
 	}
-	logInfo("Pause checking availability of redis servers")
-	s.watching = false
 }
 
 // CheckRedisAvailability uses
 func (s *ServerState) CheckRedisAvailability() {
 	s.redis.Refresh()
 	if s.MasterIsAvailable() {
+		if s.pinging {
+			s.StopPinging()
+			logInfo("Redis master came online while pinging")
+		}
+		if s.invalidating {
+			s.StopInvalidating()
+			logInfo("Redis master came online while invalidating")
+		}
+		s.StartWatcher()
 		s.MasterAvailable()
 	} else {
 		retriesLeft := s.GetConfig().RedisMasterRetries - (s.retries + 1)
