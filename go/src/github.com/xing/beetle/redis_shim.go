@@ -55,6 +55,7 @@ func (ri *RedisShim) Info() (m map[string]string) {
 	cmd := ri.redis.Info("Replication")
 	s, err := cmd.Result()
 	if err != nil {
+		logError("could not obtain redis info from %s: %s", ri.server, err)
 		return
 	}
 	re := regexp.MustCompile("([^:]+):(.*)")
@@ -94,13 +95,20 @@ func (ri *RedisShim) IsSlave() bool {
 func (ri *RedisShim) IsAvailable() bool {
 	cmd := ri.redis.Ping()
 	_, err := cmd.Result()
-	return err == nil
+	if err != nil {
+		logError("pinging server %s failed: %s", ri.server, err)
+		return false
+	}
+	return true
 }
 
 // MakeMaster sends SALVEOF no one to the redis server.
 func (ri *RedisShim) MakeMaster() error {
 	cmd := ri.redis.SlaveOf("no", "one")
 	_, err := cmd.Result()
+	if err != nil {
+		logError("could not make %s a slave of no one: %s", ri.server, err)
+	}
 	return err
 }
 
@@ -114,5 +122,8 @@ func (ri *RedisShim) IsSlaveOf(host string, port int) bool {
 func (ri *RedisShim) RedisMakeSlave(host string, port int) error {
 	cmd := ri.redis.SlaveOf(host, strconv.Itoa(port))
 	_, err := cmd.Result()
+	if err != nil {
+		logError("could not make %s a slave of %s:%d: %s", ri.server, host, port, err)
+	}
 	return err
 }
