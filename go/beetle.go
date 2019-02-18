@@ -11,9 +11,9 @@ import (
 	"syscall"
 
 	// "github.com/davecgh/go-spew/spew"
-	"bitbucket.org/madmo/daemonize"
 	"github.com/jessevdk/go-flags"
 	"github.com/xing/beetle/consul"
+	"github.com/xing/beetle/daemonize"
 	"gopkg.in/yaml.v2"
 )
 
