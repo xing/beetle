@@ -8,7 +8,7 @@ GO_PATH = $(makefile_dir)/go
 GO_DEPS = \
 	github.com/jessevdk/go-flags \
 	github.com/pkg/errors \
-	github.com/davecgh/go-spew/spew \
+	github.com/davecgh/go-spew/spew... \
 	gopkg.in/gorilla/websocket.v1 \
 	gopkg.in/redis.v5 \
 	gopkg.in/tylerb/graceful.v1 \
@@ -38,10 +38,11 @@ endif
 all: $(GO_TARGETS)
 
 clean:
+	go clean -modcache
 	rm -rf go/pkg go/bin $(GO_TARGETS) .godeps
 
 realclean: clean
-	rm -rf $(patsubst %,go/src/%,$(GO_DEPS))
+	rm -rf $(patsubst %,go/src/%,$(subst ...,,$(GO_DEPS)))
 
 install: $(GO_INSTALL_TARGETS)
 	$(INSTALL_PROGRAM) $(GO_INSTALL_TARGETS) $(SCRIPTS) $(BIN_DIR)
