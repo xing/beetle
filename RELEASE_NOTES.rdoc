@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 2.2.3
+* redis failover server logs errors when redis oparations fail
+
 == Version 2.2.2
 
 * Reset redis configuration server state when master becomes available during
