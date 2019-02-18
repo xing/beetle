@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"gopkg.in/redis.v5"
 )
@@ -52,12 +53,14 @@ func dumpMap(m map[string]string) {
 // Info runs the INFO command on the redis server and returns a map of strings.
 func (ri *RedisShim) Info() (m map[string]string) {
 	m = make(map[string]string)
+	t := time.Now()
 	cmd := ri.redis.Info("Replication")
 	s, err := cmd.Result()
 	if err != nil {
 		logError("could not obtain redis info from %s: %s", ri.server, err)
 		return
 	}
+	logInfo("obtaining redis info from %s took %s", ri.server, time.Since(t))
 	re := regexp.MustCompile("([^:]+):(.*)")
 	ss := strings.Split(s, "\n")
 	for _, x := range ss {
@@ -93,21 +96,26 @@ func (ri *RedisShim) IsSlave() bool {
 
 // IsAvailable checks whether the server is available.
 func (ri *RedisShim) IsAvailable() bool {
+	t := time.Now()
 	cmd := ri.redis.Ping()
 	_, err := cmd.Result()
 	if err != nil {
 		logError("pinging server %s failed: %s", ri.server, err)
 		return false
 	}
+	logInfo("pinging server %s took %t", ri.server, time.Since(t))
 	return true
 }
 
 // MakeMaster sends SALVEOF no one to the redis server.
 func (ri *RedisShim) MakeMaster() error {
+	t := time.Now()
 	cmd := ri.redis.SlaveOf("no", "one")
 	_, err := cmd.Result()
 	if err != nil {
 		logError("could not make %s a slave of no one: %s", ri.server, err)
+	} else {
+		logInfo("making %s a slave of no one took %s", ri.server, time.Since(t))
 	}
 	return err
 }
@@ -120,10 +128,13 @@ func (ri *RedisShim) IsSlaveOf(host string, port int) bool {
 
 // RedisMakeSlave makes the redis server slave of some other server.
 func (ri *RedisShim) RedisMakeSlave(host string, port int) error {
+	t := time.Now()
 	cmd := ri.redis.SlaveOf(host, strconv.Itoa(port))
 	_, err := cmd.Result()
 	if err != nil {
 		logError("could not make %s a slave of %s:%d: %s", ri.server, host, port, err)
+	} else {
+		logInfo("making %s a slave of %s:%d took %s", ri.server, host, port, time.Since(t))
 	}
 	return err
 }
