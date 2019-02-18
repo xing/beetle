@@ -54,7 +54,7 @@ GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.g
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) .godeps
 	$(GO_ENV) go build -o $@ $< $(GO_MODULES)
 
-test: test-main test-server test-consul
+test: test-main test-server
 
 test-main:
 	cd go/src/$(GO_PKG) && $(GO_ENV) go test
