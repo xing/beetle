@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -1176,6 +1177,7 @@ func (s *ServerState) PauseWatcher() {
 func (s *ServerState) CheckRedisAvailability() {
 	s.redis.Refresh()
 	if s.MasterIsAvailable() {
+		s.retries = 0
 		if s.pinging {
 			s.StopPinging()
 			logInfo("Redis master came online while pinging")
@@ -1191,7 +1193,8 @@ func (s *ServerState) CheckRedisAvailability() {
 		logWarn("Redis master not available! (Retries left: %d)", retriesLeft)
 		s.retries++
 		if s.retries >= s.GetConfig().RedisMasterRetries {
-			s.retries = 0
+			// prevent starting a new master switch while one is running
+			s.retries = math.MinInt32
 			s.MasterUnavailable()
 		}
 	}
