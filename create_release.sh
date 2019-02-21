@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=`awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $4}' go/src/github.com/xing/beetle/version.go`
+VERSION=`awk '/^const BEETLE_VERSION =/ { gsub(/"/, ""); print $4}' go/version.go`
 TAG="v$VERSION"
 BASEURL="https://api.github.com/repos/xing/beetle"
 if test -z "$GITHUB_COM_USER"; then
