@@ -1,7 +1,10 @@
 = Release Notes
 
+== Version 2.2.4
+* redis failover: prevent starting a new master switch while one is running
+
 == Version 2.2.3
-* redis failover server logs errors when redis oparations fail
+* redis failover: server logs errors when redis oparations fail
 
 == Version 2.2.2
 
