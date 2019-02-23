@@ -142,11 +142,28 @@ module Beetle
       @last_time_master_file_changed != File.mtime(@config.redis_server)
     end
 
-    # set current redis master from server:port string contained in the redis master file
+    # set current redis master from server:port string contained in the redis master for our system
     def set_current_redis_master_from_master_file
       @last_time_master_file_changed = File.mtime(@config.redis_server)
-      server_string = read_master_file
+      server_string = extract_redis_master(read_master_file)
       @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db) : nil
+    end
+
+    # extract redis master from file content and return the server for our system
+    def extract_redis_master(text)
+      system_name = @config.system_name
+      redis_master = ""
+      text.each_line do |line|
+        parts = line.split('/')
+        case parts.size
+        when 1
+          redis_master = parts[0]
+        when 2
+          name, master = parts
+          redis_master = master if name == system_name
+        end
+      end
+      redis_master
     end
 
     # server:port string from the redis master file

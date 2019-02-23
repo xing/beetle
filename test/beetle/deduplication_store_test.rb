@@ -43,6 +43,7 @@ module Beetle
   class RedisServerFileTest < Minitest::Test
     def setup
       @original_redis_server = Beetle.config.redis_server
+      @original_system_name = Beetle.config.system_name
       @store = DeduplicationStore.new
       @server_string = "my_test_host_from_file:6379"
       Beetle.config.redis_server = redis_test_master_file(@server_string)
@@ -50,6 +51,7 @@ module Beetle
 
     def teardown
       Beetle.config.redis_server = @original_redis_server
+      Beetle.config.system_name = @original_system_name
     end
 
     test "redis should match the redis master file" do
@@ -69,6 +71,17 @@ module Beetle
     test "should blow up if the master file doesn't exist" do
       Beetle.config.redis_server = "/tmp/__i_don_not_exist__.txt"
       assert_raises(Errno::ENOENT) { @store.redis_master_from_master_file }
+    end
+
+    test "should retrieve the redis master for the configured system name if the master file contains a mapping for it" do
+      redis_test_master_file("blabber/localhost:2\nblubber/localhost:1")
+      Beetle.config.system_name = "blubber"
+      assert_equal "localhost:1", @store.redis.server
+    end
+
+    test "should retrieve the redis master for the default system name if the master file contains a simple host:port entry" do
+      redis_test_master_file("localhost:2\nblubber/localhost:1")
+      assert_equal "localhost:2", @store.redis.server
     end
 
     private

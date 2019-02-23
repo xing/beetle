@@ -54,6 +54,32 @@ func (c *Config) Sanitize() {
 	}
 }
 
+//
+type FailoverSet struct {
+	name string
+	spec string
+}
+
+// FailoverSets parses the redis server spec and returns a list of pairs of system
+// names and comma separated strings of redis server specs (host:port pairs). Examples:
+// "a1:5,a2:5" ==> {"system": "a1:5,a2:5" } "primary/a1:5,a2:5\nsecondary/b1:3,b2:3" ==>
+// {"primary": "a1:5,a2:5", "secondary": "b1:3,b2:3"}
+func (c *Config) FailoverSets() []FailoverSet {
+	fs := []FailoverSet{}
+	for _, line := range strings.Split(c.RedisServers, "\n") {
+		if line == "" {
+			continue
+		}
+		if strings.Contains(line, "/") {
+			parts := strings.SplitN(line, "/", 2)
+			fs = append(fs, FailoverSet{name: parts[0], spec: parts[1]})
+			continue
+		}
+		fs = append(fs, FailoverSet{name: "system", spec: line})
+	}
+	return fs
+}
+
 // SetDefaults sets default values for all config options. It is called as the
 // last step to set up a Config.
 func (c *Config) SetDefaults() *Config {

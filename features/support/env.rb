@@ -7,6 +7,7 @@ World do
 end
 
 Before do
+  cleanup_master_files
   `ruby features/support/system_notification_logger start`
 end
 
@@ -23,13 +24,16 @@ def cleanup_test_env
   TestDaemons::RedisConfigurationServer.stop
 
   `ruby features/support/beetle_handler stop`
-  redis_master_files = tmp_path + "/redis-master-*"
-  `rm -f #{redis_master_files}`
 
   `ruby features/support/system_notification_logger stop`
   # `rm -f #{system_notification_log_path}`
 
   TestDaemons::Redis.stop_all
+end
+
+def cleanup_master_files
+  redis_master_files = tmp_path + "/redis-master-*"
+  `rm -f #{redis_master_files}`
 end
 
 def redis_master_file(client_name)

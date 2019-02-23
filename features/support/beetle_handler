@@ -24,9 +24,16 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
   client = Beetle::Client.new.configure :auto_delete => true do |config|
     config.queue(:echo)
     config.message(:echo)
-    config.handler(:echo) {|message| client.deduplication_store.redis.server rescue "no redis master"}
+    config.handler(:echo) do |message|
+      begin
+        client.deduplication_store.redis.server
+      rescue
+        master_file_content = File.read(Beetle.config.redis_server)
+        "no redis master: exception: #{$!.class}(#{$!}), master_file: '#{master_file_content}'"
+      end
+    end
   end
   client.listen do
-    puts "Started beetle handler"
+    puts "Started beetle handler for system: #{Beetle.config.system_name}"
   end
 end

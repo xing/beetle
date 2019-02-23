@@ -1,4 +1,4 @@
-.PHONY: all clean realclean install uninstall test test-main test-server test-consul feature stats world release linux darwin container tag push lint tidy
+.PHONY: all clean realclean install uninstall test test-main test-server test-consul feature1 feature2 feature3 stats world release linux darwin container tag push lint tidy
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
@@ -25,12 +25,14 @@ endif
 all: $(GO_TARGETS)
 
 clean:
+	cd $(GO_SRC) && packr clean
 	rm -rf go/pkg go/bin $(GO_TARGETS)
 
 tidy:
 	cd $(GO_SRC) && go mod tidy
 
 realclean: clean
+	rm .packr
 	cd $(GO_SRC) && go clean -modcache
 
 install: $(GO_INSTALL_TARGETS)
@@ -41,7 +43,14 @@ uninstall:
 
 GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go config.go)
 
-beetle: $(GO_SRC)/beetle.go $(GO_MODULES)
+.packr:
+	go get github.com/gobuffalo/packr/packr
+	touch .packr
+
+$(GO_SRC)/a_main-packr.go: $(GO_SRC)/templates/index.html .packr
+	cd $(GO_SRC) && packr
+
+beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go
 	cd $(GO_SRC) && $(GO_ENV) go build -o ../$@
 
 test: test-main test-server
@@ -59,8 +68,14 @@ lint:
 	@cd $(GO_SRC) && golint -min_confidence 1.0 *.go
 	@cd $(GO_SRC)/consul && golint -min_confidence 1.0 *.go
 
-feature:
+feature1:
 	cucumber features/redis_auto_failover.feature:9
+
+feature2:
+	cucumber features/redis_auto_failover.feature:26
+
+feature3:
+	cucumber features/redis_auto_failover.feature:48
 
 stats:
 	cloc --exclude-dir=coverage,vendor lib test features $(GO_SRC)
