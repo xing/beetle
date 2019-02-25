@@ -16,6 +16,7 @@ Beetle.config.logger.level = Logger::INFO
 # setup client
 $client = Beetle::Client.new
 $client.config.dead_lettering_enabled = true
+$client.config.lazy_queues_enabled = true
 $client.configure(:key => "my.test.message") do
   message(:test)
   queue(:test)

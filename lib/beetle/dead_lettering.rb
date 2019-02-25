@@ -10,54 +10,64 @@ module Beetle
     end
 
     def bind_dead_letter_queues!(channel, servers, target_queue, creation_keys = {})
-      return unless @config.dead_lettering_enabled?
+      if @config.dead_lettering_enabled?
+        dead_letter_queue_name = dead_letter_queue_name(target_queue)
+        logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
+        channel.queue(dead_letter_queue_name, creation_keys)
+      end
 
-      dead_letter_queue_name = dead_letter_queue_name(target_queue)
+      if @config.dead_lettering_enabled?
+        logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
+      end
+      set_queue_policies!(servers, target_queue)
 
-      logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
-      channel.queue(dead_letter_queue_name, creation_keys)
-
-      logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
-      set_dead_letter_policies!(servers, target_queue)
-
-      logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
-      set_dead_letter_policies!(
-        servers,
-        dead_letter_queue_name,
-        :message_ttl => @config.dead_lettering_msg_ttl,
-        :routing_key => target_queue
-      )
+      if @config.dead_lettering_enabled?
+        logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
+        set_queue_policies!(
+          servers,
+          dead_letter_queue_name,
+          :message_ttl => @config.dead_lettering_msg_ttl,
+          :routing_key => target_queue
+        )
+      end
     end
 
-    def set_dead_letter_policies!(servers, queue_name, options={})
-      servers.each { |server| set_dead_letter_policy!(server, queue_name, options) }
+    def set_queue_policies!(servers, queue_name, options={})
+      servers.each { |server| set_queue_policy!(server, queue_name, options) }
     end
 
-    def set_dead_letter_policy!(server, queue_name, options={})
+    def set_queue_policy!(server, queue_name, options={})
       raise ArgumentError.new("server missing")     if server.blank?
       raise ArgumentError.new("queue name missing") if queue_name.blank?
+
+      return unless @config.dead_lettering_enabled? || @config.lazy_queues_enabled?
 
       vhost = CGI.escape(@config.vhost)
       request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
       request = Net::HTTP::Put.new(request_url)
 
+      # set up queue policy
+      definition = {}
+      if @config.dead_lettering_enabled?
+        definition["dead-letter-routing-key"] = dead_letter_routing_key(queue_name, options)
+        definition["dead-letter-exchange"] = ""
+        definition["message-ttl"] = options[:message_ttl] if options[:message_ttl]
+      end
+
+      definition["queue-mode"] = "lazy" if @config.lazy_queues_enabled?
+
       request_body = {
         "pattern" => "^#{queue_name}$",
         "priority" => 1,
         "apply-to" => "queues",
-        "definition" => {
-          "dead-letter-routing-key" => dead_letter_routing_key(queue_name, options),
-          "dead-letter-exchange" => ""
-        }
+        "definition" => definition,
       }
-
-      request_body["definition"].merge!("message-ttl" => options[:message_ttl]) if options[:message_ttl]
 
       response = run_rabbit_http_request(request_url, request) do |http|
         http.request(request, request_body.to_json)
       end
 
-      if response.code != "204"
+      unless %w(200 201 204).include?(response.code)
         log_error("Failed to create policy for queue #{queue_name}", response)
         raise FailedRabbitRequest.new("Could not create policy")
       end
