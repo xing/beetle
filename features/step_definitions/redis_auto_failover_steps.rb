@@ -22,13 +22,22 @@ Given /^redis server "([^\"]*)" is slave of "([^\"]*)"$/ do |redis_name, redis_m
 end
 
 Given /^a redis configuration server using redis servers "([^\"]*)" with clients "([^\"]*)" (?:and confidence level "([^\"]*)" )?exists$/ do |redis_names, redis_configuration_client_names, confidence_level|
-  redis_servers = redis_names.split(",").map { |redis_name| TestDaemons::Redis[redis_name].ip_with_port }.join(",")
+  redis_servers = redis_names.split(";").map do |system_spec|
+    if system_spec.include?("/")
+      system_name, servers = system_spec.split("/", 2)
+    else
+      system_name, servers = nil, system_spec
+    end
+    servers = servers.split(",").map { |redis_name| TestDaemons::Redis[redis_name].ip_with_port }.join(",")
+    system_name.nil? ? servers : "#{system_name}/#{servers}"
+  end.join(";")
   TestDaemons::RedisConfigurationServer.start(redis_servers, redis_configuration_client_names, (confidence_level || 100).to_i)
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
-  redis_servers = redis_names.split(",").map do |redis_name|
-    TestDaemons::Redis[redis_name].ip_with_port
+  redis_names.split(";").each do |system_spec|
+    servers = system_spec.sub(/^.*\//, '')
+    servers.split(",").map { |redis_name| TestDaemons::Redis[redis_name].ip_with_port }
   end
   TestDaemons::RedisConfigurationClient[redis_configuration_client_name].start
 end
@@ -73,7 +82,7 @@ end
 Given /^an old redis master file for "([^\"]*)" with master "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_name|
   master_file = redis_master_file(redis_configuration_client_name)
   File.open(master_file, 'w') do |f|
-    f.puts TestDaemons::Redis[redis_name].ip_with_port
+    f.puts "system/#{TestDaemons::Redis[redis_name].ip_with_port}"
   end
 end
 
@@ -87,22 +96,28 @@ Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redi
   assert expected_role, "#{redis_name} is not a #{role}"
 end
 
-Then /^the redis master of "([^\"]*)" should be "([^\"]*)"$/ do |redis_configuration_client_name, redis_name|
+Then /^the redis master of "([^\"]*)" (?:in system "([^"]*)" )?should be "([^\"]*)"$/ do |redis_configuration_client_name, system_name, redis_name|
+  system_name ||= "system"
   master_file = redis_master_file(redis_configuration_client_name)
   master = false
-  server_info = nil
+  server_info = ''
   10.times do
+    server_name = TestDaemons::Redis[redis_name].ip_with_port
     server_info = File.read(master_file).chomp if File.exist?(master_file)
-    master = true and break if TestDaemons::Redis[redis_name].ip_with_port == server_info
+    if server_info.include?("/")
+      master = true and break if server_info =~ /#{system_name}\/#{server_name}/m
+    else
+      master = true and break if server_info == server_name
+    end
     sleep 1
   end
   assert master, "#{redis_name} is not master of #{redis_configuration_client_name}, master file content: #{server_info.inspect}"
 end
 
-Then /^the redis master file of the redis configuration server should contain "([^"]*)"$/ do |redis_name|  # " for emacs :(
+Then /^the redis master file of the redis configuration server should contain "([^"]*)"$/ do |redis_name|
   master_file = TestDaemons::RedisConfigurationServer.redis_master_file
   file_contents = File.read(master_file).chomp
-  assert_equal TestDaemons::Redis[redis_name].ip_with_port, file_contents
+  assert_match /#{TestDaemons::Redis[redis_name].ip_with_port}/, file_contents
 end
 
 Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configuration_client_name|
@@ -111,7 +126,7 @@ Then /^the redis master of "([^\"]*)" should be undefined$/ do |redis_configurat
   server_info = nil
   10.times do
     server_info = File.read(master_file).chomp if File.exist?(master_file)
-    empty = server_info == ""
+    empty = server_info !~ /:\d+/
     break if empty
     sleep 1
   end
@@ -125,7 +140,7 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
     config.queue(:echo)
     config.message(:echo)
   end
-  assert_equal TestDaemons::Redis[redis_name].ip_with_port, client.rpc(:echo, 'nil').second
+  assert_match /#{TestDaemons::Redis[redis_name].ip_with_port}/, client.rpc(:echo, 'nil').second
 end
 
 Then /^a system notification for "([^\"]*)" not being available should be sent$/ do |redis_name|
@@ -157,7 +172,7 @@ end
 
 Given /^an immediate master switch is initiated and responds with (\d+)$/ do |response_code|
   response = TestDaemons::RedisConfigurationServer.initiate_master_switch
-  assert_equal response_code, response.code
+  assert_equal response_code, response.code, "unexpected response code #{response.code}, message: #{response.body}"
   sleep 1
 end
 

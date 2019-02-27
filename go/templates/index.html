@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Beetle Configuration Server Status</title>
+    <style media="screen" type="text/css">
+      html { font: 1.25em/1.5 arial, sans-serif;}
+      body { margin: 1em; }
+      td { padding: 0.1em 0.2em; vertical-align: top; }
+      ul { list-style-type: none; margin: 0; padding: 0;}
+      li { }
+      h1.available { color: #5780b2; margin-bottom: 0.2em;}
+      h1.unavailable { color: #A52A2A; margin-bottom: 0.2em;}
+      a:link, a:visited {text-decoration:none; color:#A52A2A;}
+      a:hover, a:active {text-decoration:none; color:#FF0000;}
+      a {
+          padding: 10px; background: #cdcdcd;
+          -moz-border-radius: 5px;
+          border-radius: 5px;
+          -moz-box-shadow: 2px 2px 2px #bbb;
+          -webkit-box-shadow: 2px 2px 2px #bbb;
+          box-shadow: 2px 2px 2px #bbb;
+      }
+      form { font-size: 1em; margin-bottom: 1em; }
+    </style>
+  </head>
+  <body>
+    {{ range .Systems }}
+    <h1 class="{{ if .RedisMasterAvailable }}available{{ else }}unavailable{{ end }}">Beetle Configuration Server Status</h1>
+    {{ if not .RedisMasterAvailable }}
+    <form name='masterswitch' method='post' action='/initiate_master_switch&amp;system_name={{ .SystemName }}'>
+      Master down!
+      <a href='javascript: document.masterswitch.submit();'>Initiate master switch</a>
+      or wait until it is performed it automatically.
+    </form>
+    {{ end }}
+    <table cellspacing=0>
+      <tr><td>system_name</td><td>{{ .SystemName}}</td></tr>
+      <tr><td>switch_in_progress</td><td>{{ .SwitchInProgress}}</td></tr>
+      <tr><td>redis_master_available</td><td><ul>{{ .RedisMasterAvailable }}</td></tr>
+      <tr><td>redis_master</td><td>{{ .RedisMaster}}</td></tr>
+      <tr><td>redis_slaves_available</td><td><ul>{{ if not .RedisSlavesAvailable }}none{{ else }}{{ range .RedisSlavesAvailable }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
+      <tr><td>configured_redis_servers</td><td><ul>{{ range .ConfiguredRedisServers }}<li>{{ . }}</li>{{ end }}</ul></td></tr>
+    </table>
+    {{ end }}
+    <h1 class="available">Global Configuration</h2>
+    <table cellspacing=0>
+      <tr><td>beetle_version</td><td>{{ .BeetleVersion}}</td></tr>
+      <tr><td>unseen_client_ids</td><td><ul>{{ if not .UnseenClientIds }}none{{ else }}{{ range .UnseenClientIds }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
+      <tr><td>unresponsive_clients</td><td><ul>{{ if not .UnresponsiveClients }}none{{ else }}{{ range .UnresponsiveClients }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
+      <tr><td>unknown_client_ids</td><td><ul>{{ if not .UnknownClientIds }}none{{ else }}{{ range .UnknownClientIds }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
+      <tr><td>configured_client_ids</td><td><ul>{{ range .ConfiguredClientIds }}<li>{{ . }}</li>{{ end }}</ul></td></tr>
+    </table>
+  </body>
+</html>

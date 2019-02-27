@@ -23,6 +23,52 @@ Feature: Redis auto failover
     Given a redis server "redis-1" exists as master
     Then the role of redis server "redis-1" should be "slave"
 
+  Scenario: Successful single redis master switch with multiple failover sets
+    Given a redis server "redis-3" exists as master
+    And a redis server "redis-4" exists as slave of "redis-3"
+    Given a redis configuration server using redis servers "a/redis-1,redis-2;b/redis-3,redis-4" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And redis server "redis-1" is down
+    And the retry timeout for the redis master check is reached
+    Then a system notification for "redis-1" not being available should be sent
+    And the role of redis server "redis-2" should be "master"
+    And the redis master file of the redis configuration server should contain "redis-2"
+    And the redis master file of the redis configuration server should contain "redis-3"
+    And the redis master of "rc-client-1" in system "a" should be "redis-2"
+    And the redis master of "rc-client-2" in system "a" should be "redis-2"
+    And the redis master of "rc-client-1" in system "b" should be "redis-3"
+    And the redis master of "rc-client-2" in system "b" should be "redis-3"
+    And the redis master of the beetle handler should be "redis-2"
+    And a system notification for switching from "redis-1" to "redis-2" should be sent
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
+
+  Scenario: Successful double redis master switch with multiple failover sets
+    Given a redis server "redis-3" exists as master
+    And a redis server "redis-4" exists as slave of "redis-3"
+    Given a redis configuration server using redis servers "a/redis-1,redis-2;b/redis-3,redis-4" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And redis server "redis-1" is down
+    And redis server "redis-3" is down
+    And the retry timeout for the redis master check is reached
+    And the role of redis server "redis-2" should be "master"
+    And the role of redis server "redis-4" should be "master"
+    And the redis master file of the redis configuration server should contain "redis-2"
+    And the redis master file of the redis configuration server should contain "redis-4"
+    And the redis master of "rc-client-1" in system "a" should be "redis-2"
+    And the redis master of "rc-client-2" in system "a" should be "redis-2"
+    And the redis master of "rc-client-1" in system "b" should be "redis-4"
+    And the redis master of "rc-client-2" in system "b" should be "redis-4"
+    And the redis master of the beetle handler should be "redis-2"
+    Given a redis server "redis-1" exists as master
+    Then the role of redis server "redis-1" should be "slave"
+    Given a redis server "redis-3" exists as master
+    Then the role of redis server "redis-3" should be "slave"
+
   Scenario: Redis master only temporarily down (no switch necessary)
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists

@@ -18,6 +18,7 @@ type GCOptions struct {
 	GcThreshold     int    // Number of seconds after which a key should be considered collectible.
 	GcDatabases     string // List of databases to scan.
 	GcKeyFile       string // Name of file containing keys to collect.
+	GcSystem        string // Name of redis system for which to collect keys.
 }
 
 // GCState holds options and collector state, most importantly the current redis
@@ -170,7 +171,8 @@ func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
 }
 
 func (s *GCState) getMaster(db int) bool {
-	server := ReadRedisMasterFile(s.opts.RedisMasterFile)
+	systems := RedisMastersFromMasterFile(s.opts.RedisMasterFile)
+	server := systems[s.opts.GcSystem]
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server
 		s.currentDB = db

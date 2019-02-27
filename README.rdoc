@@ -111,7 +111,7 @@ For tests, you'll need
 
 You can find out more about our work on our {dev blog}[http://devblog.xing.com].
 
-Copyright (c) 2010-2015 {XING AG}[http://www.xing.com/]
+Copyright (c) 2010-2019 {XING AG}[http://www.xing.com/]
 
 Released under the MIT license. For full details see MIT-LICENSE included in this
 distribution.

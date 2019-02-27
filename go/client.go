@@ -21,17 +21,24 @@ type ClientOptions struct {
 	ConsulClient *consul.Client
 }
 
+// RedisSystem holds the switch protocol state for each system name.
+type RedisSystem struct {
+	system        string
+	currentMaster *RedisShim
+	currentToken  string
+	client        *ClientState
+}
+
 // ClientState holds the client state.
 type ClientState struct {
 	opts          ClientOptions
 	mutex         sync.Mutex
 	ws            *websocket.Conn
 	input         chan MsgBody
-	currentMaster *RedisShim
-	currentToken  string
 	writerDone    chan struct{}
 	readerDone    chan struct{}
 	configChanges chan consul.Env
+	redisSystems  map[string]*RedisSystem
 }
 
 // GetConfig returns the client configuration in a thread safe way.
@@ -39,6 +46,11 @@ func (s *ClientState) GetConfig() *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.opts.Config
+}
+
+// GetConfig returns the client configuration in a thread safe way.
+func (s *RedisSystem) GetConfig() *Config {
+	return s.client.GetConfig()
 }
 
 // SetConfig sets replaces the current config with a new one in athread safe way
@@ -106,14 +118,15 @@ func (s *ClientState) SendHeartBeat() error {
 // Ping sends a PING message to the server.
 func (s *ClientState) Ping(pingMsg MsgBody) error {
 	logInfo("Received ping message")
-	if s.RedeemToken(pingMsg.Token) {
-		return s.SendPong()
+	rs := s.RegisterSystem(pingMsg.System)
+	if rs.RedeemToken(pingMsg.Token) {
+		return s.SendPong(rs)
 	}
 	return nil
 }
 
 // RedeemToken checks the validity of the given token.
-func (s *ClientState) RedeemToken(token string) bool {
+func (s *RedisSystem) RedeemToken(token string) bool {
 	if s.currentToken == "" || token > s.currentToken {
 		s.currentToken = token
 	}
@@ -125,13 +138,13 @@ func (s *ClientState) RedeemToken(token string) bool {
 }
 
 // SendPong sends a PONG message to the server.
-func (s *ClientState) SendPong() error {
-	return s.send(MsgBody{Name: PONG, Id: s.opts.Id, Token: s.currentToken})
+func (s *ClientState) SendPong(rs *RedisSystem) error {
+	return s.send(MsgBody{System: rs.system, Name: PONG, Id: s.opts.Id, Token: rs.currentToken})
 }
 
 // SendClientInvalidated sends a CLIENT_INVALIDATED message to the server.
-func (s *ClientState) SendClientInvalidated() error {
-	return s.send(MsgBody{Name: CLIENT_INVALIDATED, Id: s.opts.Id, Token: s.currentToken})
+func (s *ClientState) SendClientInvalidated(rs *RedisSystem) error {
+	return s.send(MsgBody{System: rs.system, Name: CLIENT_INVALIDATED, Id: s.opts.Id, Token: rs.currentToken})
 }
 
 // SendClientStarted sends a CLIENT_STARTED message to the server.
@@ -141,31 +154,71 @@ func (s *ClientState) SendClientStarted() error {
 
 // NewMaster modifies the client state by setting the current master to a new
 // one.
-func (s *ClientState) NewMaster(server string) {
+func (s *RedisSystem) NewMaster(server string) {
 	logInfo("setting new master: %s", server)
 	s.currentMaster = NewRedisShim(server)
 }
 
-// DetermineInitialMaster tries to read the current master from disk.
-func (s *ClientState) DetermineInitialMaster() {
-	if !MasterFileExists(s.GetConfig().RedisMasterFile) {
+// UpdateMasterFile writes the known masters information to the redis master file.
+func (s *ClientState) UpdateMasterFile() {
+	path := s.GetConfig().RedisMasterFile
+	systems := make(map[string]string, 0)
+	for system, rs := range s.redisSystems {
+		if rs.currentMaster == nil {
+			systems[system] = ""
+		} else {
+			systems[system] = rs.currentMaster.server
+		}
+	}
+	content := MarshalMasterFileContent(systems)
+	WriteRedisMasterFile(path, content)
+}
+
+// DetermineInitialMasters tries to read the current masters from disk
+// and establish the system name to redis shim mapping.
+func (s *ClientState) DetermineInitialMasters() {
+	path := s.GetConfig().RedisMasterFile
+	if !MasterFileExists(path) {
+		s.UpdateMasterFile()
 		return
 	}
-	server := ReadRedisMasterFile(s.GetConfig().RedisMasterFile)
-	if server != "" {
-		s.NewMaster(server)
+	masters := RedisMastersFromMasterFile(path)
+	invalidSystems := make([]string, 0)
+	for system, server := range masters {
+		rs := s.RegisterSystem(system)
+		if server != "" {
+			rs.NewMaster(server)
+		}
+		if rs.currentMaster == nil || !rs.currentMaster.IsMaster() {
+			invalidSystems = append(invalidSystems, system)
+			rs.currentMaster = nil
+		}
 	}
+	if len(invalidSystems) > 0 {
+		logInfo("clearing systems from master file %s", invalidSystems)
+		s.UpdateMasterFile()
+	}
+}
+
+func (s *ClientState) RegisterSystem(system string) *RedisSystem {
+	rs := s.redisSystems[system]
+	if rs == nil {
+		rs = &RedisSystem{system: system}
+		s.redisSystems[system] = rs
+	}
+	return rs
 }
 
 // Invalidate clears the redis master file contents and sends a
 // CLIENT_INVALIDATED message to the server, provided the token sent with the
 // message is valid.
 func (s *ClientState) Invalidate(msg MsgBody) error {
-	if s.RedeemToken(msg.Token) && (s.currentMaster == nil || s.currentMaster.Role() != MASTER) {
-		s.currentMaster = nil
+	rs := s.RegisterSystem(msg.System)
+	if rs.RedeemToken(msg.Token) && (rs.currentMaster == nil || rs.currentMaster.Role() != MASTER) {
+		rs.currentMaster = nil
 		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
-		logInfo("Sending client_invalidated message with id '%s' and token '%s'", s.opts.Id, s.currentToken)
-		return s.SendClientInvalidated()
+		logInfo("Sending client_invalidated message with id '%s' and token '%s'", s.opts.Id, rs.currentToken)
+		return s.SendClientInvalidated(rs)
 	}
 	return nil
 }
@@ -174,12 +227,13 @@ func (s *ClientState) Invalidate(msg MsgBody) error {
 // with the message is valid.
 func (s *ClientState) Reconfigure(msg MsgBody) error {
 	logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
-	if !s.RedeemToken(msg.Token) {
+	rs := s.RegisterSystem(msg.System)
+	if !rs.RedeemToken(msg.Token) {
 		logInfo("Received invalid or outdated token: '%s'", msg.Token)
 	}
-	if msg.Server != ReadRedisMasterFile(s.GetConfig().RedisMasterFile) {
-		s.NewMaster(msg.Server)
-		WriteRedisMasterFile(s.GetConfig().RedisMasterFile, msg.Server)
+	if rs.currentMaster == nil || rs.currentMaster.server != msg.Server {
+		rs.NewMaster(msg.Server)
+		s.UpdateMasterFile()
 	}
 	return nil
 }
@@ -278,11 +332,7 @@ func (s *ClientState) Dispatch(msg MsgBody) error {
 // writer routines and a consul watcher for config changes. It exits when the
 // writer exits.
 func (s *ClientState) Run() error {
-	s.DetermineInitialMaster()
-	if s.currentMaster == nil || !s.currentMaster.IsMaster() {
-		logInfo("clearing master file")
-		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
-	}
+	s.DetermineInitialMasters()
 	if err := s.Connect(); err != nil {
 		return err
 	}
@@ -312,9 +362,10 @@ func RunConfigurationClient(o ClientOptions) error {
 	logInfo("client started with options: %+v\n", o)
 	for !interrupted {
 		state := &ClientState{
-			opts:       o,
-			readerDone: make(chan struct{}, 1),
-			writerDone: make(chan struct{}, 1),
+			opts:         o,
+			readerDone:   make(chan struct{}, 1),
+			writerDone:   make(chan struct{}, 1),
+			redisSystems: make(map[string]*RedisSystem, 0),
 		}
 		state.input = make(chan MsgBody, 1000)
 		err := state.Run()

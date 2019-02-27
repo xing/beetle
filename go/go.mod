@@ -2,10 +2,9 @@ module github.com/xing/beetle
 
 require (
 	github.com/davecgh/go-spew v1.1.1
+	github.com/gobuffalo/packr v1.22.0
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/jessevdk/go-flags v1.4.0
-	github.com/onsi/ginkgo v1.7.0 // indirect
-	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/yookoala/realpath v1.0.0
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect

@@ -16,7 +16,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-var serverTestOptions = ServerOptions{Config: &Config{ClientTimeout: 1}}
+var serverTestOptions = ServerOptions{Config: &Config{ClientTimeout: 1, RedisServers: "beetle/127.0.0.1:7001,127.0.0.1:7002"}}
 
 func startAndWaitForText(cmd *exec.Cmd, text string) {
 	pipe, err := cmd.StdoutPipe()
@@ -122,7 +122,7 @@ func TestSplitProperties(t *testing.T) {
 func TestSavingAndLoadingState(t *testing.T) {
 	fmt.Println("=== TestSavingAndLoadingState  ===================================")
 	s := NewServerState(serverTestOptions)
-	s.currentMaster = NewRedisShim("127.0.0.1:7001")
+	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
 	s.ClientSeen("xxx")
 	s.ClientSeen("yyy")
 	s.SaveState()
@@ -137,7 +137,7 @@ func TestSavingAndLoadingState(t *testing.T) {
 func TestClientSeen(t *testing.T) {
 	fmt.Println("=== TestClientSeen ===============================================")
 	s := NewServerState(serverTestOptions)
-	s.currentMaster = NewRedisShim("127.0.0.1:7001")
+	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
 	if s.ClientSeen("xxx") {
 		t.Errorf("server claims he's seen a client which it hasn't seen before. nuts?")
 	}

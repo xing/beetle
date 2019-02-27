@@ -16,6 +16,7 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/gobuffalo/packr"
 	"github.com/xing/beetle/consul"
 	"gopkg.in/gorilla/websocket.v1"
 	"gopkg.in/tylerb/graceful.v1"
@@ -52,34 +53,42 @@ func (s1 TimeSet) Equal(s2 TimeSet) bool {
 	return true
 }
 
-// ServerState holds the server state. TODO: this beast has too many variables.
+// FailoverState holds information relevant to each failover set.
+type FailoverState struct {
+	redis                        *RedisServerInfo // Cached state of watched redis instances. Refreshed every RedisMasterRetryInterval seconds.
+	currentMaster                *RedisShim       // Current redis master.
+	currentTokenInt              int              // Token to identify election rounds.
+	currentToken                 string           // String representation of current token.
+	pinging                      bool             // Whether or not we're waiting for pings
+	invalidating                 bool             // Whether or not we're waiting for invalidations.
+	clientPongIdsReceived        StringSet        // During a pong phase, the set of clients which have answered.
+	clientInvalidatedIdsReceived StringSet        // During the invalidation phase, the set of clients which have answered.
+	watching                     bool             // Whether we're currently watching a redis master (false during election process).
+	watchTick                    int              // One second tick counter which gets reset every RedisMasterRetryInterval seconds.
+	invalidateTimer              *time.Timer      // Timer used to abort waiting for answers from clients (invalidate/invalidated).
+	availabilityTimer            *time.Timer      // Timer used to abort waiting for answers from clients (ping/pong).
+	retries                      int              // Count down for checking a master to come back after it has become unreachable.
+	system                       string           // The name of the failover set.
+	server                       *ServerState     // Backpointer to embedding server.
+}
+
+// ServerState holds the server state.
 type ServerState struct {
-	opts                         ServerOptions      // Options passed to the constructor.
-	mutex                        sync.Mutex         // Mutex for changing opts.Config.
-	clientIds                    StringSet          // The list of clients we know and which take part in master election.
-	clientChannels               ChannelMap         // Channels we use to communicate with client websocket goroutines.
-	notificationChannels         ChannelSet         // Channels we use to communicate with notifier websockets goroutines.
-	unknownClientIds             StringList         // List of clients we have seen, but don't know.
-	clientsLastSeen              TimeSet            // For any client we have seen, the time when we've last seen him.
-	wsChannel                    chan *WsMsg        // Channel used by websocket go routines to send messages to dispatcher go routine.
-	upgrader                     websocket.Upgrader // Upgrader to use for turning a http connection into a webscoket connection.
-	redis                        *RedisServerInfo   // Cached state of watched redis insiances. Refreshed every RedisMasterRetryInterval seconds.
-	currentMaster                *RedisShim         // Current redis master.
-	currentTokenInt              int                // Token to identify election rounds.
-	currentToken                 string             // String representation of current token.
-	pinging                      bool               // Whether or not we're waiting for pings
-	clientPongIdsReceived        StringSet          // During a pong phase, the set of clients which have answered.
-	invalidating                 bool               // Whether or not we're waiting for invalidations.
-	clientInvalidatedIdsReceived StringSet          // During the invalidation phase, the set of clients which have answered.
-	timerChannel                 chan string        // Channel used to send an abort message to the dispatcher go routine.
-	invalidateTimer              *time.Timer        // Timer used to abort waiting for answers from clients (invalidate/invalidated).
-	availabilityTimer            *time.Timer        // Timer used to abort waiting for answers from clients (ping/pong).
-	retries                      int                // Count down for checking a master to come back after it has become unreachable.
-	watching                     bool               // Whether we're currently watching a redis master (false during election process).
-	watchTick                    int                // One second tick counter which gets reset every RedisMasterRetryInterval seconds.
-	waitGroup                    sync.WaitGroup     // Used to organize the shutdown process.
-	configChanges                chan consul.Env    // Environment chnages from consul arrive on this channel.
-	failoverConfidenceLevel      float64            // Failover confidence level, normalized to the interval [0,1.0]
+	opts                    ServerOptions             // Options passed to the constructor.
+	mutex                   sync.Mutex                // Mutex for changing opts.Config.
+	clientIds               StringSet                 // The list of clients we know and which take part in master election.
+	clientChannels          ChannelMap                // Channels we use to communicate with client websocket goroutines.
+	notificationChannels    ChannelSet                // Channels we use to communicate with notifier websockets goroutines.
+	unknownClientIds        StringList                // List of clients we have seen, but don't know.
+	clientsLastSeen         TimeSet                   // For any client we have seen, the time when we've last seen him.
+	wsChannel               chan *WsMsg               // Channel used by websocket go routines to send messages to dispatcher go routine.
+	upgrader                websocket.Upgrader        // Upgrader to use for turning a http connection into a webscoket connection.
+	timerChannel            chan string               // Channel used to send an abort message (containing the name of failoverset) to the dispatcher go routine.
+	waitGroup               sync.WaitGroup            // Used to organize the shutdown process.
+	configChanges           chan consul.Env           // Environment changes from consul arrive on this channel.
+	failoverConfidenceLevel float64                   // Failover confidence level, normalized to the interval [0,1.0]
+	systemNames             []string                  // All system names. Firste on is used for saving server state.
+	failovers               map[string]*FailoverState // Maps system name to failover state.
 }
 
 // GetConfig returns the server state in a thread safe manner.
@@ -87,6 +96,11 @@ func (s *ServerState) GetConfig() *Config {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.opts.Config
+}
+
+// GetConfig returns the server state in a thread safe manner.
+func (s *FailoverState) GetConfig() *Config {
+	return s.server.GetConfig()
 }
 
 // SetConfig sets the server state in a thread safe manner.
@@ -111,33 +125,46 @@ func (s *ServerState) determineFailoverConfidenceLevel() {
 	s.failoverConfidenceLevel = float64(level) / 100.0
 }
 
-// ServerStatus is used to faciliate JSON conversion of parts of the server state.
-type ServerStatus struct {
-	BeetleVersion          string   `json:"beetle_version"`
-	ConfiguredClientIds    []string `json:"configured_client_ids"`
+// FailoverStatus
+type FailoverStatus struct {
+	SystemName             string   `json:"system_name"`
 	ConfiguredRedisServers []string `json:"configured_redis_servers"`
 	RedisMaster            string   `json:"redis_master"`
 	RedisMasterAvailable   bool     `json:"redis_master_available"`
 	RedisSlavesAvailable   []string `json:"redis_slaves_available"`
 	SwitchInProgress       bool     `json:"switch_in_progress"`
-	UnknownClientIds       []string `json:"unknown_client_ids"`
-	UnresponsiveClients    []string `json:"unresponsive_clients"`
-	UnseenClientIds        []string `json:"unseen_client_ids"`
+}
+
+// ServerStatus is used to faciliate JSON conversion of parts of the server state.
+type ServerStatus struct {
+	BeetleVersion       string           `json:"beetle_version"`
+	ConfiguredClientIds []string         `json:"configured_client_ids"`
+	UnknownClientIds    []string         `json:"unknown_client_ids"`
+	UnresponsiveClients []string         `json:"unresponsive_clients"`
+	UnseenClientIds     []string         `json:"unseen_client_ids"`
+	Systems             []FailoverStatus `json:"redis_systems"`
 }
 
 // GetStatus creates a ServerStatus from the curretn server state.
 func (s *ServerState) GetStatus() *ServerStatus {
+	failoverStats := []FailoverStatus{}
+	for system, rs := range s.failovers {
+		failoverStats = append(failoverStats, FailoverStatus{
+			SystemName:             system,
+			ConfiguredRedisServers: rs.redis.instances.Servers(),
+			RedisMaster:            rs.currentMaster.server,
+			RedisMasterAvailable:   rs.MasterIsAvailable(),
+			RedisSlavesAvailable:   rs.redis.Slaves().Servers(),
+			SwitchInProgress:       rs.WatcherPaused(),
+		})
+	}
 	return &ServerStatus{
-		BeetleVersion:          BEETLE_VERSION,
-		ConfiguredClientIds:    s.clientIds.Keys(),
-		ConfiguredRedisServers: s.redis.instances.Servers(),
-		RedisMaster:            s.currentMaster.server,
-		RedisMasterAvailable:   s.MasterIsAvailable(),
-		RedisSlavesAvailable:   s.redis.Slaves().Servers(),
-		SwitchInProgress:       s.WatcherPaused(),
-		UnknownClientIds:       s.UnknownClientIds(),
-		UnresponsiveClients:    s.UnresponsiveClients(),
-		UnseenClientIds:        s.UnseenClientIds(),
+		BeetleVersion:       BEETLE_VERSION,
+		ConfiguredClientIds: s.clientIds.Keys(),
+		UnknownClientIds:    s.UnknownClientIds(),
+		UnresponsiveClients: s.UnresponsiveClients(),
+		UnseenClientIds:     s.UnseenClientIds(),
+		Systems:             failoverStats,
 	}
 }
 
@@ -304,6 +331,11 @@ func (s *ServerState) ClientTimeout() time.Duration {
 	return time.Duration(s.GetConfig().ClientTimeout) * time.Second
 }
 
+// ClientTimeout returns the client timeout as a time.Duration.
+func (s *FailoverState) ClientTimeout() time.Duration {
+	return s.server.ClientTimeout()
+}
+
 // SendToWebSockets sends a message to all registered clients channels.
 func (s *ServerState) SendToWebSockets(msg *MsgBody) (err error) {
 	data, err := json.Marshal(msg)
@@ -322,6 +354,11 @@ func (s *ServerState) SendToWebSockets(msg *MsgBody) (err error) {
 	return
 }
 
+// SendToWebSockets sends a message to all registered clients channels.
+func (s *FailoverState) SendToWebSockets(msg *MsgBody) (err error) {
+	return s.server.SendToWebSockets(msg)
+}
+
 // SendNotification sends a notifcation on all registered notifcation channels.
 func (s *ServerState) SendNotification(text string) (err error) {
 	logInfo("Sending notification to %d subscribers", len(s.notificationChannels))
@@ -333,6 +370,11 @@ func (s *ServerState) SendNotification(text string) (err error) {
 		}
 	}
 	return
+}
+
+// SendNotification sends a notifcation on all registered notifcation channels.
+func (s *FailoverState) SendNotification(text string) (err error) {
+	return s.server.SendNotification(text)
 }
 
 // String constants used as message identifiers.
@@ -358,6 +400,7 @@ const (
 
 // MsgBody facilitates JSON conversion for messages sent btween client and server.
 type MsgBody struct {
+	System string `json:"system,omitempty"`
 	Name   string `json:"name"`
 	Id     string `json:"id,omitempty"`
 	Token  string `json:"token,omitempty"`
@@ -372,19 +415,24 @@ type WsMsg struct {
 
 func (s *ServerState) dispatcher() {
 	ticker := time.NewTicker(1 * time.Second)
-	s.StartWatcher()
+	for _, fs := range s.failovers {
+		fs.StartWatcher()
+	}
 	for !interrupted {
 		select {
 		case msg := <-s.wsChannel:
 			s.handleWebSocketMsg(msg)
-		case <-s.timerChannel:
-			s.CancelInvalidation()
+		case system := <-s.timerChannel:
+			fs := s.failovers[system]
+			fs.CancelInvalidation()
 		case <-ticker.C:
-			s.watchTick = (s.watchTick + 1) % s.GetConfig().RedisMasterRetryInterval
-			if s.watchTick == 0 {
-				s.CheckRedisAvailability()
-				s.ForgetOldUnknownClientIds()
-				s.ForgetOldLastSeenEntries()
+			for _, fs := range s.failovers {
+				fs.watchTick = (fs.watchTick + 1) % s.GetConfig().RedisMasterRetryInterval
+				if fs.watchTick == 0 {
+					fs.CheckRedisAvailability()
+					s.ForgetOldUnknownClientIds()
+					s.ForgetOldLastSeenEntries()
+				}
 			}
 		case env := <-s.configChanges:
 			newconfig := buildConfig(env)
@@ -429,7 +477,6 @@ func NewServerState(o ServerOptions) *ServerState {
 	s := &ServerState{clientChannels: make(ChannelMap), notificationChannels: make(ChannelSet)}
 	s.opts = o
 	s.determineFailoverConfidenceLevel()
-	s.redis = NewRedisServerInfo(s.GetConfig().RedisServers)
 	s.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -444,17 +491,31 @@ func NewServerState(o ServerOptions) *ServerState {
 	}
 	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
-	s.currentTokenInt = int(time.Now().UnixNano() / 1000000) // millisecond resolution
-	s.currentToken = strconv.Itoa(s.currentTokenInt)
-	s.clientPongIdsReceived = make(StringSet)
-	s.clientInvalidatedIdsReceived = make(StringSet)
+	s.failovers = make(map[string]*FailoverState)
+	s.systemNames = make([]string, 0)
+	for _, fs := range s.GetConfig().FailoverSets() {
+		s.systemNames = append(s.systemNames, fs.name)
+		initalToken := int(time.Now().UnixNano() / 1000000) // millisecond resolution
+		s.failovers[fs.name] = &FailoverState{
+			server:                       s,
+			system:                       fs.name,
+			currentTokenInt:              initalToken,
+			currentToken:                 strconv.Itoa(initalToken),
+			redis:                        NewRedisServerInfo(fs.spec),
+			clientPongIdsReceived:        make(StringSet),
+			clientInvalidatedIdsReceived: make(StringSet),
+		}
+	}
 	return s
 }
 
 // SaveState stores some aspects of the server state to the current redis master
-// to avoid re-sending notifications on restart.
+// to avoid re-sending notifications on restart. As of now, the state only
+// consists of the last seen info. It uses the redis master of the first
+// failover set.
 func (s *ServerState) SaveState() {
-	if s.currentMaster == nil {
+	fs := s.failovers[s.systemNames[0]]
+	if fs.currentMaster == nil {
 		logError("could not save state because no redis master is available")
 		return
 	}
@@ -463,7 +524,7 @@ func (s *ServerState) SaveState() {
 		lastSeen = append(lastSeen, fmt.Sprintf("%s:%d", id, t.UnixNano()))
 	}
 	lastSeenStr := strings.Join(lastSeen, ",")
-	_, err := s.currentMaster.redis.Set("beetle:clients-last-seen", lastSeenStr, 0).Result()
+	_, err := fs.currentMaster.redis.Set("beetle:clients-last-seen", lastSeenStr, 0).Result()
 	if err != nil {
 		logError("could not save clients last seen info to redis")
 	}
@@ -472,11 +533,15 @@ func (s *ServerState) SaveState() {
 
 // LoadState loads previously saved state from current redis master.
 func (s *ServerState) LoadState() {
-	if s.currentMaster == nil {
+	if len(s.systemNames) == 0 {
+		return
+	}
+	fs := s.failovers[s.systemNames[0]]
+	if fs.currentMaster == nil {
 		logError("could not restore state because we have no redis master")
 		return
 	}
-	v, err := s.currentMaster.redis.Get("beetle:clients-last-seen").Result()
+	v, err := fs.currentMaster.redis.Get("beetle:clients-last-seen").Result()
 	if err != nil {
 		logError("could not load last seen info from redis")
 	}
@@ -529,6 +594,15 @@ func RunConfigurationServer(o ServerOptions) error {
 	} else {
 		state.configChanges = make(chan consul.Env)
 	}
+
+	// load html template
+	box := packr.NewBox("./templates")
+	html, err := box.FindString("index.html")
+	if err != nil {
+		logError("could not load index.html")
+		os.Exit(1)
+	}
+	htmlTemplate = html
 
 	state.clientHandler(state.GetConfig().Port)
 	logInfo("shutting down")
@@ -617,70 +691,20 @@ func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
 	s.wsReader(ws)
 }
 
-// HtmlTemplate defines how the web UI looks.
-const HtmlTemplate = `
-<!doctype html>
-<html><head><title>Beetle Configuration Server Status</title>
-<style media="screen" type="text/css">
-html { font: 1.25em/1.5 arial, sans-serif;}
-body { margin: 1em; }
-table tr:nth-child(2n+1){ background-color: #ffffff; }
-td { padding: 0.1em 0.2em; vertical-align: top; }
-ul { list-style-type: none; margin: 0; padding: 0;}
-li { }
-{{ if .RedisMasterAvailable }}
-h1 { color: #5780b2; margin-bottom: 0.2em;}
-{{ else }}
-h1 { color: #A52A2A; margin-bottom: 0.2em;}
-{{ end }}
-a:link, a:visited {text-decoration:none; color:#A52A2A;}
-a:hover, a:active {text-decoration:none; color:#FF0000;}
-a {
-  padding: 10px; background: #cdcdcd;
-  -moz-border-radius: 5px;
-   border-radius: 5px;
-  -moz-box-shadow: 2px 2px 2px #bbb;
-  -webkit-box-shadow: 2px 2px 2px #bbb;
-  box-shadow: 2px 2px 2px #bbb;
-}
-form { font-size: 1em; margin-bottom: 1em; }
-</style></head>
-<body><h1>Beetle Configuration Server Status</h1>
-{{ if not .RedisMasterAvailable }}
-<form name='masterswitch' method='post' action='/initiate_master_switch'>
-Master down!
-<a href='javascript: document.masterswitch.submit();'>Initiate master switch</a>
-or wait until system performs it automatically.
-</form>
-{{ end }}
-<table cellspacing=0>
-<tr><td>unseen_client_ids</td><td><ul>{{ if not .UnseenClientIds }}none{{ else }}{{ range .UnseenClientIds }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
-<tr><td>unresponsive_clients</td><td><ul>{{ if not .UnresponsiveClients }}none{{ else }}{{ range .UnresponsiveClients }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
-<tr><td>unknown_client_ids</td><td><ul>{{ if not .UnknownClientIds }}none{{ else }}{{ range .UnknownClientIds }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
-<tr><td>switch_in_progress</td><td>{{ .SwitchInProgress}}</td></tr>
-<tr><td>redis_slaves_available</td><td><ul>{{ if not .RedisSlavesAvailable }}none{{ else }}{{ range .RedisSlavesAvailable }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
-<tr><td>redis_master_available</td><td><ul>{{ .RedisMasterAvailable }}</td></tr>
-<tr><td>redis_master</td><td>{{ .RedisMaster}}</td></tr>
-<tr><td>configured_redis_servers</td><td><ul>{{ range .ConfiguredRedisServers }}<li>{{ . }}</li>{{ end }}</ul></td></tr>
-<tr><td>configured_client_ids</td><td><ul>{{ range .ConfiguredClientIds }}<li>{{ . }}</li>{{ end }}</ul></td></tr>
-<tr><td>beetle_version</td><td>{{ .BeetleVersion}}</td></tr>
-</table>
-</body></html>
-`
+var htmlTemplate string
 
 func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/", "/.html":
 		w.Header().Set("Content-Type", "text/html")
-		tmpl, err := template.New("server").Parse(HtmlTemplate)
+		tmpl, err := template.New("index.html").Parse(htmlTemplate)
 		if err != nil {
 			w.WriteHeader(500)
 			return
 		}
 		err = tmpl.Execute(w, s.GetStatus())
 		if err != nil {
-			w.WriteHeader(500)
-			return
+			logError("template execution failed: %s", err)
 		}
 	case "/.json":
 		w.Header().Set("Content-Type", "application/json")
@@ -709,13 +733,24 @@ func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ServerState) initiateMasterSwitch(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	if s.InitiateMasterSwitch() {
+	system := r.URL.Query().Get("system_name")
+	if system == "" {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Missing parameter system_name\n")
+		return
+	}
+	fs := s.failovers[system]
+	if fs == nil {
+		w.WriteHeader(400)
+		fmt.Fprintf(w, "Master switch not possible for unknown system: '%s'\n", system)
+		return
+	}
+	if fs.InitiateMasterSwitch() {
 		w.WriteHeader(201)
-		fmt.Println(w, "Master switch initiated")
+		fmt.Fprintf(w, "Master switch initiated\n")
 	} else {
 		w.WriteHeader(200)
-		fmt.Println(w, "No master switch necessary")
+		fmt.Fprintf(w, "No master switch necessary\n")
 	}
 }
 
@@ -772,14 +807,19 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 // Initialize completes the state initialization by checking redis connectivity
 // and loading saved state.
 func (s *ServerState) Initialize() {
-	VerifyMasterFileString(s.GetConfig().RedisMasterFile)
-	s.CheckRedisConfiguration()
-	s.redis.Refresh()
-	s.DetermineInitialMaster()
-	if s.currentMaster == nil {
-		logError("Could not determine initial master")
-		os.Exit(1)
+	path := s.GetConfig().RedisMasterFile
+	VerifyMasterFileString(path)
+	masters := RedisMastersFromMasterFile(path)
+	for system, fs := range s.failovers {
+		fs.CheckRedisConfiguration()
+		fs.redis.Refresh()
+		fs.DetermineInitialMaster(masters)
+		if fs.currentMaster == nil {
+			logError("Could not determine initial master for system: %s", system)
+			os.Exit(1)
+		}
 	}
+	s.UpdateMasterFile()
 	s.LoadState()
 	s.ForgetOldUnknownClientIds()
 	s.ForgetOldLastSeenEntries()
@@ -792,21 +832,22 @@ func (s *ServerState) Pong(msg MsgBody) {
 		return
 	}
 	logInfo("Received pong message from id '%s' with token '%s'", msg.Id, msg.Token)
-	if !s.RedeemToken(msg.Token) {
+	fs := s.failovers[msg.System]
+	if !fs.RedeemToken(msg.Token) {
 		return
 	}
-	s.clientPongIdsReceived.Add(msg.Id)
-	level, enough := s.ReceivedEnoughClientPongIds()
-	if s.pinging && enough {
+	fs.clientPongIdsReceived.Add(msg.Id)
+	level, enough := fs.ReceivedEnoughClientPongIds()
+	if fs.pinging && enough {
 		logInfo("Received a sufficient number of pong ids!. Confidence level: %f.", level)
-		s.StopPinging()
-		s.InvalidateCurrentMaster()
+		fs.StopPinging()
+		fs.InvalidateCurrentMaster()
 	}
 }
 
 // StopPinging changes the current state to 'not pinging' and cancels the
 // inavailability timer if one is active.
-func (s *ServerState) StopPinging() {
+func (s *FailoverState) StopPinging() {
 	s.pinging = false
 	if s.availabilityTimer != nil {
 		s.availabilityTimer.Stop()
@@ -851,18 +892,19 @@ func (s *ServerState) ClientInvalidated(msg MsgBody) {
 		s.AddUnknownClientId(msg.Id)
 	}
 	logInfo("Received client_invalidated message from id '%s' with token '%s'", msg.Id, msg.Token)
-	s.clientInvalidatedIdsReceived.Add(msg.Id)
-	level, enough := s.ReceivedEnoughClientInvalidatedIds()
-	if s.invalidating && enough {
+	fs := s.failovers[msg.System]
+	fs.clientInvalidatedIdsReceived.Add(msg.Id)
+	level, enough := fs.ReceivedEnoughClientInvalidatedIds()
+	if fs.invalidating && enough {
 		logInfo("Received a sufficient number of client invalidated ids! Confidence level: %f.", level)
-		s.StopInvalidating()
-		s.SwitchMaster()
+		fs.StopInvalidating()
+		fs.SwitchMaster()
 	}
 }
 
 // StopInvalidating changes the state to 'not invalidating' and cancels the
 // invalidation timer if one is active.
-func (s *ServerState) StopInvalidating() {
+func (s *FailoverState) StopInvalidating() {
 	s.invalidating = false
 	if s.invalidateTimer != nil {
 		s.invalidateTimer.Stop()
@@ -874,12 +916,12 @@ func (s *ServerState) StopInvalidating() {
 // master has become unavailable and starts the voting process on whether to
 // switch or not. If no client ids have been configured, it switches the master
 // immediately.
-func (s *ServerState) MasterUnavailable() {
+func (s *FailoverState) MasterUnavailable() {
 	s.PauseWatcher()
 	msg := fmt.Sprintf("Redis master '%s' not available", s.currentMaster.server)
 	logWarn(msg)
 	s.SendNotification(msg)
-	if len(s.clientIds) == 0 {
+	if len(s.server.clientIds) == 0 {
 		s.SwitchMaster()
 	} else {
 		s.StartInvalidation()
@@ -888,29 +930,29 @@ func (s *ServerState) MasterUnavailable() {
 
 // MasterAvailable sends current master info to all connected clients and
 // reconfigures remaining redis servers as slaves of the (new) master.
-func (s *ServerState) MasterAvailable() {
+func (s *FailoverState) MasterAvailable() {
 	s.PublishMaster(s.currentMaster.server)
 	s.ConfigureSlaves(s.currentMaster)
-	s.SaveState()
+	s.server.SaveState()
 }
 
 // MasterIsAvailable uses the cached redis information to determine whether the
 // currently configured master is in fact available.
-func (s *ServerState) MasterIsAvailable() bool {
+func (s *FailoverState) MasterIsAvailable() bool {
 	logDebug("Checking master availability. currentMaster: '%+v'", s.currentMaster)
 	return s.redis.Masters().Include(s.currentMaster)
 }
 
 // AvailableSlaves retrieves the list of slaves from the cached redis
 // information.
-func (s *ServerState) AvailableSlaves() RedisShims {
+func (s *FailoverState) AvailableSlaves() RedisShims {
 	return s.redis.Slaves()
 }
 
 // InitiateMasterSwitch refreshes the cached redis information and starts a vote
 // on a new redis server, unless there is already a vote in progress or the
 // currently configured redis master is available.
-func (s *ServerState) InitiateMasterSwitch() bool {
+func (s *FailoverState) InitiateMasterSwitch() bool {
 	s.redis.Refresh()
 	available, switchInProgress := s.MasterIsAvailable(), s.WatcherPaused()
 	logInfo("Initiating master switch: already in progress = %v", switchInProgress)
@@ -972,19 +1014,35 @@ func (s *ServerState) ClientSeen(id string) bool {
 }
 
 // CheckRedisConfiguration checks whether we have at leats two redis servers.
-func (s *ServerState) CheckRedisConfiguration() {
+func (s *FailoverState) CheckRedisConfiguration() {
 	if s.redis.NumServers() < 2 {
 		logError("Redis failover needs at least two redis servers")
 		os.Exit(1)
 	}
 }
 
-// DetermineInitialMaster either uses information from the master file on disk
-// or tries to auto detect an inital redis master and writes it to disk. If no
-// master can be determined, the main server loop will start a vote later on.
-func (s *ServerState) DetermineInitialMaster() {
-	if MasterFileExists(s.GetConfig().RedisMasterFile) {
-		s.currentMaster = RedisMasterFromMasterFile(s.GetConfig().RedisMasterFile)
+// UpdateMasterFile writes the known masters information to the redis master file.
+func (s *ServerState) UpdateMasterFile() {
+	path := s.GetConfig().RedisMasterFile
+	systems := make(map[string]string, 0)
+	for _, fs := range s.failovers {
+		if fs.currentMaster == nil {
+			systems[fs.system] = ""
+		} else {
+			systems[fs.system] = fs.currentMaster.server
+		}
+	}
+	content := MarshalMasterFileContent(systems)
+	WriteRedisMasterFile(path, content)
+}
+
+// DetermineInitialMaste either uses information from the master file on disk
+// (passed in as a map) or tries to auto detect inital redis masters and writes
+// the updated file to disk. If no master can be determined, the main server
+// loop will start a vote later on.
+func (s *FailoverState) DetermineInitialMaster(mastersFromFile map[string]string) {
+	if server := mastersFromFile[s.system]; server != "" {
+		s.currentMaster = NewRedisShim(server)
 	}
 	if s.currentMaster != nil {
 		logInfo("initial master from redis master file: %s", s.currentMaster.server)
@@ -995,16 +1053,13 @@ func (s *ServerState) DetermineInitialMaster() {
 		}
 	} else {
 		s.currentMaster = s.redis.AutoDetectMaster()
-		if s.currentMaster != nil {
-			WriteRedisMasterFile(s.GetConfig().RedisMasterFile, s.currentMaster.server)
-		}
 	}
 }
 
 // DetermineNewMaster uses the cached redis information to either select a new
 // master from slaves of the current master or simply returns the current
 // master, if it can still be reached.
-func (s *ServerState) DetermineNewMaster() *RedisShim {
+func (s *FailoverState) DetermineNewMaster() *RedisShim {
 	if s.redis.Unknowns().Include(s.currentMaster) {
 		slaves := s.redis.SlavesOf(s.currentMaster)
 		if len(slaves) == 0 {
@@ -1035,7 +1090,7 @@ func (s *ServerState) ClientIdIsValid(id string) bool {
 }
 
 // RedeemToken checks whether the given token is valid for the current vote.
-func (s *ServerState) RedeemToken(token string) bool {
+func (s *FailoverState) RedeemToken(token string) bool {
 	if token == s.currentToken {
 		return true
 	}
@@ -1045,14 +1100,14 @@ func (s *ServerState) RedeemToken(token string) bool {
 
 // GenerateNewToken generates a new token by incrementing a counter maintained
 // in the server state.
-func (s *ServerState) GenerateNewToken() {
+func (s *FailoverState) GenerateNewToken() {
 	s.currentTokenInt++
 	s.currentToken = strconv.Itoa(s.currentTokenInt)
 }
 
 // StartInvalidation resets the state information used to keep track of the an
 // ongoing vote and starts a new vote.
-func (s *ServerState) StartInvalidation() {
+func (s *FailoverState) StartInvalidation() {
 	s.clientPongIdsReceived = make(StringSet)
 	s.clientInvalidatedIdsReceived = make(StringSet)
 	s.pinging = true
@@ -1061,34 +1116,34 @@ func (s *ServerState) StartInvalidation() {
 }
 
 // CheckEnoughClientsAvailable sends a PING message to all connected clients.
-func (s *ServerState) CheckEnoughClientsAvailable() {
+func (s *FailoverState) CheckEnoughClientsAvailable() {
 	s.GenerateNewToken()
 	logInfo("Sending ping messages with token '%s'", s.currentToken)
-	msg := &MsgBody{Name: PING, Token: s.currentToken}
+	msg := &MsgBody{System: s.system, Name: PING, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 	s.availabilityTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.availabilityTimer = nil
-		s.timerChannel <- CANCEL_INVALIDATION
+		s.server.timerChannel <- s.system
 	})
 }
 
 // InvalidateCurrentMaster sends the INVALIDATE message to all connected
 // clients.
-func (s *ServerState) InvalidateCurrentMaster() {
+func (s *FailoverState) InvalidateCurrentMaster() {
 	s.GenerateNewToken()
 	s.invalidating = true
 	logInfo("Sending invalidate messages with token '%s'", s.currentToken)
-	msg := &MsgBody{Name: INVALIDATE, Token: s.currentToken}
+	msg := &MsgBody{System: s.system, Name: INVALIDATE, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 	s.invalidateTimer = time.AfterFunc(s.ClientTimeout(), func() {
 		s.invalidateTimer = nil
-		s.timerChannel <- CANCEL_INVALIDATION
+		s.server.timerChannel <- s.system
 	})
 }
 
 // CancelInvalidation generates a new token to the next vote and unpauses the
 // watcher.
-func (s *ServerState) CancelInvalidation() {
+func (s *FailoverState) CancelInvalidation() {
 	s.pinging = false
 	s.invalidating = false
 	s.GenerateNewToken()
@@ -1097,33 +1152,33 @@ func (s *ServerState) CancelInvalidation() {
 
 // ReceivedEnoughClientPongIds checks whether a sufficient number of client's have
 // answered the PING message by sending a PONG.
-func (s *ServerState) ReceivedEnoughClientPongIds() (float64, bool) {
-	received := s.clientPongIdsReceived.Intersect(s.clientIds)
-	level := float64(len(received)) / float64(len(s.clientIds))
-	return level, level >= s.failoverConfidenceLevel
+func (s *FailoverState) ReceivedEnoughClientPongIds() (float64, bool) {
+	received := s.clientPongIdsReceived.Intersect(s.server.clientIds)
+	level := float64(len(received)) / float64(len(s.server.clientIds))
+	return level, level >= s.server.failoverConfidenceLevel
 }
 
 // ReceivedEnoughClientInvalidatedIds checks whether all client's have answered the
 // INVALIDATE message by sending a CLIENT_INVALIDATED message back.
-func (s *ServerState) ReceivedEnoughClientInvalidatedIds() (float64, bool) {
-	received := s.clientInvalidatedIdsReceived.Intersect(s.clientIds)
-	level := float64(len(received)) / float64(len(s.clientIds))
-	return level, level >= s.failoverConfidenceLevel
+func (s *FailoverState) ReceivedEnoughClientInvalidatedIds() (float64, bool) {
+	received := s.clientInvalidatedIdsReceived.Intersect(s.server.clientIds)
+	level := float64(len(received)) / float64(len(s.server.clientIds))
+	return level, level >= s.server.failoverConfidenceLevel
 }
 
 // SwitchMaster is called after a successfully completed vote and performs a
 // switch to a new master, if possible. If no new master can be determined, it
 // starts watching the old master again. In either case, a notification message
 // is sent out.
-func (s *ServerState) SwitchMaster() {
+func (s *FailoverState) SwitchMaster() {
 	newMaster := s.DetermineNewMaster()
 	if newMaster != nil {
 		msg := fmt.Sprintf("Setting redis master to '%s' (was '%s')", newMaster.server, s.currentMaster.server)
 		logWarn(msg)
 		s.SendNotification(msg)
 		newMaster.MakeMaster()
-		WriteRedisMasterFile(s.GetConfig().RedisMasterFile, newMaster.server)
 		s.currentMaster = newMaster
+		s.server.UpdateMasterFile()
 	} else {
 		msg := fmt.Sprintf("Redis master could not be switched, no slave available to become new master, promoting old master")
 		logError(msg)
@@ -1134,15 +1189,15 @@ func (s *ServerState) SwitchMaster() {
 }
 
 // PublishMaster sends the RECONFIGURE message to all connected clients.
-func (s *ServerState) PublishMaster(server string) {
+func (s *FailoverState) PublishMaster(server string) {
 	logInfo("Sending reconfigure message with server '%s' and token: '%s'", server, s.currentToken)
-	msg := &MsgBody{Name: RECONFIGURE, Server: server, Token: s.currentToken}
+	msg := &MsgBody{System: s.system, Name: RECONFIGURE, Server: server, Token: s.currentToken}
 	s.SendToWebSockets(msg)
 }
 
 // ConfigureSlaves turns all masters which are not the currently configured
 // master into slaves of the current master.
-func (s *ServerState) ConfigureSlaves(master *RedisShim) {
+func (s *FailoverState) ConfigureSlaves(master *RedisShim) {
 	for _, r := range s.redis.Masters() {
 		if r.server != master.server {
 			r.redis.SlaveOf(master.host, strconv.Itoa(master.port))
@@ -1152,12 +1207,12 @@ func (s *ServerState) ConfigureSlaves(master *RedisShim) {
 }
 
 // WatcherPaused checks whether the redis watcher has been paused.
-func (s *ServerState) WatcherPaused() bool {
+func (s *FailoverState) WatcherPaused() bool {
 	return !s.watching
 }
 
 // StartWatcher starts watching the redis server status.
-func (s *ServerState) StartWatcher() {
+func (s *FailoverState) StartWatcher() {
 	if s.WatcherPaused() {
 		s.watchTick = 0
 		s.watching = true
@@ -1166,7 +1221,7 @@ func (s *ServerState) StartWatcher() {
 }
 
 // PauseWatcher starts watching the redis server status.
-func (s *ServerState) PauseWatcher() {
+func (s *FailoverState) PauseWatcher() {
 	if !s.WatcherPaused() {
 		s.watching = false
 		logInfo("Paused checking availability of redis servers")
@@ -1174,7 +1229,7 @@ func (s *ServerState) PauseWatcher() {
 }
 
 // CheckRedisAvailability uses
-func (s *ServerState) CheckRedisAvailability() {
+func (s *FailoverState) CheckRedisAvailability() {
 	s.redis.Refresh()
 	if s.MasterIsAvailable() {
 		s.retries = 0
