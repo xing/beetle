@@ -2,9 +2,6 @@ module Beetle
   # Provides the publishing logic implementation.
   class Publisher < Base
 
-    DEFAULT_BUNNY_CONNECT_TIMEOUT = 5
-    DEFAULT_BEETLE_DISCONNECT_TIMEOUT = DEFAULT_BUNNY_CONNECT_TIMEOUT * 2 + 1
-
     attr_reader :dead_servers
 
     def initialize(client, options = {}) #:nodoc:
@@ -171,7 +168,7 @@ module Beetle
         :frame_max          => @client.config.frame_max,
         :channel_max        => @client.config.channel_max,
         :socket_timeout     => @client.config.publishing_timeout,
-        :connect_timeout    => DEFAULT_BUNNY_CONNECT_TIMEOUT,
+        :connect_timeout    => @client.config.publisher_connect_timeout,
         :spec => '09')
       b.start
       b
@@ -228,7 +225,8 @@ module Beetle
 
     def stop!(exception=nil)
       return unless bunny?
-      Beetle::Timer.timeout(DEFAULT_BEETLE_DISCONNECT_TIMEOUT) do
+      timeout = @client.config.publisher_connect_timeout * 2 + 1
+      Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
           bunny.__send__ :close_socket
