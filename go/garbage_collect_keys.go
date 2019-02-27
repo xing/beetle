@@ -171,7 +171,7 @@ func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
 }
 
 func (s *GCState) getMaster(db int) bool {
-	systems := UnmarshalMasterFileContent(ReadRedisMasterFile(s.opts.RedisMasterFile))
+	systems := RedisMastersFromMasterFile(s.opts.RedisMasterFile)
 	server := systems[s.opts.GcSystem]
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server

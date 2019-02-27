@@ -182,7 +182,7 @@ func (s *ClientState) DetermineInitialMasters() {
 		s.UpdateMasterFile()
 		return
 	}
-	masters := UnmarshalMasterFileContent(ReadRedisMasterFile(path))
+	masters := RedisMastersFromMasterFile(path)
 	invalidSystems := make([]string, 0)
 	for system, server := range masters {
 		rs := s.EnsureKnownSystem(system)

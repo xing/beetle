@@ -809,7 +809,7 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 func (s *ServerState) Initialize() {
 	path := s.GetConfig().RedisMasterFile
 	VerifyMasterFileString(path)
-	masters := UnmarshalMasterFileContent(ReadRedisMasterFile(path))
+	masters := RedisMastersFromMasterFile(path)
 	for system, fs := range s.failovers {
 		fs.CheckRedisConfiguration()
 		fs.redis.Refresh()
