@@ -24,7 +24,7 @@ func RedisMastersFromMasterFile(path string) map[string]string {
 	return UnmarshalMasterFileContent(s)
 }
 
-// UnmarshalMasterFileContent parsers masterfile content.
+// UnmarshalMasterFileContent parses masterfile content.
 func UnmarshalMasterFileContent(s string) map[string]string {
 	m := make(map[string]string, 0)
 	for _, line := range strings.Split(s, "\n") {
@@ -50,6 +50,9 @@ func MarshalMasterFileContent(masters map[string]string) string {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+	if len(keys) == 1 && keys[0] == "system" {
+		return masters["system"]
+	}
 	for _, name := range keys {
 		server := masters[name]
 		s += name + "/" + server + "\n"

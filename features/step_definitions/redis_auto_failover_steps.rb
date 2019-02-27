@@ -104,7 +104,11 @@ Then /^the redis master of "([^\"]*)" (?:in system "([^"]*)" )?should be "([^\"]
   10.times do
     server_name = TestDaemons::Redis[redis_name].ip_with_port
     server_info = File.read(master_file).chomp if File.exist?(master_file)
-    master = true and break if server_info =~ /#{system_name}\/#{server_name}/m
+    if server_info.include?("/")
+      master = true and break if server_info =~ /#{system_name}\/#{server_name}/m
+    else
+      master = true and break if server_info == server_name
+    end
     sleep 1
   end
   assert master, "#{redis_name} is not master of #{redis_configuration_client_name}, master file content: #{server_info.inspect}"
