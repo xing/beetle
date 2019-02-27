@@ -172,7 +172,7 @@ end
 
 Given /^an immediate master switch is initiated and responds with (\d+)$/ do |response_code|
   response = TestDaemons::RedisConfigurationServer.initiate_master_switch
-  assert_equal response_code, response.code, "unexcpected response code #{response.code}, message: #{response.body}"
+  assert_equal response_code, response.code, "unexpected response code #{response.code}, message: #{response.body}"
   sleep 1
 end
 
