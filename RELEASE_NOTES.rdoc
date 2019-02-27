@@ -1,5 +1,9 @@
 = Release Notes
 
+== Master
+* redis failover: support multiple redis failover instances
+* support lazy queues
+
 == Version 2.2.4
 * redis failover: prevent starting a new master switch while one is running
 
