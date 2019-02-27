@@ -118,7 +118,7 @@ func (s *ClientState) SendHeartBeat() error {
 // Ping sends a PING message to the server.
 func (s *ClientState) Ping(pingMsg MsgBody) error {
 	logInfo("Received ping message")
-	rs := s.EnsureKnownSystem(pingMsg.System)
+	rs := s.RegisterSystem(pingMsg.System)
 	if rs.RedeemToken(pingMsg.Token) {
 		return s.SendPong(rs)
 	}
@@ -185,7 +185,7 @@ func (s *ClientState) DetermineInitialMasters() {
 	masters := RedisMastersFromMasterFile(path)
 	invalidSystems := make([]string, 0)
 	for system, server := range masters {
-		rs := s.EnsureKnownSystem(system)
+		rs := s.RegisterSystem(system)
 		if server != "" {
 			rs.NewMaster(server)
 		}
@@ -200,7 +200,7 @@ func (s *ClientState) DetermineInitialMasters() {
 	}
 }
 
-func (s *ClientState) EnsureKnownSystem(system string) *RedisSystem {
+func (s *ClientState) RegisterSystem(system string) *RedisSystem {
 	rs := s.redisSystems[system]
 	if rs == nil {
 		rs = &RedisSystem{system: system}
@@ -213,7 +213,7 @@ func (s *ClientState) EnsureKnownSystem(system string) *RedisSystem {
 // CLIENT_INVALIDATED message to the server, provided the token sent with the
 // message is valid.
 func (s *ClientState) Invalidate(msg MsgBody) error {
-	rs := s.EnsureKnownSystem(msg.System)
+	rs := s.RegisterSystem(msg.System)
 	if rs.RedeemToken(msg.Token) && (rs.currentMaster == nil || rs.currentMaster.Role() != MASTER) {
 		rs.currentMaster = nil
 		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
@@ -227,7 +227,7 @@ func (s *ClientState) Invalidate(msg MsgBody) error {
 // with the message is valid.
 func (s *ClientState) Reconfigure(msg MsgBody) error {
 	logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
-	rs := s.EnsureKnownSystem(msg.System)
+	rs := s.RegisterSystem(msg.System)
 	if !rs.RedeemToken(msg.Token) {
 		logInfo("Received invalid or outdated token: '%s'", msg.Token)
 	}
