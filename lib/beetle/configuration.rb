@@ -62,6 +62,11 @@ module Beetle
     # in bunny.
     attr_accessor :channel_max
 
+    # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
+    # compatibility, they are disabled by default.
+    attr_accessor :lazy_queues_enabled
+    alias_method :lazy_queues_enabled?, :lazy_queues_enabled
+
     # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
     # throughput degradation (when rejected messages block the processing of other messages
     # at the head of the queue) in some cases.
@@ -137,6 +142,8 @@ module Beetle
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000 #1 second
       self.dead_lettering_read_timeout = 3 #3 seconds
+
+      self.lazy_queues_enabled = false
 
       self.publishing_timeout = 0
       self.tmpdir = "/tmp"
