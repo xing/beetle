@@ -225,7 +225,7 @@ module Beetle
 
     def stop!(exception=nil)
       return unless bunny?
-      timeout = @client.config.publisher_connect_timeout * 2 + 1
+      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
       Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
