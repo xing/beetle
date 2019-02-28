@@ -146,8 +146,15 @@ module Beetle
     end
 
     # generate uuid for publishing
-    def self.generate_uuid
-      UUID4R::uuid(4)
+    begin
+      require "uuid4r"
+      def self.generate_uuid
+        UUID4R::uuid(4)
+      end
+    rescue LoadError
+      def self.generate_uuid
+        SecureRandom.uuid
+      end
     end
 
     # whether the publisher has tried sending this message to two servers
