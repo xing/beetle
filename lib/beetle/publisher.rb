@@ -159,15 +159,16 @@ module Beetle
 
     def new_bunny
       b = Bunny.new(
-        :host           => current_host,
-        :port           => current_port,
-        :logging        => !!@options[:logging],
-        :user           => @client.config.user,
-        :pass           => @client.config.password,
-        :vhost          => @client.config.vhost,
-        :frame_max      => @client.config.frame_max,
-        :channel_max    => @client.config.channel_max,
-        :socket_timeout => @client.config.publishing_timeout,
+        :host               => current_host,
+        :port               => current_port,
+        :logging            => !!@options[:logging],
+        :user               => @client.config.user,
+        :pass               => @client.config.password,
+        :vhost              => @client.config.vhost,
+        :frame_max          => @client.config.frame_max,
+        :channel_max        => @client.config.channel_max,
+        :socket_timeout     => @client.config.publishing_timeout,
+        :connect_timeout    => @client.config.publisher_connect_timeout,
         :spec => '09')
       b.start
       b
@@ -224,7 +225,8 @@ module Beetle
 
     def stop!(exception=nil)
       return unless bunny?
-      Beetle::Timer.timeout(1) do
+      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
+      Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
           bunny.__send__ :close_socket

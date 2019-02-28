@@ -24,6 +24,7 @@ module Beetle
         :pass => "guest",
         :vhost => "/",
         :socket_timeout => 0,
+        :connect_timeout => 5,
         :frame_max => 131072,
         :channel_max => 2047,
         :spec => '09'

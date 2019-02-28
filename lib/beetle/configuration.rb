@@ -94,6 +94,11 @@ module Beetle
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
 
+    # the connect/disconnect timeout in seconds for the publishing connection
+    # (defaults to <tt>5</tt>).
+    # consider this a highly experimental feature for now.
+    attr_accessor :publisher_connect_timeout
+
     # Prefetch count for subscribers (defaults to 1). Setting this higher
     # than 1 can potentially increase throughput, but comes at the cost of
     # decreased parallelism.
@@ -146,6 +151,7 @@ module Beetle
       self.lazy_queues_enabled = false
 
       self.publishing_timeout = 0
+      self.publisher_connect_timeout = 5
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
