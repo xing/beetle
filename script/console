@@ -10,16 +10,16 @@ OptionParser.new do |opt|
 end
 
 libs =  " -r irb/completion"
-libs << %( -r ubygems)
+libs << %( -r rubygems)
 libs << %( -r #{File.expand_path("../../lib/beetle.rb",__FILE__)})
 
 if options[:debugger]
   begin
-    require 'ruby-debug'
-    libs << " -r ruby-debug"
+    require 'byebug'
+    libs << " -r byebug"
     puts "=> Debugger enabled"
   rescue Exception
-    puts "You need to install ruby-debug to run the console in debugging mode. With gems, use 'gem install ruby-debug'"
+    puts "You need to install byebug to run the console in debugging mode. With gems, use 'gem install byebug'"
     exit
   end
 end
