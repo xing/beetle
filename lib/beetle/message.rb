@@ -152,6 +152,7 @@ module Beetle
         UUID4R::uuid(4)
       end
     rescue LoadError
+      require "securerandom"
       def self.generate_uuid
         SecureRandom.uuid
       end
