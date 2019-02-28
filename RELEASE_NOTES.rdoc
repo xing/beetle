@@ -1,8 +1,21 @@
 = Release Notes
 
-== Master
-* redis failover: support multiple redis failover instances
-* support lazy queues
+== Version 2.3.0
+* redis failover: support multiple redis failover instances. This has
+  required a change in the redis master file format. The master file
+  content is now either the old format (host:port) for systems using a
+  single redis failover system or a mapping from system names to
+  host:port combinations. For example,
+  "system1/master1:6379\nsystem2/master" specifies to systems with
+  their corresponding redis masters. Beetle client uses the configured
+  system name to tind the master it should use.
+* support lazy queues: setting :lazy_quques_enabled on the beetle
+  cofiguration will enable queue_mode: "lazy" for all queues of
+  declared on the beetle client.
+* improved calculation of channel close an connection disconnect
+  timeouts for beetle publisher to avoid warnings in RabbitMQ logs.
+* use SecureRandom.uuid instead of UUID4R::uuid(4) if UUID4R cannot
+  be loaded.
 
 == Version 2.2.4
 * redis failover: prevent starting a new master switch while one is running
