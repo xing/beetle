@@ -9,17 +9,14 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @channels = {}
       at_exit { stop }
     end
 
     # list of exceptions potentially raised by bunny
-    # these need to be lazy, because qrack exceptions are only defined after a connection has been established
     def bunny_exceptions
       [
-        Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
-        Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
-        Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-        Errno::EHOSTUNREACH, Errno::ECONNRESET, Timeout::Error
+        Bunny::Exception, Errno::EHOSTUNREACH, Errno::ECONNRESET, Timeout::Error
       ]
     end
 
@@ -30,9 +27,9 @@ module Beetle
         opts.delete(:queue)
         recycle_dead_servers unless @dead_servers.empty?
         if opts[:redundant]
-          publish_with_redundancy(exchange_name, message_name, data, opts)
+          publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
         else
-          publish_with_failover(exchange_name, message_name, data, opts)
+          publish_with_failover(exchange_name, message_name, data.to_s, opts)
         end
       end
     end
@@ -102,6 +99,7 @@ module Beetle
 
     def rpc(message_name, data, opts={}) #:nodoc:
       opts = @client.messages[message_name].merge(opts.symbolize_keys)
+      timeout = opts.delete(:timeout) || RPC_DEFAULT_TIMEOUT
       exchange_name = opts.delete(:exchange)
       opts.delete(:queue)
       recycle_dead_servers unless @dead_servers.empty?
@@ -113,17 +111,21 @@ module Beetle
         select_next_server
         bind_queues_for_exchange(exchange_name)
         # create non durable, autodeleted temporary queue with a server assigned name
-        queue = bunny.queue
+        queue = channel.queue("", :durable => false, :auto_delete => true)
         opts = Message.publishing_options(opts.merge :reply_to => queue.name)
         logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
         exchange(exchange_name).publish(data, opts)
         logger.debug "Beetle: message sent!"
-        logger.debug "Beetle: listening on reply queue #{queue.name}"
-        queue.subscribe(:message_max => 1, :timeout => opts[:timeout] || RPC_DEFAULT_TIMEOUT) do |msg|
+        q = Queue.new
+        consumer = queue.subscribe do |info, properties, payload|
           logger.debug "Beetle: received reply!"
-          result = msg[:payload]
-          status = msg[:header].properties[:headers][:status]
+          result = payload
+          q.push properties[:headers]["status"]
         end
+        Timeout.timeout(timeout) do
+          status = q.pop
+        end
+        consumer.cancel
         logger.debug "Beetle: rpc complete!"
       rescue *bunny_exceptions => e
         stop!(e)
@@ -154,24 +156,34 @@ module Beetle
     end
 
     def bunny?
-      @bunnies[@server]
+      !!@bunnies[@server]
     end
 
     def new_bunny
       b = Bunny.new(
-        :host               => current_host,
-        :port               => current_port,
-        :logging            => !!@options[:logging],
-        :user               => @client.config.user,
-        :pass               => @client.config.password,
-        :vhost              => @client.config.vhost,
-        :frame_max          => @client.config.frame_max,
-        :channel_max        => @client.config.channel_max,
-        :socket_timeout     => @client.config.publishing_timeout,
-        :connect_timeout    => @client.config.publisher_connect_timeout,
-        :spec => '09')
+        :host                  => current_host,
+        :port                  => current_port,
+        :logger                => @client.config.logger,
+        :username              => @client.config.user,
+        :password              => @client.config.password,
+        :vhost                 => @client.config.vhost,
+        :automatically_recover => false,
+        :frame_max             => @client.config.frame_max,
+        :channel_max           => @client.config.channel_max,
+        :read_timeout          => @client.config.publishing_timeout,
+        :write_timeout         => @client.config.publishing_timeout,
+        :continuation_timeout  => @client.config.publishing_timeout,
+        :connection_timeout    => @client.config.publisher_connect_timeout)
       b.start
       b
+    end
+
+    def channel
+      @channels[@server] ||= bunny.create_channel
+    end
+
+    def channel?
+      !!@channels[@server]
     end
 
     # retry dead servers after ignoring them for 10.seconds
@@ -204,7 +216,7 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
-      bunny.exchange(name, opts)
+      channel.exchange(name, opts)
     end
 
     def bind_queues_for_exchange(exchange_name)
@@ -216,8 +228,8 @@ module Beetle
     # TODO: Refactor, fetch the keys and stuff itself
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       logger.debug("Beetle: creating queue with opts: #{creation_keys.inspect}")
-      queue = bunny.queue(queue_name, creation_keys)
-      @dead_lettering.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys)
+      queue = channel.queue(queue_name, creation_keys)
+      @dead_lettering.bind_dead_letter_queues!(channel, @client.servers, queue_name, creation_keys)
       logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_keys.inspect}")
       queue.bind(exchange(exchange_name), binding_keys)
       queue
@@ -229,8 +241,10 @@ module Beetle
       Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
-          bunny.__send__ :close_socket
+          puts exception.inspect
+          bunny.__send__ :close_connection
         else
+          channel.close if channel?
           bunny.stop
         end
       end
@@ -239,6 +253,7 @@ module Beetle
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
+      @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
     end

@@ -37,7 +37,7 @@ else
       # puts "status  #{status}"
       # puts "result  #{result}"
       # puts
-      $stderr.puts "processing failure for message '#{content}'" if result != content
+      $stderr.puts "processing failure for message: expected '#{content}', got '#{result}'" if result != content
     end
   end
   printf "Runtime: %dms\n", ms

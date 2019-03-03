@@ -23,11 +23,11 @@ Gem::Specification.new do |s|
   }
 
   s.specification_version = 3
-  s.add_runtime_dependency "bunny",                   "~> 0.7.12"
+  s.add_runtime_dependency "bunny",                   "~> 2.14.1"
   s.add_runtime_dependency "redis",                   ">= 2.2.2"
   s.add_runtime_dependency "hiredis",                 ">= 0.4.5"
-  s.add_runtime_dependency "amq-protocol",            "= 2.0.1"
-  s.add_runtime_dependency "amqp",                    "= 1.6.0"
+  s.add_runtime_dependency "amq-protocol",            "~> 2.3.0"
+  s.add_runtime_dependency "amqp",                    "~> 1.8.0"
   s.add_runtime_dependency "activesupport",           ">= 2.3.4"
 
   s.add_development_dependency "uuid4r",              ">= 0.1.2"
@@ -37,9 +37,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency "daemons",             ">= 1.2.0"
   s.add_development_dependency "i18n"
   s.add_development_dependency "minitest",            "~> 5.1"
-  s.add_development_dependency "mocha",               "~> 1.3.0"
-  s.add_development_dependency "mysql2",              "~> 0.4.4"
-  s.add_development_dependency "rake",                "~> 11.2"
+  s.add_development_dependency "mocha",               "~> 1.8"
+  s.add_development_dependency "mysql2",              "~> 0.5"
+  s.add_development_dependency "rake",                "~> 12.3"
   s.add_development_dependency "rdoc",                "~> 4.0"
   s.add_development_dependency "simplecov",           "~> 0.15"
   s.add_development_dependency "webmock",             "~> 3.0"
