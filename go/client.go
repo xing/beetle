@@ -31,7 +31,7 @@ type RedisSystem struct {
 
 // ClientState holds the client state.
 type ClientState struct {
-	opts          ClientOptions
+	opts          *ClientOptions
 	mutex         sync.Mutex
 	ws            *websocket.Conn
 	input         chan MsgBody
@@ -362,7 +362,7 @@ func RunConfigurationClient(o ClientOptions) error {
 	logInfo("client started with options: %+v\n", o)
 	for !interrupted {
 		state := &ClientState{
-			opts:         o,
+			opts:         &o,
 			readerDone:   make(chan struct{}, 1),
 			writerDone:   make(chan struct{}, 1),
 			redisSystems: make(map[string]*RedisSystem, 0),

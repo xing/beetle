@@ -74,7 +74,7 @@ type FailoverState struct {
 
 // ServerState holds the server state.
 type ServerState struct {
-	opts                    ServerOptions             // Options passed to the constructor.
+	opts                    *ServerOptions            // Options passed to the constructor.
 	mutex                   sync.Mutex                // Mutex for changing opts.Config.
 	clientIds               StringSet                 // The list of clients we know and which take part in master election.
 	clientChannels          ChannelMap                // Channels we use to communicate with client websocket goroutines.
@@ -475,7 +475,7 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 // NewServerState creates partially initialized ServerState.
 func NewServerState(o ServerOptions) *ServerState {
 	s := &ServerState{clientChannels: make(ChannelMap), notificationChannels: make(ChannelSet)}
-	s.opts = o
+	s.opts = &o
 	s.determineFailoverConfidenceLevel()
 	s.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
