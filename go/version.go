@@ -6,7 +6,7 @@ import (
 )
 
 // BEETLE_VERSION is displayed in the web UI and can be checked using beetle --version.
-const BEETLE_VERSION = "2.3.0"
+const BEETLE_VERSION = "2.3.1"
 
 // ReportVersionIfRequestedAndExit checks os.Args for the string --version,
 // prints the version if found and then exits.

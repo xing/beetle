@@ -1,5 +1,10 @@
 = Release Notes
 
+== Version 2.3.1
+* updated amqp and amq-protocol requirements in ruby client.
+* fixed that a change in consul endpoint was not properly handled by
+  the beetle configuration client.
+
 == Version 2.3.0
 * redis failover: support multiple redis failover instances. This has
   required a change in the redis master file format. The master file
