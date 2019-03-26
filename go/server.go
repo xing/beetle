@@ -89,6 +89,19 @@ type ServerState struct {
 	failoverConfidenceLevel float64                   // Failover confidence level, normalized to the interval [0,1.0]
 	systemNames             []string                  // All system names. Firste on is used for saving server state.
 	failovers               map[string]*FailoverState // Maps system name to failover state.
+	cmdChannel              chan command              // Channel for messages to perform state access/changing in the dispatcher thread, passed as closures.
+}
+
+type command struct {
+	closure func()
+	reply   chan struct{}
+}
+
+// Evaluate sends a command (as a closure) to the dispatcher thread and waits for completion.
+func (s *ServerState) Evaluate(closure func()) {
+	replyChannel := make(chan struct{}, 1)
+	s.cmdChannel <- command{closure: closure, reply: replyChannel}
+	<-replyChannel
 }
 
 // GetConfig returns the server state in a thread safe manner.
@@ -166,6 +179,15 @@ func (s *ServerState) GetStatus() *ServerStatus {
 		UnseenClientIds:     s.UnseenClientIds(),
 		Systems:             failoverStats,
 	}
+}
+
+// GetStatusFromDispatcher retrieves the status from the dispatcher thread.
+func (s *ServerState) GetStatusFromDispatcher() *ServerStatus {
+	var res *ServerStatus
+	s.Evaluate(func() {
+		res = s.GetStatus()
+	})
+	return res
 }
 
 // pst and psta facilitate sorting of (string, time.Duration pairs) by duration,
@@ -420,6 +442,9 @@ func (s *ServerState) dispatcher() {
 	}
 	for !interrupted {
 		select {
+		case cmd := <-s.cmdChannel:
+			cmd.closure()
+			cmd.reply <- struct{}{}
 		case msg := <-s.wsChannel:
 			s.handleWebSocketMsg(msg)
 		case system := <-s.timerChannel:
@@ -483,6 +508,7 @@ func NewServerState(o ServerOptions) *ServerState {
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
 	s.wsChannel = make(chan *WsMsg, 10000)
+	s.cmdChannel = make(chan command, 1000)
 	s.clientIds = make(StringSet)
 	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
 		if id != "" {
@@ -702,13 +728,13 @@ func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(500)
 			return
 		}
-		err = tmpl.Execute(w, s.GetStatus())
+		err = tmpl.Execute(w, s.GetStatusFromDispatcher())
 		if err != nil {
 			logError("template execution failed: %s", err)
 		}
 	case "/.json":
 		w.Header().Set("Content-Type", "application/json")
-		b, err := json.Marshal(s.GetStatus())
+		b, err := json.Marshal(s.GetStatusFromDispatcher())
 		if err != nil {
 			w.WriteHeader(500)
 			return
@@ -745,7 +771,9 @@ func (s *ServerState) initiateMasterSwitch(w http.ResponseWriter, r *http.Reques
 		fmt.Fprintf(w, "Master switch not possible for unknown system: '%s'\n", system)
 		return
 	}
-	if fs.InitiateMasterSwitch() {
+	var initiated bool
+	s.Evaluate(func() { initiated = fs.InitiateMasterSwitch() })
+	if initiated {
 		w.WriteHeader(201)
 		fmt.Fprintf(w, "Master switch initiated\n")
 	} else {
