@@ -154,7 +154,7 @@ module Beetle
       system_name = @config.system_name
       redis_master = ""
       text.each_line do |line|
-        parts = line.split('/')
+        parts = line.split('/', 2)
         case parts.size
         when 1
           redis_master = parts[0]
