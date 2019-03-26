@@ -1,5 +1,12 @@
 = Release Notes
 
+== Version 2.3.2
+* config server: fixed a race condition when accessing server state.
+  HTTP requests run in threads separate from the server dispatcher
+  thread and thus can cause race conditions/crashes when accessing
+  server state. Solved this by adding a closure evaluator to the
+  dispatcher.
+
 == Version 2.3.1
 * updated amqp and amq-protocol requirements in ruby client.
 * fixed that a change in consul endpoint was not properly handled by
