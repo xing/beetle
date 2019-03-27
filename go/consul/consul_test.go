@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"testing"
@@ -22,6 +23,18 @@ func init() {
 		log.SetOutput(ioutil.Discard)
 	}
 	testUrl = "http://localhost:8500"
+	cmd := exec.Command("curl", "-X", "PUT", testUrl+"/v1/kv/datacenters", "-d", "ams1,ams2")
+	if err := cmd.Run(); err != nil {
+		fmt.Errorf("could not set up datacenters")
+	}
+	cmd = exec.Command("curl", "-X", "PUT", testUrl+"/v1/kv/apps/beetle/config/")
+	if err := cmd.Run(); err != nil {
+		fmt.Errorf("could not set up beetle config")
+	}
+	cmd = exec.Command("curl", "-X", "PUT", testUrl+"/v1/kv/shared/config/")
+	if err := cmd.Run(); err != nil {
+		fmt.Errorf("could not set up shared config")
+	}
 }
 
 func TestConnect(t *testing.T) {

@@ -53,7 +53,7 @@ $(GO_SRC)/a_main-packr.go: $(GO_SRC)/templates/index.html .packr
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go
 	cd $(GO_SRC) && $(GO_ENV) go build -o ../$@
 
-test: test-main test-server
+test: test-main test-server test-consul
 
 test-main:
 	cd $(GO_SRC) && go test
