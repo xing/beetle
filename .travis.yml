@@ -1,8 +1,7 @@
 rvm:
-  - 2.3.8
   - 2.4.5
-  - 2.5.3
-  - 2.6.1
+  - 2.5.5
+  - 2.6.2
 before_script:
   - sudo rm -rf /usr/local/go
   - curl -s https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
