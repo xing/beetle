@@ -161,7 +161,16 @@ type ServerStatus struct {
 // GetStatus creates a ServerStatus from the curretn server state.
 func (s *ServerState) GetStatus() *ServerStatus {
 	failoverStats := []FailoverStatus{}
-	for system, rs := range s.failovers {
+
+	var keys []string
+	for k := range s.failovers {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, system := range keys {
+		rs := s.failovers[system]
 		failoverStats = append(failoverStats, FailoverStatus{
 			SystemName:             system,
 			ConfiguredRedisServers: rs.redis.instances.Servers(),
@@ -171,6 +180,7 @@ func (s *ServerState) GetStatus() *ServerStatus {
 			SwitchInProgress:       rs.WatcherPaused(),
 		})
 	}
+
 	return &ServerStatus{
 		BeetleVersion:       BEETLE_VERSION,
 		ConfiguredClientIds: s.clientIds.Keys(),
