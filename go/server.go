@@ -463,6 +463,7 @@ func (s *ServerState) dispatcher() {
 			newconfig := buildConfig(env)
 			s.SetConfig(newconfig)
 			s.determineFailoverConfidenceLevel()
+			s.updateClientIds()
 			logInfo("updated server config from consul: %s", s.GetConfig())
 		}
 	}
@@ -497,6 +498,15 @@ func (s *ServerState) handleWebSocketMsg(msg *WsMsg) {
 	}
 }
 
+func (s *ServerState) updateClientIds() {
+	s.clientIds = make(StringSet)
+	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
+		if id != "" {
+			s.clientIds.Add(id)
+		}
+	}
+}
+
 // NewServerState creates partially initialized ServerState.
 func NewServerState(o ServerOptions) *ServerState {
 	s := &ServerState{clientChannels: make(ChannelMap), notificationChannels: make(ChannelSet)}
@@ -509,12 +519,7 @@ func NewServerState(o ServerOptions) *ServerState {
 	}
 	s.wsChannel = make(chan *WsMsg, 10000)
 	s.cmdChannel = make(chan command, 1000)
-	s.clientIds = make(StringSet)
-	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
-		if id != "" {
-			s.clientIds.Add(id)
-		}
-	}
+	s.updateClientIds()
 	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
 	s.failovers = make(map[string]*FailoverState)
