@@ -82,6 +82,13 @@ namespace :redis do
   end
 end
 
+namespace :consul do
+    desc "start consul agent in development mode"
+    task :start do
+      system "consul agent -dev -node machine"
+    end
+end
+
 Cucumber::Rake::Task.new(:cucumber) do |t|
   t.cucumber_opts = "features --format progress"
 end

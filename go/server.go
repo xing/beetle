@@ -674,7 +674,7 @@ func (s *ServerState) serveNotifications(w http.ResponseWriter, r *http.Request)
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
-			logError(err.Error())
+			logError("serveNotifications: %s", err)
 		}
 		return
 	}
@@ -721,7 +721,7 @@ func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		if _, ok := err.(websocket.HandshakeError); !ok {
-			logError(err.Error())
+			logError("serveWS: %s", err)
 		}
 		return
 	}
@@ -852,7 +852,16 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 func (s *ServerState) Initialize() {
 	path := s.GetConfig().RedisMasterFile
 	VerifyMasterFileString(path)
-	masters := RedisMastersFromMasterFile(path)
+	var masters map[string]string
+	if MasterFileExists(path) {
+		masters = RedisMastersFromMasterFile(path)
+	} else if s.opts.ConsulClient != nil {
+		kv, err := s.opts.ConsulClient.GetState()
+		if err != nil {
+			logError("Could not load state from consul: %s", err)
+		}
+		masters = UnmarshalMasterFileContent(kv["redis_master_file_content"])
+	}
 	for system, fs := range s.failovers {
 		fs.CheckRedisConfiguration()
 		fs.redis.Refresh()
@@ -1077,6 +1086,12 @@ func (s *ServerState) UpdateMasterFile() {
 	}
 	content := MarshalMasterFileContent(systems)
 	WriteRedisMasterFile(path, content)
+	if s.opts.ConsulClient != nil {
+		err := s.opts.ConsulClient.UpdateState("redis_master_file_content", content)
+		if err != nil {
+			logError("could not update consul state")
+		}
+	}
 }
 
 // DetermineInitialMaste either uses information from the master file on disk

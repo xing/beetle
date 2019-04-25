@@ -1,3 +1,10 @@
+Given /^consul state has been cleared$/ do
+  system "killall beetle beetle_handler >/dev/null 2>/dev/null"
+  system "curl --silent --request PUT http://localhost:8500/v1/kv/apps/beetle/config/ >/dev/null"
+  system "curl --silent --request PUT http://localhost:8500/v1/kv/shared/config/ >/dev/null"
+  system "curl --silent --request DELETE http://localhost:8500/v1/kv/apps/beetle/state/redis_master_file_content >/dev/null"
+end
+
 Given /^a redis server "([^\"]*)" exists as master$/ do |redis_name|
   TestDaemons::Redis[redis_name].restart
   TestDaemons::Redis[redis_name].master

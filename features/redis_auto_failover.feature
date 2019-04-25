@@ -5,6 +5,7 @@ Feature: Redis auto failover
   Background:
     Given a redis server "redis-1" exists as master
     And a redis server "redis-2" exists as slave of "redis-1"
+    And consul state has been cleared
 
   Scenario: Successful redis master switch
     Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists

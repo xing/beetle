@@ -1,8 +1,10 @@
 package consul
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -11,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -21,7 +24,7 @@ var Verbose = false
 // Env is a string map
 type Env map[string]string
 
-// Entry is akey value pair
+// Entry is a key value pair
 type Entry struct {
 	Key   string
 	Value string
@@ -40,11 +43,23 @@ func (es Entries) Swap(i, j int) {
 	es[i], es[j] = es[j], es[i]
 }
 
+// Update inserts or updates a key value pair
+func (es *Entries) Update(key string, value string) {
+	for i, e := range *es {
+		if e.Key == key {
+			(*es)[i].Value = value
+			return
+		}
+	}
+	*es = append(*es, Entry{Key: key, Value: value})
+}
+
 // Space represents a space in consul
 type Space struct {
 	prefix      string
 	modifyIndex int
 	entries     Entries
+	upcase      bool
 }
 
 // Client is used to access consul
@@ -53,6 +68,7 @@ type Client struct {
 	appName      string
 	appConfig    Space
 	sharedConfig Space
+	state        Space
 	dataCenter   string
 	dataCenters  []string
 }
@@ -62,8 +78,9 @@ func NewClient(consulUrl string, appName string) *Client {
 	client := Client{
 		consulUrl:    consulUrl,
 		appName:      appName,
-		appConfig:    Space{prefix: "apps/" + appName + "/config/"},
-		sharedConfig: Space{prefix: "shared/config/"},
+		appConfig:    Space{prefix: "apps/" + appName + "/config/", upcase: true},
+		sharedConfig: Space{prefix: "shared/config/", upcase: true},
+		state:        Space{prefix: "apps/" + appName + "/state/", upcase: false},
 	}
 	n := len(client.consulUrl)
 	if n > 0 && client.consulUrl[n-1] != '/' {
@@ -168,6 +185,51 @@ func (c *Client) GetData(space *Space, useIndex bool) error {
 	return nil
 }
 
+// GetState loads the state space from consul
+func (c *Client) GetState() (env Env, err error) {
+	if Verbose {
+		log.Printf("Retrieving state for %s from consul %s\n", c.appName, c.consulUrl)
+	}
+	if err = c.GetData(&c.state, false); err != nil {
+		return
+	}
+	env = make(Env)
+	c.addEntriesToEnv(&c.state, env)
+	return
+}
+
+// UpdateState stores a single key value pair in the state
+func (c *Client) UpdateState(key string, value string) error {
+	client := &http.Client{Timeout: time.Second * 5}
+	uri := c.kvUrl(c.state.prefix + key)
+	if Verbose {
+		log.Printf("PUT %s\n", uri)
+		log.Printf("VALUE %s\n", value)
+	}
+	body := bytes.NewBufferString(value)
+	req, err := http.NewRequest(http.MethodPut, uri, body)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %q failed", uri)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %q failed", uri)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("PUT %q failed with status: %s", uri, resp.Status)
+	}
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %q failed", uri)
+	}
+	if Verbose {
+		log.Printf("PUT response: %s", string(d))
+	}
+	c.state.entries.Update(key, value)
+	return nil
+}
+
 // GetEnv loads shared and app specific config from consul and returns it as a
 // string map
 func (c *Client) GetEnv() (env Env, err error) {
@@ -244,7 +306,9 @@ func (c *Client) addEntriesToEnv(space *Space, env Env) (err error) {
 		}
 		x.Key = c.transformKeyAccordingToDC(x.Key)
 		x.Key = strings.Replace(x.Key, "/", "_", -1)
-		x.Key = strings.ToUpper(x.Key)
+		if space.upcase {
+			x.Key = strings.ToUpper(x.Key)
+		}
 		if x.Key != "" && x.Key != "RESTART" && !strings.HasSuffix(x.Key, "_") {
 			if Verbose {
 				log.Printf("adding %s=%v\n", x.Key, x.Value)
