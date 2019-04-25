@@ -12,7 +12,7 @@ module Beetle
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
-      @dead_lettering = DeadLettering.new(@client.config)
+      @dead_lettering = DeadLettering.new(@client)
     end
 
     private

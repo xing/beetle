@@ -73,12 +73,19 @@ module Beetle
     #   the name of the exchange this queue will be bound to (defaults to the name of the queue)
     # [<tt>:key</tt>]
     #   the binding key (defaults to the name of the queue)
+    # [<tt>:lazy</tt>]
+    #   whether the queue should use lazy mode (defaults to <tt>config.lazy_queues_enabled</tt>)
+    # [<tt>:dead_lettering</tt>]
+    #   whether the queue should use dead lettering (defaults to <tt>config.dead_lettering_enabled</tt>)
     # automatically registers the specified exchange if it hasn't been registered yet
 
     def register_queue(name, options={})
       name = name.to_s
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
-      opts = {:exchange => name, :key => name, :auto_delete => false, :amqp_name => name}.merge!(options.symbolize_keys)
+      opts = {
+        :exchange => name, :key => name, :auto_delete => false, :amqp_name => name,
+        :lazy => config.lazy_queues_enabled, :dead_lettering => config.dead_lettering_enabled
+      }.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false
       exchange = opts.delete(:exchange).to_s
       key = opts.delete(:key)

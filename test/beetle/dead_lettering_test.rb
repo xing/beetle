@@ -4,7 +4,8 @@ module Beetle
   class SetDeadLetteringsTest < Minitest::Test
     def setup
       @config = Configuration.new
-      @dead_lettering = DeadLettering.new(@config)
+      @client = Client.new @config
+      @dead_lettering = DeadLettering.new(@client)
       @config.dead_lettering_enabled = true
     end
 
@@ -25,9 +26,9 @@ module Beetle
       @server = "localhost:15672"
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
+      @client = Client.new @config
       @config.logger = Logger.new("/dev/null")
-      @dead_lettering = DeadLettering.new(@config)
-      @config.dead_lettering_enabled = true
+      @dead_lettering = DeadLettering.new(@client)
     end
 
     test "raises exception when queue name wasn't specified" do
@@ -55,12 +56,10 @@ module Beetle
                }}.to_json)
         .to_return(:status => 204)
 
-      @dead_lettering.set_queue_policy!(@server, @queue_name)
+      @dead_lettering.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true)
     end
 
     test "creates a policy by posting to the rabbitmq if lazy queues are enabled" do
-      @config.lazy_queues_enabled = true
-      @config.dead_lettering_enabled = false
       stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
@@ -72,7 +71,7 @@ module Beetle
                }}.to_json)
         .to_return(:status => 204)
 
-      @dead_lettering.set_queue_policy!(@server, @queue_name)
+      @dead_lettering.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => false)
     end
 
     test "raises exception when policy couldn't successfully be created" do
@@ -81,7 +80,7 @@ module Beetle
         .to_return(:status => [405])
 
       assert_raises DeadLettering::FailedRabbitRequest do
-        @dead_lettering.set_queue_policy!(@server, @queue_name)
+        @dead_lettering.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => true)
       end
     end
 
@@ -99,7 +98,7 @@ module Beetle
                 }}.to_json)
         .to_return(:status => 204)
 
-      @dead_lettering.set_queue_policy!(@server, @queue_name, :message_ttl => 10000)
+      @dead_lettering.set_queue_policy!(@server, @queue_name, :dead_lettering => true, :message_ttl => 10000)
     end
 
     test "properly encodes the vhost from the configuration" do
@@ -117,7 +116,7 @@ module Beetle
 
       @config.vhost = "foo/"
 
-      @dead_lettering.set_queue_policy!(@server, @queue_name)
+      @dead_lettering.set_queue_policy!(@server, @queue_name, :dead_lettering => true)
     end
   end
 
@@ -125,28 +124,31 @@ module Beetle
     def setup
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
+      @client = Client.new @config
       @config.logger = Logger.new("/dev/null")
-      @dead_lettering = DeadLettering.new(@config)
+      @dead_lettering = DeadLettering.new(@client)
       @servers = ["localhost:55672"]
     end
 
     test "is does not call out to rabbit if neither dead lettering nor lazy queues are enabled" do
-      @config.dead_lettering_enabled = false
+      @client.register_queue(@queue_name, :dead_lettering => false, :lazy => false)
       channel = stub('channel')
       @dead_lettering.expects(:run_rabbit_http_request).never
       @dead_lettering.bind_dead_letter_queues!(channel, @servers, @queue_name)
     end
 
     test "creates and connects the dead letter queue via policies when enabled" do
-      @config.dead_lettering_enabled = true
+      @client.register_queue(@queue_name, :dead_lettering => true, :lazy => false)
 
       channel = stub('channel')
 
       channel.expects(:queue).with("#{@queue_name}_dead_letter", {})
-      @dead_lettering.expects(:set_queue_policies!).with(@servers, @queue_name)
+      @dead_lettering.expects(:set_queue_policies!).with(@servers, @queue_name,  :dead_lettering => true, :lazy => false)
       @dead_lettering.expects(:set_queue_policies!).with(@servers, "#{@queue_name}_dead_letter",
         :routing_key => @queue_name,
-        :message_ttl => 1000
+        :message_ttl => 1000,
+        :dead_lettering => true,
+        :lazy => false
       )
 
       @dead_lettering.bind_dead_letter_queues!(channel, @servers, @queue_name)
