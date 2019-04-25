@@ -1,5 +1,14 @@
 = Release Notes
 
+
+== Version 3.x.x
+* provide client method to setup all queues and queue policies.
+  Setting up queue policies on demand in publisher and subscriber is OK
+  for a small number of queues, publishers and subscribers. But the HTTP
+  API of RabbitMQ doesn't scale all that well, so that a large number
+  of HTPP calls to set up queue policies can in fact crash a server.
+
+
 == Version 2.3.2
 * config server: fixed a race condition when accessing server state.
   HTTP requests run in threads separate from the server dispatcher

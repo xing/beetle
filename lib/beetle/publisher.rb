@@ -143,6 +143,14 @@ module Beetle
       end
     end
 
+    def setup_all_queues_and_policies(queue_names) #:nodoc:
+      each_server do
+        queue_names.each do |name|
+          queue(name, create_policies: true)
+        end
+      end
+    end
+
     def stop #:nodoc:
       each_server { stop! }
     end
@@ -214,10 +222,12 @@ module Beetle
     end
 
     # TODO: Refactor, fetch the keys and stuff itself
-    def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
+    def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys, create_policies: false)
       logger.debug("Beetle: creating queue with opts: #{creation_keys.inspect}")
       queue = bunny.queue(queue_name, creation_keys)
-      @dead_lettering.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys)
+      if create_policies
+        @dead_lettering.bind_dead_letter_queues!(bunny, @client.servers, queue_name, creation_keys)
+      end
       logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_keys.inspect}")
       queue.bind(exchange(exchange_name), binding_keys)
       queue

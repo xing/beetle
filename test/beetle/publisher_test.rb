@@ -279,10 +279,44 @@ module Beetle
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("Bunny")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m).twice
+      @pub.expects(:bunny).returns(m)
 
       @pub.send(:queue, "some_queue")
-      assert_equal q, @pub.send(:queues)["some_queue"]
+      assert_equal Base::QueueInfo.new(q, false), @pub.send(:queues)["some_queue"]
+    end
+
+    test "binding a queue should create it using the config and bind it to the exchange with the name specified and setup policies if requested" do
+      @client.register_queue("some_queue", :exchange => "some_exchange", :key => "haha.#", :arguments => {"foo" => "fighter"})
+      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      q = mock("queue")
+      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      m = mock("Bunny")
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
+      @pub.expects(:bunny).returns(m).twice
+
+      @pub.send(:queue, "some_queue", create_policies: true)
+      assert_equal Base::QueueInfo.new(q, true), @pub.send(:queues)["some_queue"]
+    end
+
+    test "binding a queue with create_plocies: true after having already declared it with create_plocies: false creates the policies" do
+      @client.register_queue("some_queue", :exchange => "some_exchange", :key => "haha.#", :arguments => {"foo" => "fighter"})
+      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      q = mock("queue")
+      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      m = mock("Bunny")
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
+      @pub.expects(:bunny).returns(m)
+
+      @pub.send(:queue, "some_queue")
+      assert_equal Base::QueueInfo.new(q, false), @pub.send(:queues)["some_queue"]
+
+      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
+      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
+      @pub.expects(:bunny).returns(m).twice
+
+      @pub.send(:queue, "some_queue", create_policies: true)
+      assert_equal Base::QueueInfo.new(q, true), @pub.send(:queues)["some_queue"]
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do
@@ -325,6 +359,18 @@ module Beetle
       queue.expects(:purge).in_sequence(s)
       @pub.purge(["queue"])
     end
+
+    test "setting up queues and policies should iterate over all servers" do
+      @pub.servers = %w(a b)
+      queue = mock("queue")
+      s = sequence("setup")
+      @pub.expects(:set_current_server).with("a").in_sequence(s)
+      @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
+      @pub.expects(:set_current_server).with("b").in_sequence(s)
+      @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
+      @pub.setup_all_queues_and_policies(["queue"])
+    end
+
   end
 
   class PublisherExchangeManagementTest < Minitest::Test

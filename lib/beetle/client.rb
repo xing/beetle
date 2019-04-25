@@ -202,6 +202,11 @@ module Beetle
       publisher.purge(queues)
     end
 
+    # declares all queues, binds them and creates/updates all policies
+    def setup_all_queues_and_policies
+      publisher.setup_all_queues_and_policies(queues.keys)
+    end
+
     # start listening to all registered queues. Calls #listen_queues internally
     # runs the given block before entering the eventmachine loop.
     def listen(_deprecated_messages=nil, &block)

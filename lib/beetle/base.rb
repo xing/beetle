@@ -54,7 +54,13 @@ module Beetle
       @queues[@server] ||= {}
     end
 
-    def queue(name)
+    QueueInfo = Struct.new(:queue, :create_policies)
+
+    def queue(name, create_policies: false)
+      info = queues[name]
+      if info && create_policies && !info.create_policies
+        queues.delete(name)
+      end
       queues[name] ||=
         begin
           opts = @client.queues[name]
@@ -66,10 +72,11 @@ module Beetle
           @client.bindings[name].each do |binding_options|
             exchange_name = binding_options[:exchange]
             binding_options = binding_options.slice(*QUEUE_BINDING_KEYS)
-            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options)
+            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options, create_policies: create_policies)
           end
-          the_queue
+          info = QueueInfo.new(the_queue, create_policies)
         end
+      info.queue
     end
 
   end
