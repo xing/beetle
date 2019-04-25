@@ -12,17 +12,17 @@ module Beetle
     def bind_dead_letter_queues!(channel, servers, target_queue, creation_keys = {})
       if @config.dead_lettering_enabled?
         dead_letter_queue_name = dead_letter_queue_name(target_queue)
-        logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
+        logger.info("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
         channel.queue(dead_letter_queue_name, creation_keys)
       end
 
       if @config.dead_lettering_enabled?
-        logger.debug("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
+        logger.info("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
       end
       set_queue_policies!(servers, target_queue)
 
       if @config.dead_lettering_enabled?
-        logger.debug("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
+        logger.info("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
         set_queue_policies!(
           servers,
           dead_letter_queue_name,
