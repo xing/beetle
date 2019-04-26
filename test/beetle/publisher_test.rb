@@ -368,7 +368,7 @@ module Beetle
       @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
       @pub.expects(:set_current_server).with("b").in_sequence(s)
       @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
-      @pub.setup_all_queues_and_policies(["queue"])
+      @pub.setup_queues_and_policies(["queue"])
     end
 
   end

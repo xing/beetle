@@ -311,8 +311,8 @@ module Beetle
     test "should delegate queue setup to the publisher instance" do
       client = Client.new
       client.register_queue(:queue)
-      client.send(:publisher).expects(:setup_all_queues_and_policies).with(["queue"]).returns("ha!")
-      assert_equal "ha!", client.setup_all_queues_and_policies
+      client.send(:publisher).expects(:setup_queues_and_policies).with(["queue"]).returns("ha!")
+      assert_equal "ha!", client.setup_queues_and_policies(["queue"])
     end
 
     test "should delegate rpc calls to the publisher instance" do

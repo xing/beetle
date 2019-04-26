@@ -210,8 +210,8 @@ module Beetle
     end
 
     # declares all queues, binds them and creates/updates all policies
-    def setup_all_queues_and_policies
-      publisher.setup_all_queues_and_policies(queues.keys)
+    def setup_queues_and_policies(queues)
+      publisher.setup_queues_and_policies(queues)
     end
 
     # start listening to all registered queues. Calls #listen_queues internally

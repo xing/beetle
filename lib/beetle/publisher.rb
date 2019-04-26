@@ -143,7 +143,7 @@ module Beetle
       end
     end
 
-    def setup_all_queues_and_policies(queue_names) #:nodoc:
+    def setup_queues_and_policies(queue_names) #:nodoc:
       each_server do
         queue_names.each do |name|
           queue(name, create_policies: true)
