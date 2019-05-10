@@ -91,7 +91,7 @@ func (s *GCState) garbageCollectKeys(db int) {
 collecting:
 	for range ticker.C {
 		if interrupted {
-			break
+			return
 		}
 		if s.getMaster(db) {
 			if cursor == 0 {
@@ -112,6 +112,9 @@ collecting:
 			total += len(keys)
 			threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
 			for _, key := range keys {
+				if interrupted {
+					return
+				}
 				collected, err := s.gcKey(key, uint64(threshold))
 				if err != nil {
 					logError("starting over: %v", err)
