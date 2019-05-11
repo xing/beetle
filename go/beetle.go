@@ -124,7 +124,7 @@ func (x *CmdRunGCKeys) Execute(args []string) error {
 	})
 }
 
-// CmdRunDeleteKeys is used when the program arguments tell us to garbage collect redis keys.
+// CmdRunDeleteKeys is used when the program arguments tell us to delete redis keys.
 type CmdRunDeleteKeys struct{}
 
 var cmdRunDeleteKeys CmdRunDeleteKeys
@@ -143,6 +143,23 @@ func (x *CmdRunDeleteKeys) Execute(args []string) error {
 		System:          opts.GcSystem,
 		Queue:           opts.Queue,
 		DeleteBefore:    opts.DeleteBefore,
+	})
+}
+
+// CmdRunDumpExpiries is used when the program arguments tell us to dump redis epxiries.
+type CmdRunDumpExpiries struct{}
+
+var cmdRunDumpExpiries CmdRunDumpExpiries
+
+// Execute delete redis keys.
+func (x *CmdRunDumpExpiries) Execute(args []string) error {
+	if opts.GcSystem == "" {
+		opts.GcSystem = "system"
+	}
+	return RunDumpExpiries(DumpExpiriesOptions{
+		RedisMasterFile: initialConfig.RedisMasterFile,
+		Databases:       initialConfig.GcDatabases,
+		System:          opts.GcSystem,
 	})
 }
 
@@ -323,6 +340,7 @@ func main() {
 	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
 	parser.AddCommand("garbage_collect_deduplication_store", "garbage collect keys on redis servers", "", &cmdRunGCKeys)
 	parser.AddCommand("delete_queue_keys", "delete all keys for a given queue on redis servers", "", &cmdRunDeleteKeys)
+	parser.AddCommand("dump_expiries", "print all expiry values from redis master", "", &cmdRunDumpExpiries)
 	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
 	parser.CommandHandler = cmdHandler
 
