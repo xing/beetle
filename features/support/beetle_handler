@@ -3,6 +3,7 @@
 require "rubygems"
 require "daemons"
 require "optparse"
+require 'json'
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
 tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
@@ -22,7 +23,7 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
   Beetle.config.logger.level = Logger::INFO
 
   client = Beetle::Client.new.configure :auto_delete => true do |config|
-    config.queue(:echo)
+    config.queue(:echo, :lazy => true, :dead_lettering => true)
     config.message(:echo)
     config.handler(:echo) do |message|
       begin
@@ -30,6 +31,14 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
       rescue
         master_file_content = File.read(Beetle.config.redis_server)
         "no redis master: exception: #{$!.class}(#{$!}), master_file: '#{master_file_content}'"
+      end
+    end
+    config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|
+      begin
+        Beetle.config.logger.info "received beetle policy update message': #{message.data}"
+        client.set_queue_policies!(JSON.parse(message.data))
+      rescue => e
+        Beetle.config.logger.error("#{e}:#{e.backtrace.join("\n")}")
       end
     end
   end

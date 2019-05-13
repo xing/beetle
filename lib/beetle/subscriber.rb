@@ -144,19 +144,19 @@ module Beetle
       callback = create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       keys = opts.slice(*SUBSCRIPTION_KEYS).merge(:key => "#", :ack => true)
       logger.debug "Beetle: subscribing to queue #{amqp_queue_name} with key # on server #{@server}"
-      queues[queue_name].queue.subscribe(keys, &callback)
+      queues[queue_name].subscribe(keys, &callback)
       subscriptions[queue_name] = [keys, callback]
     end
 
     def pause(queue_name)
-      return unless queues[queue_name].queue.subscribed?
-      queues[queue_name].queue.unsubscribe
+      return unless queues[queue_name].subscribed?
+      queues[queue_name].unsubscribe
     end
 
     def resume(queue_name)
-      return if queues[queue_name].queue.subscribed?
+      return if queues[queue_name].subscribed?
       keys, callback = subscriptions[queue_name]
-      queues[queue_name].queue.subscribe(keys, &callback)
+      queues[queue_name].subscribe(keys, &callback)
     end
 
     def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
@@ -204,12 +204,10 @@ module Beetle
       channel.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
     end
 
-    def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys, create_policies: false)
+    def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = channel.queue(queue_name, creation_keys)
-      target_servers = @client.servers + @client.additional_subscription_servers
-      if create_policies
-        @dead_lettering.bind_dead_letter_queues!(channel, target_servers, queue_name, creation_keys)
-      end
+      policy_options = bind_dead_letter_queue!(channel, queue_name, creation_keys)
+      publish_policy_options(policy_options)
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue

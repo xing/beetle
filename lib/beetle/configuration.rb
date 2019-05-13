@@ -5,6 +5,14 @@ module Beetle
   class Configuration
     # system name (used for redis cluster partitioning) (defaults to <tt>system</tt>)
     attr_accessor :system_name
+    # system_exchange_name is the name of the exchange on which to publish system internal messages, such as
+    # messages to set up queue policies. Whenever a queue is declared in the client, either by publisher or
+    # consumer, a message with the queue policy parameters is sent to this exachange. (defaults to <tt>beetle</tt>)
+    attr_accessor :beetle_policy_exchange_name
+    # Name of the policy update queue
+    attr_accessor :beetle_policy_updates_queue_name
+    # Name of the policy update routing key
+    attr_accessor :beetle_policy_updates_routing_key
     # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
     # defaults to <tt>STDOUT</tt>
@@ -120,6 +128,9 @@ module Beetle
 
     def initialize #:nodoc:
       self.system_name = "system"
+      self.beetle_policy_exchange_name = "beetle-policies"
+      self.beetle_policy_updates_queue_name = "beetle-policy-updates"
+      self.beetle_policy_updates_routing_key = "beetle.policy.update"
 
       self.gc_threshold = 1.hour.to_i
       self.redis_server = "localhost:6379"

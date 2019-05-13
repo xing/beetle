@@ -263,7 +263,8 @@ module Beetle
 
   class PublisherQueueManagementTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Configuration.new
+      @client = Client.new(@config)
       @pub = Publisher.new(@client)
     end
 
@@ -275,48 +276,15 @@ module Beetle
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
       @client.register_queue("some_queue", :exchange => "some_exchange", :key => "haha.#", :arguments => {"foo" => "fighter"})
       @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("Bunny")
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m)
-
-      @pub.send(:queue, "some_queue")
-      assert_equal Base::QueueInfo.new(q, false), @pub.send(:queues)["some_queue"]
-    end
-
-    test "binding a queue should create it using the config and bind it to the exchange with the name specified and setup policies if requested" do
-      @client.register_queue("some_queue", :exchange => "some_exchange", :key => "haha.#", :arguments => {"foo" => "fighter"})
-      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      @pub.expects(:publish_policy_options)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
       m = mock("Bunny")
       m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
       @pub.expects(:bunny).returns(m).twice
 
-      @pub.send(:queue, "some_queue", create_policies: true)
-      assert_equal Base::QueueInfo.new(q, true), @pub.send(:queues)["some_queue"]
-    end
-
-    test "binding a queue with create_plocies: true after having already declared it with create_plocies: false creates the policies" do
-      @client.register_queue("some_queue", :exchange => "some_exchange", :key => "haha.#", :arguments => {"foo" => "fighter"})
-      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("Bunny")
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m)
-
       @pub.send(:queue, "some_queue")
-      assert_equal Base::QueueInfo.new(q, false), @pub.send(:queues)["some_queue"]
-
-      @pub.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"foo" => "fighter"}).returns(q)
-      @pub.expects(:bunny).returns(m).twice
-
-      @pub.send(:queue, "some_queue", create_policies: true)
-      assert_equal Base::QueueInfo.new(q, true), @pub.send(:queues)["some_queue"]
+      assert_equal q, @pub.send(:queues)["some_queue"]
     end
 
     test "should bind the defined queues for the used exchanges when publishing" do

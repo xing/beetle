@@ -53,4 +53,54 @@ module Beetle
       assert_equal "goofy:123", @bs.send(:server_from_settings, {:host => "goofy", :port => 123})
     end
   end
+
+  class BindDeadLetterQueuesTest < Minitest::Test
+    def setup
+      @queue_name = "QUEUE_NAME"
+      @config = Configuration.new
+      @client = Client.new @config
+      @bs = Base.new(@client)
+      @config.logger = Logger.new("/dev/null")
+    end
+
+    test "it does not call out to rabbit if neither dead lettering nor lazy queues are enabled" do
+      @client.register_queue(@queue_name, :dead_lettering => false, :lazy => false)
+      channel = stub('channel')
+      expected_options = {
+        :queue_name => "QUEUE_NAME",
+        :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
+        :message_ttl => 1000,
+        :dead_lettering => false,
+        :lazy => false
+      }
+      assert_equal expected_options, @bs.__send__(:bind_dead_letter_queue!, channel, @queue_name)
+    end
+
+    test "creates and connects the dead letter queue via policies when enabled" do
+      @client.register_queue(@queue_name, :dead_lettering => true, :lazy => true)
+
+      channel = stub('channel')
+      channel.expects(:queue).with("#{@queue_name}_dead_letter", {})
+
+      expected_options = {
+        :queue_name => "QUEUE_NAME",
+        :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
+        :message_ttl => 1000,
+        :dead_lettering => true,
+        :lazy => true
+      }
+      assert_equal expected_options, @bs.__send__(:bind_dead_letter_queue!, channel, @queue_name)
+    end
+
+    test "publish_policy_options declares the beetle policy updates queue and publishes the options" do
+      options = { :lazy => true, :dead_lettering => true }
+      @bs.logger.stubs(:debug)
+      @bs.expects(:queue).with(@client.config.beetle_policy_updates_queue_name)
+      exchange = mock("exchange")
+      exchange.expects(:publish)
+      @bs.expects(:exchange).with(@client.config.beetle_policy_exchange_name).returns(exchange)
+      @bs.__send__(:publish_policy_options, options)
+    end
+
+  end
 end

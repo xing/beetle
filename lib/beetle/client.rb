@@ -1,3 +1,5 @@
+require 'json'
+
 module Beetle
   # This class provides the interface through which messaging is configured for both
   # message producers and consumers. It keeps references to an instance of a
@@ -53,7 +55,17 @@ module Beetle
       @messages = {}
       @bindings = {}
       @deduplication_store = DeduplicationStore.new(config)
+      @dead_lettering = DeadLettering.new(config)
       load_brokers_from_config
+      register_exchange(config.beetle_policy_exchange_name)
+      # make sure dead lettering is false for the policy update queue
+      register_queue(
+        config.beetle_policy_updates_queue_name,
+        :exchange => config.beetle_policy_exchange_name,
+        :key => config.beetle_policy_updates_routing_key,
+        :dead_lettering => false,
+        :lazy => false,
+      )
     end
 
     # register an exchange with the given _name_ and a set of _options_:
@@ -209,11 +221,6 @@ module Beetle
       publisher.purge(queues)
     end
 
-    # declares all queues, binds them and creates/updates all policies
-    def setup_queues_and_policies(queues)
-      publisher.setup_queues_and_policies(queues)
-    end
-
     # start listening to all registered queues. Calls #listen_queues internally
     # runs the given block before entering the eventmachine loop.
     def listen(_deprecated_messages=nil, &block)
@@ -290,6 +297,10 @@ module Beetle
     ensure
       @publisher = nil
       @subscriber = nil
+    end
+
+    def set_queue_policies!(message_payload)
+      @dead_lettering.set_queue_policies!(message_payload)
     end
 
     private

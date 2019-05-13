@@ -5,56 +5,44 @@ module Beetle
   class DeadLettering
     class FailedRabbitRequest < StandardError; end
 
-    attr_reader :client, :config
+    attr_reader :config
 
-    def initialize(client)
-      @client = client
-      @config = client.config
+    def initialize(config)
+      @config = config
     end
 
-    def bind_dead_letter_queues!(channel, servers, target_queue, creation_keys = {})
-      policy_options = client.queues[target_queue].slice(:dead_lettering, :lazy)
-      if policy_options[:dead_lettering]
-        dead_letter_queue_name = dead_letter_queue_name(target_queue)
-        logger.info("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
-        channel.queue(dead_letter_queue_name, creation_keys)
-      end
+    def set_queue_policies!(options)
+      # logger.debug "Setting queue policies: #{options.inspect}"
+      options = options.symbolize_keys
+      server = options[:server]
+      target_queue = options[:queue_name]
+      dead_letter_queue_name = options[:dead_letter_queue_name]
+      policy_options = options.slice(:lazy, :dead_lettering)
 
-      if policy_options[:dead_lettering]
-        logger.info("Beetle: setting #{dead_letter_queue_name} as dead letter queue of #{target_queue} on all servers")
-      end
-      set_queue_policies!(servers, target_queue, policy_options)
+      target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
+      set_queue_policy!(server, target_queue, target_queue_options)
 
-      if policy_options[:dead_lettering]
-        logger.info("Beetle: setting #{target_queue} as dead letter queue of #{dead_letter_queue_name} on all servers")
-        set_queue_policies!(
-          servers,
-          dead_letter_queue_name,
-          { :message_ttl => config.dead_lettering_msg_ttl,
-            :routing_key => target_queue
-          }.merge(policy_options)
-        )
-      end
-    end
-
-    def set_queue_policies!(servers, queue_name, options={})
-      servers.each { |server| set_queue_policy!(server, queue_name, options) }
+      dead_letter_queue_options = policy_options.merge(:routing_key => target_queue, :message_ttl => options[:message_ttl])
+      set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options)
     end
 
     def set_queue_policy!(server, queue_name, options={})
+      logger.info "Setting queue policy: #{server}, #{queue_name}, #{options.inspect}"
+
       raise ArgumentError.new("server missing")     if server.blank?
       raise ArgumentError.new("queue name missing") if queue_name.blank?
 
       return unless options[:dead_lettering] || options[:lazy]
 
       vhost = CGI.escape(config.vhost)
+      # no need to worry that the server has the port 5672. Net:HTTP will take care of this. See below.
       request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
       request = Net::HTTP::Put.new(request_url)
 
       # set up queue policy
       definition = {}
       if options[:dead_lettering]
-        definition["dead-letter-routing-key"] = dead_letter_routing_key(queue_name, options)
+        definition["dead-letter-routing-key"] = options[:routing_key]
         definition["dead-letter-exchange"] = ""
         definition["message-ttl"] = options[:message_ttl] if options[:message_ttl]
       end
@@ -80,19 +68,15 @@ module Beetle
       :ok
     end
 
-    def dead_letter_routing_key(queue_name, options)
-      options.fetch(:routing_key) { dead_letter_queue_name(queue_name) }
-    end
-
-    def dead_letter_queue_name(queue_name)
-      "#{queue_name}_dead_letter"
-    end
-
     def run_rabbit_http_request(uri, request, &block)
       request.basic_auth(config.user, config.password)
       request["Content-Type"] = "application/json"
-      Net::HTTP.start(uri.hostname, config.api_port, :read_timeout => config.dead_lettering_read_timeout) do |http|
-        block.call(http) if block_given?
+      http = Net::HTTP.new(uri.hostname, config.api_port)
+      http.read_timeout = config.dead_lettering_read_timeout
+      # don't do this in production:
+      # http.set_debug_output(logger.instance_eval{ @logdev.dev })
+      http.start do |instance|
+        block.call(instance) if block_given?
       end
     end
 
@@ -103,7 +87,8 @@ module Beetle
     end
 
     def logger
-      config.logger
+      @config.logger
     end
+
   end
 end

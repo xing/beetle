@@ -1,3 +1,5 @@
+require 'json'
+
 module Beetle
   # Abstract base class shared by Publisher and Subscriber
   class Base
@@ -12,7 +14,6 @@ module Beetle
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
-      @dead_lettering = DeadLettering.new(@client)
     end
 
     private
@@ -54,13 +55,7 @@ module Beetle
       @queues[@server] ||= {}
     end
 
-    QueueInfo = Struct.new(:queue, :create_policies)
-
-    def queue(name, create_policies: false)
-      info = queues[name]
-      if info && create_policies && !info.create_policies
-        queues.delete(name)
-      end
+    def queue(name)
       queues[name] ||=
         begin
           opts = @client.queues[name]
@@ -72,11 +67,37 @@ module Beetle
           @client.bindings[name].each do |binding_options|
             exchange_name = binding_options[:exchange]
             binding_options = binding_options.slice(*QUEUE_BINDING_KEYS)
-            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options, create_policies: create_policies)
+            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options)
           end
-          info = QueueInfo.new(the_queue, create_policies)
+          the_queue
         end
-      info.queue
+    end
+
+    def bind_dead_letter_queue!(channel, target_queue, creation_keys = {})
+      policy_options = @client.queues[target_queue].slice(:dead_lettering, :lazy)
+      dead_letter_queue_name = "#{target_queue}_dead_letter"
+      if policy_options[:dead_lettering]
+        logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
+        channel.queue(dead_letter_queue_name, creation_keys)
+      end
+      return {
+        :queue_name => target_queue,
+        :dead_letter_queue_name => dead_letter_queue_name,
+        :message_ttl => @client.config.dead_lettering_msg_ttl,
+      }.merge(policy_options)
+    end
+
+    # called by <tt>bind_queue!</tt>
+    def publish_policy_options(options)
+      # avoid endless recursion
+      return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
+      payload = options.merge(:server => @server)
+      logger.debug("Beetle: publishing policy options on #{@server}: #{payload.inspect}")
+      # make sure to declare the queue, so the message does not get lost
+      queue(@client.config.beetle_policy_updates_queue_name)
+      data = payload.to_json
+      opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
+      exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
     end
 
   end

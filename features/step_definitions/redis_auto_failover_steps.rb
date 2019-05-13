@@ -144,7 +144,7 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
   Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
   Beetle.config.logger.level = Logger::INFO
   client = Beetle::Client.new.configure :auto_delete => true do |config|
-    config.queue(:echo)
+    config.queue(:echo, :lazy => true, :dead_lettering => true)
     config.message(:echo)
   end
   assert_match /#{TestDaemons::Redis[redis_name].ip_with_port}/, client.rpc(:echo, 'nil').second

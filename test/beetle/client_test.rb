@@ -15,20 +15,20 @@ module Beetle
       assert_equal [], @client.additional_subscription_servers
     end
 
-    test "should have no exchanges" do
-      assert @client.exchanges.empty?
+    test "should have only the system exchange" do
+      assert_equal ["beetle-policies"], @client.exchanges.keys
     end
 
-    test "should have no queues" do
-      assert @client.queues.empty?
+    test "should have only the beetle policy queue" do
+      assert_equal ["beetle-policy-updates"], @client.queues.keys
     end
 
     test "should have no messages" do
-      assert @client.messages.empty?
+      assert_equal [], @client.messages.keys
     end
 
-    test "should have no bindings" do
-      assert @client.bindings.empty?
+    test "should have only one binding for the beetle policy updates" do
+      assert_equal ["beetle-policy-updates"], @client.bindings.keys
     end
   end
 
@@ -308,13 +308,6 @@ module Beetle
       assert_equal "ha!", client.purge(:queue1, :queue2)
     end
 
-    test "should delegate queue setup to the publisher instance" do
-      client = Client.new
-      client.register_queue(:queue)
-      client.send(:publisher).expects(:setup_queues_and_policies).with(["queue"]).returns("ha!")
-      assert_equal "ha!", client.setup_queues_and_policies(["queue"])
-    end
-
     test "should delegate rpc calls to the publisher instance" do
       client = Client.new
       client.register_message("deadletter")
@@ -361,6 +354,12 @@ module Beetle
       client = Client.new
       client.send(:subscriber).expects(:stop!)
       client.stop_listening
+    end
+
+    test "should delegate set_queue_policies! to the dead lettering instance" do
+      client = Client.new
+      client.instance_variable_get(:@dead_lettering).expects(:set_queue_policies!)
+      client.set_queue_policies!({})
     end
 
     test "should delegate pause_listening to the subscriber instance" do

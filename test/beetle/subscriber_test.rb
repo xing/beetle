@@ -89,7 +89,7 @@ module Beetle
       q = mock("queue a")
       q.expects(:subscribed?).returns(true)
       q.expects(:unsubscribe)
-      @sub.stubs(:queues).returns({"a" => Base::QueueInfo.new(q,false)})
+      @sub.stubs(:queues).returns("a" => q)
       @sub.__send__(:pause, "a")
     end
 
@@ -97,7 +97,7 @@ module Beetle
       q = mock("queue a")
       q.expects(:subscribed?).returns(false)
       q.expects(:unsubscribe).never
-      @sub.stubs(:queues).returns({"a" => Base::QueueInfo.new(q,false)})
+      @sub.stubs(:queues).returns("a" => q)
       @sub.__send__(:pause, "a")
     end
 
@@ -105,7 +105,7 @@ module Beetle
       q = mock("queue a")
       q.expects(:subscribed?).returns(false)
       q.expects(:subscribe)
-      @sub.stubs(:queues).returns({"a" => Base::QueueInfo.new(q,false)})
+      @sub.stubs(:queues).returns("a" => q)
       @sub.__send__(:resume, "a")
     end
 
@@ -113,7 +113,7 @@ module Beetle
       q = mock("queue a")
       q.expects(:subscribed?).returns(true)
       q.expects(:subscribe).never
-      @sub.stubs(:queues).returns({"a" => Base::QueueInfo.new(q,false)})
+      @sub.stubs(:queues).returns("a" => q)
       @sub.__send__(:resume, "a")
     end
 
@@ -146,27 +146,17 @@ module Beetle
     test "binding a queue should create it using the config and bind it to the exchange with the name specified" do
       @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#", "arguments" => {"schmu" => 5})
       @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
+      @sub.expects(:publish_policy_options)
       q = mock("queue")
       q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("MQ")
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"schmu" => 5}).returns(q)
-      @sub.expects(:channel).returns(m)
+      channel = mock("MQ")
+      creation_opts = {:durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"schmu" => 5}}
+      channel.expects(:queue).with("some_queue", creation_opts).returns(q)
+      @sub.expects(:channel).returns(channel).twice
+      @sub.expects(:bind_dead_letter_queue!).with(channel, "some_queue", creation_opts)
 
       @sub.send(:queue, "some_queue")
-      assert_equal q, @sub.send(:queues)["some_queue"].queue
-    end
-
-    test "binding a queue should create it using the config and bind it to the exchange with the name specified and create policies if requested" do
-      @client.register_queue("some_queue", "durable" => true, "exchange" => "some_exchange", "key" => "haha.#", "arguments" => {"schmu" => 5})
-      @sub.expects(:exchange).with("some_exchange").returns(:the_exchange)
-      q = mock("queue")
-      q.expects(:bind).with(:the_exchange, {:key => "haha.#"})
-      m = mock("MQ")
-      m.expects(:queue).with("some_queue", :durable => true, :passive => false, :auto_delete => false, :exclusive => false, :arguments => {"schmu" => 5}).returns(q)
-      @sub.expects(:channel).returns(m).twice
-
-      @sub.send(:queue, "some_queue", create_policies: true)
-      assert_equal q, @sub.send(:queues)["some_queue"].queue
+      assert_equal q, @sub.send(:queues)["some_queue"]
     end
 
     test "binding queues should bind all queues" do
@@ -370,7 +360,7 @@ module Beetle
       q = mock("QUEUE")
       subscription_options = {:ack => true, :key => "#"}
       q.expects(:subscribe).with(subscription_options).yields(header, "foo")
-      @sub.expects(:queues).returns({"some_queue" => Base::QueueInfo.new(q,false)}).once
+      @sub.expects(:queues).returns("some_queue" => q).once
       @sub.send(:subscribe, "some_queue")
       assert block_called
       assert @sub.__send__(:has_subscription?, "some_queue")
