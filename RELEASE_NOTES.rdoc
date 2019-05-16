@@ -9,6 +9,10 @@
   expiry times.
 * added delete_queue_keys command to beetle to allow deletion of
   excess dedup store entries for a given queue.
+* config server: store current master server in consul, if consul
+  config has been provided.
+* config server: server correctly updates configured client ids when
+  they change in consul.
 
 == Version 3.0.0.rc1
 * provide client method to setup queues and queue policies.

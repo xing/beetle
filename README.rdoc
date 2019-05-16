@@ -121,14 +121,44 @@ distribution.
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Hack along and test your code using rake test and rake
-   cucumber. You must start consul in order to use cucumber.
+3. Hack along and test your code.
 4. Commit your changes (`git commit -am 'Add some feature'`)
 5. Push to the branch (`git push origin my-new-feature`)
 6. Create new Pull Request
 
 Don't increase the gem version in your pull requests. It will be done after merging the request,
 to allow merging of pull requests in a flexible order.
+
+== Running the tests
+
+Beetle ships with a cucumber feature to test the automatic redis failover
+as an integration test.
+
+To run it, you have to start a RabbitMQ server and a consul
+development mode.
+
+The top level Rakefile comes with targets to start several RabbitMQ
+instances locally.  Make sure the corresponding binaries are in your
+search path. Open two shell windows and execute the following command:
+
+    rake rabbit:start1
+
+and
+
+   rake consul:start
+
+Then you can run the cucumber feature by running:
+
+    cucumber
+
+or
+
+    rake cucumber
+
+
+Note: Cucumber will automatically run after the unit test when you run rake.
+
+
 
 == How to release a new gem version
 
