@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +31,7 @@ type GCState struct {
 	currentDB     int
 	redis         *redis.Client // current connection
 	keySuffixes   []string
+	expiries      map[string]map[int]int
 }
 
 func (s *GCState) key(msgId, suffix string) string {
@@ -53,6 +56,96 @@ func (s *GCState) msgId(key string) string {
 	return matches[1]
 }
 
+func (s *GCState) msgQueueName(key string) string {
+	re := regexp.MustCompile("^msgid:([^:]+):[-0-9a-f]+:.*$")
+	matches := re.FindStringSubmatch(key)
+	if len(matches) == 0 {
+		logError("queue name could not be extracted from key '%s'", key)
+		return ""
+	}
+	logDebug("queue name: %s", matches[1])
+	return matches[1]
+}
+
+func (s *GCState) recordExpiryHour(key string, t time.Duration) {
+	queue := s.msgQueueName(key)
+	if queue == "" {
+		return
+	}
+	expiriesForQueue, ok := s.expiries[queue]
+	if !ok {
+		expiriesForQueue = make(map[int]int)
+		s.expiries[queue] = expiriesForQueue
+	}
+	hour := int(math.Ceil(t.Hours()))
+	expiriesForQueue[hour]++
+}
+
+func (s *GCState) resetExpiries() {
+	s.expiries = make(map[string]map[int]int)
+}
+
+type queueInfo struct {
+	queue         string
+	totalExpiries int
+}
+type queueInfos []queueInfo
+
+func (s queueInfos) Len() int {
+	return len(s)
+}
+
+func (s queueInfos) Less(i, j int) bool {
+	return s[i].totalExpiries > s[j].totalExpiries
+}
+
+func (s queueInfos) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+type hourInfo struct {
+	hour  int
+	count int
+}
+type hourInfos []hourInfo
+
+func (s hourInfos) Len() int {
+	return len(s)
+}
+
+func (s hourInfos) Less(i, j int) bool {
+	return s[i].hour > s[j].hour
+}
+
+func (s hourInfos) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s *GCState) dumpExpiries() {
+	l := make(queueInfos, 0, len(s.expiries))
+	for q, m := range s.expiries {
+		i := queueInfo{queue: q}
+		for _, v := range m {
+			i.totalExpiries += v
+		}
+		l = append(l, i)
+	}
+	sort.Sort(l)
+	for _, i := range l {
+		fmt.Println("--------------------------------------------------------------")
+		fmt.Printf("%s: %d\n", i.queue, i.totalExpiries)
+		fmt.Println("--------------------------------------------------------------")
+		h := make(hourInfos, 0, len(s.expiries[i.queue]))
+		for k, v := range s.expiries[i.queue] {
+			h = append(h, hourInfo{hour: k, count: v})
+		}
+		sort.Sort(h)
+		for _, hi := range h {
+			fmt.Printf("%3dh: %5d\n", hi.hour, hi.count)
+		}
+	}
+}
+
 func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	v, err := s.redis.Get(key).Result()
 	if err != nil {
@@ -69,6 +162,7 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	if expires >= threshold {
 		t := time.Duration(expires-threshold) * time.Second
 		logDebug("key %s expires in %s", key, t)
+		s.recordExpiryHour(key, t)
 		return false, err
 	}
 	t := time.Duration(threshold-expires) * time.Second
@@ -86,6 +180,7 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 func (s *GCState) garbageCollectKeys(db int) {
 	var total, expired int
 	var cursor uint64
+	defer func() { s.dumpExpiries() }()
 	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
 	ticker := time.NewTicker(1 * time.Second)
 collecting:
@@ -212,6 +307,7 @@ func RunGarbageCollectKeys(opts GCOptions) error {
 				logError("%v", err)
 				continue
 			}
+			state.resetExpiries()
 			if opts.GcKeyFile == "" {
 				state.garbageCollectKeys(db)
 			} else {
