@@ -41,7 +41,7 @@ install: $(GO_INSTALL_TARGETS)
 uninstall:
 	cd $(BIN_DIR) && rm -f $(GO_INSTALL_TARGETS) $(SCRIPTS)
 
-GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go config.go delete_keys.go dump_expiries.go)
+GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go datatypes.go server_state.go failover_state.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go config.go delete_keys.go dump_expiries.go)
 
 .packr:
 	go get github.com/gobuffalo/packr/packr
@@ -53,7 +53,7 @@ $(GO_SRC)/a_main-packr.go: $(GO_SRC)/templates/index.html .packr
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go
 	cd $(GO_SRC) && $(GO_ENV) go build -o ../$@
 
-test: test-main test-server test-consul
+test: test-main test-server
 
 test-main:
 	cd $(GO_SRC) && go test
