@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 3.0.0.rc3
+* store redis gc stats in redis and display them in the configuration
+  server web UI
+
 == Version 3.0.0.rc2
 * change policy setup to be asynchronous, on demand in publisher and
   consumer. Users have to run a processors to listen to messages and
