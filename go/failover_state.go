@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -25,6 +26,7 @@ type FailoverState struct {
 	retries                      int              // Count down for checking a master to come back after it has become unreachable.
 	system                       string           // The name of the failover set.
 	server                       *ServerState     // Backpointer to embedding server.
+	gcInfo                       *GCInfo          // Information on last garbage collection.
 }
 
 // GetConfig returns the server state in a thread safe manner.
@@ -35,6 +37,25 @@ func (s *FailoverState) GetConfig() *Config {
 // ClientTimeout returns the client timeout as a time.Duration.
 func (s *FailoverState) ClientTimeout() time.Duration {
 	return s.server.ClientTimeout()
+}
+
+// SetGCInfo retrieves info about the last garbage collection from the urrent master and remembers it.
+func (s *FailoverState) SetGCInfo() {
+	if s.currentMaster == nil {
+		return
+	}
+	data, err := s.currentMaster.redis.Get("beetle:lastgc").Result()
+	if err != nil {
+		logInfo("could not retrieve last GC info for system '%s': %s", s.system, err)
+		return
+	}
+	var info GCInfo
+	err = json.Unmarshal([]byte(data), &info)
+	if err != nil {
+		logInfo("could not unmarshal last GC info for system '%s': %s", s.system, err)
+		return
+	}
+	s.gcInfo = &info
 }
 
 // SendToWebSockets sends a message to all registered clients channels.
@@ -143,6 +164,7 @@ func (s *FailoverState) DetermineInitialMaster(mastersFromFile map[string]string
 	} else {
 		s.currentMaster = s.redis.AutoDetectMaster()
 	}
+	s.SetGCInfo()
 }
 
 // DetermineNewMaster uses the cached redis information to either select a new
@@ -313,6 +335,7 @@ func (s *FailoverState) CheckRedisAvailability() {
 		}
 		s.StartWatcher()
 		s.MasterAvailable()
+		s.SetGCInfo()
 	} else {
 		retriesLeft := s.GetConfig().RedisMasterRetries - (s.retries + 1)
 		logWarn("Redis master not available! (Retries left: %d)", retriesLeft)

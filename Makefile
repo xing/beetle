@@ -47,7 +47,7 @@ GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go datatypes.go server_s
 	go get github.com/gobuffalo/packr/packr
 	touch .packr
 
-$(GO_SRC)/a_main-packr.go: $(GO_SRC)/templates/index.html .packr
+$(GO_SRC)/a_main-packr.go: $(wildcard $(GO_SRC)/templates/*.html) .packr
 	cd $(GO_SRC) && packr
 
 beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go

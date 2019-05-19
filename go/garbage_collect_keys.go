@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -85,63 +86,93 @@ func (s *GCState) resetExpiries() {
 	s.expiries = make(map[string]map[int]int)
 }
 
-type queueInfo struct {
-	queue         string
-	totalExpiries int
+type QueueInfo struct {
+	Queue         string    `json:"queue"`
+	TotalExpiries int       `json:"total_expiries"`
+	Expiries      HourInfos `json:"expiries"`
 }
-type queueInfos []queueInfo
 
-func (s queueInfos) Len() int {
+type QueueInfos []QueueInfo
+
+func (s QueueInfos) Len() int {
 	return len(s)
 }
 
-func (s queueInfos) Less(i, j int) bool {
-	return s[i].totalExpiries > s[j].totalExpiries
+func (s QueueInfos) Less(i, j int) bool {
+	return s[i].TotalExpiries > s[j].TotalExpiries
 }
 
-func (s queueInfos) Swap(i, j int) {
+func (s QueueInfos) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type hourInfo struct {
-	hour  int
-	count int
+type HourInfo struct {
+	Hour  int `json:"hour"`
+	Count int `json:"count"`
 }
-type hourInfos []hourInfo
+type HourInfos []HourInfo
 
-func (s hourInfos) Len() int {
+func (s HourInfos) Len() int {
 	return len(s)
 }
 
-func (s hourInfos) Less(i, j int) bool {
-	return s[i].hour > s[j].hour
+func (s HourInfos) Less(i, j int) bool {
+	return s[i].Hour > s[j].Hour
 }
 
-func (s hourInfos) Swap(i, j int) {
+func (s HourInfos) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (s *GCState) dumpExpiries() {
-	l := make(queueInfos, 0, len(s.expiries))
+func (s *GCState) getQueueInfos() QueueInfos {
+	l := make(QueueInfos, 0, len(s.expiries))
 	for q, m := range s.expiries {
-		i := queueInfo{queue: q}
-		for _, v := range m {
-			i.totalExpiries += v
+		i := QueueInfo{Queue: q, Expiries: make(HourInfos, 0, len(m))}
+		for h, c := range m {
+			i.TotalExpiries += c
+			i.Expiries = append(i.Expiries, HourInfo{Hour: h, Count: c})
 		}
+		sort.Sort(i.Expiries)
 		l = append(l, i)
 	}
 	sort.Sort(l)
-	for _, i := range l {
+	return l
+}
+
+type GCInfo struct {
+	Timestamp int64      `json:"timestamp"`
+	Queues    QueueInfos `json:"queues"`
+}
+
+func (i *GCInfo) TimestampHuman() string {
+	if i == nil {
+		return "unknown"
+	}
+	return time.Unix(i.Timestamp, 0).Format(time.RFC1123)
+}
+
+func (s *GCState) storeQueueInfos(infos QueueInfos) {
+	gcInfo := GCInfo{Timestamp: time.Now().Unix(), Queues: infos}
+	data, err := json.Marshal(gcInfo)
+	if err != nil {
+		logError("could not encode gc info as json: %s", err)
+		return
+	}
+	_, err = s.redis.Set("beetle:lastgc", data, 0).Result()
+	if err != nil {
+		logError("could not store GC information in redis: %s", err)
+	}
+	logInfo("updated GC information in dedup store")
+}
+
+func (s *GCState) dumpQueueInfos(infos QueueInfos) {
+	logInfo("active keys in dedup store by queue")
+	for _, i := range infos {
 		fmt.Println("--------------------------------------------------------------")
-		fmt.Printf("%s: %d\n", i.queue, i.totalExpiries)
+		fmt.Printf("%s: %d\n", i.Queue, i.TotalExpiries)
 		fmt.Println("--------------------------------------------------------------")
-		h := make(hourInfos, 0, len(s.expiries[i.queue]))
-		for k, v := range s.expiries[i.queue] {
-			h = append(h, hourInfo{hour: k, count: v})
-		}
-		sort.Sort(h)
-		for _, hi := range h {
-			fmt.Printf("%3dh: %5d\n", hi.hour, hi.count)
+		for _, hi := range i.Expiries {
+			fmt.Printf("%3dh: %5d\n", hi.Hour, hi.Count)
 		}
 	}
 }
@@ -177,16 +208,15 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	return err == nil, err
 }
 
-func (s *GCState) garbageCollectKeys(db int) {
+func (s *GCState) garbageCollectKeys(db int) bool {
 	var total, expired int
 	var cursor uint64
-	defer func() { s.dumpExpiries() }()
 	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
 	ticker := time.NewTicker(1 * time.Second)
-collecting:
+	threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
 	for range ticker.C {
 		if interrupted {
-			return
+			return false
 		}
 		if s.getMaster(db) {
 			if cursor == 0 {
@@ -198,35 +228,29 @@ collecting:
 			keys, cursor, err = s.redis.Scan(cursor, "msgid:*:expires", 10000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
-				cursor = 0
-				total = 0
-				expired = 0
-				continue collecting
+				return true
 			}
 			logDebug("retrieved %d keys from db %d", len(keys), db)
 			total += len(keys)
-			threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
 			for _, key := range keys {
 				if interrupted {
-					return
+					return false
 				}
 				collected, err := s.gcKey(key, uint64(threshold))
 				if err != nil {
 					logError("starting over: %v", err)
-					cursor = 0
-					total = 0
-					expired = 0
-					goto collecting
+					return true
 				}
 				if collected {
 					expired++
 				}
 			}
 			if cursor == 0 {
-				return
+				return false
 			}
 		}
 	}
+	return false
 }
 
 func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
@@ -292,11 +316,13 @@ func (s *GCState) getMaster(db int) bool {
 // RunGarbageCollectKeys runs a garbage collection on the redis master using the
 // redis SCAN operation. Restarts from the beginning, should the master change
 // while running the scan. Terminates as soon as a full scan has been performed
-// on all databases which need GC.
+// successfully on all databases which need GC.
 func RunGarbageCollectKeys(opts GCOptions) error {
 	logDebug("garbage collecting keys with options: %+v", opts)
 	state := &GCState{opts: opts}
 	state.keySuffixes = []string{"status", "ack_count", "timeout", "delay", "attempts", "exceptions", "mutex", "expires"}
+restart:
+	state.resetExpiries()
 	for _, s := range strings.Split(opts.GcDatabases, ",") {
 		if interrupted {
 			break
@@ -307,16 +333,21 @@ func RunGarbageCollectKeys(opts GCOptions) error {
 				logError("%v", err)
 				continue
 			}
-			state.resetExpiries()
 			if opts.GcKeyFile == "" {
-				state.garbageCollectKeys(db)
+				restart := state.garbageCollectKeys(db)
+				if restart {
+					goto restart
+				}
 			} else {
 				state.garbageCollectKeysFromFile(db, opts.GcKeyFile)
 			}
 		}
 	}
+	state.getMaster(0)
 	if state.redis != nil {
-		return state.redis.Close()
+		infos := state.getQueueInfos()
+		state.storeQueueInfos(infos)
+		state.dumpQueueInfos(infos)
 	}
 	return nil
 }

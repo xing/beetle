@@ -136,6 +136,7 @@ type FailoverStatus struct {
 	RedisMasterAvailable   bool     `json:"redis_master_available"`
 	RedisSlavesAvailable   []string `json:"redis_slaves_available"`
 	SwitchInProgress       bool     `json:"switch_in_progress"`
+	GCInfo                 *GCInfo  `json:"lastgc"`
 }
 
 // ServerStatus is used to faciliate JSON conversion of parts of the server state.
@@ -148,7 +149,16 @@ type ServerStatus struct {
 	Systems             []FailoverStatus `json:"redis_systems"`
 }
 
-// GetStatus creates a ServerStatus from the curretn server state.
+func (s *ServerStatus) GetFailoverStatus(system string) *FailoverStatus {
+	for _, fs := range s.Systems {
+		if fs.SystemName == system {
+			return &fs
+		}
+	}
+	return nil
+}
+
+// GetStatus creates a ServerStatus from the current server state.
 func (s *ServerState) GetStatus() *ServerStatus {
 	failoverStats := []FailoverStatus{}
 
@@ -168,6 +178,7 @@ func (s *ServerState) GetStatus() *ServerStatus {
 			RedisMasterAvailable:   rs.MasterIsAvailable(),
 			RedisSlavesAvailable:   rs.redis.Slaves().Servers(),
 			SwitchInProgress:       rs.WatcherPaused(),
+			GCInfo:                 rs.gcInfo,
 		})
 	}
 
@@ -540,6 +551,32 @@ func (s *ServerState) serveWs(w http.ResponseWriter, r *http.Request) {
 	s.wsReader(ws)
 }
 
+func (s *ServerState) serveGCStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	keys, ok := r.URL.Query()["system"]
+	if !ok || len(keys[0]) < 1 {
+		logError("Url parameter 'system' is missing")
+		w.WriteHeader(400)
+		return
+	}
+	system := keys[0]
+	tmpl, err := template.New("gcstats.html").Parse(gcStatsTemplate)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	status := s.GetStatusFromDispatcher()
+	fs := status.GetFailoverStatus(system)
+	if fs == nil {
+		w.WriteHeader(404)
+		return
+	}
+	err = tmpl.Execute(w, fs.GCInfo)
+	if err != nil {
+		logError("template execution failed: %s", err)
+	}
+}
+
 func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/", "/.html":
@@ -574,6 +611,8 @@ func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 		s.serveWs(w, r)
 	case "/notifications":
 		s.serveNotifications(w, r)
+	case "/gcstats":
+		s.serveGCStats(w, r)
 	default:
 		http.NotFound(w, r)
 	}

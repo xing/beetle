@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <title>GC Statistics</title>
+    <style media="screen" type="text/css">
+      html { font: 1.1em/1.2 arial, sans-serif;}
+      body { margin: 1em; }
+      th { padding: 3px 3px; vertical-align: top; font-weight: normal; }
+      td { padding: 1px 1px; vertical-align: top; text-align: right; }
+      dl { margin-left: 0px; padding: 1px;}
+      dd { margin-inline-start: 0px; padding: 1px;}
+      dt { color: #5780b2; font-weight: bold; font-size: 110%;}
+      h2 { color: #5780b2; }
+      table { margin-left: 0; padding: 1px; }
+    </style>
+  </head>
+  <body>
+    {{ if . }}
+    <h2>Last GC completed at {{ .TimestampHuman }}</h2>
+    <p>Active dedup store entries by queue, with an hour base histogram of future expiries.</p>
+    <dl>
+      {{ range .Queues }}
+      <dt>{{ .Queue }}: {{ .TotalExpiries }}</dt>
+      <dd>
+        <table>
+          <colgroup>
+            <col span="1" style="width: 2em;">
+            <col span="1" style="width: 4em;">
+          </colgroup>
+          {{ range .Expiries }}
+          <tr><td>{{ .Hour }}h</td><td>{{ .Count  }}</td></tr>
+          {{ end }}
+        </table>
+      </dd>
+      {{ end }}
+    </dl>
+    {{ else }}
+    <h2>No GC information available</h2>
+    {{ end }}
+  </body>
+</html>

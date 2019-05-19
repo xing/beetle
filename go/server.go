@@ -25,7 +25,10 @@ func waitForWaitGroupWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool
 	}
 }
 
-var htmlTemplate string
+var (
+	htmlTemplate    string
+	gcStatsTemplate string
+)
 
 // RunConfigurationServer implements the main server loop.
 func RunConfigurationServer(o ServerOptions) error {
@@ -47,7 +50,7 @@ func RunConfigurationServer(o ServerOptions) error {
 		state.configChanges = make(chan consul.Env)
 	}
 
-	// load html template
+	// load html templates
 	box := packr.NewBox("./templates")
 	html, err := box.FindString("index.html")
 	if err != nil {
@@ -55,6 +58,12 @@ func RunConfigurationServer(o ServerOptions) error {
 		os.Exit(1)
 	}
 	htmlTemplate = html
+	html, err = box.FindString("gcstats.html")
+	if err != nil {
+		logError("could not load gcstats.html")
+		os.Exit(1)
+	}
+	gcStatsTemplate = html
 
 	state.clientHandler(state.GetConfig().Port)
 	logInfo("shutting down")

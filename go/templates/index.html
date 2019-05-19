@@ -10,9 +10,19 @@
       li { }
       h1.available { color: #5780b2; margin-bottom: 0.2em;}
       h1.unavailable { color: #A52A2A; margin-bottom: 0.2em;}
-      a:link, a:visited {text-decoration:none; color:#A52A2A;}
-      a:hover, a:active {text-decoration:none; color:#FF0000;}
-      a {
+      a:link, a:visited {text-decoration:none; color:#5780b2;}
+      a:hover, a:active {text-decoration:none; color:blue;}
+      a { text-decoration:none;
+          padding: 5px; background: #cdcdcd;
+          -moz-border-radius: 4px;
+          border-radius: 4px;
+          -moz-box-shadow: 1px 1px 1px #bbb;
+          -webkit-box-shadow: 1px 1px 1px #bbb;
+          box-shadow: 1px 1px 1px #bbb;
+      }
+      form a:link, form a:visited {text-decoration:none; color:#A52A2A;}
+      form a:hover, form a:active {text-decoration:none; color:#FF0000;}
+      form a {
           padding: 10px; background: #cdcdcd;
           -moz-border-radius: 5px;
           border-radius: 5px;
@@ -40,6 +50,7 @@
       <tr><td>redis_master</td><td>{{ .RedisMaster}}</td></tr>
       <tr><td>redis_slaves_available</td><td><ul>{{ if not .RedisSlavesAvailable }}none{{ else }}{{ range .RedisSlavesAvailable }}<li>{{ . }}</li>{{ end }}{{ end }}</ul></td></tr>
       <tr><td>configured_redis_servers</td><td><ul>{{ range .ConfiguredRedisServers }}<li>{{ . }}</li>{{ end }}</ul></td></tr>
+      <tr><td>last_gc</td><td>{{ if .GCInfo }}<a href=/gcstats?system={{ .SystemName }}>{{ .GCInfo.TimestampHuman }}</a>{{ else }}unknown{{ end }}</td></tr>
     </table>
     {{ end }}
     <h1 class="available">Global Configuration</h2>
