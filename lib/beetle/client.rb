@@ -258,6 +258,25 @@ module Beetle
       subscriber.resume_listening(queues)
     end
 
+    # throttle publishing of messages based on queue lengths.
+    #
+    #    client.throttle(:foo => 10000, :bar => 10_000)
+    #
+    # throttle publisher to 1 message per second as long as queue foo has more
+    # than 10000 entries or queue bar has more than 100000 entries across all
+    # servers. Queue lenghts are periodically determined during publishing. You
+    # only want to use this feature if you plan to publish a huge amount of
+    # messages to slow consumers so as to not overload the broker or the redis
+    # dedpuplication store.
+    def throttle(throttling_options)
+      publisher.throttle(throttling_options.stringify_keys)
+    end
+
+    # is the publisher currently throttled?
+    def throttled?
+      publisher.throttled?
+    end
+
     # traces queues without consuming them. useful for debugging message flow.
     def trace(queue_names=self.queues.keys, tracer=nil, &block)
       queues_to_trace = self.queues.slice(*queue_names)

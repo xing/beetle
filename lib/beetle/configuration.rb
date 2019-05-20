@@ -112,6 +112,9 @@ module Beetle
     # decreased parallelism.
     attr_accessor :prefetch_count
 
+    # refresh interval for determining queue lenghts for throttling.
+    attr_accessor :throttling_refresh_interval
+
     # directory to store large intermediate files (defaults '/tmp')
     attr_accessor :tmpdir
 
@@ -160,6 +163,7 @@ module Beetle
       self.dead_lettering_read_timeout = 3 #3 seconds
 
       self.lazy_queues_enabled = false
+      self.throttling_refresh_interval = 60 # seconds
 
       self.publishing_timeout = 0
       self.publisher_connect_timeout = 5

@@ -80,6 +80,7 @@ module Beetle
       @pub.send(:mark_server_dead)
       publishing = sequence('publishing')
       @pub.expects(:recycle_dead_servers).in_sequence(publishing)
+      @pub.expects(:throttle!).in_sequence(publishing)
       @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).in_sequence(publishing)
       @pub.publish("mama", @data)
     end
@@ -89,6 +90,7 @@ module Beetle
       @pub.send(:mark_server_dead)
       publishing = sequence('publishing')
       @pub.expects(:recycle_dead_servers).in_sequence(publishing)
+      @pub.expects(:throttle!).in_sequence(publishing)
       @pub.expects(:publish_with_redundancy).with("mama-exchange", "mama", @data, @opts.merge(:redundant => true)).in_sequence(publishing)
       @pub.publish("mama", @data, :redundant => true)
     end
@@ -337,6 +339,57 @@ module Beetle
       @pub.expects(:set_current_server).with("b").in_sequence(s)
       @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
       @pub.setup_queues_and_policies(["queue"])
+    end
+
+    test "reports whether it has been throttled" do
+      assert !@pub.throttled?
+      @pub.instance_variable_set :@throttled, true
+      assert @pub.throttled?
+    end
+
+    test "sets throttling options" do
+      h = { "x" => 1, "y" => 2}
+      @pub.throttle(h)
+      assert_equal h, @pub.instance_variable_get(:@throttling_options)
+    end
+
+    test "throttle! sleeps appropriately when refreshing throttling" do
+      @pub.expects(:throttling?).returns(true).twice
+      @pub.expects(:refresh_throttling!).twice
+      @pub.expects(:throttled?).returns(true)
+      @pub.expects(:sleep).with(1)
+      @pub.throttle!
+      @pub.expects(:throttled?).returns(false)
+      @pub.expects(:sleep).never
+      @pub.throttle!
+    end
+
+    test "returns a throttling status" do
+      assert_equal 'unthrottled', @pub.throttling_status
+      @pub.instance_variable_set :@throttled, true
+      assert_equal 'throttled', @pub.throttling_status
+    end
+
+    test "refresh_throttling! does not recompute values when refresh interval has not passed" do
+      @pub.instance_variable_set :@next_throttle_refresh, Time.now + 1
+      options = {}
+      @pub.throttle(options)
+      options.expects(:each).never
+      @pub.__send__ :refresh_throttling!
+    end
+
+    test "refresh_throttling! throttles when queue length exceeds limit" do
+      assert !@pub.throttled?
+      @pub.instance_variable_set :@next_throttle_refresh, Time.now - 1
+      options = { "test" => 100 }
+      @pub.throttle(options)
+      @pub.expects(:each_server).yields
+      q = mock("queue")
+      q.expects(:status).returns(:message_count => 500)
+      @pub.expects(:queue).returns(q)
+      @pub.logger.expects(:info)
+      @pub.__send__ :refresh_throttling!
+      assert @pub.throttled?
     end
 
   end
