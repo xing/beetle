@@ -190,8 +190,8 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if expires >= threshold {
-		t := time.Duration(expires-threshold) * time.Second
+	if expires > threshold {
+		t := time.Duration(expires-threshold+uint64(s.opts.GcThreshold)) * time.Second
 		logDebug("key %s expires in %s", key, t)
 		s.recordExpiryHour(key, t)
 		return false, err
