@@ -381,7 +381,9 @@ module Beetle
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       return if simple? # simple messages don't use the deduplication store
-      if !redundant? || @store.incr(msg_id, :ack_count) == 2
+      if !redundant? || @store.incr(msg_id, :ack_count) >= 2
+        # we test for >= 2 here, because we retry increments in the
+        # dedup store so the counter could be greater than two
         @store.del_keys(msg_id)
       end
     end
