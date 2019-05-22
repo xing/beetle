@@ -1,7 +1,10 @@
 = Release Notes
 
+== Version 3.0.0.rc?
+* don't create dead letter queues when using the trace functionality
+
 == Version 3.0.0.rc5
-* ake sure to clean dedup store when ack_count is larger than 2
+* make sure to clean dedup store when ack_count is larger than 2
 
 == Version 3.0.0.rc4
 * fixed incorrect calculation of expiry time in garbage collector
