@@ -352,7 +352,7 @@ module Beetle
     end
 
     def queue_name_for_tracing(queue)
-      "trace-#{queue}-#{Beetle.hostname}-#{$$}"
+      "trace-#{queue}-#{Beetle.hostname}"
     end
 
     def load_brokers_from_config
