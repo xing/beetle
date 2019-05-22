@@ -4,6 +4,11 @@ module Beetle
   # Manages subscriptions and message processing on the receiver side of things.
   class Subscriber < Base
 
+    attr_accessor :tracing
+    def tracing?
+      @tracing
+    end
+
     # create a new subscriber instance
     def initialize(client, options = {}) #:nodoc:
       super
@@ -14,6 +19,7 @@ module Beetle
       @subscriptions = {}
       @listened_queues = []
       @channels_closed = false
+      @tracing = false
     end
 
     # the client calls this method to subscribe to a list of queues.
@@ -206,8 +212,11 @@ module Beetle
 
     def bind_queue!(queue_name, creation_keys, exchange_name, binding_keys)
       queue = channel.queue(queue_name, creation_keys)
-      policy_options = bind_dead_letter_queue!(channel, queue_name, creation_keys)
-      publish_policy_options(policy_options)
+      unless tracing?
+        # we don't want to create dead-letter queues for tracing
+        policy_options = bind_dead_letter_queue!(channel, queue_name, creation_keys)
+        publish_policy_options(policy_options)
+      end
       exchange = exchange(exchange_name)
       queue.bind(exchange, binding_keys)
       queue

@@ -275,7 +275,9 @@ module Beetle
           puts "DATA: #{msg.data}"
         end
       register_handler(queue_names){|msg| tracer.call msg }
+      @subscriber.tracing = true
       listen_queues(queue_names, &block)
+      @subscriber.tracing = false
     end
 
     # evaluate the ruby files matching the given +glob+ pattern in the context of the client instance.
