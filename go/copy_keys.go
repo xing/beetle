@@ -10,30 +10,32 @@ import (
 	"gopkg.in/redis.v5"
 )
 
-// DeleteKeysOptions are provided by the caller of RunDeleteKeys.
-type DeleteKeysOptions struct {
+// CopyKeysOptions are provided by the caller of RunCopyKeys.
+type CopyKeysOptions struct {
 	RedisMasterFile string        // Path to the redis master file.
 	Databases       string        // List of databases to scan.
-	System          string        // Name of redis system for which to delete keys.
-	QueuePrefix     string        // Delete keys for queues starting with the given prefix.
-	DeleteBefore    time.Duration // Delete keys which expire before the given time.
+	System          string        // Name of redis system from which to copy keys.
+	TargetRedis     string        // Redis connection spec of the system to copy keys to.
+	QueuePrefix     string        // Copy keys for queues starting with the given prefix.
+	CopyAfter       time.Duration // Copy keys which expire after the given time.
 }
 
-// DeleterState holds options and collector state, most importantly the current redis
+// CopyerState holds options and copier state, most importantly the current redis
 // connection and database.
-type DeleterState struct {
-	opts          DeleteKeysOptions
+type CopierState struct {
+	opts          CopyKeysOptions
 	currentMaster string
 	currentDB     int
-	redis         *redis.Client // current connection
+	redis         *redis.Client // current source connection
+	targetRedis   *redis.Client // target connection
 	keySuffixes   []string
 }
 
-func (s *DeleterState) key(msgId, suffix string) string {
+func (s *CopierState) key(msgId, suffix string) string {
 	return fmt.Sprintf("%s:%s", msgId, suffix)
 }
 
-func (s *DeleterState) keys(msgId string) []string {
+func (s *CopierState) keys(msgId string) []string {
 	res := make([]string, 0)
 	for _, suffix := range s.keySuffixes {
 		res = append(res, s.key(msgId, suffix))
@@ -41,7 +43,7 @@ func (s *DeleterState) keys(msgId string) []string {
 	return res
 }
 
-func (s *DeleterState) msgId(key string) string {
+func (s *CopierState) msgId(key string) string {
 	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]+):.*$")
 	matches := re.FindStringSubmatch(key)
 	if len(matches) == 0 {
@@ -51,7 +53,16 @@ func (s *DeleterState) msgId(key string) string {
 	return matches[1]
 }
 
-func (s *DeleterState) deleteMessageKeys(key string, threshold uint64) (bool, error) {
+func (s *CopierState) matches(key string) string {
+	re := regexp.MustCompile("^msgid:(" + s.opts.QueuePrefix + ".*):[-0-9a-f]+:.*$")
+	matches := re.FindStringSubmatch(key)
+	if len(matches) == 0 {
+		return ""
+	}
+	return matches[1]
+}
+
+func (s *CopierState) copyMessageKeys(key string, threshold uint64) (bool, error) {
 	v, err := s.redis.Get(key).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -64,33 +75,45 @@ func (s *DeleterState) deleteMessageKeys(key string, threshold uint64) (bool, er
 	if err != nil {
 		return false, err
 	}
-	if expires >= threshold {
-		t := time.Duration(expires-threshold) * time.Second
+	if expires < threshold {
+		t := time.Duration(threshold-expires) * time.Second
 		logDebug("key %s expires in %s", key, t)
 		return false, err
 	}
-	t := time.Duration(threshold-expires) * time.Second
-	logDebug("key %s has expired %s ago", key, t)
+	t := time.Duration(expires-threshold) * time.Second
+	logDebug("key %s will expire in %s", key, t)
 	msgID := s.msgId(key)
 	if msgID == "" {
 		return false, nil
 	}
 	keys := s.keys(msgID)
-	// logDebug("deleting keys: %s", strings.Join(keys, ", "))
-	_, err = s.redis.Del(keys...).Result()
+	values, err := s.redis.MGet(keys...).Result()
+	if err != nil {
+		return false, err
+	}
+	pairs := make([]interface{}, 0, 2*len(keys))
+	for i := range keys {
+		if values[i] != nil {
+			pairs = append(pairs, keys[i], values[i])
+		}
+	}
+	logDebug("copying keys: %v", pairs)
+	result, err := s.targetRedis.MSet(pairs...).Result()
+	logDebug("copying keys returned: %v", result)
 	return err == nil, err
 }
 
-func (s *DeleterState) deleteKeys(db int) {
-	var deleted int
+func (s *CopierState) copyKeys(db int) {
+	var copied int
 	var cursor uint64
-	defer func() { logInfo("deleted %d keys in db %d", deleted, db) }()
+	defer func() { logInfo("copied %d keys from db %d", copied, db) }()
 	ticker := time.NewTicker(100 * time.Millisecond)
+	s.targetRedis = redis.NewClient(&redis.Options{Addr: s.opts.TargetRedis, DB: db})
 	keyPattern := "msgid:" + s.opts.QueuePrefix + "*:expires"
-	expiry := time.Now().Add(s.opts.DeleteBefore)
-	logInfo("deleting keys with queue prefix '%s' expiring before %s", s.opts.QueuePrefix, expiry.Format(time.RFC3339))
+	expiry := time.Now().Add(s.opts.CopyAfter)
+	logInfo("copying keys for queue prefix '%s' expiring after %s", s.opts.QueuePrefix, expiry.Format(time.RFC3339))
 	threshold := uint64(expiry.Unix())
-deleting:
+copying:
 	for range ticker.C {
 		if interrupted {
 			return
@@ -106,23 +129,25 @@ deleting:
 			if err != nil {
 				logError("starting over: %v", err)
 				cursor = 0
-				deleted = 0
-				continue deleting
+				copied = 0
+				continue copying
 			}
-			logDebug("retrieved %d keys from db %d", len(keys), db)
 			for _, key := range keys {
 				if interrupted {
 					return
 				}
-				removed, err := s.deleteMessageKeys(key, threshold)
+				if s.matches(key) == "" {
+					continue
+				}
+				ok, err := s.copyMessageKeys(key, threshold)
 				if err != nil {
 					logError("starting over: %v", err)
 					cursor = 0
-					deleted = 0
-					goto deleting
+					copied = 0
+					goto copying
 				}
-				if removed {
-					deleted++
+				if ok {
+					copied++
 				}
 			}
 			if cursor == 0 {
@@ -132,7 +157,7 @@ deleting:
 	}
 }
 
-func (s *DeleterState) getMaster(db int) bool {
+func (s *CopierState) getMaster(db int) bool {
 	systems := RedisMastersFromMasterFile(s.opts.RedisMasterFile)
 	server := systems[s.opts.System]
 	if s.currentMaster != server || s.currentDB != db {
@@ -153,13 +178,13 @@ func (s *DeleterState) getMaster(db int) bool {
 	return s.redis != nil
 }
 
-// RunDeleteKeys deletes all keys for a given queue on the redis
+// RunCopyKeys deletes all keys for a given queue on the redis
 // master using the redis SCAN operation. Restarts from the beginning,
 // should the master change while running the scan. Terminates as soon
 // as a full scan has been performed on all databases.
-func RunDeleteKeys(opts DeleteKeysOptions) error {
+func RunCopyKeys(opts CopyKeysOptions) error {
 	logDebug("deleting keys with options: %+v", opts)
-	state := &DeleterState{opts: opts}
+	state := &CopierState{opts: opts}
 	state.keySuffixes = []string{"status", "ack_count", "timeout", "delay", "attempts", "exceptions", "mutex", "expires"}
 	for _, s := range strings.Split(opts.Databases, ",") {
 		if interrupted {
@@ -171,7 +196,7 @@ func RunDeleteKeys(opts DeleteKeysOptions) error {
 				logError("%v", err)
 				continue
 			}
-			state.deleteKeys(db)
+			state.copyKeys(db)
 		}
 	}
 	if state.redis != nil {

@@ -37,13 +37,15 @@ var opts struct {
 	ConsulUrl                string        `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
 	GcThreshold              int           `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
 	GcDatabases              string        `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
-	GcSystem                 string        `long:"redis-gc-system" description:"Redis system from which to collect keys. Defaults to 'system'."`
+	GcSystem                 string        `long:"redis-gc-system" default:"system" description:"Redis system from which to collect keys."`
 	GcKeyFile                string        `long:"redis-gc-key-file" description:"File with keys to collect."`
 	MailTo                   string        `long:"mail-to" description:"Send notifcation mails to this address."`
 	DialTimeout              int           `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
 	ConfidenceLevel          string        `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
-	Queue                    string        `long:"queue" description:"Name of the queue for which to delete all redis keys."`
-	DeleteBefore             time.Duration `long:"delete-before" description:"Delete keys which do expire before the given date/time."`
+	DeleteBefore             time.Duration `long:"delete-before" description:"Delete keys which do expire before the given time."`
+	CopyAfter                time.Duration `long:"copy-after" description:"Copy keys which do expire after the given time."`
+	TargetRedis              string        `long:"target-redis" description:"Specifies the target server for the copy_keys command (host:port)."`
+	QueuePrefix              string        `long:"queue-prefix" description:"Specifies the queue prefix for matching keys to be deleted/copied."`
 }
 
 // Verbose stores verbosity or logging purposoes.
@@ -134,15 +136,32 @@ func (x *CmdRunDeleteKeys) Execute(args []string) error {
 	if opts.GcSystem == "" {
 		opts.GcSystem = "system"
 	}
-	if opts.Queue == "" {
-		return fmt.Errorf("please specify a queue using the --queue option")
-	}
 	return RunDeleteKeys(DeleteKeysOptions{
 		RedisMasterFile: initialConfig.RedisMasterFile,
 		Databases:       initialConfig.GcDatabases,
 		System:          opts.GcSystem,
-		Queue:           opts.Queue,
+		QueuePrefix:     opts.QueuePrefix,
 		DeleteBefore:    opts.DeleteBefore,
+	})
+}
+
+// CmdRunCopyKeys is used when the program arguments tell us to copy redis keys.
+type CmdRunCopyKeys struct{}
+
+var cmdRunCopyKeys CmdRunCopyKeys
+
+// Execute copy redis keys.
+func (x *CmdRunCopyKeys) Execute(args []string) error {
+	if opts.GcSystem == "" {
+		opts.GcSystem = "system"
+	}
+	return RunCopyKeys(CopyKeysOptions{
+		RedisMasterFile: initialConfig.RedisMasterFile,
+		Databases:       initialConfig.GcDatabases,
+		System:          opts.GcSystem,
+		TargetRedis:     opts.TargetRedis,
+		QueuePrefix:     opts.QueuePrefix,
+		CopyAfter:       opts.CopyAfter,
 	})
 }
 
@@ -339,7 +358,8 @@ func main() {
 	parser.AddCommand("configuration_server", "run redis configuration server", "", &cmdRunServer)
 	parser.AddCommand("dump", "dump configuration after merging all config sources and exit", "", &cmdPrintConfig)
 	parser.AddCommand("garbage_collect_deduplication_store", "garbage collect keys on redis servers", "", &cmdRunGCKeys)
-	parser.AddCommand("delete_queue_keys", "delete all keys for a given queue on redis servers", "", &cmdRunDeleteKeys)
+	parser.AddCommand("delete_queue_keys", "delete all keys for a given queue prefix on redis servers", "", &cmdRunDeleteKeys)
+	parser.AddCommand("copy_queue_keys", "copy all keys for a given queue prefix from current master to a given redis server", "", &cmdRunCopyKeys)
 	parser.AddCommand("dump_expiries", "print all expiry values from redis master", "", &cmdRunDumpExpiries)
 	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
 	parser.CommandHandler = cmdHandler
