@@ -27,6 +27,7 @@ type DeleterState struct {
 	currentDB     int
 	redis         *redis.Client // current connection
 	keySuffixes   []string
+	cursor        uint64
 }
 
 func (s *DeleterState) key(msgId, suffix string) string {
@@ -83,7 +84,6 @@ func (s *DeleterState) deleteMessageKeys(key string, threshold uint64) (bool, er
 
 func (s *DeleterState) deleteKeys(db int) {
 	var deleted int
-	var cursor uint64
 	defer func() { logInfo("deleted %d keys in db %d", deleted, db) }()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	keyPattern := "msgid:" + s.opts.QueuePrefix + "*:expires"
@@ -96,16 +96,16 @@ deleting:
 			return
 		}
 		if s.getMaster(db) {
-			if cursor == 0 {
+			if s.cursor == 0 {
 				logInfo("starting SCAN on db %d", db)
 			}
-			logDebug("cursor: %d", cursor)
+			logDebug("cursor: %d", s.cursor)
 			var err error
 			var keys []string
-			keys, cursor, err = s.redis.Scan(cursor, keyPattern, 1000).Result()
+			keys, s.cursor, err = s.redis.Scan(s.cursor, keyPattern, 1000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
-				cursor = 0
+				s.cursor = 0
 				deleted = 0
 				continue deleting
 			}
@@ -117,7 +117,7 @@ deleting:
 				removed, err := s.deleteMessageKeys(key, threshold)
 				if err != nil {
 					logError("starting over: %v", err)
-					cursor = 0
+					s.cursor = 0
 					deleted = 0
 					goto deleting
 				}
@@ -125,7 +125,7 @@ deleting:
 					deleted++
 				}
 			}
-			if cursor == 0 {
+			if s.cursor == 0 {
 				return
 			}
 		}
@@ -138,6 +138,7 @@ func (s *DeleterState) getMaster(db int) bool {
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server
 		s.currentDB = db
+		s.cursor = 0
 		if server == "" {
 			if s.redis != nil {
 				s.redis.Close()

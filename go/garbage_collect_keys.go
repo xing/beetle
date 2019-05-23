@@ -33,6 +33,7 @@ type GCState struct {
 	redis         *redis.Client // current connection
 	keySuffixes   []string
 	expiries      map[string]map[int]int
+	cursor        uint64
 }
 
 func (s *GCState) key(msgId, suffix string) string {
@@ -210,7 +211,6 @@ func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
 
 func (s *GCState) garbageCollectKeys(db int) bool {
 	var total, expired int
-	var cursor uint64
 	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
 	ticker := time.NewTicker(1 * time.Second)
 	threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
@@ -219,13 +219,13 @@ func (s *GCState) garbageCollectKeys(db int) bool {
 			return false
 		}
 		if s.getMaster(db) {
-			if cursor == 0 {
+			if s.cursor == 0 {
 				logInfo("starting SCAN on db %d", db)
 			}
-			logDebug("cursor: %d", cursor)
+			logDebug("s.cursor: %d", s.cursor)
 			var err error
 			var keys []string
-			keys, cursor, err = s.redis.Scan(cursor, "msgid:*:expires", 10000).Result()
+			keys, s.cursor, err = s.redis.Scan(s.cursor, "msgid:*:expires", 10000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
 				return true
@@ -245,7 +245,7 @@ func (s *GCState) garbageCollectKeys(db int) bool {
 					expired++
 				}
 			}
-			if cursor == 0 {
+			if s.cursor == 0 {
 				return false
 			}
 		}
@@ -298,6 +298,7 @@ func (s *GCState) getMaster(db int) bool {
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server
 		s.currentDB = db
+		s.cursor = 0
 		if server == "" {
 			if s.redis != nil {
 				s.redis.Close()

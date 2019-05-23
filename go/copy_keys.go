@@ -29,6 +29,7 @@ type CopierState struct {
 	redis         *redis.Client // current source connection
 	targetRedis   *redis.Client // target connection
 	keySuffixes   []string
+	cursor        uint64
 }
 
 func (s *CopierState) key(msgId, suffix string) string {
@@ -105,7 +106,6 @@ func (s *CopierState) copyMessageKeys(key string, threshold uint64) (bool, error
 
 func (s *CopierState) copyKeys(db int) {
 	var copied int
-	var cursor uint64
 	defer func() { logInfo("copied %d keys from db %d", copied, db) }()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	s.targetRedis = redis.NewClient(&redis.Options{Addr: s.opts.TargetRedis, DB: db})
@@ -119,16 +119,16 @@ copying:
 			return
 		}
 		if s.getMaster(db) {
-			if cursor == 0 {
+			if s.cursor == 0 {
 				logInfo("starting SCAN on db %d", db)
 			}
-			logDebug("cursor: %d", cursor)
+			logDebug("cursor: %d", s.cursor)
 			var err error
 			var keys []string
-			keys, cursor, err = s.redis.Scan(cursor, keyPattern, 1000).Result()
+			keys, s.cursor, err = s.redis.Scan(s.cursor, keyPattern, 1000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
-				cursor = 0
+				s.cursor = 0
 				copied = 0
 				continue copying
 			}
@@ -142,7 +142,7 @@ copying:
 				ok, err := s.copyMessageKeys(key, threshold)
 				if err != nil {
 					logError("starting over: %v", err)
-					cursor = 0
+					s.cursor = 0
 					copied = 0
 					goto copying
 				}
@@ -150,7 +150,7 @@ copying:
 					copied++
 				}
 			}
-			if cursor == 0 {
+			if s.cursor == 0 {
 				return
 			}
 		}
@@ -163,6 +163,7 @@ func (s *CopierState) getMaster(db int) bool {
 	if s.currentMaster != server || s.currentDB != db {
 		s.currentMaster = server
 		s.currentDB = db
+		s.cursor = 0
 		if server == "" {
 			if s.redis != nil {
 				s.redis.Close()
