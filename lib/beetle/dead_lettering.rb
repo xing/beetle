@@ -11,6 +11,10 @@ module Beetle
       @config = config
     end
 
+    def vhost
+      CGI.escape(@config.vhost)
+    end
+
     def set_queue_policies!(options)
       # logger.debug "Setting queue policies: #{options.inspect}"
       options = options.symbolize_keys
@@ -21,6 +25,7 @@ module Beetle
 
       target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
       set_queue_policy!(server, target_queue, target_queue_options)
+      remove_obsolete_bindings(server, target_queue, options[:bindings]) if options.has_key?(:bindings)
 
       dead_letter_queue_options = policy_options.merge(:routing_key => target_queue, :message_ttl => options[:message_ttl])
       set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options)
@@ -34,7 +39,6 @@ module Beetle
 
       return unless options[:dead_lettering] || options[:lazy]
 
-      vhost = CGI.escape(config.vhost)
       # no need to worry that the server has the port 5672. Net:HTTP will take care of this. See below.
       request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
       request = Net::HTTP::Put.new(request_url)
@@ -66,6 +70,58 @@ module Beetle
       end
 
       :ok
+    end
+
+    def remove_obsolete_bindings(server, queue_name, bindings)
+      logger.debug "Removing obsolete bindings"
+      raise ArgumentError.new("server missing")     if server.blank?
+      raise ArgumentError.new("queue name missing") if queue_name.blank?
+      raise ArgumentError.new("bindings missing")   if bindings.nil?
+
+      desired_bindings = bindings.each_with_object({}) do |b, desired|
+        desired[[b[:exchange], b[:key]]] = b.except(:exchange, :key)
+      end
+
+      server_bindings = retrieve_bindings(server, queue_name)
+      server_bindings.each do |b|
+        next unless b["destination_type"] == "queue" || b["destination"] == queue_name
+        next if b["source"] == ""
+        source_route = b.values_at("source", "routing_key")
+        unless desired_bindings.has_key?(source_route)
+          logger.info "Removing obsolete binding: #{b.inspect}"
+          remove_binding(server, queue_name, b["source"], b["properties_key"])
+        end
+      end
+    end
+
+    def retrieve_bindings(server, queue_name)
+      request_url = URI("http://#{server}/api/queues/#{vhost}/#{queue_name}/bindings")
+      request = Net::HTTP::Get.new(request_url)
+
+      response = run_rabbit_http_request(request_url, request) do |http|
+        http.request(request)
+      end
+
+      unless response.code == "200"
+        log_error("Failed to retrieve bindings for queue #{queue_name}", response)
+        raise FailedRabbitRequest.new("Could not retrieve queue bindings")
+      end
+
+      JSON.parse(response.body)
+    end
+
+    def remove_binding(server, queue_name, exchange, properties_key)
+      request_url = URI("http://#{server}/api/bindings/#{vhost}/e/#{exchange}/q/#{queue_name}/#{properties_key}")
+      request = Net::HTTP::Delete.new(request_url)
+
+      response = run_rabbit_http_request(request_url, request) do |http|
+        http.request(request)
+      end
+
+      unless %w(200 201 204).include?(response.code)
+        log_error("Failed to remove obsolete binding for queue #{queue_name}", response)
+        raise FailedRabbitRequest.new("Could not retrieve queue bindings")
+      end
     end
 
     def run_rabbit_http_request(uri, request, &block)

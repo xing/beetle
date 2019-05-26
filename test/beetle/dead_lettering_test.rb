@@ -113,5 +113,98 @@ module Beetle
 
       @dead_lettering.set_queue_policy!(@server, @queue_name, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
     end
+
+    test "set_queue_policies! calls remove_obsolete_bindings if bindings are part of the options hash" do
+      bindings = [{:exchange => "foo", :key => "a.b.c"}]
+      options = {
+        :server => "server", :lazy => true, :dead_lettering => true,
+        :queue_name => "QUEUE_NAME", :dead_letter_queue_name => "QUEUE_NAME_dead_letter",
+        :message_ttl => 10000,
+        :bindings => bindings
+      }
+      @dead_lettering.expects(:set_queue_policy!).twice
+      @dead_lettering.expects(:remove_obsolete_bindings).with("server", "QUEUE_NAME", bindings)
+      @dead_lettering.set_queue_policies!(options)
+    end
+
+    test "remove_obsolete_bindings removes an obsolete binding but does not remove the default binding" do
+      bindings = [{:exchange => "foo", :key => "QUEUE_NAME"}, {:exchange => "foo", :key => "a.b.c"}]
+      stub_request(:get, "http://localhost:15672/api/queues/%2F/QUEUE_NAME/bindings")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 200,
+                   :body =>[
+                     {
+                       "destination_type" => "queue",
+                       "source" => "",
+                       "routing_key" => "QUEUE_NAME",
+                       "destination" => "QUEUE_NAME",
+                       "vhost" => "/",
+                       "properties_key" => "QUEUE_NAME",
+                       "arguments" => {}
+                     },
+                     {
+                       "destination_type" => "queue",
+                       "source" => "foo",
+                       "routing_key" => "QUEUE_NAME",
+                       "destination" => "QUEUE_NAME",
+                       "vhost" => "/",
+                       "properties_key" => "QUEUE_NAME",
+                       "arguments" => {}
+                     },
+                     {
+                       "destination_type" => "queue",
+                       "source" => "foo",
+                       "routing_key" => "a.b.c",
+                       "destination" => "QUEUE_NAME",
+                       "vhost" => "/",
+                       "properties_key" => "a.b.c",
+                       "arguments" => {}
+                     },
+                     {
+                       "destination_type" => "queue",
+                       "source" => "foofoo",
+                       "routing_key" => "x.y.z",
+                       "destination" => "QUEUE_NAME",
+                       "vhost" => "/",
+                       "properties_key" => "x.y.z",
+                       "arguments" => {}
+                     }
+                   ].to_json)
+
+      stub_request(:delete, "http://localhost:15672/api/bindings/%2F/e/foofoo/q/QUEUE_NAME/x.y.z")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 200)
+
+      @dead_lettering.remove_obsolete_bindings(@server, "QUEUE_NAME", bindings)
+    end
+
+    test "raises an error when bindings cannot be retrieved" do
+      stub_request(:get, "http://localhost:15672/api/queues/%2F/QUEUE_NAME/bindings")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 500)
+      assert_raises(Beetle::DeadLettering::FailedRabbitRequest) { @dead_lettering.remove_obsolete_bindings(@server, "QUEUE_NAME", []) }
+    end
+
+    test "raises an error when bindings cannot be deleted" do
+      stub_request(:get, "http://localhost:15672/api/queues/%2F/QUEUE_NAME/bindings")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 200, :body => [
+                     {
+                       "destination_type" => "queue",
+                       "source" => "foofoo",
+                       "routing_key" => "x.y.z",
+                       "destination" => "QUEUE_NAME",
+                       "vhost" => "/",
+                       "properties_key" => "x.y.z",
+                       "arguments" => {}
+                     }
+                   ].to_json)
+      stub_request(:delete, "http://localhost:15672/api/bindings/%2F/e/foofoo/q/QUEUE_NAME/x.y.z")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 500)
+
+      assert_raises(Beetle::DeadLettering::FailedRabbitRequest) { @dead_lettering.remove_obsolete_bindings(@server, "QUEUE_NAME", []) }
+    end
+
   end
 end

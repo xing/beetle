@@ -68,6 +68,7 @@ module Beetle
       channel = stub('channel')
       expected_options = {
         :queue_name => "QUEUE_NAME",
+        :bindings=>[{:exchange=>"QUEUE_NAME", :key=>"QUEUE_NAME"}],
         :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
         :message_ttl => 1000,
         :dead_lettering => false,
@@ -84,6 +85,7 @@ module Beetle
 
       expected_options = {
         :queue_name => "QUEUE_NAME",
+        :bindings=>[{:exchange=>"QUEUE_NAME", :key=>"QUEUE_NAME"}],
         :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
         :message_ttl => 1000,
         :dead_lettering => true,
