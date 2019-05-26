@@ -267,7 +267,9 @@ module Beetle
     # servers. Queue lenghts are periodically determined during publishing. You
     # only want to use this feature if you plan to publish a huge amount of
     # messages to slow consumers so as to not overload the broker or the redis
-    # dedpuplication store.
+    # deduplication store. You'll want to use this feature when running background
+    # jobs that publish huge amounts of messages to avoid overloading brokers
+    # and the message deduplication store.
     def throttle(throttling_options)
       publisher.throttle(throttling_options.stringify_keys)
     end

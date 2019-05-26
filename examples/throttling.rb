@@ -1,9 +1,9 @@
-# simple.rb
-# this example shows you a very basic message/handler setup
+# throttling.rb
+# this example shows you how throttling the publisher works
 #
 # ! check the examples/README.rdoc for information on starting your redis/rabbit !
 #
-# start it with ruby simple.rb
+# start it with ruby throttling.rb
 
 require "rubygems"
 require File.expand_path("../lib/beetle", File.dirname(__FILE__))
