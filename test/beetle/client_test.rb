@@ -430,6 +430,18 @@ module Beetle
       client.trace(["test"])
     end
 
+    test "delegates setting throttling options to the publisher instance and stringifies the queue names" do
+      client = Client.new
+      client.send(:publisher).expects(:throttle).with("test" => 1)
+      client.throttle(:test => 1)
+    end
+
+    test "delegates querying the throttling status to the publisher instance" do
+      client = Client.new
+      client.send(:publisher).expects(:throttled?)
+      client.throttled?
+    end
+
     def message_stub_for_tracing
       header_stub = stub_everything("header")
       header_stub.stubs(:method).returns(stub_everything("method"))

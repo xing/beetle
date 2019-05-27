@@ -9,7 +9,22 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @throttling_options = {}
+      @next_throttle_refresh = Time.now
+      @throttled = false
       at_exit { stop }
+    end
+
+    def throttled?
+      @throttled
+    end
+
+    def throttling?
+      !@throttling_options.empty?
+    end
+
+    def throttling_status
+      @throttled ? 'throttled' : 'unthrottled'
     end
 
     # list of exceptions potentially raised by bunny
@@ -29,6 +44,7 @@ module Beetle
         exchange_name = opts.delete(:exchange)
         opts.delete(:queue)
         recycle_dead_servers unless @dead_servers.empty?
+        throttle!
         if opts[:redundant]
           publish_with_redundancy(exchange_name, message_name, data, opts)
         else
@@ -133,6 +149,16 @@ module Beetle
         logger.error "Beetle: message could not be delivered: #{message_name}"
       end
       [status, result]
+    end
+
+    def throttle(queue_options)
+      @throttling_options = queue_options
+    end
+
+    def throttle!
+      return unless throttling?
+      refresh_throttling!
+      sleep 1 if throttled?
     end
 
     def purge(queue_names) #:nodoc:
@@ -251,5 +277,30 @@ module Beetle
       @exchanges[@server] = {}
       @queues[@server] = {}
     end
+
+    def refresh_throttling!
+      t = Time.now
+      return if t < @next_throttle_refresh
+      @next_throttle_refresh = t + @client.config.throttling_refresh_interval
+      old_throttled = @throttled
+      @throttled = false
+      @throttling_options.each do |queue_name, max_length|
+        begin
+          len = 0
+          each_server do
+            len += queue(queue_name).status[:message_count]
+          end
+          # logger.debug "Beetle: queue '#{queue_name}' has size #{len}"
+          if len > max_length
+            @throttled = true
+            break
+          end
+        rescue => e
+          logger.warn "Beetle: could not fetch queue length for queue '#{queue_name}': #{e}"
+        end
+      end
+      logger.info "Beetle: publisher #{throttling_status}" if @throttled != old_throttled
+    end
+
   end
 end
