@@ -9,7 +9,7 @@ before_script:
   - export PATH=/usr/local/go/bin:$PATH
   - curl -s https://releases.hashicorp.com/consul/1.4.4/consul_1.4.4_linux_amd64.zip >/tmp/consul.zip; sudo unzip -d /usr/local/bin /tmp/consul.zip; sudo chmod 755 /usr/local/bin/consul
   - "consul agent -dev -node machine >/tmp/consul.log 2>&1 &"
-script: "make && (bundle exec rake || (tail -n +1 tmp/*.{log,output}; false))"
+script: "make && make test && (bundle exec rake || (tail -n +1 tmp/*.{log,output}; false))"
 services:
   - redis-server
   - rabbitmq
