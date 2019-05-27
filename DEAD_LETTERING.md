@@ -45,7 +45,7 @@ example:
 client = Beetle::Client.new.configure do |config|
   config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|
     Beetle.config.logger.info "received beetle policy update message': #{message.data}"
-    client.set_queue_policies!(JSON.parse(message.data))
+    client.update_queue_properties!(JSON.parse(message.data))
   end
 end
 ```
