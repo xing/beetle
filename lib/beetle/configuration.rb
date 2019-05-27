@@ -85,15 +85,15 @@ module Beetle
     # the end of the original queue when they expire in the dead letter queue.
     #
     # By default this is turned off and needs to be explicitly enabled.
-    attr_accessor :queue_properties_enabled
-    alias_method :queue_properties_enabled?, :queue_properties_enabled
+    attr_accessor :dead_lettering_enabled
+    alias_method :dead_lettering_enabled?, :dead_lettering_enabled
 
     # the time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
     # to the original queue
-    attr_accessor :queue_properties_msg_ttl
+    attr_accessor :dead_lettering_msg_ttl
 
     # Read timeout for http requests to create dead letter bindings
-    attr_accessor :queue_properties_read_timeout
+    attr_accessor :dead_lettering_read_timeout
 
     # Returns the port on which the Rabbit API is hosted
     attr_accessor :api_port
@@ -155,9 +155,9 @@ module Beetle
       self.channel_max = 2047
       self.prefetch_count = 1
 
-      self.queue_properties_enabled = false
-      self.queue_properties_msg_ttl = 1000 #1 second
-      self.queue_properties_read_timeout = 3 #3 seconds
+      self.dead_lettering_enabled = false
+      self.dead_lettering_msg_ttl = 1000 #1 second
+      self.dead_lettering_read_timeout = 3 #3 seconds
 
       self.lazy_queues_enabled = false
 

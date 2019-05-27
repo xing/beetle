@@ -228,7 +228,7 @@ module Beetle
   class QueuePropertiesCallBackExecutionTest < Minitest::Test
     def setup
       @client = Client.new
-      @client.config.queue_properties_enabled = true
+      @client.config.dead_lettering_enabled = true
       @queue = "somequeue"
       @client.register_queue(@queue)
       @sub = @client.send(:subscriber)
@@ -243,10 +243,10 @@ module Beetle
     end
 
     def teardown
-      @client.config.queue_properties_enabled = false
+      @client.config.dead_lettering_enabled = false
     end
 
-    test "should call reject on the message header when processing the handler returns true on reject? if queue_properties has been enabled" do
+    test "should call reject on the message header when processing the handler returns true on reject? if dead lettering has been enabled" do
       header = header_with_params({})
       result = mock("result")
       result.expects(:reject?).returns(true)

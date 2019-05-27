@@ -63,7 +63,7 @@ module Beetle
         config.beetle_policy_updates_queue_name,
         :exchange => config.beetle_policy_exchange_name,
         :key => config.beetle_policy_updates_routing_key,
-        :queue_properties => false,
+        :dead_lettering => false,
         :lazy => false,
       )
     end
@@ -87,8 +87,8 @@ module Beetle
     #   the binding key (defaults to the name of the queue)
     # [<tt>:lazy</tt>]
     #   whether the queue should use lazy mode (defaults to <tt>config.lazy_queues_enabled</tt>)
-    # [<tt>:queue_properties</tt>]
-    #   whether the queue should use dead lettering (defaults to <tt>config.queue_properties_enabled</tt>)
+    # [<tt>:dead_lettering</tt>]
+    #   whether the queue should use dead lettering (defaults to <tt>config.dead_lettering_enabled</tt>)
     # automatically registers the specified exchange if it hasn't been registered yet
 
     def register_queue(name, options={})
@@ -96,7 +96,7 @@ module Beetle
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {
         :exchange => name, :key => name, :auto_delete => false, :amqp_name => name,
-        :lazy => config.lazy_queues_enabled, :queue_properties => config.queue_properties_enabled
+        :lazy => config.lazy_queues_enabled, :dead_lettering => config.dead_lettering_enabled
       }.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false
       exchange = opts.delete(:exchange).to_s

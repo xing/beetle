@@ -24,15 +24,15 @@ module Beetle
 
     test "update_queue_properties! calls set_queue_policy for both target queue and dead letter queue" do
       options = {
-        :server => "server", :lazy => true, :queue_properties => true,
+        :server => "server", :lazy => true, :dead_lettering => true,
         :queue_name => "QUEUE_NAME", :dead_letter_queue_name => "QUEUE_NAME_dead_letter",
         :message_ttl => 10000
       }
       @queue_properties.expects(:set_queue_policy!).with("server", "QUEUE_NAME",
-                                                       :lazy => true, :queue_properties => true,
+                                                       :lazy => true, :dead_lettering => true,
                                                        :routing_key => "QUEUE_NAME_dead_letter")
       @queue_properties.expects(:set_queue_policy!).with("server", "QUEUE_NAME_dead_letter",
-                                                       :lazy => true, :queue_properties => true,
+                                                       :lazy => true, :dead_lettering => true,
                                                        :routing_key => "QUEUE_NAME",
                                                        :message_ttl => 10000)
       @queue_properties.update_queue_properties!(options)
@@ -51,7 +51,7 @@ module Beetle
                }}.to_json)
         .to_return(:status => 204)
 
-      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :queue_properties => true, :routing_key => "QUEUE_NAME_dead_letter")
+      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
     end
 
     test "creates a policy by posting to the rabbitmq if lazy queues are enabled" do
@@ -66,7 +66,7 @@ module Beetle
                }}.to_json)
         .to_return(:status => 204)
 
-      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :queue_properties => false)
+      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => false)
     end
 
     test "raises exception when policy couldn't successfully be created" do
@@ -75,7 +75,7 @@ module Beetle
         .to_return(:status => [405])
 
       assert_raises QueueProperties::FailedRabbitRequest do
-        @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :queue_properties => true)
+        @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => true)
       end
     end
 
@@ -93,7 +93,7 @@ module Beetle
                 }}.to_json)
         .to_return(:status => 204)
 
-      @queue_properties.set_queue_policy!(@server, @queue_name, :queue_properties => true, :message_ttl => 10000, :routing_key => "QUEUE_NAME_dead_letter")
+      @queue_properties.set_queue_policy!(@server, @queue_name, :dead_lettering => true, :message_ttl => 10000, :routing_key => "QUEUE_NAME_dead_letter")
     end
 
     test "properly encodes the vhost from the configuration" do
@@ -111,13 +111,13 @@ module Beetle
 
       @config.vhost = "foo/"
 
-      @queue_properties.set_queue_policy!(@server, @queue_name, :queue_properties => true, :routing_key => "QUEUE_NAME_dead_letter")
+      @queue_properties.set_queue_policy!(@server, @queue_name, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
     end
 
     test "update_queue_properties! calls remove_obsolete_bindings if bindings are part of the options hash" do
       bindings = [{:exchange => "foo", :key => "a.b.c"}]
       options = {
-        :server => "server", :lazy => true, :queue_properties => true,
+        :server => "server", :lazy => true, :dead_lettering => true,
         :queue_name => "QUEUE_NAME", :dead_letter_queue_name => "QUEUE_NAME_dead_letter",
         :message_ttl => 10000,
         :bindings => bindings

@@ -38,7 +38,7 @@ specifies how long the message stays in the dead letter queue, before it's repub
 the original queue.
 
 In order for this to work, you need to run a beetle handler which listens on the beetle
-policy updates queue and calls setup\_queue\_policies! with the parsed JSON payload. For
+policy updates queue and calls update\_queue\_properties! with the parsed JSON payload. For
 example:
 
 ```ruby
