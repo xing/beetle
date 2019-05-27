@@ -4,7 +4,7 @@ rvm:
   - 2.6.2
 before_script:
   - sudo rm -rf /usr/local/go
-  - curl -s https://dl.google.com/go/go1.11.5.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
+  - curl -s https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
   - export GOROOT=/usr/local/go
   - export PATH=/usr/local/go/bin:$PATH
   - curl -s https://releases.hashicorp.com/consul/1.4.4/consul_1.4.4_linux_amd64.zip >/tmp/consul.zip; sudo unzip -d /usr/local/bin /tmp/consul.zip; sudo chmod 755 /usr/local/bin/consul
