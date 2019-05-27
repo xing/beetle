@@ -16,7 +16,7 @@ module Beetle
     end
 
     def update_queue_properties!(options)
-      # logger.debug "Updating queue properties: #{options.inspect}"
+      logger.info "Updating queue properties: #{options.inspect}"
       options = options.symbolize_keys
       server = options[:server]
       target_queue = options[:queue_name]

@@ -225,7 +225,7 @@ module Beetle
   end
 
 
-  class QueuePropertiesCallBackExecutionTest < Minitest::Test
+  class DeadLetteringCallBackExecutionTest < Minitest::Test
     def setup
       @client = Client.new
       @client.config.dead_lettering_enabled = true
