@@ -156,13 +156,13 @@ module Beetle
       self.prefetch_count = 1
 
       self.dead_lettering_enabled = false
-      self.dead_lettering_msg_ttl = 1000 #1 second
-      self.rabbitmq_api_read_timeout = 3 #3 seconds
+      self.dead_lettering_msg_ttl = 1000   # 1 second
+      self.rabbitmq_api_read_timeout = 5   # 5 seconds
 
       self.lazy_queues_enabled = false
 
       self.publishing_timeout = 0
-      self.publisher_connect_timeout = 5
+      self.publisher_connect_timeout = 5   # seconds
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
