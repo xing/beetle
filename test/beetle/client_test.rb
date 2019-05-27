@@ -356,10 +356,10 @@ module Beetle
       client.stop_listening
     end
 
-    test "should delegate set_queue_policies! to the dead lettering instance" do
+    test "should delegate update_queue_properties! to the queue policies instance" do
       client = Client.new
-      client.instance_variable_get(:@dead_lettering).expects(:set_queue_policies!)
-      client.set_queue_policies!({})
+      client.instance_variable_get(:@queue_properties).expects(:update_queue_properties!)
+      client.update_queue_properties!({})
     end
 
     test "should delegate pause_listening to the subscriber instance" do

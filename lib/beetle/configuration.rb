@@ -93,7 +93,7 @@ module Beetle
     attr_accessor :dead_lettering_msg_ttl
 
     # Read timeout for http requests to create dead letter bindings
-    attr_accessor :dead_lettering_read_timeout
+    attr_accessor :rabbitmq_api_read_timeout
 
     # Returns the port on which the Rabbit API is hosted
     attr_accessor :api_port
@@ -159,14 +159,14 @@ module Beetle
       self.prefetch_count = 1
 
       self.dead_lettering_enabled = false
-      self.dead_lettering_msg_ttl = 1000 #1 second
-      self.dead_lettering_read_timeout = 3 #3 seconds
+      self.dead_lettering_msg_ttl = 1000   # 1 second
+      self.rabbitmq_api_read_timeout = 5   # 5 seconds
 
       self.lazy_queues_enabled = false
       self.throttling_refresh_interval = 60 # seconds
 
       self.publishing_timeout = 0
-      self.publisher_connect_timeout = 5
+      self.publisher_connect_timeout = 5   # seconds
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT

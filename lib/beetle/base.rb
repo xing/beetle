@@ -82,6 +82,7 @@ module Beetle
       end
       return {
         :queue_name => target_queue,
+        :bindings => @client.bindings[target_queue],
         :dead_letter_queue_name => dead_letter_queue_name,
         :message_ttl => @client.config.dead_lettering_msg_ttl,
       }.merge(policy_options)

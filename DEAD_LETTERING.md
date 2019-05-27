@@ -38,14 +38,14 @@ specifies how long the message stays in the dead letter queue, before it's repub
 the original queue.
 
 In order for this to work, you need to run a beetle handler which listens on the beetle
-policy updates queue and calls setup\_queue\_policies! with the parsed JSON payload. For
+policy updates queue and calls update\_queue\_properties! with the parsed JSON payload. For
 example:
 
 ```ruby
 client = Beetle::Client.new.configure do |config|
   config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|
     Beetle.config.logger.info "received beetle policy update message': #{message.data}"
-    client.set_queue_policies!(JSON.parse(message.data))
+    client.update_queue_properties!(JSON.parse(message.data))
   end
 end
 ```

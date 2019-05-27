@@ -246,7 +246,7 @@ module Beetle
       @client.config.dead_lettering_enabled = false
     end
 
-    test "should call reject on the message header when processing the handler returns true on reject? if dead_lettering has been enabled" do
+    test "should call reject on the message header when processing the handler returns true on reject? if dead lettering has been enabled" do
       header = header_with_params({})
       result = mock("result")
       result.expects(:reject?).returns(true)

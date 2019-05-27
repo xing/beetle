@@ -55,7 +55,7 @@ module Beetle
       @messages = {}
       @bindings = {}
       @deduplication_store = DeduplicationStore.new(config)
-      @dead_lettering = DeadLettering.new(config)
+      @queue_properties = QueueProperties.new(config)
       load_brokers_from_config
       register_exchange(config.beetle_policy_exchange_name)
       # make sure dead lettering is false for the policy update queue
@@ -322,8 +322,8 @@ module Beetle
       @subscriber = nil
     end
 
-    def set_queue_policies!(message_payload)
-      @dead_lettering.set_queue_policies!(message_payload)
+    def update_queue_properties!(message_payload)
+      @queue_properties.update_queue_properties!(message_payload)
     end
 
     private
