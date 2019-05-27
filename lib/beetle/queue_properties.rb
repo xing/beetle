@@ -128,7 +128,7 @@ module Beetle
       request.basic_auth(config.user, config.password)
       request["Content-Type"] = "application/json"
       http = Net::HTTP.new(uri.hostname, config.api_port)
-      http.read_timeout = config.dead_lettering_read_timeout
+      http.read_timeout = config.rabbitmq_api_read_timeout
       # don't do this in production:
       # http.set_debug_output(logger.instance_eval{ @logdev.dev })
       http.start do |instance|
