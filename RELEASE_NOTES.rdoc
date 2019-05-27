@@ -1,39 +1,30 @@
 = Release Notes
 
-== Version 3.0.0.rc?
-* don't create dead letter queues when using the trace functionality
+== Version 3.0.0
 
-== Version 3.0.0.rc5
-* make sure to clean dedup store when ack_count is larger than 2
-
-== Version 3.0.0.rc4
-* fixed incorrect calculation of expiry time in garbage collector
-
-
-== Version 3.0.0.rc3
-* store redis gc stats in redis and display them in the configuration
-  server web UI
-
-== Version 3.0.0.rc2
-* change policy setup to be asynchronous, on demand in publisher and
-  consumer. Users have to run a processors to listen to messages and
-  call setup_queue_policies! with the parses JSON paylod of the
-  message.
-* added dump_expiries command to beetle to dump dediplication store
-  expiry times.
-* added delete_queue_keys command to beetle to allow deletion of
-  excess dedup store entries for a given queue.
-* config server: store current master server in consul, if consul
-  config has been provided.
-* config server: server correctly updates configured client ids when
-  they change in consul.
-
-== Version 3.0.0.rc1
 * provide client method to setup queues and queue policies.
   Setting up queue policies on demand in publisher and subscriber is OK
   for a small number of queues, publishers and subscribers. But the HTTP
   API of RabbitMQ doesn't scale all that well, so that a large number
   of HTTP calls to set up queue policies can in fact crash a server.
+* allow queue mode specification and dead lettering specification on a
+  per queue basis.
+* change policy setup to be asynchronous, on demand in publisher and
+  consumer. Users have to run a processors to listen to messages and
+  call setup_queue_policies! with the parses JSON paylod of the
+  message.
+* store redis gc stats in redis and display them in the configuration
+  server web UI
+* config server: store current master server in consul, if consul
+  config has been provided.
+* config server: server correctly updates configured client ids when
+  they change in consul.
+* don't create dead letter queues when using the trace functionality
+* make sure to clean dedup store when ack_count is larger than 2
+* added dump_expiries command to beetle to dump dediplication store
+  expiry times.
+* added delete_queue_keys command to beetle to allow deletion of
+  excess dedup store entries for a given queue.
 
 == Version 2.3.2
 * config server: fixed a race condition when accessing server state.
