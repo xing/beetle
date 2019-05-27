@@ -179,7 +179,7 @@ module Beetle
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.reject?
-            if @client.config.dead_lettering_enabled?
+            if @client.config.queue_properties_enabled?
               header.reject(:requeue => false)
             else
               sleep 1

@@ -79,7 +79,7 @@ module Beetle
 
     test "registering a queue should store it in the configuration with symbolized option keys and force durable=true and passive=false and set the amqp queue name" do
       @client.register_queue("some_queue", "durable" => false, "exchange" => "some_exchange")
-      assert_equal({:durable => true, :passive => false, :lazy=>false, :dead_lettering=>false, :auto_delete => false, :exclusive => false, :amqp_name => "some_queue"}, @client.queues["some_queue"])
+      assert_equal({:durable => true, :passive => false, :lazy=>false, :queue_properties=>false, :auto_delete => false, :exclusive => false, :amqp_name => "some_queue"}, @client.queues["some_queue"])
     end
 
     test "registering a queue should add the queue to the list of queues of the queue's exchange" do
@@ -356,10 +356,10 @@ module Beetle
       client.stop_listening
     end
 
-    test "should delegate set_queue_policies! to the dead lettering instance" do
+    test "should delegate update_queue_properties! to the dead lettering instance" do
       client = Client.new
-      client.instance_variable_get(:@dead_lettering).expects(:set_queue_policies!)
-      client.set_queue_policies!({})
+      client.instance_variable_get(:@queue_properties).expects(:update_queue_properties!)
+      client.update_queue_properties!({})
     end
 
     test "should delegate pause_listening to the subscriber instance" do

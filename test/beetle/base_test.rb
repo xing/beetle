@@ -64,21 +64,21 @@ module Beetle
     end
 
     test "it does not call out to rabbit if neither dead lettering nor lazy queues are enabled" do
-      @client.register_queue(@queue_name, :dead_lettering => false, :lazy => false)
+      @client.register_queue(@queue_name, :queue_properties => false, :lazy => false)
       channel = stub('channel')
       expected_options = {
         :queue_name => "QUEUE_NAME",
         :bindings=>[{:exchange=>"QUEUE_NAME", :key=>"QUEUE_NAME"}],
         :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
         :message_ttl => 1000,
-        :dead_lettering => false,
+        :queue_properties => false,
         :lazy => false
       }
       assert_equal expected_options, @bs.__send__(:bind_dead_letter_queue!, channel, @queue_name)
     end
 
     test "creates and connects the dead letter queue via policies when enabled" do
-      @client.register_queue(@queue_name, :dead_lettering => true, :lazy => true)
+      @client.register_queue(@queue_name, :queue_properties => true, :lazy => true)
 
       channel = stub('channel')
       channel.expects(:queue).with("#{@queue_name}_dead_letter", {})
@@ -88,14 +88,14 @@ module Beetle
         :bindings=>[{:exchange=>"QUEUE_NAME", :key=>"QUEUE_NAME"}],
         :dead_letter_queue_name=>"QUEUE_NAME_dead_letter",
         :message_ttl => 1000,
-        :dead_lettering => true,
+        :queue_properties => true,
         :lazy => true
       }
       assert_equal expected_options, @bs.__send__(:bind_dead_letter_queue!, channel, @queue_name)
     end
 
     test "publish_policy_options declares the beetle policy updates queue and publishes the options" do
-      options = { :lazy => true, :dead_lettering => true }
+      options = { :lazy => true, :queue_properties => true }
       @bs.logger.stubs(:debug)
       @bs.expects(:queue).with(@client.config.beetle_policy_updates_queue_name)
       exchange = mock("exchange")

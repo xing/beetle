@@ -50,7 +50,7 @@ module Beetle
   # use ruby's autoload mechanism for loading beetle classes
   lib_dir = File.expand_path(File.dirname(__FILE__) + '/beetle/')
   Dir["#{lib_dir}/*.rb"].each do |libfile|
-    autoload File.basename(libfile)[/^(.*)\.rb$/, 1].classify, libfile
+    autoload File.basename(libfile)[/^(.*)\.rb$/, 1].camelize, libfile
   end
 
   require "#{lib_dir}/redis_ext"

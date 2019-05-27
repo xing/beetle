@@ -55,7 +55,7 @@ module Beetle
       @messages = {}
       @bindings = {}
       @deduplication_store = DeduplicationStore.new(config)
-      @dead_lettering = DeadLettering.new(config)
+      @queue_properties = QueueProperties.new(config)
       load_brokers_from_config
       register_exchange(config.beetle_policy_exchange_name)
       # make sure dead lettering is false for the policy update queue
@@ -63,7 +63,7 @@ module Beetle
         config.beetle_policy_updates_queue_name,
         :exchange => config.beetle_policy_exchange_name,
         :key => config.beetle_policy_updates_routing_key,
-        :dead_lettering => false,
+        :queue_properties => false,
         :lazy => false,
       )
     end
@@ -87,8 +87,8 @@ module Beetle
     #   the binding key (defaults to the name of the queue)
     # [<tt>:lazy</tt>]
     #   whether the queue should use lazy mode (defaults to <tt>config.lazy_queues_enabled</tt>)
-    # [<tt>:dead_lettering</tt>]
-    #   whether the queue should use dead lettering (defaults to <tt>config.dead_lettering_enabled</tt>)
+    # [<tt>:queue_properties</tt>]
+    #   whether the queue should use dead lettering (defaults to <tt>config.queue_properties_enabled</tt>)
     # automatically registers the specified exchange if it hasn't been registered yet
 
     def register_queue(name, options={})
@@ -96,7 +96,7 @@ module Beetle
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {
         :exchange => name, :key => name, :auto_delete => false, :amqp_name => name,
-        :lazy => config.lazy_queues_enabled, :dead_lettering => config.dead_lettering_enabled
+        :lazy => config.lazy_queues_enabled, :queue_properties => config.queue_properties_enabled
       }.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false
       exchange = opts.delete(:exchange).to_s
@@ -301,8 +301,8 @@ module Beetle
       @subscriber = nil
     end
 
-    def set_queue_policies!(message_payload)
-      @dead_lettering.set_queue_policies!(message_payload)
+    def update_queue_properties!(message_payload)
+      @queue_properties.update_queue_properties!(message_payload)
     end
 
     private
