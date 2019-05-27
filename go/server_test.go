@@ -18,7 +18,7 @@ import (
 
 var serverTestOptions = ServerOptions{Config: &Config{ClientTimeout: 1, RedisServers: "beetle/127.0.0.1:7001,127.0.0.1:7002"}}
 
-func startAndWaitForText(cmd *exec.Cmd, text string) {
+func startAndWaitForText(cmd *exec.Cmd, text []string) {
 	pipe, err := cmd.StdoutPipe()
 	if err != nil {
 		fmt.Printf("could not obtain stdout of redis-server: %v", err)
@@ -29,8 +29,10 @@ func startAndWaitForText(cmd *exec.Cmd, text string) {
 	cmd.Start()
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, text) {
-			return
+		for _, marker := range text {
+			if strings.Contains(line, marker) {
+				return
+			}
 		}
 	}
 }
@@ -45,9 +47,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	redis1 := exec.Command(cmd, "--port", "7001")
-	startAndWaitForText(redis1, "server is now ready to accept connections")
+	startAndWaitForText(redis1, []string{"server is now ready to accept connections", "Ready to accept connections"})
 	redis2 := exec.Command(cmd, "--port", "7002", "--slaveof", "127.0.0.1", "7001")
-	startAndWaitForText(redis2, "MASTER <-> SLAVE sync: Finished with success")
+	startAndWaitForText(redis2, []string{"MASTER <-> SLAVE sync: Finished with success"})
 	result := m.Run()
 	redis1.Process.Kill()
 	redis2.Process.Kill()
