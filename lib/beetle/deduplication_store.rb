@@ -30,7 +30,8 @@ module Beetle
       redis
     end
 
-    # list of key suffixes to use for storing values in Redis.
+    # list of key suffixes to use for storing values in Redis. 'status'
+    # always needs to be the first element of the array.
     KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]
 
     # build a Redis key out of a message id and a given suffix
@@ -93,7 +94,12 @@ module Beetle
 
     # delete all keys associated with the given <tt>msg_id</tt>.
     def del_keys(msg_id)
-      with_failover { redis.del(*keys(msg_id)) }
+      keys = keys(msg_id)
+      status_key = keys.shift
+      with_failover do
+        redis.del(*keys)
+        redis.expire(status_key, @config.redis_status_key_expiry_interval)
+      end
     end
 
     # check whether key with given suffix exists for a given <tt>msg_id</tt>.

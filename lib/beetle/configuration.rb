@@ -35,6 +35,12 @@ module Beetle
     # handler timeout.
     attr_accessor :redis_failover_timeout
 
+    # how long we want status keys survive after we are we have seen the second message of
+    # a redundant message pair. Setting this to a high value (hours) will reduce the
+    # likelyhood of executing handler logic, but require a lerger redis instance and cause
+    # a higher database size with all associated problems. Defaults to 5 minutes.
+    attr_accessor :redis_status_key_expiry_interval
+
     # how often heartbeat messages are exchanged between failover
     # daemons. defaults to 10 seconds.
     attr_accessor :redis_failover_client_heartbeat_interval
@@ -140,6 +146,7 @@ module Beetle
       self.redis_servers = ""
       self.redis_db = 4
       self.redis_failover_timeout = 180.seconds
+      self.redis_status_key_expiry_interval = 5.minutes
       self.redis_failover_client_heartbeat_interval = 10.seconds
       self.redis_failover_client_dead_interval = 60.seconds
 

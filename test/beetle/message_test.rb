@@ -115,7 +115,8 @@ module Beetle
 
   class KeyManagementTest < Minitest::Test
     def setup
-      @store = DeduplicationStore.new
+      @config = Configuration.new
+      @store = DeduplicationStore.new(@config)
       @store.flushdb
     end
 
@@ -127,33 +128,42 @@ module Beetle
       end
     end
 
-    test "successful processing of a non redundant message should delete all keys from the database" do
+    test "successful processing of a non redundant message should delete all keys from the database (except the staus key, which should be set to expire)" do
       header = header_with_params({})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
+      message.stubs(:simple?).returns(false)
 
       assert !message.expired?
       assert !message.redundant?
+      assert !message.simple?
 
       message.process(lambda {|*args|})
-
-      @store.keys(message.msg_id).each do |key|
+      keys = @store.keys(message.msg_id)
+      status_key = keys.shift
+      assert @store.redis.exists(status_key)
+      assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
+      keys.each do |key|
         assert !@store.redis.exists(key)
       end
     end
 
-    test "succesful processing of a redundant message twice should delete all keys from the database" do
+    test "succesful processing of a redundant message twice should delete all keys from the database (except the staus key, which should be set to expire)" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
       message = Message.new("somequeue", header, 'foo', :store => @store)
 
       assert !message.expired?
       assert message.redundant?
+      assert !message.simple?
 
       message.process(lambda {|*args|})
       message.process(lambda {|*args|})
 
-      @store.keys(message.msg_id).each do |key|
+      keys = @store.keys(message.msg_id)
+      status_key = keys.shift
+      assert @store.redis.exists(status_key)
+      keys.each do |key|
         assert !@store.redis.exists(key)
       end
     end
