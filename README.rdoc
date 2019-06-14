@@ -13,6 +13,10 @@ infrastructure. It offers the following features:
 
 More information can be found on the {project website}[http://xing.github.com/beetle].
 
+== Release notes
+
+See {RELEASE_NOTES.rdoc}[https://github.com/xing/beetle/blob/master/RELEASE_NOTES.rdoc]
+
 == Usage
 
 === Configuration
