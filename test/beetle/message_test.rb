@@ -136,7 +136,6 @@ module Beetle
 
       assert !message.expired?
       assert !message.redundant?
-      assert !message.simple?
 
       message.process(lambda {|*args|})
       keys = @store.keys(message.msg_id)
@@ -148,7 +147,7 @@ module Beetle
       end
     end
 
-    test "succesful processing of a redundant message twice should delete all keys from the database (except the staus key, which should be set to expire)" do
+    test "successful processing of a redundant message twice should delete all keys from the database (except the staus key, which should be set to expire)" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
       message = Message.new("somequeue", header, 'foo', :store => @store)
@@ -163,6 +162,7 @@ module Beetle
       keys = @store.keys(message.msg_id)
       status_key = keys.shift
       assert @store.redis.exists(status_key)
+      assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
       keys.each do |key|
         assert !@store.redis.exists(key)
       end
