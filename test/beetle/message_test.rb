@@ -128,7 +128,7 @@ module Beetle
       end
     end
 
-    test "successful processing of a non redundant message should delete all keys from the database (except the staus key, which should be set to expire)" do
+    test "successful processing of a non redundant message should delete all keys from the database (except the status key, which should be set to expire)" do
       header = header_with_params({})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
@@ -147,7 +147,7 @@ module Beetle
       end
     end
 
-    test "successful processing of a redundant message twice should delete all keys from the database (except the staus key, which should be set to expire)" do
+    test "successful processing of a redundant message twice should delete all keys from the database (except the status key, which should be set to expire)" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
       message = Message.new("somequeue", header, 'foo', :store => @store)
