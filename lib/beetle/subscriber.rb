@@ -169,16 +169,18 @@ module Beetle
       server = @server
       lambda do |header, data|
         if channel(server).closing?
-          logger.info "Beetle: ignoring message since channel to server #{server} already closed"
+          logger.info "Beetle: ignoring message #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) since channel to server #{server} already closed"
           return
         end
         begin
+          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) received")
           # logger.debug "Beetle: received message"
           processor = Handler.create(handler, opts)
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.reject?
+            logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) rejected")
             if @client.config.dead_lettering_enabled?
               header.reject(:requeue => false)
             else
@@ -190,6 +192,7 @@ module Beetle
             # require 'ruby-debug'
             # Debugger.start
             # debugger
+            logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) reply-to: #{header.attributes[:reply_to]}")
             status = result == Beetle::RC::OK ? "OK" : "FAILED"
             exchange = AMQP::Exchange.new(channel(server), :direct, "")
             exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
@@ -198,9 +201,11 @@ module Beetle
         rescue Exception
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
+          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) errored")
           logger.error "Beetle: internal error during message processing: #{$!}: #{$!.backtrace.join("\n")}"
         ensure
           # processing_completed swallows all exceptions, so we don't need to protect this call
+          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) completed")
           processor.processing_completed
         end
       end
