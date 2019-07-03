@@ -16,6 +16,8 @@ module Beetle
     # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
     # defaults to <tt>STDOUT</tt>
+    attr_accessor :redis_logger
+    # set this to a logger instance if you want redis operations to be logged. defaults to <tt>nil</tt>.
     attr_accessor :log_file
     # number of seconds after which keys are removed from the message deduplication store (defaults to <tt>1.hour</tt>)
     attr_accessor :gc_threshold

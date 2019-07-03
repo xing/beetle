@@ -134,7 +134,7 @@ module Beetle
 
     # set current redis master instance (as specified in the Beetle::Configuration)
     def redis_master_from_server_string
-      @current_master ||= Redis.from_server_string(@config.redis_server, :db => @config.redis_db)
+      @current_master ||= Redis.from_server_string(@config.redis_server, :db => @config.redis_db, :logger => @config.redis_logger)
     end
 
     # set current redis master from master file
@@ -152,7 +152,7 @@ module Beetle
     def set_current_redis_master_from_master_file
       @last_time_master_file_changed = File.mtime(@config.redis_server)
       server_string = extract_redis_master(read_master_file)
-      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db) : nil
+      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db, :logger => @config.redis_logger) : nil
     end
 
     # extract redis master from file content and return the server for our system
