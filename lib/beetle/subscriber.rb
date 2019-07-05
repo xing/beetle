@@ -203,7 +203,7 @@ module Beetle
           logger.debug "Beetle: completed #{msg_id}"
           begin
             processor.post_process
-          rescue Execption
+          rescue Exception
             Beetle::reraise_expectation_errors!
           end
         end

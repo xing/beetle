@@ -266,6 +266,7 @@ module Beetle
       @sub = client.send(:subscriber)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
+      @handler.instance_eval { def post_process; raise "shoot"; end }
       @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
     end
 
