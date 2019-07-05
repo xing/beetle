@@ -1,5 +1,13 @@
 = Release Notes
 
+== Version 3.1.0
+* added more debug log statements
+* added new callbacks on class Beetle::Handler:
+  * pre_process is called before any message processing commences
+  * post_process is called after all processing has been completed
+  these handlers can be used for logging purposes (such as logjam
+  integration)
+
 == Version 3.0.0
 
 * provide client method to setup queues and queue policies.

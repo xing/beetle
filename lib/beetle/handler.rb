@@ -48,10 +48,18 @@ module Beetle
       @__handler_called__ = true
     end
 
+    # called before message processing starts
+    def pre_process
+    end
+
     # called for message processing if no processor was specfied when the handler instance
     # was created
     def process
       logger.info "Beetle: received message #{message.inspect}"
+    end
+
+    # called after message processing finishes
+    def post_process
     end
 
     # should not be overriden in subclasses
