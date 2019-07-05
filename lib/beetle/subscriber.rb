@@ -168,14 +168,15 @@ module Beetle
     def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       server = @server
       lambda do |header, data|
-        msg_id, timestamp = header.attributes.values_at(:message_id, :timestamp)
+        msg_id = header.attributes[:message_id]
         if channel(server).closing?
-          logger.info "Beetle: ignored message since channel to server #{server} was already closed: #{msg_id}(#{timestamp})"
+          timestamp = header.attributes[:timestamp]
+          logger.info "Beetle: ignored message #{msg_id}(#{timestamp}) since channel to server #{server} was already closed"
           return
         end
         begin
-          logger.debug "Beetle: received #{msg_id}(#{timestamp})"
           processor = Handler.create(handler, opts)
+          processor.pre_process
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
@@ -195,12 +196,16 @@ module Beetle
           end
         rescue Exception
           Beetle::reraise_expectation_errors!
-          # swallow all exceptions
           logger.debug "Beetle: internal error on #{msg_id}: #{$!}: #{$!.backtrace.join("\n")}"
         ensure
           # processing_completed swallows all exceptions, so we don't need to protect this call
           processor.processing_completed
           logger.debug "Beetle: completed #{msg_id}"
+          begin
+            processor.post_process
+          rescue Execption
+            Beetle::reraise_expectation_errors!
+          end
         end
       end
     end

@@ -264,7 +264,7 @@ module Beetle
 
     # process this message and do not allow any exception to escape to the caller
     def process(handler)
-      logger.debug "Beetle: processing message #{msg_id}"
+      logger.debug "Beetle: processing message #{msg_id}(#{timestamp})"
       result = nil
       begin
         result = process_internal(handler)
