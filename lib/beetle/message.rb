@@ -1,4 +1,5 @@
 require "timeout"
+require "securerandom"
 
 module Beetle
   # Instances of class Message are created when a subscription callback fires. Class
@@ -146,16 +147,8 @@ module Beetle
     end
 
     # generate uuid for publishing
-    begin
-      require "uuid4r"
-      def self.generate_uuid
-        UUID4R::uuid(4)
-      end
-    rescue LoadError
-      require "securerandom"
-      def self.generate_uuid
-        SecureRandom.uuid
-      end
+    def self.generate_uuid
+      SecureRandom.uuid
     end
 
     # whether the publisher has tried sending this message to two servers
