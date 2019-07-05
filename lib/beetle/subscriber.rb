@@ -168,45 +168,39 @@ module Beetle
     def create_subscription_callback(queue_name, amqp_queue_name, handler, opts)
       server = @server
       lambda do |header, data|
+        msg_id, timestamp = header.attributes.values_at(:message_id, :timestamp)
         if channel(server).closing?
-          logger.info "Beetle: ignoring message #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) since channel to server #{server} already closed"
+          logger.info "Beetle: ignored message since channel to server #{server} was already closed: #{msg_id}(#{timestamp})"
           return
         end
         begin
-          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) received")
-          # logger.debug "Beetle: received message"
+          logger.debug "Beetle: received #{msg_id}(#{timestamp})"
           processor = Handler.create(handler, opts)
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
           result = m.process(processor)
           if result.reject?
-            logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) rejected")
             if @client.config.dead_lettering_enabled?
               header.reject(:requeue => false)
             else
               sleep 1
               header.reject(:requeue => true)
             end
+            logger.debug "Beetle: rejected #{msg_id} RC: #{result.name}"
           elsif reply_to = header.attributes[:reply_to]
-            # logger.info "Beetle: sending reply to queue #{reply_to}"
-            # require 'ruby-debug'
-            # Debugger.start
-            # debugger
-            logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) reply-to: #{header.attributes[:reply_to]}")
+            logger.debug "Beetle: sending reply to queue #{reply_to} for #{msg_id}"
             status = result == Beetle::RC::OK ? "OK" : "FAILED"
             exchange = AMQP::Exchange.new(channel(server), :direct, "")
             exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
           end
-          # logger.debug "Beetle: processed message"
         rescue Exception
           Beetle::reraise_expectation_errors!
           # swallow all exceptions
-          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) errored")
-          logger.error "Beetle: internal error during message processing: #{$!}: #{$!.backtrace.join("\n")}"
+          logger.debug "Beetle: internal error on #{msg_id}: #{$!}: #{$!.backtrace.join("\n")}"
         ensure
           # processing_completed swallows all exceptions, so we don't need to protect this call
-          logger.debug("Beetle: #{header.attributes[:message_id]} (#{header.attributes[:timestamp]}) completed")
           processor.processing_completed
+          logger.debug "Beetle: completed #{msg_id}"
         end
       end
     end

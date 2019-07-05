@@ -3,6 +3,8 @@ module Beetle
 
     # message processing result return codes
     class ReturnCode
+      attr_reader :name
+
       def initialize(*args)
         @reject = args.delete :reject
         @failure = args.delete :failure
