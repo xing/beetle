@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.1.1
+* added currently processed message to the handler pre-processing step
+
 == Version 3.1.0
 * added more debug log statements
 * added new callbacks on class Beetle::Handler:

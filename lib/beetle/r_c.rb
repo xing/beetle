@@ -39,6 +39,7 @@ module Beetle
     rc :MutexLocked, :reject
     rc :InternalError, :reject
     rc :DecodingError, :failure
+    rc :PreprocessingError, :failure
 
   end
 end

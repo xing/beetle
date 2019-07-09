@@ -118,6 +118,7 @@ module Beetle
       @config = Configuration.new
       @store = DeduplicationStore.new(@config)
       @store.flushdb
+      @null_handler = Handler.create(lambda {|*args|})
     end
 
     test "should be able to extract msg_id from any key" do
@@ -137,7 +138,7 @@ module Beetle
       assert !message.expired?
       assert !message.redundant?
 
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
       keys = @store.keys(message.msg_id)
       status_key = keys.shift
       assert @store.redis.exists(status_key)
@@ -156,8 +157,8 @@ module Beetle
       assert message.redundant?
       assert !message.simple?
 
-      message.process(lambda {|*args|})
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
+      message.process(@null_handler)
 
       keys = @store.keys(message.msg_id)
       status_key = keys.shift
@@ -176,7 +177,7 @@ module Beetle
       assert !message.expired?
       assert message.redundant?
 
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
 
       assert @store.exists(message.msg_id, :status)
       assert @store.exists(message.msg_id, :expires)
@@ -193,6 +194,7 @@ module Beetle
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
+      @null_handler = Handler.create(lambda {|*args|})
     end
 
     test "an expired message should be acked without calling the handler" do
@@ -202,7 +204,7 @@ module Beetle
       assert message.expired?
 
       processed = :no
-      message.process(lambda {|*args| processed = true})
+      message.process(Handler.create(lambda {|*args| processed = true}))
       assert_equal :no, processed
     end
 
@@ -215,7 +217,7 @@ module Beetle
       assert message.delayed?
 
       processed = :no
-      message.process(lambda {|*args| processed = true})
+      message.process(Handler.create(lambda {|*args| processed = true}))
       assert_equal :no, processed
     end
 
@@ -224,7 +226,7 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
 
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
       assert !message.redundant?
       assert !@store.exists(message.msg_id, :ack_count)
     end
@@ -235,7 +237,7 @@ module Beetle
 
       message.expects(:ack!)
       assert message.redundant?
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
     end
 
     test "acking a redundant message should increment the ack_count key" do
@@ -244,7 +246,7 @@ module Beetle
       message = Message.new("somequeue", header, 'foo', :store => @store)
 
       assert_nil @store.get(message.msg_id, :ack_count)
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
       assert message.redundant?
       assert_equal "1", @store.get(message.msg_id, :ack_count)
     end
@@ -254,8 +256,8 @@ module Beetle
       header.expects(:ack).twice
       message = Message.new("somequeue", header, 'foo', :store => @store)
 
-      message.process(lambda {|*args|})
-      message.process(lambda {|*args|})
+      message.process(@null_handler)
+      message.process(@null_handler)
       assert message.redundant?
       assert !@store.exists(message.msg_id, :ack_count)
     end
@@ -273,11 +275,12 @@ module Beetle
       message = Message.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
       assert !message.attempts_limit_reached?
 
-      proc = mock("proc")
+      handler = mock("handler")
       s = sequence("s")
-      proc.expects(:call).in_sequence(s)
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
       header.expects(:ack).in_sequence(s)
-      assert_equal RC::OK, message.process(proc)
+      assert_equal RC::OK, message.process(handler)
     end
 
     test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
@@ -308,25 +311,27 @@ module Beetle
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
-      proc = mock("proc")
+      handler = mock("handler")
       s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
       header.expects(:ack).in_sequence(s)
-      proc.expects(:call).in_sequence(s)
-      assert_equal RC::OK, message.process(proc)
+      handler.expects(:call).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
     end
 
     test "when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
-      proc = mock("proc")
+      handler = mock("handler")
       s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       e = Exception.new("ohoh")
-      proc.expects(:call).in_sequence(s).raises(e)
-      proc.expects(:process_exception).with(e).in_sequence(s)
-      proc.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
-      assert_equal RC::AttemptsLimitReached, message.process(proc)
+      handler.expects(:call).in_sequence(s).raises(e)
+      handler.expects(:process_exception).with(e).in_sequence(s)
+      handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
+      assert_equal RC::AttemptsLimitReached, message.process(handler)
     end
 
   end
@@ -432,7 +437,6 @@ module Beetle
       assert !message.timed_out?
 
       proc = lambda {|*args| raise "crash"}
-      s = sequence("s")
       message.expects(:completed!).once
       header.expects(:ack)
       assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
@@ -446,7 +450,7 @@ module Beetle
       @store.flushdb
     end
 
-    test "a message with an exception set should not be processed at all, but it should be acked" do
+    test "a message with a decoding error should not be processed at all, but it should be acked" do
       header = {}
       message = Message.new("somequeue", header, 'foo')
       assert message.exception
@@ -455,6 +459,17 @@ module Beetle
       proc.expects(:call).never
       message.expects(:ack!)
       assert_equal RC::DecodingError, message.__send__(:process_internal, proc)
+    end
+
+    test "a message with a preprocessing error set should not be processed at all, but it should be acked" do
+      header = header_with_params({})
+      message = Message.new("somequeue", header, 'foo')
+      message.instance_eval { @pre_exception = StandardError.new("shoo") }
+
+      proc = mock("proc")
+      proc.expects(:call).never
+      message.expects(:ack!)
+      assert_equal RC::PreprocessingError, message.__send__(:process_internal, proc)
     end
 
     test "a completed existing message should be just acked and not run the handler" do
