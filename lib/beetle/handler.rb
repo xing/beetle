@@ -49,7 +49,7 @@ module Beetle
     end
 
     # called before message processing starts
-    def pre_process
+    def pre_process(message)
     end
 
     # called for message processing if no processor was specfied when the handler instance

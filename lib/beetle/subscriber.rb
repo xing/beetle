@@ -175,10 +175,9 @@ module Beetle
           return
         end
         begin
-          processor = Handler.create(handler, opts)
-          processor.pre_process
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
           m = Message.new(amqp_queue_name, header, data, message_options)
+          processor = Handler.create(handler, opts)
           result = m.process(processor)
           if result.reject?
             if @client.config.dead_lettering_enabled?
@@ -203,7 +202,8 @@ module Beetle
           logger.debug "Beetle: completed #{msg_id}"
           begin
             processor.post_process
-          rescue Exception
+          rescue Exception => e
+            logger.error "Beetle: post_process error #{e.class}(#{e}) for #{msg_id}"
             Beetle::reraise_expectation_errors!
           end
         end

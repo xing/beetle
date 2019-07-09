@@ -257,11 +257,18 @@ module Beetle
 
     # process this message and do not allow any exception to escape to the caller
     def process(handler)
-      logger.debug "Beetle: processing message #{msg_id}(#{timestamp})"
       result = nil
       begin
+        # pre_process might set up log routing and it might raise
+        handler.pre_process(self)
+      rescue Exception => @pre_exception
+        Beetle::reraise_expectation_errors!
+        logger.error "Beetle: preprocessing error #{@pre_exception.class}(#{@pre_exception}) for #{msg_id}"
+      end
+      logger.debug "Beetle: processing message #{msg_id}(#{timestamp})"
+      begin
         result = process_internal(handler)
-        handler.process_exception(@exception) if @exception
+        handler.process_exception(@exception || @pre_exception) if (@exception || @pre_exception)
         handler.process_failure(result) if result.failure?
       rescue Exception => e
         Beetle::reraise_expectation_errors!
@@ -278,6 +285,9 @@ module Beetle
       if @exception
         ack!
         RC::DecodingError
+      elsif @pre_exception
+        ack!
+        RC::PreprocessingError
       elsif expired?
         logger.warn "Beetle: ignored expired message (#{msg_id})!"
         ack!
