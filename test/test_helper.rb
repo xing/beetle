@@ -35,6 +35,7 @@ def header_with_params(opts = {})
   beetle_headers = Beetle::Message.publishing_options(opts)
   header = mock("header")
   header.stubs(:attributes).returns(beetle_headers)
+  header.stubs(:redelivered?).returns(false)
   header
 end
 
