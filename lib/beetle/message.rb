@@ -265,7 +265,7 @@ module Beetle
         Beetle::reraise_expectation_errors!
         logger.error "Beetle: preprocessing error #{@pre_exception.class}(#{@pre_exception}) for #{msg_id}"
       end
-      logger.debug "Beetle: processing message #{msg_id}(#{timestamp})"
+      logger.debug "Beetle: processing message #{msg_id}(#{timestamp}) redelivered: #{header.redelivered?}"
       begin
         result = process_internal(handler)
         handler.process_exception(@exception || @pre_exception) if (@exception || @pre_exception)
