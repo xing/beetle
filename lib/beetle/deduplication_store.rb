@@ -59,6 +59,19 @@ module Beetle
       with_failover { redis.setnx(key(msg_id, suffix), value) }
     end
 
+    # store completion status for given <tt>msg_id</tt> if it doesn't exist yet. Returns whether the
+    # operation was successful.
+    def setnx_completed!(msg_id)
+      with_failover do
+        redis.set(
+          key(msg_id, :status),
+          "completed",
+          :nx => true,
+          :ex => @config.redis_status_key_expiry_interval,
+        )
+      end
+    end
+
     # store some key/value pairs
     def mset(msg_id, values)
       values = values.inject([]){|a,(k,v)| a.concat([key(msg_id, k), v])}

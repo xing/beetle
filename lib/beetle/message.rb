@@ -293,8 +293,13 @@ module Beetle
         ack!
         RC::Ancient
       elsif simple?
+        if @store.setnx_completed!(msg_id)
+          rc = run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
+        else
+          rc = RC::OK
+        end
         ack!
-        run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
+        rc
       elsif !key_exists?
         run_handler!(handler)
       else
@@ -383,7 +388,7 @@ module Beetle
       #:doc:
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
-      return if simple? # simple messages don't use the deduplication store
+      return if simple?
       if !redundant? || @store.incr(msg_id, :ack_count) >= 2
         # we test for >= 2 here, because we retry increments in the
         # dedup store so the counter could be greater than two

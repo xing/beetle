@@ -304,18 +304,17 @@ module Beetle
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
-      @store.expects(:redis).never
     end
 
-    test "when processing a simple message, ack should precede calling the handler" do
+    test "when processing a simple message, ack should folllow calling the handler" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
       handler = mock("handler")
       s = sequence("s")
       handler.expects(:pre_process).with(message).in_sequence(s)
-      header.expects(:ack).in_sequence(s)
       handler.expects(:call).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.process(handler)
     end
 
@@ -326,9 +325,9 @@ module Beetle
       handler = mock("handler")
       s = sequence("s")
       handler.expects(:pre_process).with(message).in_sequence(s)
-      header.expects(:ack).in_sequence(s)
       e = Exception.new("ohoh")
       handler.expects(:call).in_sequence(s).raises(e)
+      header.expects(:ack).in_sequence(s)
       handler.expects(:process_exception).with(e).in_sequence(s)
       handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
       assert_equal RC::AttemptsLimitReached, message.process(handler)

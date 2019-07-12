@@ -120,5 +120,6 @@ RDoc::Task.new do |rdoc|
 end
 
 task :clean do
-  system('rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid test.log')
+  sh "rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid test.log"
+  sh "find tmp -name '*.rdb' -o -name '*.aof' | xargs rm"
 end
