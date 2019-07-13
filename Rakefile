@@ -121,5 +121,5 @@ end
 
 task :clean do
   sh "rm -f tmp/*.output tmp/*.log tmp/master/* tmp/slave/* tmp/*lock tmp/*pid test.log"
-  sh "find tmp -name '*.rdb' -o -name '*.aof' | xargs rm"
+  sh "find tmp -name '*.rdb' -o -name '*.aof' -print | xargs rm -f"
 end
