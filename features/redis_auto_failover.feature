@@ -49,7 +49,7 @@ Feature: Redis auto failover
   Scenario: Successful double redis master switch with multiple failover sets
     Given a redis server "redis-3" exists as master
     And a redis server "redis-4" exists as slave of "redis-3"
-    Given a redis configuration server using redis servers "system/redis-1,redis-2;b/redis-3,redis-4" with clients "rc-client-1,rc-client-2" exists
+    Given a redis configuration server using redis servers "system/redis-1,redis-2;system2/redis-3,redis-4" with clients "rc-client-1,rc-client-2" exists
     And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
     And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
     And a beetle handler using the redis-master file from "rc-client-1" exists
