@@ -306,7 +306,7 @@ module Beetle
       @store.flushdb
     end
 
-    test "when processing a simple message, ack should folllow calling the handler" do
+    test "when processing a simple message, ack should follow calling the handler" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
 
