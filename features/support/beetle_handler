@@ -42,7 +42,7 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
     config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|
       begin
         Beetle.config.logger.info "received beetle policy update message': #{message.data}"
-        client.set_queue_policies!(JSON.parse(message.data))
+        client.update_queue_properties!(JSON.parse(message.data))
       rescue => e
         Beetle.config.logger.error("#{e}:#{e.backtrace.join("\n")}")
       end
