@@ -313,8 +313,8 @@ module Beetle
       handler = mock("handler")
       s = sequence("s")
       handler.expects(:pre_process).with(message).in_sequence(s)
-      handler.expects(:call).in_sequence(s)
       header.expects(:ack).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
       assert_equal RC::OK, message.process(handler)
     end
 
@@ -325,9 +325,9 @@ module Beetle
       handler = mock("handler")
       s = sequence("s")
       handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
       e = Exception.new("ohoh")
       handler.expects(:call).in_sequence(s).raises(e)
-      header.expects(:ack).in_sequence(s)
       handler.expects(:process_exception).with(e).in_sequence(s)
       handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
       assert_equal RC::AttemptsLimitReached, message.process(handler)

@@ -293,13 +293,12 @@ module Beetle
         ack!
         RC::Ancient
       elsif simple?
-        if @store.setnx_completed!(msg_id)
-          rc = run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
-        else
-          rc = RC::OK
-        end
         ack!
-        rc
+        if @store.setnx_completed!(msg_id)
+          run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
+        else
+          RC::OK
+        end
       elsif !key_exists?
         run_handler!(handler)
       else
