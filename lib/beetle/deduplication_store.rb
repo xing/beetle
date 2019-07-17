@@ -62,12 +62,14 @@ module Beetle
     # store completion status for given <tt>msg_id</tt> if it doesn't exist yet. Returns whether the
     # operation was successful.
     def setnx_completed!(msg_id)
+      expiry = @config.redis_status_key_expiry_interval
+      return true if expiry == 0
       with_failover do
         redis.set(
           key(msg_id, :status),
           "completed",
           :nx => true,
-          :ex => @config.redis_status_key_expiry_interval,
+          :ex => expiry,
         )
       end
     end
@@ -107,11 +109,12 @@ module Beetle
 
     # delete all keys associated with the given <tt>msg_id</tt>.
     def del_keys(msg_id)
+      expiry = @config.redis_status_key_expiry_interval
       keys = keys(msg_id)
-      status_key = keys.shift
+      status_key = keys.shift if expiry > 0
       with_failover do
         redis.del(*keys)
-        redis.expire(status_key, @config.redis_status_key_expiry_interval)
+        redis.expire(status_key, expiry) if expiry > 0
       end
     end
 

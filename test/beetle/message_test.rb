@@ -129,7 +129,24 @@ module Beetle
       end
     end
 
+    test "successful processing of a non redundant message should delete all keys from the database" do
+      header = header_with_params({})
+      header.expects(:ack)
+      message = Message.new("somequeue", header, 'foo', :store => @store)
+      message.stubs(:simple?).returns(false)
+
+      assert !message.expired?
+      assert !message.redundant?
+
+      message.process(@null_handler)
+      keys = @store.keys(message.msg_id)
+      keys.each do |key|
+        assert !@store.redis.exists(key)
+      end
+    end
+
     test "successful processing of a non redundant message should delete all keys from the database (except the status key, which should be set to expire)" do
+      @config.redis_status_key_expiry_interval = 1.minutes
       header = header_with_params({})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
@@ -148,7 +165,26 @@ module Beetle
       end
     end
 
+    test "successful processing of a redundant message twice should delete all keys from the database" do
+      header = header_with_params({:redundant => true})
+      header.expects(:ack).twice
+      message = Message.new("somequeue", header, 'foo', :store => @store)
+
+      assert !message.expired?
+      assert message.redundant?
+      assert !message.simple?
+
+      message.process(@null_handler)
+      message.process(@null_handler)
+
+      keys = @store.keys(message.msg_id)
+      keys.each do |key|
+        assert !@store.redis.exists(key)
+      end
+    end
+
     test "successful processing of a redundant message twice should delete all keys from the database (except the status key, which should be set to expire)" do
+      @config.redis_status_key_expiry_interval = 1.minutes
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
       message = Message.new("somequeue", header, 'foo', :store => @store)
@@ -302,7 +338,8 @@ module Beetle
 
   class SimpleMessageTest < Minitest::Test
     def setup
-      @store = DeduplicationStore.new
+      @config = Configuration.new
+      @store = DeduplicationStore.new(@config)
       @store.flushdb
     end
 
@@ -331,6 +368,26 @@ module Beetle
       handler.expects(:process_exception).with(e).in_sequence(s)
       handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
       assert_equal RC::AttemptsLimitReached, message.process(handler)
+    end
+
+    test "when processing a simple message, the handler should be executed only once if status keys are used" do
+      @config.redis_status_key_expiry_interval = 1.minute
+      header = header_with_params({})
+      message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
+
+      handler2 = mock("handler")
+      s2 = sequence("s2")
+      handler2.expects(:pre_process).with(message).in_sequence(s2)
+      header.expects(:ack).in_sequence(s2)
+      handler2.expects(:call).in_sequence(s2).never
+      assert_equal RC::OK, message.process(handler2)
     end
 
   end

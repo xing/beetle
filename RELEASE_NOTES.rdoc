@@ -6,7 +6,9 @@
   the dedup store for a configurable time window. The config option
   is named redis_status_key_expiry_interval. Note that this will
   significantly increase the cpu load and memory usage of the Redis
-  server for applications using a large number of non-redundant messages.
+  server for applications using a large number of non-redundant
+  messages. This feature is turned off by default, but we will
+  activate it with the next major release (4.0.0).
 
 == Version 3.2.0
 * added currently processed message to the handler pre-processing step

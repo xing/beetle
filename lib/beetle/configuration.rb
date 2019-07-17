@@ -37,13 +37,14 @@ module Beetle
     # handler timeout.
     attr_accessor :redis_failover_timeout
 
-    # how long we want status keys to survive after we have seen the second message of a
-    # redundant message pair. Defaults to 5 minutes. Setting this to a high value (hours)
-    # will reduce the likelihood of executing handler logic more than once, but can cause
-    # a higher redis database size with all associated problems. A handler can be
-    # executed more than once if the ack to the RabbitMQ server gets lost between the consumer
-    # and the RabbitMQ instance. This happens extremely seldom in our environment, but we cannot
-    # rule it out and we also don't quite understand (yet) why it happens.
+    # how long we want status keys to survive after we have seen the second message of a redundant
+    # message pair. Defaults to 0 seconds, but will be set to something non-zero with the next
+    # major beetle release. A recommended value would be 5 minutes (300 seconds). Setting this to a
+    # high value (hours) will reduce the likelihood of executing handler logic more than once, but
+    # can cause a higher redis database size with all associated problems. A handler can be
+    # executed more than once if the ack to the RabbitMQ server gets lost between the consumer and
+    # the RabbitMQ instance. This happens extremely seldom in our environment, but we cannot rule
+    # it out and we also don't quite understand (yet) why it happens.
     attr_accessor :redis_status_key_expiry_interval
 
     # how often heartbeat messages are exchanged between failover
@@ -151,7 +152,7 @@ module Beetle
       self.redis_servers = ""
       self.redis_db = 4
       self.redis_failover_timeout = 180.seconds
-      self.redis_status_key_expiry_interval = 5.minutes
+      self.redis_status_key_expiry_interval = 0.seconds
       self.redis_failover_client_heartbeat_interval = 10.seconds
       self.redis_failover_client_dead_interval = 60.seconds
 
