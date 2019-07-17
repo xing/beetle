@@ -1,6 +1,14 @@
 = Release Notes
 
-== Version 3.1.1
+== Version 3.3.0.rc1
+* protect against duplicate handler execution by keeping the status of
+  handler exectution for both redundant and non-redundant messages in
+  the dedup store for a configurable time window. The config option
+  is named redis_status_key_expiry_interval. Note that this will
+  significantly increase the cpu load and memory usage of the Redis
+  server for applications using a large number of non-redundant messages.
+
+== Version 3.2.0
 * added currently processed message to the handler pre-processing step
 
 == Version 3.1.0
