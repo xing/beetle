@@ -53,6 +53,17 @@ module Beetle
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
     end
 
+    test "stop!(exception) should close the bunny socket if an exception is not nil" do
+      b = mock("bunny")
+      b.expects(:close_socket)
+      @pub.expects(:bunny?).returns(true)
+      @pub.expects(:bunny).returns(b)
+      @pub.send(:stop!, Exception.new)
+      assert_equal({}, @pub.send(:exchanges))
+      assert_equal({}, @pub.send(:queues))
+      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+    end
+
     test "stop! should not create a new bunny " do
       @pub.expects(:bunny?).returns(false)
       @pub.expects(:bunny).never
@@ -390,6 +401,17 @@ module Beetle
       @pub.logger.expects(:info)
       @pub.__send__ :refresh_throttling!
       assert @pub.throttled?
+    end
+
+    test "refresh_throttling! logs a warning if an exception is raised during throttling" do
+      assert !@pub.throttled?
+      @pub.instance_variable_set :@next_throttle_refresh, Time.now - 1
+      options = { "test" => 100 }
+      @pub.throttle(options)
+      @pub.expects(:each_server).raises(StandardError.new("foo"))
+      @pub.logger.expects(:warn)
+      @pub.__send__ :refresh_throttling!
+      assert !@pub.throttled?
     end
 
   end
