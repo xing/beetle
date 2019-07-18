@@ -41,10 +41,7 @@ module Beetle
     # message pair. Defaults to 0 seconds, but will be set to something non-zero with the next
     # major beetle release. A recommended value would be 5 minutes (300 seconds). Setting this to a
     # high value (hours) will reduce the likelihood of executing handler logic more than once, but
-    # can cause a higher redis database size with all associated problems. A handler can be
-    # executed more than once if the ack to the RabbitMQ server gets lost between the consumer and
-    # the RabbitMQ instance. This happens extremely seldom in our environment, but we cannot rule
-    # it out and we also don't quite understand (yet) why it happens.
+    # can cause a higher redis database size with all associated problems.
     attr_accessor :redis_status_key_expiry_interval
 
     # how often heartbeat messages are exchanged between failover
