@@ -1,6 +1,6 @@
 = Release Notes
 
-== Version 3.3.0.rc1
+== Version 3.3.0
 * protect against duplicate handler execution by keeping the status of
   handler exectution for both redundant and non-redundant messages in
   the dedup store for a configurable time window. The config option
