@@ -856,7 +856,7 @@ func (s *ServerState) UpdateMasterFile() {
 	if s.opts.ConsulClient != nil {
 		err := s.opts.ConsulClient.UpdateState("redis_master_file_content", content)
 		if err != nil {
-			logError("could not update consul state")
+			logError("could not update consul state: %s", err)
 		}
 	}
 }
