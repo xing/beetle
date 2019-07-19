@@ -35,6 +35,7 @@ var opts struct {
 	Server                   string        `long:"server" description:"Specifies config server address."`
 	Port                     int           `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
 	ConsulUrl                string        `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
+	ConsulToken              string        `long:"consul-token" env:"BEETLE_CONSUL_TOKEN" description:"Specifies consul authentication token."`
 	GcThreshold              int           `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
 	GcDatabases              string        `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
 	GcSystem                 string        `long:"redis-gc-system" default:"system" description:"Redis system from which to collect keys."`
@@ -320,7 +321,7 @@ var consulClient *consul.Client
 
 func getConsulClient() *consul.Client {
 	if opts.ConsulUrl != "" && consulClient == nil {
-		consulClient = consul.NewClient(opts.ConsulUrl, "beetle")
+		consulClient = consul.NewClient(opts.ConsulUrl, opts.ConsulToken, "beetle")
 	}
 	return consulClient
 }

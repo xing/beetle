@@ -13,8 +13,9 @@ import (
 	"time"
 )
 
-var testUrl = ""
+var testUrl = "http://localhost:8500"
 var testApp = "beetle"
+var testToken = "randomstring"
 
 func init() {
 	log.SetFlags(0)
@@ -22,7 +23,6 @@ func init() {
 	if !Verbose {
 		log.SetOutput(ioutil.Discard)
 	}
-	testUrl = "http://localhost:8500"
 	cmd := exec.Command("curl", "-X", "PUT", testUrl+"/v1/kv/datacenters", "-d", "ams1,ams2")
 	if err := cmd.Run(); err != nil {
 		fmt.Errorf("could not set up datacenters")
@@ -38,7 +38,7 @@ func init() {
 }
 
 func TestConnect(t *testing.T) {
-	client := NewClient(testUrl, testApp)
+	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	if !reflect.DeepEqual(client.dataCenters, []string{"ams1", "ams2"}) {
 		t.Errorf("could not retrieve datacenters: %v", client.dataCenters)
@@ -48,7 +48,7 @@ func TestConnect(t *testing.T) {
 	}
 }
 func TestState(t *testing.T) {
-	client := NewClient(testUrl, testApp)
+	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	value := strconv.Itoa(rand.Int())
 	if err := client.UpdateState("test", value); err != nil {
@@ -64,7 +64,7 @@ func TestState(t *testing.T) {
 }
 
 func TestWatching(t *testing.T) {
-	client := NewClient(testUrl, testApp)
+	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	channel, err := client.WatchConfig()
 	if err != nil {

@@ -65,6 +65,7 @@ type Space struct {
 // Client is used to access consul
 type Client struct {
 	consulUrl    string
+	consulToken  string
 	appName      string
 	appConfig    Space
 	sharedConfig Space
@@ -74,9 +75,10 @@ type Client struct {
 }
 
 // NewClient creates a new consul client
-func NewClient(consulUrl string, appName string) *Client {
+func NewClient(consulUrl string, consulToken string, appName string) *Client {
 	client := Client{
 		consulUrl:    consulUrl,
+		consulToken:  consulToken,
 		appName:      appName,
 		appConfig:    Space{prefix: "apps/" + appName + "/config/", upcase: true},
 		sharedConfig: Space{prefix: "shared/config/", upcase: true},
@@ -144,6 +146,7 @@ func (c *Client) GetDataCenters() error {
 
 // GetData loads a key/value space from consul
 func (c *Client) GetData(space *Space, useIndex bool) error {
+	client := &http.Client{Timeout: time.Second * 60}
 	fullUrl := c.kvUrl(space.prefix) + "?recurse"
 	if useIndex {
 		fullUrl += "&index=" + strconv.Itoa(space.modifyIndex)
@@ -151,7 +154,14 @@ func (c *Client) GetData(space *Space, useIndex bool) error {
 	if Verbose {
 		log.Printf("GET %s\n", fullUrl)
 	}
-	response, err := http.Get(fullUrl)
+	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %q failed", fullUrl)
+	}
+	if c.consulToken != "" {
+		req.Header.Set("X-Consul-Token", c.consulToken)
+	}
+	response, err := client.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "GET %q failed", fullUrl)
 	}
@@ -200,7 +210,7 @@ func (c *Client) GetState() (env Env, err error) {
 
 // UpdateState stores a single key value pair in the state
 func (c *Client) UpdateState(key string, value string) error {
-	client := &http.Client{Timeout: time.Second * 5}
+	client := &http.Client{Timeout: time.Second * 60}
 	uri := c.kvUrl(c.state.prefix + key)
 	if Verbose {
 		log.Printf("PUT %s\n", uri)
@@ -210,6 +220,9 @@ func (c *Client) UpdateState(key string, value string) error {
 	req, err := http.NewRequest(http.MethodPut, uri, body)
 	if err != nil {
 		return errors.Wrapf(err, "PUT %q failed", uri)
+	}
+	if c.consulToken != "" {
+		req.Header.Set("X-Consul-Token", c.consulToken)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
