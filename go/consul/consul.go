@@ -146,7 +146,7 @@ func (c *Client) GetDataCenters() error {
 
 // GetData loads a key/value space from consul
 func (c *Client) GetData(space *Space, useIndex bool) error {
-	client := &http.Client{Timeout: time.Second * 60}
+	client := &http.Client{}
 	fullUrl := c.kvUrl(space.prefix) + "?recurse"
 	if useIndex {
 		fullUrl += "&index=" + strconv.Itoa(space.modifyIndex)
@@ -156,7 +156,7 @@ func (c *Client) GetData(space *Space, useIndex bool) error {
 	}
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
-		return errors.Wrapf(err, "PUT %q failed", fullUrl)
+		return errors.Wrapf(err, "GET %q failed", fullUrl)
 	}
 	if c.consulToken != "" {
 		req.Header.Set("X-Consul-Token", c.consulToken)
