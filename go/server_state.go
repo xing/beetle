@@ -390,6 +390,7 @@ func (s *ServerState) updateClientIds() {
 	for _, id := range strings.Split(s.GetConfig().ClientIds, ",") {
 		if id != "" {
 			s.clientIds.Add(id)
+			s.unknownClientIds.Remove(id)
 		}
 	}
 }
@@ -406,8 +407,8 @@ func NewServerState(o ServerOptions) *ServerState {
 	}
 	s.wsChannel = make(chan *WsMsg, 10000)
 	s.cmdChannel = make(chan command, 1000)
-	s.updateClientIds()
 	s.unknownClientIds = make(StringList, 0)
+	s.updateClientIds()
 	s.clientsLastSeen = make(TimeSet)
 	s.failovers = make(map[string]*FailoverState)
 	s.systemNames = make(StringList, 0)

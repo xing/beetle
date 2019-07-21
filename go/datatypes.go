@@ -35,6 +35,16 @@ func (l *StringList) Add(s string) {
 	*l = append(*l, s)
 }
 
+// Remove removes given string from string slice l.
+func (l *StringList) Remove(s string) {
+	for i, x := range *l {
+		if x == s {
+			*l = append((*l)[:i], (*l)[i+1:]...)
+			return
+		}
+	}
+}
+
 // StringSet implements convenient set abstractions.
 type StringSet map[string]bool
 
