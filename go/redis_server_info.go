@@ -33,6 +33,7 @@ func (shims RedisShims) Servers() []string {
 // RedisServerInfo contans a list slice of RedisShim objects and a lookup index
 // on server strings (host:port format).
 type RedisServerInfo struct {
+	servers    string
 	instances  RedisShims
 	serverInfo map[string]RedisShims
 }
@@ -40,7 +41,7 @@ type RedisServerInfo struct {
 // NewRedisServerInfo creates a new RedisServerInfo from a comma separated list
 // of servers (host:port format).
 func NewRedisServerInfo(servers string) *RedisServerInfo {
-	si := &RedisServerInfo{}
+	si := &RedisServerInfo{servers: servers}
 	si.instances = make(RedisShims, 0)
 	if servers != "" {
 		serverList := regexp.MustCompile(" *, *").Split(servers, -1)
@@ -67,7 +68,7 @@ func (si *RedisServerInfo) Reset() {
 	si.serverInfo = m
 }
 
-// Refresh contacts all redis servers and dtermines their current role.
+// Refresh contacts all redis servers and determines their current role.
 func (si *RedisServerInfo) Refresh() {
 	logDebug("refreshing server info")
 	si.Reset()
@@ -104,7 +105,7 @@ func (si *RedisServerInfo) Unknowns() RedisShims {
 	return si.serverInfo[UNKNOWN]
 }
 
-// SlavesOf returns all shims for servers which are salves of the given server.
+// SlavesOf returns all shims for servers which are slaves of the given server.
 func (si *RedisServerInfo) SlavesOf(master *RedisShim) RedisShims {
 	slaves := make(RedisShims, 0)
 	for _, s := range si.Slaves() {

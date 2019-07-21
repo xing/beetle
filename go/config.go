@@ -60,11 +60,21 @@ type FailoverSet struct {
 	spec string
 }
 
+type FailoverSets []FailoverSet
+
+func (fs *FailoverSets) SystemNames() StringList {
+	res := make(StringList, 0, len(*fs))
+	for _, s := range *fs {
+		res = append(res, s.name)
+	}
+	return res
+}
+
 // FailoverSets parses the redis server spec and returns a list of pairs of system
 // names and comma separated strings of redis server specs (host:port pairs). Examples:
 // "a1:5,a2:5" ==> {"system": "a1:5,a2:5" } "primary/a1:5,a2:5\nsecondary/b1:3,b2:3" ==>
 // {"primary": "a1:5,a2:5", "secondary": "b1:3,b2:3"}
-func (c *Config) FailoverSets() []FailoverSet {
+func (c *Config) FailoverSets() FailoverSets {
 	fs := []FailoverSet{}
 	for _, line := range strings.Split(c.RedisServers, "\n") {
 		if line == "" {

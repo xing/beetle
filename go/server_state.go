@@ -41,7 +41,7 @@ type ServerState struct {
 	waitGroup               sync.WaitGroup            // Used to organize the shutdown process.
 	configChanges           chan consul.Env           // Environment changes from consul arrive on this channel.
 	failoverConfidenceLevel float64                   // Failover confidence level, normalized to the interval [0,1.0]
-	systemNames             []string                  // All system names. Firste on is used for saving server state.
+	systemNames             StringList                // All system names. Firste on is used for saving server state.
 	failovers               map[string]*FailoverState // Maps system name to failover state.
 	cmdChannel              chan command              // Channel for messages to perform state access/changing in the dispatcher thread, passed as closures.
 }
@@ -326,9 +326,6 @@ func (s *ServerState) SendNotification(text string) (err error) {
 
 func (s *ServerState) dispatcher() {
 	ticker := time.NewTicker(1 * time.Second)
-	for _, fs := range s.failovers {
-		fs.StartWatcher()
-	}
 	for !interrupted {
 		select {
 		case cmd := <-s.cmdChannel:
@@ -353,6 +350,7 @@ func (s *ServerState) dispatcher() {
 			s.SetConfig(newconfig)
 			s.determineFailoverConfidenceLevel()
 			s.updateClientIds()
+			s.updateFailoverSets()
 			logInfo("updated server config from consul: %s", s.GetConfig())
 		}
 	}
@@ -412,21 +410,45 @@ func NewServerState(o ServerOptions) *ServerState {
 	s.unknownClientIds = make(StringList, 0)
 	s.clientsLastSeen = make(TimeSet)
 	s.failovers = make(map[string]*FailoverState)
-	s.systemNames = make([]string, 0)
-	for _, fs := range s.GetConfig().FailoverSets() {
-		s.systemNames = append(s.systemNames, fs.name)
-		initalToken := int(time.Now().UnixNano() / 1000000) // millisecond resolution
-		s.failovers[fs.name] = &FailoverState{
+	s.systemNames = make(StringList, 0)
+	s.updateFailoverSets()
+	return s
+}
+
+func (s *ServerState) updateFailoverSets() {
+	failovers := s.GetConfig().FailoverSets()
+	// delete obsolete failover sets
+	newSystemNames := failovers.SystemNames()
+	knownSystemNames := s.systemNames
+	for _, known := range knownSystemNames {
+		if !newSystemNames.Include(known) {
+			delete(s.failovers, known)
+		}
+	}
+	s.systemNames = newSystemNames
+	// add new failoversets and update already existing ones
+	for _, fs := range failovers {
+		existing := s.failovers[fs.name]
+		if existing != nil {
+			if existing.redis.servers != fs.spec {
+				existing.redis = NewRedisServerInfo(fs.spec)
+				existing.redis.Refresh()
+			}
+			continue
+		}
+		initalTokenInt := int(time.Now().UnixNano() / 1000000) // millisecond resolution
+		newFailoverState := &FailoverState{
 			server:                       s,
 			system:                       fs.name,
-			currentTokenInt:              initalToken,
-			currentToken:                 strconv.Itoa(initalToken),
+			currentTokenInt:              initalTokenInt,
+			currentToken:                 strconv.Itoa(initalTokenInt),
 			redis:                        NewRedisServerInfo(fs.spec),
 			clientPongIdsReceived:        make(StringSet),
 			clientInvalidatedIdsReceived: make(StringSet),
 		}
+		s.failovers[fs.name] = newFailoverState
+		newFailoverState.StartWatcher()
 	}
-	return s
 }
 
 // SaveState stores some aspects of the server state to the current redis master
