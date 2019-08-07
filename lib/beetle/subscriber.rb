@@ -34,7 +34,7 @@ module Beetle
       @listened_queues = queues
       @exchanges_for_queues = exchanges_for_queues(queues)
       EM.run do
-        each_server do
+        each_server_sorted_randomly do
           connect_server connection_settings
         end
         yield if block_given?

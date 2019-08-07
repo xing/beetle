@@ -43,6 +43,10 @@ module Beetle
       @servers.each { |s| set_current_server(s); yield }
     end
 
+    def each_server_sorted_randomly
+      @servers.sort_by{rand}.each { |s| set_current_server(s); yield }
+    end
+
     def exchanges
       @exchanges[@server] ||= {}
     end
