@@ -1,5 +1,10 @@
 = Release Notes
 
+== Version 3.3.1
+* It seems that there is a certain preference on connection level when
+  selecting the next message to process. We try to protect against
+  such bias by connecting in random order.
+
 == Version 3.3.0
 * protect against duplicate handler execution by keeping the status of
   handler exectution for both redundant and non-redundant messages in
