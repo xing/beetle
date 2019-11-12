@@ -8,5 +8,5 @@ windows and execute the following commands:
 
     rake rabbit:start1
     rake rabbit:start2
-    rake redis:start1
-    rake redis:start2
+    rake redis:start:master
+    rake redis:start:slave
