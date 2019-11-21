@@ -14,7 +14,7 @@ export RABBITMQ_NODENAME=$1
 # combination. See clustering on a single machine guide at <http://www.rab-
 # bitmq.com/clustering.html#single-machine> for details.
 
-# RABBITMQ_NODE_IP_ADDRESS
+export RABBITMQ_NODE_IP_ADDRESS=localhost
 # Defaults to 0.0.0.0. This can be changed if you only want to bind to one net-
 # work interface.
 
@@ -22,10 +22,6 @@ export RABBITMQ_NODE_PORT=$2
 # Defaults to 5672.
 
 export RABBITMQ_CONFIG_FILE=$3
-# RABBITMQ_CLUSTER_CONFIG_FILE
-# Defaults to /etc/rabbitmq/rabbitmq_cluster.config. If this file is present it
-# is used by the server to auto-configure a RabbitMQ cluster.  See the clustering
-# guide at <http://www.rabbitmq.com/clustering.html> for details.
 export RABBITMQ_ENABLED_PLUGINS_FILE=$4
 
 rabbitmq-server
