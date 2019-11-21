@@ -26,7 +26,9 @@ export RABBITMQ_CONFIG_FILE=$3
 # Defaults to /etc/rabbitmq/rabbitmq_cluster.config. If this file is present it
 # is used by the server to auto-configure a RabbitMQ cluster.  See the clustering
 # guide at <http://www.rabbitmq.com/clustering.html> for details.
+export RABBITMQ_ENABLED_PLUGINS_FILE=$4
 
 rabbitmq-server
 
 rm -f $RABBITMQ_CONFIG_FILE
+rm -f $RABBITMQ_ENABLED_PLUGINS_FILE
