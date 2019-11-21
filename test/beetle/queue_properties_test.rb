@@ -28,13 +28,15 @@ module Beetle
         :queue_name => "QUEUE_NAME", :dead_letter_queue_name => "QUEUE_NAME_dead_letter",
         :message_ttl => 10000
       }
-      @queue_properties.expects(:set_queue_policy!).with("server", "QUEUE_NAME",
-                                                       :lazy => true, :dead_lettering => true,
-                                                       :routing_key => "QUEUE_NAME_dead_letter")
-      @queue_properties.expects(:set_queue_policy!).with("server", "QUEUE_NAME_dead_letter",
+
+      policies = sequence('policies')
+      @queue_properties.expects(:set_queue_policy!).in_sequence(policies).with("server", "QUEUE_NAME_dead_letter",
                                                        :lazy => true, :dead_lettering => true,
                                                        :routing_key => "QUEUE_NAME",
                                                        :message_ttl => 10000)
+      @queue_properties.expects(:set_queue_policy!).in_sequence(policies).with("server", "QUEUE_NAME",
+                                                       :lazy => true, :dead_lettering => true,
+                                                       :routing_key => "QUEUE_NAME_dead_letter")
       @queue_properties.update_queue_properties!(options)
     end
 
