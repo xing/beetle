@@ -23,12 +23,17 @@ module Beetle
       dead_letter_queue_name = options[:dead_letter_queue_name]
       policy_options = options.slice(:lazy, :dead_lettering)
 
-      target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
-      set_queue_policy!(server, target_queue, target_queue_options)
-      remove_obsolete_bindings(server, target_queue, options[:bindings]) if options.has_key?(:bindings)
-
+      # The order of policy creation is important.
+      # We need to create the policy on the dead letter queue first to have the message_ttl setting
+      # in place before the first message comes in. Otherwise a message will not get a ttl
+      # applied and stay in the dead letter queue forever (or until manually consumed), thus
+      # blocking the head of the queue.
       dead_letter_queue_options = policy_options.merge(:routing_key => target_queue, :message_ttl => options[:message_ttl])
       set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options)
+      target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
+      set_queue_policy!(server, target_queue, target_queue_options)
+
+      remove_obsolete_bindings(server, target_queue, options[:bindings]) if options.has_key?(:bindings)
     end
 
     def set_queue_policy!(server, queue_name, options={})
