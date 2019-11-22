@@ -1,8 +1,8 @@
 dist: trusty
 rvm:
-  - 2.4.5
-  - 2.5.5
-  - 2.6.2
+  - 2.4.9
+  - 2.5.7
+  - 2.6.5
 before_script:
   - sudo rm -rf /usr/local/go
   - curl -s https://dl.google.com/go/go1.12.7.linux-amd64.tar.gz | sudo tar xzCf /usr/local -
