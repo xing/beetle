@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 3.3.2
+* Changed order of queue policy application to avoid ahead of line blocking in dead letter
+  queues.
+
 == Version 3.3.1
 * It seems that there is a certain preference on connection level when
   selecting the next message to process. We try to protect against
