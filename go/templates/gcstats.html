@@ -17,10 +17,10 @@
   <body>
     {{ if . }}
     <h2>Last GC completed at {{ .TimestampHuman }}</h2>
-    <p>Active dedup store entries by queue, with an hour based histogram of future expiries.</p>
+    <p>Active dedup store entries and collected orphans by queue, with an hour based histogram of future expiries.</p>
     <dl>
       {{ range .Queues }}
-      <dt>{{ .Queue }}: {{ .TotalExpiries }}</dt>
+      <dt>{{ .Queue }}: {{ .FormattedTotalExpiries }} active, {{ .FormattedTotalOrphans }} orphans</dt>
       <dd>
         <table>
           <colgroup>

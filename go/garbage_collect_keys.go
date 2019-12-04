@@ -12,8 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"gopkg.in/redis.v5"
 )
+
+var printer *message.Printer
+
+func init() {
+	printer = message.NewPrinter(language.English)
+}
 
 // GCOptions are provided by the caller of RunGarbageCollectKeys.
 type GCOptions struct {
@@ -33,6 +41,7 @@ type GCState struct {
 	redis         *redis.Client // current connection
 	keySuffixes   []string
 	expiries      map[string]map[int]int
+	orphans       map[string]int
 	cursor        uint64
 }
 
@@ -49,7 +58,7 @@ func (s *GCState) keys(msgId string) []string {
 }
 
 func (s *GCState) msgId(key string) string {
-	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]+):.*$")
+	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]*):.*$")
 	matches := re.FindStringSubmatch(key)
 	if len(matches) == 0 {
 		logError("msgid could not be extracted from key '%s'", key)
@@ -59,7 +68,7 @@ func (s *GCState) msgId(key string) string {
 }
 
 func (s *GCState) msgQueueName(key string) string {
-	re := regexp.MustCompile("^msgid:([^:]+):[-0-9a-f]+:.*$")
+	re := regexp.MustCompile("^msgid:([^:]+):[-0-9a-f]*:.*$")
 	matches := re.FindStringSubmatch(key)
 	if len(matches) == 0 {
 		logError("queue name could not be extracted from key '%s'", key)
@@ -85,12 +94,22 @@ func (s *GCState) recordExpiryHour(key string, t time.Duration) {
 
 func (s *GCState) resetExpiries() {
 	s.expiries = make(map[string]map[int]int)
+	s.orphans = make(map[string]int)
 }
 
 type QueueInfo struct {
 	Queue         string    `json:"queue"`
 	TotalExpiries int       `json:"total_expiries"`
 	Expiries      HourInfos `json:"expiries"`
+	TotalOrphans  int       `json:"total_orphans"`
+}
+
+func (qi *QueueInfo) FormattedTotalExpiries() string {
+	return printer.Sprintf("%d", qi.TotalExpiries)
+}
+
+func (qi *QueueInfo) FormattedTotalOrphans() string {
+	return printer.Sprintf("%d", qi.TotalOrphans)
 }
 
 type QueueInfos []QueueInfo
@@ -128,7 +147,7 @@ func (s HourInfos) Swap(i, j int) {
 func (s *GCState) getQueueInfos() QueueInfos {
 	l := make(QueueInfos, 0, len(s.expiries))
 	for q, m := range s.expiries {
-		i := QueueInfo{Queue: q, Expiries: make(HourInfos, 0, len(m))}
+		i := QueueInfo{Queue: q, Expiries: make(HourInfos, 0, len(m)), TotalOrphans: s.orphans[q]}
 		for h, c := range m {
 			i.TotalExpiries += c
 			i.Expiries = append(i.Expiries, HourInfo{Hour: h, Count: c})
@@ -169,50 +188,72 @@ func (s *GCState) storeQueueInfos(infos QueueInfos) {
 func (s *GCState) dumpQueueInfos(infos QueueInfos) {
 	logInfo("active keys in dedup store by queue")
 	for _, i := range infos {
-		fmt.Println("--------------------------------------------------------------")
-		fmt.Printf("%s: %d\n", i.Queue, i.TotalExpiries)
-		fmt.Println("--------------------------------------------------------------")
+		printer.Println("---------------------------------------------------------------------------------")
+		printer.Printf("%s: %d active (%d orphans)\n", i.Queue, i.TotalExpiries, i.TotalOrphans)
+		printer.Println("---------------------------------------------------------------------------------")
 		for _, hi := range i.Expiries {
-			fmt.Printf("%3dh: %5d\n", hi.Hour, hi.Count)
+			printer.Printf("%3dh: %5d\n", hi.Hour, hi.Count)
 		}
 	}
 }
 
-func (s *GCState) gcKey(key string, threshold uint64) (bool, error) {
+func (s *GCState) gcKey(key string, threshold uint64) (int64, error) {
 	v, err := s.redis.Get(key).Result()
 	if err != nil {
 		if err == redis.Nil {
 			logDebug("key not found: %s", key)
-			return false, nil
+			return 0, nil
 		}
-		return false, err
+		return 0, err
 	}
 	expires, err := strconv.ParseUint(v, 10, 64)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	if expires > threshold {
 		t := time.Duration(expires-threshold+uint64(s.opts.GcThreshold)) * time.Second
 		logDebug("key %s expires in %s", key, t)
 		s.recordExpiryHour(key, t)
-		return false, err
+		return 0, err
 	}
 	t := time.Duration(threshold-expires) * time.Second
 	logDebug("key %s has expired %s ago", key, t)
 	msgID := s.msgId(key)
-	if msgID == "" {
-		return false, nil
-	}
 	keys := s.keys(msgID)
 	// logDebug("deleting keys: %s", strings.Join(keys, ", "))
-	_, err = s.redis.Del(keys...).Result()
-	return err == nil, err
+	n, err := s.redis.Del(keys...).Result()
+	return n, err
+}
+
+func (s *GCState) maybeGcKey(key string, threshold uint64) (int64, error) {
+	if strings.HasSuffix(key, ":expires") {
+		return s.gcKey(key, uint64(threshold))
+	}
+	if strings.HasSuffix(key, ":status") {
+		logDebug("skipping status key: %s", key)
+		return 0, nil
+	}
+	msgID := s.msgId(key)
+	expiresKey := s.key(msgID, "expires")
+	_, err := s.redis.Get(expiresKey).Result()
+	if err == redis.Nil {
+		// logDebug("key %s has no corresponding expires key: %s", key, expiresKey)
+		n, err := s.redis.Del(key).Result()
+		if err != nil {
+			logError("could not delete orphaned key '%s':%s", key, err)
+		}
+		queueName := s.msgQueueName(key)
+		s.orphans[queueName] += 1
+		return n, err
+	}
+	// logDebug("found expires key %s: %s", expiresKey, v)
+	return 0, err
 }
 
 func (s *GCState) garbageCollectKeys(db int) bool {
-	var total, expired int
+	var total, expired int64
 	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(1000 * time.Millisecond)
 	threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
 	for range ticker.C {
 		if interrupted {
@@ -225,25 +266,23 @@ func (s *GCState) garbageCollectKeys(db int) bool {
 			logDebug("s.cursor: %d", s.cursor)
 			var err error
 			var keys []string
-			keys, s.cursor, err = s.redis.Scan(s.cursor, "msgid:*:expires", 10000).Result()
+			keys, s.cursor, err = s.redis.Scan(s.cursor, "msgid:*", 10000).Result()
 			if err != nil {
 				logError("starting over: %v", err)
 				return true
 			}
 			logDebug("retrieved %d keys from db %d", len(keys), db)
-			total += len(keys)
+			total += int64(len(keys))
 			for _, key := range keys {
 				if interrupted {
 					return false
 				}
-				collected, err := s.gcKey(key, uint64(threshold))
+				collected, err := s.maybeGcKey(key, uint64(threshold))
 				if err != nil {
 					logError("starting over: %v", err)
 					return true
 				}
-				if collected {
-					expired++
-				}
+				expired += collected
 			}
 			if s.cursor == 0 {
 				return false
@@ -254,8 +293,8 @@ func (s *GCState) garbageCollectKeys(db int) bool {
 }
 
 func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
-	var total, expired int
-	defer func() { logInfo("expired %d keys out of %d in db %d", expired, total, db) }()
+	var total, expired int64
+	defer func() { logInfo("expired %d keys out of %d potential keys in db %d", expired, total, db) }()
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -267,8 +306,9 @@ func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
 	s.getMaster(db)
 
 	threshold := time.Now().Unix() + int64(s.opts.GcThreshold)
-	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]+):expires$")
+	re := regexp.MustCompile("^(msgid:[^:]+:[-0-9a-f]*):expires$")
 	scanner := bufio.NewScanner(file)
+	numKeySuffixes := int64(len(s.keySuffixes))
 	for scanner.Scan() {
 		if interrupted {
 			break
@@ -277,15 +317,13 @@ func (s *GCState) garbageCollectKeysFromFile(db int, filePath string) {
 		if !re.MatchString(line) {
 			continue
 		}
-		total++
-		collected, err := s.gcKey(line, uint64(threshold))
+		total += numKeySuffixes
+		collected, err := s.maybeGcKey(line, uint64(threshold))
 		if err != nil {
 			logError("could not collect %s: %v", line, err)
 			continue
 		}
-		if collected {
-			expired++
-		}
+		expired += collected
 	}
 	if err := scanner.Err(); err != nil {
 		logError("%v", err)

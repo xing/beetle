@@ -10,6 +10,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/yookoala/realpath v1.0.0
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
+	golang.org/x/text v0.3.0
 	gopkg.in/gorilla/websocket.v1 v1.4.0
 	gopkg.in/redis.v5 v5.2.9
 	gopkg.in/tylerb/graceful.v1 v1.2.15
