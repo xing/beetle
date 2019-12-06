@@ -237,13 +237,16 @@ func (s *GCState) maybeGcKey(key string, threshold uint64) (int64, error) {
 	expiresKey := s.key(msgID, "expires")
 	_, err := s.redis.Get(expiresKey).Result()
 	if err == redis.Nil {
+		// this can happen for two reasons:
+		// 1. we have real garbage
+		// 2. the key has been deleted by a beetle subscriber
 		// logDebug("key %s has no corresponding expires key: %s", key, expiresKey)
 		n, err := s.redis.Del(key).Result()
 		if err != nil {
-			logError("could not delete orphaned key '%s':%s", key, err)
+			logError("could not delete potentially orphaned key '%s':%s", key, err)
 		}
 		queueName := s.msgQueueName(key)
-		s.orphans[queueName] += 1
+		s.orphans[queueName] += int(n)
 		return n, err
 	}
 	// logDebug("found expires key %s: %s", expiresKey, v)
