@@ -14,7 +14,7 @@ export RABBITMQ_NODENAME=$1
 # combination. See clustering on a single machine guide at <http://www.rab-
 # bitmq.com/clustering.html#single-machine> for details.
 
-export RABBITMQ_NODE_IP_ADDRESS=localhost
+export RABBITMQ_NODE_IP_ADDRESS=127.0.0.1
 # Defaults to 0.0.0.0. This can be changed if you only want to bind to one net-
 # work interface.
 

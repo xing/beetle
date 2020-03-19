@@ -58,11 +58,11 @@ namespace :rabbit do
 
   desc "start rabbit instance 1"
   task :start1 do
-    start "rabbit1", 5672, 15672
+    start "rabbit1@localhost", 5672, 15672
   end
   desc "start rabbit instance 2"
   task :start2 do
-    start "rabbit2", 5673, 15673
+    start "rabbit2@localhost", 5673, 15673
   end
   desc "reset rabbit instances (deletes all data!)"
   task :reset do
