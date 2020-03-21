@@ -87,8 +87,6 @@ should suffice.
 == Gem Dependencies
 
 At runtime, Beetle will use
-* {uuid4r}[http://github.com/skaes/uuid4r]
-  (which needs ossp-uuid)
 * {bunny}[http://github.com/ruby-amqp/bunny]
 * {redis}[http://github.com/redis/redis-rb]
 * {amqp}[http://github.com/ruby-amqp/amqp]
