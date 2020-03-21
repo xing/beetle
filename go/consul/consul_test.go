@@ -38,6 +38,7 @@ func init() {
 }
 
 func TestConnect(t *testing.T) {
+	fmt.Println("=== TestReadingDatacenters =======================================")
 	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	if !reflect.DeepEqual(client.dataCenters, []string{"ams1", "ams2"}) {
@@ -48,6 +49,7 @@ func TestConnect(t *testing.T) {
 	}
 }
 func TestState(t *testing.T) {
+	fmt.Println("=== TestUpdatingConsulState ======================================")
 	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	value := strconv.Itoa(rand.Int())
@@ -64,6 +66,7 @@ func TestState(t *testing.T) {
 }
 
 func TestWatching(t *testing.T) {
+	fmt.Println("=== TestWatchingConsulKeys =======================================")
 	client := NewClient(testUrl, testToken, testApp)
 	client.Initialize()
 	channel, err := client.WatchConfig()
