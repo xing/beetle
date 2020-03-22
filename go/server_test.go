@@ -25,12 +25,15 @@ func startAndWaitForText(cmd *exec.Cmd, text []string) {
 		cmd.Process.Kill()
 		os.Exit(1)
 	}
+	log.Println("starting redis server")
 	scanner := bufio.NewScanner(pipe)
 	cmd.Start()
 	for scanner.Scan() {
 		line := scanner.Text()
+		log.Println(line)
 		for _, marker := range text {
 			if strings.Contains(line, marker) {
+				log.Printf("redis server started: %s", marker)
 				return
 			}
 		}
@@ -49,7 +52,7 @@ func TestMain(m *testing.M) {
 	redis1 := exec.Command(cmd, "--port", "7001")
 	startAndWaitForText(redis1, []string{"server is now ready to accept connections", "Ready to accept connections"})
 	redis2 := exec.Command(cmd, "--port", "7002", "--slaveof", "127.0.0.1", "7001")
-	startAndWaitForText(redis2, []string{"MASTER <-> SLAVE sync: Finished with success"})
+	startAndWaitForText(redis2, []string{"MASTER <-> SLAVE sync: Finished with success", "MASTER <-> REPLICA sync: Finished with success"})
 	result := m.Run()
 	redis1.Process.Kill()
 	redis2.Process.Kill()
@@ -93,7 +96,7 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 func checkEqual(t *testing.T, actual, expected interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-		spew.Dump(actual, expected)
+		// spew.Dump(actual, expected)
 	}
 }
 
