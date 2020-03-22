@@ -32,7 +32,7 @@ tidy:
 	cd $(GO_SRC) && go mod tidy
 
 realclean: clean
-	rm .packr
+	rm -f .packr .lint
 	cd $(GO_SRC) && go clean -modcache
 
 install: $(GO_INSTALL_TARGETS)
@@ -64,6 +64,9 @@ test-server:
 test-consul:
 	cd $(GO_SRC)/consul && $(GO_ENV) go test
 
+.lint:
+	go get -u golang.org/x/lint/golint
+	touch .lint
 lint:
 	@cd $(GO_SRC) && golint -min_confidence 1.0 *.go
 	@cd $(GO_SRC)/consul && golint -min_confidence 1.0 *.go
