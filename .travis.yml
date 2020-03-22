@@ -15,5 +15,10 @@ services:
   - mysql
 addons:
   apt:
+    sources:
+      - sourceline: "deb https://packages.erlang-solutions.com/ubuntu bionic contrib"
+        key_url: "https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc"
+      - sourceline: "deb https://dl.bintray.com/rabbitmq/debian bionic main"
+        key_url: "https://dl.bintray.com/rabbitmq/Keys/rabbitmq-release-signing-key.asc"
     packages:
       - rabbitmq-server
