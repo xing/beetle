@@ -6,7 +6,7 @@ makefile_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
 BIN_DIR = $(makefile_dir)/bin
 GO_PATH = $(makefile_dir)/go
 
-export GO11MODULE=on
+export GO111MODULE=on
 
 GO_ENV = V=$(V)
 GO_SRC = go
