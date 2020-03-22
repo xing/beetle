@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
 
 func TestRedisIsMaster(t *testing.T) {
-	fmt.Println("=== RedisIsMaster ================================================")
 	r := NewRedisShim("127.0.0.1:7001")
 	isMaster := r.IsMaster()
 	if !isMaster {
@@ -16,7 +14,6 @@ func TestRedisIsMaster(t *testing.T) {
 }
 
 func TestReadMasterFile(t *testing.T) {
-	fmt.Println("=== ReadMasterFile ===============================================")
 	path := "/tmp/test_redis_read_master_file.txt"
 	if err := WriteRedisMasterFile(path, "127.0.0.1:7001"); err != nil {
 		t.Errorf("%s", err)
@@ -29,7 +26,6 @@ func TestReadMasterFile(t *testing.T) {
 }
 
 func TestRedisIsAvailable(t *testing.T) {
-	fmt.Println("=== ReadIsAvailable ==============================================")
 	r := NewRedisShim("127.0.0.1:7001")
 	isAvailable := r.IsAvailable()
 	if !isAvailable {
@@ -38,7 +34,6 @@ func TestRedisIsAvailable(t *testing.T) {
 }
 
 func TestRedisNotAvailable(t *testing.T) {
-	fmt.Println("=== ReadIsNotAvailable ===========================================")
 	r := NewRedisShim("127.0.0.1:7003")
 	isAvailable := r.IsAvailable()
 	if isAvailable {
@@ -47,7 +42,6 @@ func TestRedisNotAvailable(t *testing.T) {
 }
 
 func TestRedisMakeMaster(t *testing.T) {
-	fmt.Println("=== RedisMakeMaster ==============================================")
 	r := NewRedisShim("127.0.0.1:7001")
 	err := r.MakeMaster()
 	if err != nil {
@@ -59,7 +53,6 @@ func TestRedisMakeMaster(t *testing.T) {
 }
 
 func TestRedisIsSlaveOf(t *testing.T) {
-	fmt.Println("=== RedisIsSlaveOf ===============================================")
 	r := NewRedisShim("127.0.0.1:7002")
 	if !r.IsSlaveOf("127.0.0.1", 7001) {
 		t.Errorf("redis should be slave")

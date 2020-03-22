@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 )
 
 var serverTestOptions = ServerOptions{Config: &Config{ClientTimeout: 1, RedisServers: "beetle/127.0.0.1:7001,127.0.0.1:7002"}}
+var testVerbosity int
 
 func startAndWaitForText(cmd *exec.Cmd, text []string) {
 	pipe, err := cmd.StdoutPipe()
@@ -25,15 +27,21 @@ func startAndWaitForText(cmd *exec.Cmd, text []string) {
 		cmd.Process.Kill()
 		os.Exit(1)
 	}
-	log.Println("starting redis server")
+	if testVerbosity > 1 {
+		log.Println("starting redis server")
+	}
 	scanner := bufio.NewScanner(pipe)
 	cmd.Start()
 	for scanner.Scan() {
 		line := scanner.Text()
-		log.Println(line)
+		if testVerbosity > 1 {
+			log.Println(line)
+		}
 		for _, marker := range text {
 			if strings.Contains(line, marker) {
-				log.Printf("redis server started: %s", marker)
+				if testVerbosity > 1 {
+					log.Printf("redis server started: %s", marker)
+				}
 				return
 			}
 		}
@@ -41,7 +49,11 @@ func startAndWaitForText(cmd *exec.Cmd, text []string) {
 }
 
 func TestMain(m *testing.M) {
-	if os.Getenv("V") != "1" {
+
+	if v, err := strconv.Atoi(os.Getenv("V")); err == nil {
+		testVerbosity = v
+	}
+	if testVerbosity == 0 {
 		log.SetOutput(ioutil.Discard)
 	}
 	cmd, err := exec.LookPath("redis-server")
@@ -62,7 +74,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestServerManagingUnresponsiveClients(t *testing.T) {
-	fmt.Println("=== ServerManagingUnresponsiveClients ============================")
 	s := NewServerState(serverTestOptions)
 	u := s.UnresponsiveClients()
 	if len(u) != 0 {
@@ -96,12 +107,11 @@ func TestServerManagingUnresponsiveClients(t *testing.T) {
 func checkEqual(t *testing.T, actual, expected interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected %+v to be equal to %+v", actual, expected)
-		// spew.Dump(actual, expected)
+		spew.Dump(actual, expected)
 	}
 }
 
 func TestSplitProperties(t *testing.T) {
-	fmt.Println("=== SplitProperties ==============================================")
 	s, expected := "", []string{""}
 	actual := strings.Split(s, ",")
 	checkEqual(t, actual, expected)
@@ -125,7 +135,6 @@ func TestSplitProperties(t *testing.T) {
 }
 
 func TestSavingAndLoadingState(t *testing.T) {
-	fmt.Println("=== TestSavingAndLoadingState  ===================================")
 	s := NewServerState(serverTestOptions)
 	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
 	s.ClientSeen("xxx")
@@ -140,7 +149,6 @@ func TestSavingAndLoadingState(t *testing.T) {
 }
 
 func TestClientSeen(t *testing.T) {
-	fmt.Println("=== TestClientSeen ===============================================")
 	s := NewServerState(serverTestOptions)
 	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
 	if s.ClientSeen("xxx") {
@@ -152,7 +160,6 @@ func TestClientSeen(t *testing.T) {
 }
 
 func TestUnknownClientIdsSorting(t *testing.T) {
-	fmt.Println("=== TestUnknownClientIdsSorting ==================================")
 	s := NewServerState(serverTestOptions)
 	s.AddUnknownClientId("yyy")
 	s.AddUnknownClientId("aaa")

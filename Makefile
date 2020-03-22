@@ -22,6 +22,13 @@ else
   TAR := tar
 endif
 
+ifeq ($(V), 2)
+  TV := -v
+endif
+ifeq ($(V), 1)
+  TV := -v
+endif
+
 all: $(GO_TARGETS)
 
 clean:
@@ -56,13 +63,13 @@ beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go
 test: test-main test-server
 
 test-main:
-	cd $(GO_SRC) && go test
+	cd $(GO_SRC) && go test $(TV)
 
 test-server:
-	cd $(GO_SRC) && $(GO_ENV) go test -run TestServer
+	cd $(GO_SRC) && $(GO_ENV) go test $(TV) -run TestServer
 
 test-consul:
-	cd $(GO_SRC)/consul && $(GO_ENV) go test
+	cd $(GO_SRC)/consul && $(GO_ENV) go test $(TV)
 
 .lint:
 	go get -u golang.org/x/lint/golint

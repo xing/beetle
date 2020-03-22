@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestCanGetFailoverSetsFromConfig(t *testing.T) {
-	fmt.Println("=== CanGetFailoverSetsFromConfig =================================")
 	c := Config{RedisServers: "a.xxx.com:6379,b.xxx.com:6379"}
 	expected := FailoverSets{{name: "system", spec: "a.xxx.com:6379,b.xxx.com:6379"}}
 	actual := c.FailoverSets()
