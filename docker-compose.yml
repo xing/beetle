@@ -1,0 +1,78 @@
+version: '2'
+
+services:
+  mysql:
+    container_name: beetle-mysql
+    image: mysql:5.7
+    ports:
+      - "6612:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+
+  rabbitmq1:
+    container_name: beetle-rabbitmq1
+    image: rabbitmq:3.8-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  rabbitmq2:
+    container_name: beetle-rabbitmq2
+    image: rabbitmq:3.8-management
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+
+  consul:
+    container_name: beetle-consul
+    image: consul:1.7.2
+    ports:
+      - "8500:8500"
+    command:
+      agent -dev -node machine -client 0.0.0.0
+
+  redis-master:
+    container_name: beetle-redis-master
+    image: redis:4.0
+    ports:
+      - "6370:6379"
+    volumes:
+      - ./tmp/master-dir:/data
+
+  redis-slave:
+    container_name: beetle-redis-slave
+    image: redis:4.0
+    ports:
+      - "6380:6379"
+    command: redis-server --slaveof beetle-redis-master 6379
+    volumes:
+      - ./tmp/slave-dir:/data
+    depends_on:
+      - redis-master
+
+  # redis-1:
+  #   container_name: redis-1
+  #   image: redis:4.0
+  #   ports:
+  #     - "6381:6379"
+  #   volumes:
+  #     - ./tmp/redis-1:/data
+  #   command: redis-server --pidfile redis-1.pid --logfile redis-1.log
+
+  # redis-2:
+  #   container_name: redis-2
+  #   image: redis:4.0
+  #   ports:
+  #     - "6382:6379"
+  #   volumes:
+  #     - ./tmp/redis-2:/data
+  #   command: redis-server --pidfile redis-2.pid --logfile redis-2.log
+
+  # redis-3:
+  #   container_name: redis-3
+  #   image: redis:4.0
+  #   ports:
+  #     - "6383:6379"
+  #   volumes:
+  #     - ./tmp/redis-3:/data
+  #   command: redis-server --pidfile redis-3.pid --logfile redis-3.log
