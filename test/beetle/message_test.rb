@@ -116,6 +116,7 @@ module Beetle
   class KeyManagementTest < Minitest::Test
     def setup
       @config = Configuration.new
+      @config.redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new(@config)
       @store.flushdb
       @null_handler = Handler.create(lambda {|*args|})
@@ -339,6 +340,7 @@ module Beetle
   class SimpleMessageTest < Minitest::Test
     def setup
       @config = Configuration.new
+      @config.redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new(@config)
       @store.flushdb
     end
@@ -765,7 +767,7 @@ module Beetle
         username: "root",
         encoding: "utf8",
         host: ENV['MYSQL_HOST'] || "127.0.0.1",
-        port: ENV['MYSQL_PORT'] || 3306
+        port: (ENV['MYSQL_PORT'] || 3306).to_i
       )
     end
 
