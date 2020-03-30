@@ -35,44 +35,46 @@ services:
     container_name: beetle-redis-master
     image: redis:4.0
     ports:
-      - "6370:6379"
+      - "6370:6370"
     volumes:
       - ./tmp/master-dir:/data
+    command:
+      redis-server --port 6370
 
   redis-slave:
     container_name: beetle-redis-slave
     image: redis:4.0
     ports:
-      - "6380:6379"
-    command: redis-server --slaveof beetle-redis-master 6379
+      - "6380:6380"
+    command: redis-server --port 6380 --slaveof beetle-redis-master 6370
     volumes:
       - ./tmp/slave-dir:/data
     depends_on:
       - redis-master
 
   # redis-1:
-  #   container_name: redis-1
+  #   container_name: beetle-redis-1
   #   image: redis:4.0
   #   ports:
-  #     - "6381:6379"
+  #     - "6381:6381"
   #   volumes:
   #     - ./tmp/redis-1:/data
-  #   command: redis-server --pidfile redis-1.pid --logfile redis-1.log
+  #   command: redis-server --port 6381--pidfile redis-1.pid --logfile redis-1.log
 
   # redis-2:
-  #   container_name: redis-2
+  #   container_name: beetle-redis-2
   #   image: redis:4.0
   #   ports:
-  #     - "6382:6379"
+  #     - "6382:6382"
   #   volumes:
   #     - ./tmp/redis-2:/data
-  #   command: redis-server --pidfile redis-2.pid --logfile redis-2.log
+  #   command: redis-server --port 6382 --pidfile redis-2.pid --logfile redis-2.log
 
   # redis-3:
-  #   container_name: redis-3
+  #   container_name: beetle-redis-3
   #   image: redis:4.0
   #   ports:
-  #     - "6383:6379"
+  #     - "6383:6383"
   #   volumes:
   #     - ./tmp/redis-3:/data
-  #   command: redis-server --pidfile redis-3.pid --logfile redis-3.log
+  #   command: redis-server --port 6383 --pidfile redis-3.pid --logfile redis-3.log
