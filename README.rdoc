@@ -104,6 +104,8 @@ For tests, you'll need
 * {activerecord}[https://github.com/rails/rails/tree/master/activerecord]
 * {mysql2}[https://github.com/brianmario/mysql2/]
 
+Dependencies are managed by bundler.
+
 == Authors
 
 {Stefan Kaes}[http://github.com/skaes],
@@ -131,21 +133,47 @@ distribution.
 Don't increase the gem version in your pull requests. It will be done after merging the request,
 to allow merging of pull requests in a flexible order.
 
-== Running the tests
+== Compiling beetle and running tests
 
-Beetle ships with a cucumber feature to test the automatic redis failover
-as an integration test.
+In order to execute the unit tests, you need Ruby, a running rabbitmq server, a running
+redis-server, a running mysql server and a runnning consul server.
 
-To run it, you have to start a RabbitMQ server and a consul
-development mode.
+In addition, beetle ships with a cucumber feature to test the automatic redis failover as
+an integration test. For this you need a recent Go installation in order to compile the
+beetle go binary. Just invoke `make` in the top level directory.
 
-The top level Rakefile comes with targets to start several RabbitMQ
-instances locally.  Make sure the corresponding binaries are in your
-search path. Open two shell windows and execute the following command:
+There are two ways to start the required test dependencies: using `docker-compose` or
+starting the services manually.
+
+=== Testing with docker-compose
+
+Open a separate terminal window and run
+
+     docker-compose pull
+
+followed by
+
+     docker-compose up
+
+This will start mysql, two redis servers, two RabbitMQ instances and a single consul
+development node.
+
+Note: make sure to wait until all services are properly started.
+
+
+== Tesing with  locally installed services
+
+The top level Rakefile comes with targets to start several RabbitMQ instances locally.
+Make sure the corresponding binaries are in your search path. Open three shell windows and
+execute the following command:
 
     rake rabbit:start1
 
 and
+
+   rake redis:start:master
+
+as well as
 
    rake consul:start
 
@@ -157,9 +185,8 @@ or
 
     rake cucumber
 
-
-Note: Cucumber will automatically run after the unit test when you run rake.
-
+Note: Cucumber will automatically run after the unit tests when you run `rake` without
+arguments.
 
 
 == How to release a new gem version
