@@ -97,13 +97,18 @@ module Beetle
       # avoid endless recursion
       return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
       payload = options.merge(:server => @server)
-      logger.debug("Beetle: publishing policy options on #{@server}: #{payload.inspect}")
-      # make sure to declare the queue, so the message does not get lost
-      ActiveSupport::Notifications.instrument('publish.beetle') do
-        queue(@client.config.beetle_policy_updates_queue_name)
-        data = payload.to_json
-        opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
-        exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
+      if @client.config.update_queue_properties_synchronously
+        logger.debug("Beetle: updating policy options on #{@server}: #{payload.inspect}")
+        @client.update_queue_properties!(payload)
+      else
+        logger.debug("Beetle: publishing policy options on #{@server}: #{payload.inspect}")
+        # make sure to declare the queue, so the message does not get lost
+        ActiveSupport::Notifications.instrument('publish.beetle') do
+          queue(@client.config.beetle_policy_updates_queue_name)
+          data = payload.to_json
+          opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
+          exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
+        end
       end
     end
 
