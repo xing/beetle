@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.3
+* Track publishing policy options metrics.
+
 == Version 3.3.2
 * Changed order of queue policy application to avoid ahead of line blocking in dead letter
   queues.
