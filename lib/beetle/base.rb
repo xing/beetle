@@ -99,10 +99,12 @@ module Beetle
       payload = options.merge(:server => @server)
       logger.debug("Beetle: publishing policy options on #{@server}: #{payload.inspect}")
       # make sure to declare the queue, so the message does not get lost
-      queue(@client.config.beetle_policy_updates_queue_name)
-      data = payload.to_json
-      opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
-      exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
+      ActiveSupport::Notifications.instrument('publish.beetle') do
+        queue(@client.config.beetle_policy_updates_queue_name)
+        data = payload.to_json
+        opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
+        exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
+      end
     end
 
   end
