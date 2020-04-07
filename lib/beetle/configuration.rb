@@ -97,9 +97,12 @@ module Beetle
     attr_accessor :dead_lettering_enabled
     alias_method :dead_lettering_enabled?, :dead_lettering_enabled
 
-    # the time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
+    # The time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
     # to the original queue
     attr_accessor :dead_lettering_msg_ttl
+
+    # Whether to update quueue policies synchronously or asynchronously.
+    attr_accessor :update_queue_properties_synchronously
 
     # Read timeout for http requests to create dead letter bindings
     attr_accessor :rabbitmq_api_read_timeout
@@ -174,6 +177,8 @@ module Beetle
 
       self.lazy_queues_enabled = false
       self.throttling_refresh_interval = 60 # seconds
+
+      self.update_queue_properties_synchronously = false
 
       self.publishing_timeout = 0
       self.publisher_connect_timeout = 5   # seconds
