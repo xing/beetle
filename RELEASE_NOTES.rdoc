@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.5
+* Support synchronous queue policy creation.
+
 == Version 3.3.4
 * Track publishing policy options metrics.
 
