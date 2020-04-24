@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.6
+* Fixed a redis connection leak in gobeetle.
+
 == Version 3.3.5
 * Support synchronous queue policy creation.
 
