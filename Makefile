@@ -122,7 +122,7 @@ container:
 	docker build -f Dockerfile -t=xingarchitects/gobeetle .
 
 tag:
-	docker tag xingarchitects/gobeetle xingarchitects/gobeetle:$(TAG)
+	docker tag xingarchitects/gobeetle xingarchitects/gobeetle:$(TAG:v%=%)
 
 push:
-	docker push xingarchitects/gobeetle:$(TAG)
+	docker push xingarchitects/gobeetle:$(TAG:v%=%)

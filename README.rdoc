@@ -228,6 +228,6 @@ https://hub.docker.com/r/xingarchitects/gobeetle/.
 
 Run
 
-    make tag push TAG=vX.X.X
+    make tag push TAG=X.X.X
 
 to tag and push the container with a specific version number.
