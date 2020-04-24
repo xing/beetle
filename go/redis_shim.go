@@ -138,3 +138,8 @@ func (ri *RedisShim) RedisMakeSlave(host string, port int) error {
 	}
 	return err
 }
+
+// Close closses the redis connection.
+func (ri *RedisShim) Close() {
+	ri.redis.Close()
+}

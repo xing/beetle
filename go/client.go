@@ -78,6 +78,7 @@ func (s *ClientState) Connect() (err error) {
 	logInfo("connecting to %s, timeout: %s", url, websocket.DefaultDialer.HandshakeTimeout)
 	s.ws, _, err = websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
+		logError("could not establish web socket connection")
 		return
 	}
 	logInfo("established web socket connection")
@@ -333,6 +334,7 @@ func (s *ClientState) Dispatch(msg MsgBody) error {
 // writer exits.
 func (s *ClientState) Run() error {
 	s.DetermineInitialMasters()
+	defer s.closeRedisConnections()
 	if err := s.Connect(); err != nil {
 		return err
 	}
@@ -356,6 +358,14 @@ func (s *ClientState) Run() error {
 	return nil
 }
 
+func (s *ClientState) closeRedisConnections() {
+	for _, rs := range s.redisSystems {
+		if rs.currentMaster != nil {
+			rs.currentMaster.Close()
+		}
+	}
+}
+
 // RunConfigurationClient keeps a client running until the process receives an
 // INT or a TERM signal.
 func RunConfigurationClient(o ClientOptions) error {
@@ -370,7 +380,7 @@ func RunConfigurationClient(o ClientOptions) error {
 		state.input = make(chan MsgBody, 1000)
 		err := state.Run()
 		if err != nil {
-			logError("%s", err)
+			logError("client exited prematurely: %s", err)
 			if !interrupted {
 				// TODO: exponential backoff with jitter.
 				time.Sleep(1 * time.Second)
