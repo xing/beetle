@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +18,6 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/xing/beetle/consul"
 	"gopkg.in/gorilla/websocket.v1"
-	"gopkg.in/tylerb/graceful.v1"
 )
 
 // ServerOptions for our server.
@@ -503,12 +503,32 @@ func (s *ServerState) LoadState() {
 	logInfo("restored client last seen info from redis: %v", s.clientsLastSeen)
 }
 
-func (s *ServerState) clientHandler(webSocketPort int) {
+func (s *ServerState) setupClientHandler(webSocketPort int) *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.dispatchRequest)
 	logInfo("Starting web socket server on port %d", webSocketPort)
 	webSocketSpec := ":" + strconv.Itoa(webSocketPort)
-	graceful.Run(webSocketSpec, 10*time.Second, mux)
+	return &http.Server{
+		Addr:    webSocketSpec,
+		Handler: mux,
+	}
+}
+
+func (s *ServerState) runClientHandler(srv *http.Server) {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logError("starting websocket server failed")
+	}
+}
+
+func (s *ServerState) shutdownClientHandler(srv *http.Server, timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	err := srv.Shutdown(ctx)
+	if err != nil {
+		logError("web server shutdown failed: %+v", err)
+	} else {
+		logInfo("web server shutdown successful")
+	}
 }
 
 func (s *ServerState) serveNotifications(w http.ResponseWriter, r *http.Request) {

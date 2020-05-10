@@ -13,6 +13,5 @@ require (
 	golang.org/x/text v0.3.0
 	gopkg.in/gorilla/websocket.v1 v1.4.0
 	gopkg.in/redis.v5 v5.2.9
-	gopkg.in/tylerb/graceful.v1 v1.2.15
 	gopkg.in/yaml.v2 v2.2.2
 )

@@ -2,7 +2,9 @@ package main
 
 import (
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
@@ -29,6 +31,13 @@ var (
 	htmlTemplate    string
 	gcStatsTemplate string
 )
+
+func waitForInterrupt() {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-done
+	logInfo("received interrupt")
+}
 
 // RunConfigurationServer implements the main server loop.
 func RunConfigurationServer(o ServerOptions) error {
@@ -65,7 +74,11 @@ func RunConfigurationServer(o ServerOptions) error {
 	}
 	gcStatsTemplate = html
 
-	state.clientHandler(state.GetConfig().Port)
+	srv := state.setupClientHandler(state.GetConfig().Port)
+	go state.runClientHandler(srv)
+	waitForInterrupt()
+	state.shutdownClientHandler(srv, 3*time.Second)
+
 	logInfo("shutting down")
 	// wait for web socket readers and writers to finish
 	if waitForWaitGroupWithTimeout(&state.waitGroup, 3*time.Second) {
