@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.7
+* incease http api read timeout to handle large server better.
+
 == Version 3.3.6
 * Fixed a redis connection leak in gobeetle.
 
