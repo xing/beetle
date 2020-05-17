@@ -173,7 +173,7 @@ module Beetle
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second
-      self.rabbitmq_api_read_timeout = 5   # 5 seconds
+      self.rabbitmq_api_read_timeout = 60  # 60 seconds
 
       self.lazy_queues_enabled = false
       self.throttling_refresh_interval = 60 # seconds
