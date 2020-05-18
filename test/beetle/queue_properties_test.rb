@@ -41,6 +41,10 @@ module Beetle
     end
 
     test "creates a policy by posting to the rabbitmq if dead lettering is enabled" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
       stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
@@ -56,7 +60,29 @@ module Beetle
       @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
     end
 
+    test "skips the PUT call to rabbitmq if the policy is already defined as desired" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 200,
+                   :body => {
+                     "vhost" => "/",
+                     "name" => "QUEUE_NAME_policy",
+                     "pattern" => "^QUEUE_NAME$",
+                     "priority" => 1,
+                     "apply-to" => "queues",
+                     "definition" => {
+                       "dead-letter-routing-key" => "QUEUE_NAME_dead_letter",
+                       "dead-letter-exchange" => ""
+                     }}.to_json)
+
+      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
+    end
+
     test "creates a policy by posting to the rabbitmq if lazy queues are enabled" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
       stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
@@ -72,6 +98,10 @@ module Beetle
     end
 
     test "raises exception when policy couldn't successfully be created" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
       stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .to_return(:status => [405])
@@ -82,6 +112,10 @@ module Beetle
     end
 
     test "can optionally specify a message ttl" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
       stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
@@ -99,6 +133,10 @@ module Beetle
     end
 
     test "properly encodes the vhost from the configuration" do
+      stub_request(:get, "http://localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
       stub_request(:put, "http://localhost:15672/api/policies/foo%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {

@@ -46,7 +46,8 @@ module Beetle
 
       # no need to worry that the server has the port 5672. Net:HTTP will take care of this. See below.
       request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
-      request = Net::HTTP::Put.new(request_url)
+      get_request = Net::HTTP::Get.new(request_url)
+      put_request = Net::HTTP::Put.new(request_url)
 
       # set up queue policy
       definition = {}
@@ -58,19 +59,28 @@ module Beetle
 
       definition["queue-mode"] = "lazy" if options[:lazy]
 
-      request_body = {
+      put_request_body = {
         "pattern" => "^#{queue_name}$",
         "priority" => 1,
         "apply-to" => "queues",
         "definition" => definition,
       }
 
-      response = run_rabbit_http_request(request_url, request) do |http|
-        http.request(request, request_body.to_json)
+      get_response = run_rabbit_http_request(request_url, get_request) do |http|
+        http.request(get_request, nil)
       end
 
-      unless %w(200 201 204).include?(response.code)
-        log_error("Failed to create policy for queue #{queue_name}", response)
+      if get_response.code == "200"
+        response_body = JSON.parse(get_response.body) rescue {}
+        return :ok if put_request_body.all? { |k,v| response_body[k] == v }
+      end
+
+      put_response = run_rabbit_http_request(request_url, put_request) do |http|
+        http.request(put_request, put_request_body.to_json)
+      end
+
+      unless %w(200 201 204).include?(put_response.code)
+        log_error("Failed to create policy for queue #{queue_name}", put_response)
         raise FailedRabbitRequest.new("Could not create policy")
       end
 
@@ -131,7 +141,11 @@ module Beetle
 
     def run_rabbit_http_request(uri, request, &block)
       request.basic_auth(config.user, config.password)
-      request["Content-Type"] = "application/json"
+      if request.class::METHOD == 'GET'
+        request["Accept"] = "application/json"
+      else
+        request["Content-Type"] = "application/json"
+      end
       http = Net::HTTP.new(uri.hostname, config.api_port)
       http.read_timeout = config.rabbitmq_api_read_timeout
       # don't do this in production:
