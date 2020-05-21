@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.10
+* Support configuring RabbitMQ write timeout.
+
 == Version 3.3.9
 * Reduce the number of queue policies created on the servers by allowing
   the spefication of a default broker policy. You need to install the
