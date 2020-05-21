@@ -14,6 +14,9 @@ module Beetle
     # Name of the policy update routing key
     attr_accessor :beetle_policy_updates_routing_key
     # default logger (defaults to <tt>Logger.new(log_file)</tt>)
+    attr_accessor :broker_default_policy
+    # set this to whatever your brokers have installed as default policy. For example, if you have installed
+    # a policy that makes every queue lazy, it should be set to <tt>{"queue-moode" => "lazy"}</tt>.
     attr_accessor :logger
     # defaults to <tt>STDOUT</tt>
     attr_accessor :redis_logger
@@ -146,6 +149,7 @@ module Beetle
       self.beetle_policy_exchange_name = "beetle-policies"
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
       self.beetle_policy_updates_routing_key = "beetle.policy.update"
+      self.broker_default_policy = {}
 
       self.gc_threshold = 1.hour.to_i
       self.redis_server = "localhost:6379"

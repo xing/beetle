@@ -78,6 +78,36 @@ module Beetle
       @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
     end
 
+    test "deletes policy if its definition corresponds to the broker default policy" do
+      @config.broker_default_policy = { "queue-mode" => "lazy" }
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 200,
+                   :body => {
+                     "vhost" => "/",
+                     "name" => "QUEUE_NAME_policy",
+                     "pattern" => "^QUEUE_NAME$",
+                     "priority" => 1,
+                     "apply-to" => "queues",
+                     "definition" => {
+                       "queue-mode" => "lazy",
+                     }}.to_json)
+      stub_request(:delete, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => false, :routing_key => "QUEUE_NAME_dead_letter")
+    end
+
+    test "does nothing if its definition corresponds to the broker default policy and the policy does not exist on the server" do
+      @config.broker_default_policy = { "queue-mode" => "lazy" }
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => true, :dead_lettering => false, :routing_key => "QUEUE_NAME_dead_letter")
+    end
+
     test "creates a policy by posting to the rabbitmq if lazy queues are enabled" do
       stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])

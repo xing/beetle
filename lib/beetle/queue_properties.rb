@@ -45,9 +45,11 @@ module Beetle
       return unless options[:dead_lettering] || options[:lazy]
 
       # no need to worry that the server has the port 5672. Net:HTTP will take care of this. See below.
-      request_url = URI("http://#{server}/api/policies/#{vhost}/#{queue_name}_policy")
+      policy_name = "#{queue_name}_policy"
+      request_url = URI("http://#{server}/api/policies/#{vhost}/#{policy_name}")
       get_request = Net::HTTP::Get.new(request_url)
       put_request = Net::HTTP::Put.new(request_url)
+      delete_request = Net::HTTP::Delete.new(request_url)
 
       # set up queue policy
       definition = {}
@@ -66,13 +68,26 @@ module Beetle
         "definition" => definition,
       }
 
+      is_default_policy = definition == config.broker_default_policy
+
       get_response = run_rabbit_http_request(request_url, get_request) do |http|
         http.request(get_request, nil)
       end
 
-      if get_response.code == "200"
+      case get_response.code
+      when "200"
         response_body = JSON.parse(get_response.body) rescue {}
-        return :ok if put_request_body.all? { |k,v| response_body[k] == v }
+        same_policy = put_request_body.all? { |k,v| response_body[k] == v }
+        if same_policy
+          if is_default_policy
+            run_rabbit_http_request(request_url, delete_request) do |http|
+              http.request(get_request, nil)
+            end
+          end
+          return :ok
+        end
+      when "404"
+        return :ok if is_default_policy
       end
 
       put_response = run_rabbit_http_request(request_url, put_request) do |http|
@@ -141,9 +156,10 @@ module Beetle
 
     def run_rabbit_http_request(uri, request, &block)
       request.basic_auth(config.user, config.password)
-      if request.class::METHOD == 'GET'
+      case request.class::METHOD
+      when 'GET'
         request["Accept"] = "application/json"
-      else
+      when 'PUT'
         request["Content-Type"] = "application/json"
       end
       http = Net::HTTP.new(uri.hostname, config.api_port)
