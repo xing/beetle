@@ -107,8 +107,10 @@ module Beetle
     # Whether to update quueue policies synchronously or asynchronously.
     attr_accessor :update_queue_properties_synchronously
 
-    # Read timeout for http requests to create dead letter bindings
+    # Read timeout for http requests to RabbitMQ HTTP API
     attr_accessor :rabbitmq_api_read_timeout
+    # Write timeout for http requests to RabbitMQ HTTP API
+    attr_accessor :rabbitmq_api_write_timeout
 
     # Returns the port on which the Rabbit API is hosted
     attr_accessor :api_port
@@ -178,6 +180,7 @@ module Beetle
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second
       self.rabbitmq_api_read_timeout = 60  # 60 seconds
+      self.rabbitmq_api_write_timeout = 60  # 60 seconds
 
       self.lazy_queues_enabled = false
       self.throttling_refresh_interval = 60 # seconds
