@@ -1,5 +1,11 @@
 = Release Notes
 
+== Version 3.3.9
+* Reduce the number of queue policies created on the servers by allowing
+  the spefication of a default broker policy. You need to install the
+  default policy with a priority of zero to match all queues ever
+  created. This feature is optional.
+
 == Version 3.3.8
 * Avoid needless put call when updating queue policies.
   It seems the additional call to get the current definition of a policy
