@@ -164,7 +164,7 @@ module Beetle
       end
       http = Net::HTTP.new(uri.hostname, config.api_port)
       http.read_timeout = config.rabbitmq_api_read_timeout
-      http.write_timeout = config.rabbitmq_api_write_timeout
+      http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
       # don't do this in production:
       # http.set_debug_output(logger.instance_eval{ @logdev.dev })
       http.start do |instance|
