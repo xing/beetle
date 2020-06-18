@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.3.11
+* Fixed that dead lettering only works correctly with global config option.
+
 == Version 3.3.10
 * Support configuring RabbitMQ write timeout.
 
