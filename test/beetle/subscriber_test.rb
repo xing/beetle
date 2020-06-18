@@ -224,13 +224,11 @@ module Beetle
     end
   end
 
-
   class DeadLetteringCallBackExecutionTest < Minitest::Test
     def setup
       @client = Client.new
-      @client.config.dead_lettering_enabled = true
       @queue = "somequeue"
-      @client.register_queue(@queue)
+      @client.register_queue(@queue, :dead_lettering => true)
       @sub = @client.send(:subscriber)
       mq = mock("MQ")
       mq.expects(:closing?).returns(false)
@@ -239,11 +237,7 @@ module Beetle
       @handler = Handler.create(lambda{|*args| raise @exception})
       # handler method 'processing_completed' should be called under all circumstances
       @handler.expects(:processing_completed).once
-      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
-    end
-
-    def teardown
-      @client.config.dead_lettering_enabled = false
+      @callback = @sub.send(:create_subscription_callback, @queue, @queue, @handler, :exceptions => 1)
     end
 
     test "should call reject on the message header when processing the handler returns true on reject? if dead lettering has been enabled" do
@@ -255,19 +249,18 @@ module Beetle
       header.expects(:reject).with(:requeue => false)
       @callback.call(header, 'foo')
     end
-
   end
 
   class CallBackExecutionTest < Minitest::Test
     def setup
-      client = Client.new
+      @client = Client.new
       @queue = "somequeue"
-      client.register_queue(@queue)
-      @sub = client.send(:subscriber)
+      @client.register_queue(@queue)
+      @sub = @client.send(:subscriber)
       @exception = Exception.new "murks"
       @handler = Handler.create(lambda{|*args| raise @exception})
       @handler.instance_eval { def post_process; raise "shoot"; end }
-      @callback = @sub.send(:create_subscription_callback, "my myessage", @queue, @handler, :exceptions => 1)
+      @callback = @sub.send(:create_subscription_callback, @queue, @queue, @handler, :exceptions => 1)
     end
 
     test "exceptions raised from message processing should be ignored" do

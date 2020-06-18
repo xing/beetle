@@ -180,7 +180,7 @@ module Beetle
           processor = Handler.create(handler, opts)
           result = m.process(processor)
           if result.reject?
-            if @client.config.dead_lettering_enabled?
+            if @client.queues[queue_name][:dead_lettering]
               header.reject(:requeue => false)
             else
               sleep 1
