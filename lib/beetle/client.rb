@@ -96,7 +96,8 @@ module Beetle
       raise ConfigurationError.new("queue #{name} already configured") if queues.include?(name)
       opts = {
         :exchange => name, :key => name, :auto_delete => false, :amqp_name => name,
-        :lazy => config.lazy_queues_enabled, :dead_lettering => config.dead_lettering_enabled
+        :lazy => config.lazy_queues_enabled, :dead_lettering => config.dead_lettering_enabled,
+        :dead_lettering_msg_ttl => config.dead_lettering_msg_ttl
       }.merge!(options.symbolize_keys)
       opts.merge! :durable => true, :passive => false, :exclusive => false
       exchange = opts.delete(:exchange).to_s

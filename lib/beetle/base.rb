@@ -78,7 +78,8 @@ module Beetle
     end
 
     def bind_dead_letter_queue!(channel, target_queue, creation_keys = {})
-      policy_options = @client.queues[target_queue].slice(:dead_lettering, :lazy)
+      policy_options = @client.queues[target_queue].slice(:dead_lettering, :lazy, :dead_lettering_msg_ttl)
+      policy_options[:message_ttl] = policy_options.delete(:dead_lettering_msg_ttl)
       dead_letter_queue_name = "#{target_queue}_dead_letter"
       if policy_options[:dead_lettering]
         logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
@@ -88,7 +89,7 @@ module Beetle
         :queue_name => target_queue,
         :bindings => @client.bindings[target_queue],
         :dead_letter_queue_name => dead_letter_queue_name,
-        :message_ttl => @client.config.dead_lettering_msg_ttl,
+        :message_ttl => policy_options[:message_ttl]
       }.merge(policy_options)
     end
 
