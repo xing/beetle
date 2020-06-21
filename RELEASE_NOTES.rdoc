@@ -1,5 +1,11 @@
 = Release Notes
 
+== Version 3.4.0
+* Require redis gem version 4.2.1. This version changes the exists to check for the
+  existence of multiple keys, return the number of keys in the list that exist. This
+  requires at least redis gem version 4.2.0, but 4.2.1 contains a bug fix for said
+  command.
+
 == Version 3.3.12
 * Support queue level declaration of dead letter queue message TTL.
 

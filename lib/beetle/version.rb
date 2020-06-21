@@ -1,3 +1,3 @@
 module Beetle
-  VERSION = "3.3.12"
+  VERSION = "3.4.0"
 end
