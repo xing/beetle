@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.4.1
+* Update amq-protocol gem to version 2.3.1.
+
 == Version 3.4.0
 * Require redis gem version 4.2.1. This version changes the exists to check for the
   existence of multiple keys, return the number of keys in the list that exist. This
