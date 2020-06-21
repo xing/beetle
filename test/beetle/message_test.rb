@@ -142,7 +142,7 @@ module Beetle
       message.process(@null_handler)
       keys = @store.keys(message.msg_id)
       keys.each do |key|
-        assert !@store.redis.exists(key)
+        assert !@store.redis.exists?(key)
       end
     end
 
@@ -159,10 +159,10 @@ module Beetle
       message.process(@null_handler)
       keys = @store.keys(message.msg_id)
       status_key = keys.shift
-      assert @store.redis.exists(status_key)
+      assert @store.redis.exists?(status_key)
       assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
       keys.each do |key|
-        assert !@store.redis.exists(key)
+        assert !@store.redis.exists?(key)
       end
     end
 
@@ -180,7 +180,7 @@ module Beetle
 
       keys = @store.keys(message.msg_id)
       keys.each do |key|
-        assert !@store.redis.exists(key)
+        assert !@store.redis.exists?(key)
       end
     end
 
@@ -199,10 +199,10 @@ module Beetle
 
       keys = @store.keys(message.msg_id)
       status_key = keys.shift
-      assert @store.redis.exists(status_key)
+      assert @store.redis.exists?(status_key)
       assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
       keys.each do |key|
-        assert !@store.redis.exists(key)
+        assert !@store.redis.exists?(key)
       end
     end
 

@@ -120,7 +120,7 @@ module Beetle
 
     # check whether key with given suffix exists for a given <tt>msg_id</tt>.
     def exists(msg_id, suffix)
-      with_failover { redis.exists(key(msg_id, suffix)) }
+      with_failover { redis.exists?(key(msg_id, suffix)) }
     end
 
     # flush the configured redis database. useful for testing.
