@@ -141,9 +141,7 @@ module Beetle
 
       message.process(@null_handler)
       keys = @store.keys(message.msg_id)
-      keys.each do |key|
-        assert !@store.redis.exists?(key)
-      end
+      assert_equal 0, @store.redis.exists(*keys)
     end
 
     test "successful processing of a non redundant message should delete all keys from the database (except the status key, which should be set to expire)" do
@@ -161,9 +159,7 @@ module Beetle
       status_key = keys.shift
       assert @store.redis.exists?(status_key)
       assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
-      keys.each do |key|
-        assert !@store.redis.exists?(key)
-      end
+      assert_equal 0, @store.redis.exists(*keys)
     end
 
     test "successful processing of a redundant message twice should delete all keys from the database" do
@@ -179,9 +175,7 @@ module Beetle
       message.process(@null_handler)
 
       keys = @store.keys(message.msg_id)
-      keys.each do |key|
-        assert !@store.redis.exists?(key)
-      end
+      assert_equal 0, @store.redis.exists(*keys)
     end
 
     test "successful processing of a redundant message twice should delete all keys from the database (except the status key, which should be set to expire)" do
@@ -201,9 +195,7 @@ module Beetle
       status_key = keys.shift
       assert @store.redis.exists?(status_key)
       assert @store.redis.ttl(status_key) <= @config.redis_status_key_expiry_interval
-      keys.each do |key|
-        assert !@store.redis.exists?(key)
-      end
+      assert_equal 0, @store.redis.exists(*keys)
     end
 
     test "successful processing of a redundant message once should insert all but the delay key and the exception count key into the database" do
