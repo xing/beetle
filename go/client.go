@@ -29,6 +29,8 @@ type RedisSystem struct {
 	client        *ClientState
 }
 
+const RECONFIGURE_LOG_INTERVAL = 10
+
 // ClientState holds the client state.
 type ClientState struct {
 	opts          *ClientOptions
@@ -39,6 +41,7 @@ type ClientState struct {
 	readerDone    chan struct{}
 	configChanges chan consul.Env
 	redisSystems  map[string]*RedisSystem
+	ticks         uint64
 }
 
 // GetConfig returns the client configuration in a thread safe way.
@@ -116,7 +119,7 @@ func (s *ClientState) SendHeartBeat() error {
 	return s.send(MsgBody{Name: HEARTBEAT, Id: s.opts.Id})
 }
 
-// Ping sends a PING message to the server.
+// Ping sends a PONG message to the server.
 func (s *ClientState) Ping(pingMsg MsgBody) error {
 	logInfo("Received ping message")
 	rs := s.RegisterSystem(pingMsg.System)
@@ -227,7 +230,10 @@ func (s *ClientState) Invalidate(msg MsgBody) error {
 // Reconfigure updates the redis mater file on disk, provided the token sent
 // with the message is valid.
 func (s *ClientState) Reconfigure(msg MsgBody) error {
-	logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
+	if s.ticks%RECONFIGURE_LOG_INTERVAL == 0 {
+		logInfo("Received reconfigure message with server '%s' and token '%s'", msg.Server, msg.Token)
+	}
+	s.ticks++
 	rs := s.RegisterSystem(msg.System)
 	if !rs.RedeemToken(msg.Token) {
 		logInfo("Received invalid or outdated token: '%s'", msg.Token)
