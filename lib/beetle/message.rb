@@ -18,6 +18,8 @@ module Beetle
     # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
     DEFAULT_HANDLER_TIMEOUT = 600.seconds
+    # How much extra time on top of the handler timeout we add before considering a handler timed out
+    TIMEOUT_GRACE_PERIOD = 10.seconds
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     # how many seconds we should wait before retrying handler execution
@@ -168,7 +170,7 @@ module Beetle
 
     # handler timed out?
     def timed_out?
-      (t = @store.get(msg_id, :timeout)) && t.to_i < now
+      (t = @store.get(msg_id, :timeout)) && (t.to_i + TIMEOUT_GRACE_PERIOD) < now
     end
 
     # reset handler timeout in the deduplication store
