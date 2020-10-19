@@ -313,12 +313,12 @@ module Beetle
           RC::Delayed
         elsif !(timeout && timed_out?(timeout))
           RC::HandlerNotYetTimedOut
-        elsif attempts_limit_reached?(attempts)
+        elsif attempts && attempts_limit_reached?(attempts)
           completed!
           ack!
           logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
           RC::AttemptsLimitReached
-        elsif exceptions_limit_reached?(exceptions)
+        elsif exceptions && exceptions_limit_reached?(exceptions)
           completed!
           ack!
           logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
