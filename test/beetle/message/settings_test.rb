@@ -75,9 +75,9 @@ module Beetle
       message.expects(:now).returns(1)
       message.set_timeout!
       assert_equal "2", @store.get(message.msg_id, :timeout)
-      message.expects(:now).returns(2)
+      message.expects(:now).returns(2 + Message::TIMEOUT_GRACE_PERIOD)
       assert !message.timed_out?
-      message.expects(:now).returns(3)
+      message.expects(:now).returns(3 + Message::TIMEOUT_GRACE_PERIOD)
       assert message.timed_out?
     end
 
@@ -86,9 +86,9 @@ module Beetle
       message.expects(:now).returns(0)
       message.set_timeout!
       assert_equal "#{Message::DEFAULT_HANDLER_TIMEOUT}", @store.get(message.msg_id, :timeout)
-      message.expects(:now).returns(message.timeout)
+      message.expects(:now).returns(message.timeout + Message::TIMEOUT_GRACE_PERIOD)
       assert !message.timed_out?
-      message.expects(:now).returns(Message::DEFAULT_HANDLER_TIMEOUT + 1)
+      message.expects(:now).returns(message.timeout + Message::TIMEOUT_GRACE_PERIOD + 1)
       assert message.timed_out?
     end
 

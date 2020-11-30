@@ -18,6 +18,8 @@ module Beetle
     # forcefully abort a running handler after this many seconds.
     # can be overriden when registering a handler.
     DEFAULT_HANDLER_TIMEOUT = 600.seconds
+    # How much extra time on top of the handler timeout we add before considering a handler timed out
+    TIMEOUT_GRACE_PERIOD = 10.seconds
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
     # how many seconds we should wait before retrying handler execution
@@ -167,8 +169,8 @@ module Beetle
     end
 
     # handler timed out?
-    def timed_out?
-      (t = @store.get(msg_id, :timeout)) && t.to_i < now
+    def timed_out?(t = nil)
+      (t ||= @store.get(msg_id, :timeout)) && (t.to_i + TIMEOUT_GRACE_PERIOD) < now
     end
 
     # reset handler timeout in the deduplication store
@@ -187,8 +189,8 @@ module Beetle
     end
 
     # whether we should wait before running the handler
-    def delayed?
-      (t = @store.get(msg_id, :delay)) && t.to_i > now
+    def delayed?(t = nil)
+      (t ||= @store.get(msg_id, :delay)) && t.to_i > now
     end
 
     # store delay value in the deduplication store
@@ -207,8 +209,8 @@ module Beetle
     end
 
     # whether we have already tried running the handler as often as specified when the handler was registered
-    def attempts_limit_reached?
-      (limit = @store.get(msg_id, :attempts)) && limit.to_i >= attempts_limit
+    def attempts_limit_reached?(attempts = nil)
+      (attempts ||= @store.get(msg_id, :attempts)) && attempts.to_i >= attempts_limit
     end
 
     # increment number of exception occurences in the deduplication store
@@ -217,8 +219,8 @@ module Beetle
     end
 
     # whether the number of exceptions has exceeded the limit set when the handler was registered
-    def exceptions_limit_reached?
-      @store.get(msg_id, :exceptions).to_i > exceptions_limit
+    def exceptions_limit_reached?(exceptions = nil)
+      (exceptions ||= @store.get(msg_id, :exceptions)) && exceptions.to_i > exceptions_limit
     end
 
     def exception_accepted?
@@ -306,17 +308,17 @@ module Beetle
         if status == "completed"
           ack!
           RC::OK
-        elsif delay && delay.to_i > now
+        elsif delay && delayed?(delay)
           logger.warn "Beetle: ignored delayed message (#{msg_id})!"
           RC::Delayed
-        elsif !(timeout && timeout.to_i < now)
+        elsif !(timeout && timed_out?(timeout))
           RC::HandlerNotYetTimedOut
-        elsif attempts.to_i >= attempts_limit
+        elsif attempts && attempts_limit_reached?(attempts)
           completed!
           ack!
           logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
           RC::AttemptsLimitReached
-        elsif exceptions.to_i > exceptions_limit
+        elsif exceptions && exceptions_limit_reached?(exceptions)
           completed!
           ack!
           logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
