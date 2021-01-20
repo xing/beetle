@@ -304,7 +304,9 @@ module Beetle
       @client.register_queue('test_queue_1', :exchange => 'test_exchange')
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
       @client.register_queue('test_queue_3', :exchange => 'test_exchange_2')
-      @pub.expects(:bind_queue!).returns(1).times(3)
+      queue = mock("queue")
+      queue.expects(:bind).times(3)
+      @pub.expects(:declare_queue!).returns(queue).times(3)
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
       @pub.send(:bind_queues_for_exchange, 'test_exchange_2')
     end
@@ -312,8 +314,19 @@ module Beetle
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do
       @client.register_queue('test_queue_1', :exchange => 'test_exchange')
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
-      @pub.expects(:bind_queue!).twice
+      queue = mock("queue")
+      queue.expects(:bind).twice
+      @pub.expects(:declare_queue!).returns(queue).twice
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
+      @pub.send(:bind_queues_for_exchange, 'test_exchange')
+    end
+
+    test "should declare queues only once even with many bindings" do
+      @client.register_queue('test_queue', :exchange => 'test_exchange')
+      @client.register_binding('test_queue', :exchange => 'test_exchange', :key => 'sir-message-a-lot')
+      queue = mock("queue")
+      queue.expects(:bind).twice
+      @pub.expects(:declare_queue!).returns(queue).once
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
 

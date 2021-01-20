@@ -66,12 +66,14 @@ module Beetle
           raise UnknownQueue.new("You are trying to bind a queue #{name} which is not configured!") unless opts
           logger.debug("Beetle: binding queue #{name} with internal name #{opts[:amqp_name]} on server #{@server}")
           queue_name = opts[:amqp_name]
-          creation_options = opts.slice(*QUEUE_CREATION_KEYS)
-          the_queue = nil
+          creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
+
+          the_queue = declare_queue!(queue_name, creation_keys)
           @client.bindings[name].each do |binding_options|
             exchange_name = binding_options[:exchange]
             binding_options = binding_options.slice(*QUEUE_BINDING_KEYS)
-            the_queue = bind_queue!(queue_name, creation_options, exchange_name, binding_options)
+            logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_options.inspect}")
+            the_queue.bind(exchange(exchange_name), binding_options)
           end
           the_queue
         end
@@ -93,7 +95,7 @@ module Beetle
       }.merge(policy_options)
     end
 
-    # called by <tt>bind_queue!</tt>
+    # called by <tt>declare_queue!</tt>
     def publish_policy_options(options)
       # avoid endless recursion
       return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
