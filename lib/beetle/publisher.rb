@@ -247,13 +247,17 @@ module Beetle
       @exchanges_with_bound_queues[exchange_name] = true
     end
 
-    def declare_queue!(queue_name, creation_keys)
-      logger.debug("Beetle: creating queue with opts: #{creation_keys.inspect}")
-      queue = bunny.queue(queue_name, creation_keys)
+    def declare_queue!(queue_name, creation_options)
+      logger.debug("Beetle: creating queue with opts: #{creation_options.inspect}")
+      queue = bunny.queue(queue_name, creation_options)
 
-      policy_options = bind_dead_letter_queue!(bunny, queue_name, creation_keys)
+      policy_options = bind_dead_letter_queue!(bunny, queue_name, creation_options)
       publish_policy_options(policy_options)
       queue
+    end
+
+    def bind_queue!(queue, exchange_name, binding_options)
+      queue.bind(exchange(exchange_name), binding_options)
     end
 
     def stop!(exception=nil)

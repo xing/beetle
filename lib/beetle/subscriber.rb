@@ -214,14 +214,18 @@ module Beetle
       channel.__send__(opts[:type], name, opts.slice(*EXCHANGE_CREATION_KEYS))
     end
 
-    def declare_queue!(queue_name, creation_keys)
-      queue = channel.queue(queue_name, creation_keys)
+    def declare_queue!(queue_name, creation_options)
+      queue = channel.queue(queue_name, creation_options)
       unless tracing?
         # we don't want to create dead-letter queues for tracing
-        policy_options = bind_dead_letter_queue!(channel, queue_name, creation_keys)
+        policy_options = bind_dead_letter_queue!(channel, queue_name, creation_options)
         publish_policy_options(policy_options)
       end
       queue
+    end
+
+    def bind_queue!(queue, exchange_name, binding_options)
+      queue.bind(exchange(exchange_name), binding_options)
     end
 
     def connection_settings

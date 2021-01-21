@@ -66,26 +66,26 @@ module Beetle
           raise UnknownQueue.new("You are trying to bind a queue #{name} which is not configured!") unless opts
           logger.debug("Beetle: binding queue #{name} with internal name #{opts[:amqp_name]} on server #{@server}")
           queue_name = opts[:amqp_name]
-          creation_keys = opts.slice(*QUEUE_CREATION_KEYS)
+          creation_options = opts.slice(*QUEUE_CREATION_KEYS)
 
-          the_queue = declare_queue!(queue_name, creation_keys)
+          the_queue = declare_queue!(queue_name, creation_options)
           @client.bindings[name].each do |binding_options|
             exchange_name = binding_options[:exchange]
             binding_options = binding_options.slice(*QUEUE_BINDING_KEYS)
             logger.debug("Beetle: binding queue #{queue_name} to #{exchange_name} with opts: #{binding_options.inspect}")
-            the_queue.bind(exchange(exchange_name), binding_options)
+            bind_queue!(the_queue, exchange_name, binding_options)
           end
           the_queue
         end
     end
 
-    def bind_dead_letter_queue!(channel, target_queue, creation_keys = {})
+    def bind_dead_letter_queue!(channel, target_queue, creation_options = {})
       policy_options = @client.queues[target_queue].slice(:dead_lettering, :lazy, :dead_lettering_msg_ttl)
       policy_options[:message_ttl] = policy_options.delete(:dead_lettering_msg_ttl)
       dead_letter_queue_name = "#{target_queue}_dead_letter"
       if policy_options[:dead_lettering]
-        logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_keys.inspect}")
-        channel.queue(dead_letter_queue_name, creation_keys)
+        logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_options.inspect}")
+        channel.queue(dead_letter_queue_name, creation_options)
       end
       return {
         :queue_name => target_queue,
