@@ -168,6 +168,17 @@ module Beetle
       @sub.send(:bind_queues, %W(x y))
     end
 
+    test "binding queues with many bindings should create it only once" do
+      @client.register_queue(:x, :exchange => 'test_exchange')
+      @client.register_binding(:x, :exchange => 'test_exchange', :key => 'sir-message-a-lot')
+      @client.register_handler(%w(x)){}
+      @sub.stubs(:exchange)
+      queue = mock("queue")
+      queue.expects(:bind).twice
+      @sub.expects(:declare_queue!).returns(queue).once
+      @sub.send(:bind_queues, %W(x))
+    end
+
     test "subscribing to queues should subscribe on all queues" do
       @client.register_queue(:x)
       @client.register_queue(:y)
