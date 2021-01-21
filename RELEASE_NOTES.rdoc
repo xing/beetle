@@ -1,5 +1,8 @@
 = Release Notes
 
+== Version 3.4.3
+* optimize declaration of queues with many bindings
+
 == Version 3.4.2
 * Updated amq-protocol gem to version 2.3.2.
 * Fixed a rare race condition on message handler timeouts.
