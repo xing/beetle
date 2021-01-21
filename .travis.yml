@@ -16,9 +16,26 @@ services:
 addons:
   apt:
     sources:
-      - sourceline: "deb https://packages.erlang-solutions.com/ubuntu bionic contrib"
-        key_url: "https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc"
+      - sourceline: "deb https://dl.bintray.com/rabbitmq-erlang/debian bionic erlang-23.x"
+        key_url: "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc"
       - sourceline: "deb https://dl.bintray.com/rabbitmq/debian bionic main"
-        key_url: "https://dl.bintray.com/rabbitmq/Keys/rabbitmq-release-signing-key.asc"
+        key_url: "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc"
     packages:
+      - erlang-base
+      - erlang-asn1
+      - erlang-crypto
+      - erlang-eldap
+      - erlang-ftp
+      - erlang-inets
+      - erlang-mnesia
+      - erlang-os-mon
+      - erlang-parsetools
+      - erlang-public-key
+      - erlang-runtime-tools
+      - erlang-snmp
+      - erlang-ssl
+      - erlang-syntax-tools
+      - erlang-tftp
+      - erlang-tools
+      - erlang-xmerl
       - rabbitmq-server
