@@ -4,8 +4,8 @@ rvm:
   - 2.6.5
   - 2.7.0
 before_install:
-  - gimme 1.14.1
-  - source ~/.gimme/envs/go1.14.1.env
+  - gimme 1.15.7
+  - source ~/.gimme/envs/go1.15.7.env
   - curl -s https://releases.hashicorp.com/consul/1.7.2/consul_1.7.2_linux_amd64.zip >/tmp/consul.zip; sudo unzip -d /usr/local/bin /tmp/consul.zip; sudo chmod 755 /usr/local/bin/consul
   - "consul agent -dev -node machine >/tmp/consul.log 2>&1 &"
 script: "make && make test && (bundle exec rake || (tail -n 50 tmp/*.{log,output}; false))"
