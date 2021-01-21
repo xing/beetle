@@ -169,10 +169,10 @@ module Beetle
       end
     end
 
-    def setup_queues_and_policies(queue_names) #:nodoc:
+    def setup_queues_and_policies
       each_server do
-        queue_names.each do |name|
-          queue(name, create_policies: true)
+        @client.queues.keys.each do |name|
+          queue(name)
         end
       end
     end
