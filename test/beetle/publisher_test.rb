@@ -355,14 +355,34 @@ module Beetle
     end
 
     test "setting up queues and policies should iterate over all servers" do
-      @pub.servers = %w(a b)
-      queue = mock("queue")
+      client = Client.new
+      client.register_queue("queue")
+      pub = Publisher.new(client)
+      pub.servers = %w(a b)
+
       s = sequence("setup")
-      @pub.expects(:set_current_server).with("a").in_sequence(s)
-      @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
-      @pub.expects(:set_current_server).with("b").in_sequence(s)
-      @pub.expects(:queue).with("queue", :create_policies => true).returns(queue).in_sequence(s)
-      @pub.setup_queues_and_policies(["queue"])
+      pub.expects(:set_current_server).with("a").in_sequence(s)
+      pub.expects(:queue).with(client.config.beetle_policy_updates_queue_name).in_sequence(s)
+      pub.expects(:queue).with("queue").in_sequence(s)
+      pub.expects(:set_current_server).with("b").in_sequence(s)
+      pub.expects(:queue).with(client.config.beetle_policy_updates_queue_name).in_sequence(s)
+      pub.expects(:queue).with("queue").in_sequence(s)
+
+      pub.setup_queues_and_policies()
+    end
+
+    test "setting up queues and policies should handle ephemeral errors" do
+      client = Client.new
+      pub = Publisher.new(client)
+      client.register_queue("queue")
+      pub.servers = %w(a b)
+      pub.stubs(:queue).raises(StandardError)
+
+      s = sequence("setup")
+      pub.expects(:set_current_server).with("a").in_sequence(s)
+      pub.expects(:set_current_server).with("b").in_sequence(s)
+
+      pub.setup_queues_and_policies()
     end
 
     test "reports whether it has been throttled" do

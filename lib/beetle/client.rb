@@ -280,6 +280,13 @@ module Beetle
       publisher.throttled?
     end
 
+    # set up queues and policies for all configured queues. Otherwise this will
+    # happen on first use of an exchange, which can be undesired for latency
+    # sensitive endpoints. Only needs to be called once.
+    def setup_queues_and_policies
+      publisher.setup_queues_and_policies
+    end
+
     # traces queues without consuming them. useful for debugging message flow.
     def trace(queue_names=self.queues.keys, tracer=nil, &block)
       queues_to_trace = self.queues.slice(*queue_names)

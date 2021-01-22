@@ -169,10 +169,14 @@ module Beetle
       end
     end
 
-    def setup_queues_and_policies(queue_names) #:nodoc:
+    def setup_queues_and_policies
       each_server do
-        queue_names.each do |name|
-          queue(name, create_policies: true)
+        begin
+          @client.queues.keys.each do |name|
+            queue(name)
+          end
+        rescue => e
+          logger.warn "Beetle: failed setting up queues and policies on #{@server}: #{e}"
         end
       end
     end
