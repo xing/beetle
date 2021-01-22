@@ -280,7 +280,7 @@ module Beetle
       publisher.throttled?
     end
 
-    # setup queues and policies for all configured queues. Otherwise this will
+    # set up queues and policies for all configured queues. Otherwise this will
     # happen on first use of an exchange, which can be undesired for latency
     # sensitive endpoints. Only needs to be called once.
     def setup_queues_and_policies
