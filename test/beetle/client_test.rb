@@ -282,6 +282,12 @@ module Beetle
       client.stop_publishing
     end
 
+    test "should delegate setup_queues_and_policies to the publisher instance" do
+      client = Client.new
+      client.send(:publisher).expects(:setup_queues_and_policies)
+      client.setup_queues_and_policies
+    end
+
     test "should delegate queue purging to the publisher instance" do
       client = Client.new
       client.register_queue(:queue)
