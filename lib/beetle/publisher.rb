@@ -171,8 +171,12 @@ module Beetle
 
     def setup_queues_and_policies
       each_server do
-        @client.queues.keys.each do |name|
-          queue(name)
+        begin
+          @client.queues.keys.each do |name|
+            queue(name)
+          end
+        rescue => e
+          logger.warn "Beetle: failed setting up queues and policies on #{@server}: #{e}"
         end
       end
     end
