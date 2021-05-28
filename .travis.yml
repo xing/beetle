@@ -3,6 +3,7 @@ rvm:
   - 2.5.7
   - 2.6.5
   - 2.7.0
+  - 3.0.0
 before_install:
   - gimme 1.15.7
   - source ~/.gimme/envs/go1.15.7.env
