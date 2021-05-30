@@ -385,8 +385,8 @@ module Beetle
     end
 
     def load_brokers_from_config
-      @servers = config.servers.split(/ *, */)
-      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */)
+      @servers = config.servers.split(/ *, */).uniq
+      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */).uniq - @servers
     end
   end
 end

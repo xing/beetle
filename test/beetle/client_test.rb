@@ -343,17 +343,17 @@ module Beetle
 
     test "trying to listen to an unknown queue should raise an exception" do
       client = Client.new
-      assert_raises(UnknownQueue) { Client.new.listen_queues([:foobar])}
+      assert_raises(UnknownQueue) { client.listen_queues([:foobar])}
     end
 
     test "trying to pause listening on an unknown queue should raise an exception" do
       client = Client.new
-      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+      assert_raises(UnknownQueue) { client.pause_listening(:foobar)}
     end
 
     test "trying to resume listening on an unknown queue should raise an exception" do
       client = Client.new
-      assert_raises(UnknownQueue) { Client.new.pause_listening(:foobar)}
+      assert_raises(UnknownQueue) { client.pause_listening(:foobar)}
     end
 
     test "should delegate stop_listening to the subscriber instance" do
@@ -457,4 +457,22 @@ module Beetle
       msg_stub
     end
   end
+
+  class ServerDeduplicationTest < Minitest::Test
+    def setup
+      @config = Configuration.new
+      @config.servers = "localhost:5672,localhost:5672"
+      @config.additional_subscription_servers = @config.servers + ",localhost:1234,localhost:1234"
+      @client = Client.new(@config)
+    end
+
+    test "duplicates are removed from the server list" do
+      assert_equal ["localhost:5672"], @client.servers
+    end
+
+    test "duplicates and servers in the server list are rmeoved from the addtional subscription server list" do
+      assert_equal ["localhost:1234"], @client.additional_subscription_servers
+    end
+  end
+
 end
