@@ -487,7 +487,7 @@ module Beetle
       assert_equal ["localhost:5672"], @client.servers
     end
 
-    test "empty strings are rmeoved from the additional subscription server list" do
+    test "empty strings are removed from the additional subscription server list" do
       assert_equal ["localhost:1234"], @client.additional_subscription_servers
     end
   end
