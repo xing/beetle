@@ -127,7 +127,7 @@ module Beetle
       @sub = @client.send(:subscriber)
     end
 
-    test "subscribers server list should contain addtional subcription hosts" do
+    test "subscribers server list should contain additional subcription hosts" do
       assert_equal ["localhost:5672", "localhost:1234"], @sub.servers
     end
   end
