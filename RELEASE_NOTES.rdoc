@@ -1,5 +1,9 @@
 = Release Notes
 
+== Version 3.5.1
+*  remove blank entries from server list strings
+*  make sure not to subscribe to any server twice
+
 == Version 3.5.0
 * expose publisher method to setup queues/policies ahead of use
 
