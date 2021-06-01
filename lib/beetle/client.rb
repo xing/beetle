@@ -385,8 +385,12 @@ module Beetle
     end
 
     def load_brokers_from_config
-      @servers = config.servers.split(/ *, */).uniq
-      @additional_subscription_servers = config.additional_subscription_servers.split(/ *, */).uniq - @servers
+      @servers = parse_server_list(config.servers)
+      @additional_subscription_servers = parse_server_list(config.additional_subscription_servers) - @servers
+    end
+
+    def parse_server_list(s)
+      s.split(/ *, */).uniq.reject(&:blank?)
     end
   end
 end

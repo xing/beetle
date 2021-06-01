@@ -470,7 +470,24 @@ module Beetle
       assert_equal ["localhost:5672"], @client.servers
     end
 
-    test "duplicates and servers in the server list are rmeoved from the addtional subscription server list" do
+    test "duplicates and servers in the server list are removed from the additional subscription server list" do
+      assert_equal ["localhost:1234"], @client.additional_subscription_servers
+    end
+  end
+
+  class EmptyServerStringTest < Minitest::Test
+    def setup
+      @config = Configuration.new
+      @config.servers = "localhost:5672,\t,localhost:5672, "
+      @config.additional_subscription_servers = @config.servers + ",localhost:1234, , ,,"
+      @client = Client.new(@config)
+    end
+
+    test "empty strings are removed from the server list" do
+      assert_equal ["localhost:5672"], @client.servers
+    end
+
+    test "empty strings are removed from the additional subscription server list" do
       assert_equal ["localhost:1234"], @client.additional_subscription_servers
     end
   end
