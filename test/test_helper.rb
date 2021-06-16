@@ -27,12 +27,14 @@ end
 I18n.enforce_available_locales = false
 
 Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
-if `docker inspect beetle-redis-master -f '{{.State.Status}}'`.chomp == "running"
-  Beetle.config.redis_server = "localhost:6370"
-  Beetle.config.redis_servers = "localhost:6370,localhost:6380"
+Beetle.config.servers = ENV["RABBITMQ_SERVERS"] || "localhost:5672"
+
+if system('docker') && `docker inspect beetle-redis-master -f '{{.State.Status}}'`.chomp == "running"
+  Beetle.config.redis_server = ENV["REDIS_SERVER"] || "localhost:6370"
+  Beetle.config.redis_servers = ENV["REDIS_SERVERS"] || "localhost:6370,localhost:6380"
 else
-  Beetle.config.redis_server = "localhost:6379"
-  Beetle.config.redis_servers = "localhost:6379,localhost:6380"
+  Beetle.config.redis_server = ENV["REDIS_SERVER"] || "localhost:6379"
+  Beetle.config.redis_servers = ENV["REDIS_SERVERS"] || "localhost:6379,localhost:6380"
 end
 
 def header_with_params(opts = {})
@@ -43,7 +45,6 @@ def header_with_params(opts = {})
   header
 end
 
-
 def redis_stub(name, opts = {})
   default_port = opts['port'] || "1234"
   default_host = opts['host'] || "foo"
@@ -51,6 +52,6 @@ def redis_stub(name, opts = {})
   stub(name, opts)
 end
 
-if `docker inspect beetle-mysql -f '{{.State.Status}}'`.chomp == "running"
+if system('docker') && `docker inspect beetle-mysql -f '{{.State.Status}}'`.chomp == "running"
   ENV['MYSQL_PORT'] = '6612'
 end

@@ -17,7 +17,7 @@ Beetle.config.logger.level = Logger::INFO
 client = Beetle::Client.new
 
 # use two servers
-Beetle.config.servers = "localhost:5672, localhost:5673"
+Beetle.config.servers = ENV["RABBITMQ_SERVERS"] || "localhost:5672, localhost:5673"
 # instantiate a client
 client = Beetle::Client.new
 

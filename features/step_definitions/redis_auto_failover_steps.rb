@@ -1,8 +1,9 @@
 Given /^consul state has been cleared$/ do
+  consul_host = ENV["CONSUL_HOST"] || "localhost:8500"
   system "killall beetle beetle_handler >/dev/null 2>/dev/null"
-  system "curl --silent --request PUT http://localhost:8500/v1/kv/apps/beetle/config/ >/dev/null"
-  system "curl --silent --request PUT http://localhost:8500/v1/kv/shared/config/ >/dev/null"
-  system "curl --silent --request DELETE http://localhost:8500/v1/kv/apps/beetle/state/redis_master_file_content >/dev/null"
+  system "curl --silent --request PUT http://#{consul_host}/v1/kv/apps/beetle/config/ >/dev/null"
+  system "curl --silent --request PUT http://#{consul_host}/v1/kv/shared/config/ >/dev/null"
+  system "curl --silent --request DELETE http://#{consul_host}/v1/kv/apps/beetle/state/redis_master_file_content >/dev/null"
 end
 
 Given /^a redis server "([^\"]*)" exists as master$/ do |redis_name|
