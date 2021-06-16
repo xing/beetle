@@ -4,7 +4,7 @@ require File.expand_path(File.dirname(__FILE__)+"/../lib/beetle")
 
 # suppress debug messages
 Beetle.config.logger.level = Logger::INFO
-Beetle.config.servers = "localhost:5672, localhost:5673"
+Beetle.config.servers = ENV["RABBITMQ_SERVERS"] || "localhost:5672, localhost:5673"
 # instantiate a client
 
 client = Beetle::Client.new

@@ -26,7 +26,7 @@ module Beetle
     end
 
     test "server should be initialized" do
-      assert_equal @bs.servers.first, @bs.server
+      assert @bs.server
     end
 
     test "current_host should return the hostname of the current server" do

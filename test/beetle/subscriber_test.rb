@@ -52,7 +52,9 @@ module Beetle
 
   class SubscriberPauseAndResumeTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Configuration.new
+      @config.servers = "localhost:5672"
+      @client = Client.new(@config)
       @sub = @client.send(:subscriber)
       @sub.servers << "localhost:7777"
       @server1, @server2 = @sub.servers
@@ -342,7 +344,9 @@ module Beetle
 
   class SubscriptionTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Configuration.new
+      @config.servers = "locahost:5672"
+      @client = Client.new(@config)
       @sub = @client.send(:subscriber)
     end
 
