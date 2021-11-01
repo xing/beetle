@@ -143,11 +143,21 @@ end
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
   Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
   Beetle.config.logger.level = Logger::INFO
-  client = Beetle::Client.new.configure :auto_delete => true do |config|
-    config.queue(:echo, :lazy => true, :dead_lettering => true)
-    config.message(:echo)
+  redis_master = TestDaemons::Redis[redis_name].ip_with_port
+  response = nil
+  expected_response = ['OK', redis_master]
+  3.times do |i|
+    client = Beetle::Client.new.configure :auto_delete => true do |config|
+      config.queue(:echo, :lazy => true, :dead_lettering => true)
+      config.message(:echo)
+    end
+    t1 = Time.now
+    response = client.rpc(:echo, 'echo')
+    t2 = Time.now
+    # puts "OK,#{redis_master} =?= #{response.join(',')} after #{t2-t1}, attempt #{i+1}"
+    break if expected_response == response
   end
-  assert_match /#{TestDaemons::Redis[redis_name].ip_with_port}/, client.rpc(:echo, 'nil').second
+  assert_equal expected_response, response
 end
 
 Then /^a system notification for "([^\"]*)" not being available should be sent$/ do |redis_name|
