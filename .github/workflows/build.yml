@@ -1,0 +1,51 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        ruby-version: [3.0.2, 2.7.4, 2.6.8]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Ruby ${{ matrix.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+
+      - name: Setup Go environment
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16.9'
+
+      - name: Install dependencies
+        run: sudo apt-get install redis
+
+      - name: Start required services
+        run: docker-compose up -d
+
+      - name: Install gems
+        run: bundle install
+
+      - name: Compile and test beetle go binary
+        run: make && make test
+
+      - name: Run beetle gem tests
+        run: bundle exec rake test
+
+      - name: Run beetle failover tests
+        run: bundle exec cucumber || (tail -n 100 tmp/*.{log,output}; false)
+
+      - name: Stop services
+        run: docker-compose down
+        if: always()
