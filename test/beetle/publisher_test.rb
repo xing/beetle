@@ -305,7 +305,9 @@ module Beetle
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
       @client.register_queue('test_queue_3', :exchange => 'test_exchange_2')
       queue = mock("queue")
-      queue.expects(:bind).times(3)
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "test_queue_1"}).once
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "test_queue_2"}).once
+      @pub.expects(:bind_queue!).with(queue, "test_exchange_2", {:key => "test_queue_3"}).once
       @pub.expects(:declare_queue!).returns(queue).times(3)
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
       @pub.send(:bind_queues_for_exchange, 'test_exchange_2')
@@ -315,8 +317,9 @@ module Beetle
       @client.register_queue('test_queue_1', :exchange => 'test_exchange')
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
       queue = mock("queue")
-      queue.expects(:bind).twice
       @pub.expects(:declare_queue!).returns(queue).twice
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "test_queue_1"}).once
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "test_queue_2"}).once
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
@@ -325,8 +328,9 @@ module Beetle
       @client.register_queue('test_queue', :exchange => 'test_exchange')
       @client.register_binding('test_queue', :exchange => 'test_exchange', :key => 'sir-message-a-lot')
       queue = mock("queue")
-      queue.expects(:bind).twice
       @pub.expects(:declare_queue!).returns(queue).once
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "test_queue"}).once
+      @pub.expects(:bind_queue!).with(queue, "test_exchange", {:key => "sir-message-a-lot"}).once
       @pub.send(:bind_queues_for_exchange, 'test_exchange')
     end
 
