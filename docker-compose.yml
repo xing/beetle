@@ -33,7 +33,7 @@ services:
 
   redis-master:
     container_name: beetle-redis-master
-    image: redis:4.0
+    image: redis:5.0
     ports:
       - "6370:6370"
     volumes:
@@ -43,7 +43,7 @@ services:
 
   redis-slave:
     container_name: beetle-redis-slave
-    image: redis:4.0
+    image: redis:5.0
     ports:
       - "6380:6380"
     command: redis-server --port 6380 --slaveof beetle-redis-master 6370
