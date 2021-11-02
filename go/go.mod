@@ -1,11 +1,11 @@
 module github.com/xing/beetle
 
-go 1.12
+go 1.16
 
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/gobuffalo/packr v1.22.0
-	github.com/gorilla/websocket v1.4.0 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/pkg/errors v0.8.1
 	github.com/yookoala/realpath v1.0.0
