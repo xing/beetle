@@ -1,6 +1,6 @@
-=== Examples
+### Examples
 
-Beetle ships with a number of {example scripts}[http://github.com/xing/beetle/tree/master/examples/].
+Beetle ships with a number of [example scripts](http://github.com/xing/beetle/tree/master/examples/)
 
 The top level Rakefile comes with targets to start several RabbitMQ and redis instances
 locally. Make sure the corresponding binaries are in your search path. Open four new shell
