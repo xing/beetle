@@ -115,18 +115,14 @@ Rake::TestTask.new do |t|
   t.warning = false
 end
 
-require 'rdoc/task'
-
-RDoc::Task.new do |rdoc|
-  rdoc.rdoc_dir = 'site/rdoc'
-  rdoc.title    = 'Beetle'
-  rdoc.main     = 'README.rdoc'
-  rdoc.options << '--line-numbers' << '--inline-source' << '--quiet'
-  rdoc.rdoc_files.include('**/*.rdoc')
-  rdoc.rdoc_files.include('MIT-LICENSE')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
 task :clean do
   sh "rm -f tmp/*.output tmp/*.log tmp/master-dir/* tmp/slave-dir/* tmp/*lock tmp/*pid test.log" unless ENV['GITHUB_ACTIONS']
+end
+
+require 'yard'
+
+YARD::Rake::YardocTask.new do |t|
+  OTHER_PATHS = %w()
+  t.files = ['lib/**/*.rb'] + OTHER_PATHS
+  t.options = %w(--markup-provider=redcarpet --markup=markdown --main=README.md --output-dir=site/yard)
 end

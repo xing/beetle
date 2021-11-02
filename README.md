@@ -1,8 +1,8 @@
-= Beetle
+# Beetle
 
 High Availability AMQP Messaging with Redundant Queues
 
-== About
+## About
 
 Beetle grew out of a project to improve an existing ActiveMQ based messaging
 infrastructure. It offers the following features:
@@ -11,15 +11,15 @@ infrastructure. It offers the following features:
 * Redundancy (by replicating queues)
 * Simple client API (by encapsulating the publishing/ deduplication logic)
 
-More information can be found on the {project website}[http://xing.github.com/beetle].
 
-== Release notes
+## Release notes
 
-See {RELEASE_NOTES.rdoc}[https://github.com/xing/beetle/blob/master/RELEASE_NOTES.rdoc]
+See [RELEASE_NOTES.md](./RELEASE_NOTES.md)
 
-== Usage
+## Usage
 
-=== Configuration
+### Configuration
+
     # configure machines
 
     Beetle.config do |config|
@@ -39,15 +39,17 @@ See {RELEASE_NOTES.rdoc}[https://github.com/xing/beetle/blob/master/RELEASE_NOTE
       handler(:test) { |message| puts message.data }
     end
 
-=== Publishing
+### Publishing
+
     b.publish :test, "I'm a test message"
 
-=== Subscribing
+### Subscribing
+
     b.listen_queues
 
-=== Examples
+### Examples
 
-Beetle ships with a number of {example scripts}[http://github.com/xing/beetle/tree/master/examples/].
+Beetle ships with a number of [example scripts](http://github.com/xing/beetle/tree/master/examples/).
 
 The top level Rakefile comes with targets to start several RabbitMQ and redis instances
 locally. Make sure the corresponding binaries are in your search path. Open four new shell
@@ -58,13 +60,14 @@ windows and execute the following commands:
     rake redis:start:master
     rake redis:start:slave
 
-== Prerequisites
+## Prerequisites
 
 To set up a redundant messaging system you will need
-* at least 2 AMQP servers (we use {RabbitMQ}[http://www.rabbitmq.com/])
-* at least one {Redis}[http://github.com/antirez/redis] server (better are two in a master/slave setup, see REDIS_AUTO_FAILOVER.rdoc)
+* at least 2 AMQP servers (we use [RabbitMQ](http://www.rabbitmq.com/))
+* at least one [Redis](http://github.com/antirez/redis) server (better are two in a
+  master/slave setup, see [REDIS_AUTO_FAILOVER.md](./REDIS_AUTO_FAILOVER.md))
 
-== Test environment
+## Test environment
 
 For testing purposes, you will need a MySQL database with the database
 `beetle_test` created. This is needed to test special cases in which
@@ -84,44 +87,44 @@ purpose, so simply running
 
 should suffice.
 
-== Gem Dependencies
+## Gem Dependencies
 
 At runtime, Beetle will use
-* {bunny}[http://github.com/ruby-amqp/bunny]
-* {redis}[http://github.com/redis/redis-rb]
-* {amqp}[http://github.com/ruby-amqp/amqp]
-  (which is based on {eventmachine}[http://github.com/eventmachine/eventmachine])
-* {daemons}[http://daemons.rubyforge.org/]
-* {activesupport}[https://github.com/rails/rails/tree/master/activesupport]
+* [bunny](http://github.com/ruby-amqp/bunny)
+* [redis](http://github.com/redis/redis-rb)
+* [amqp](http://github.com/ruby-amqp/amqp)
+  (which is based on [eventmachine](http://github.com/eventmachine/eventmachine))
+* [daemons](http://daemons.rubyforge.org/)
+* [activesupport](https://github.com/rails/rails/tree/master/activesupport)
 
 For development, you'll need
-* {mocha}[http://github.com/floehopper/mocha]
-* {cucumber}[http://github.com/aslakhellesoy/cucumber]
-* {daemon_controller}[http://github.com/FooBarWidget/daemon_controller]
-* {consul}[https://www.consul.io/downloads.html]
+* [mocha](http://github.com/floehopper/mocha)
+* [cucumber](http://github.com/aslakhellesoy/cucumber)
+* [daemon_controller](http://github.com/FooBarWidget/daemon_controller)
+* [consul](https://www.consul.io/downloads.html)
 
 For tests, you'll need
-* {activerecord}[https://github.com/rails/rails/tree/master/activerecord]
-* {mysql2}[https://github.com/brianmario/mysql2/]
+* [activerecord](https://github.com/rails/rails/tree/master/activerecord)
+* [mysql2](https://github.com/brianmario/mysql2/)
 
 Dependencies are managed by bundler.
 
-== Authors
+## Authors
 
-{Stefan Kaes}[http://github.com/skaes],
-{Pascal Friederich}[http://github.com/paukul],
-{Ali Jelveh}[http://github.com/dudemeister],
-{Bjoern Rochel}[http://github.com/bjro] and
-{Sebastian Roebke}[http://github.com/boosty].
+[Stefan Kaes](http://github.com/skaes),
+[Pascal Friederich](http://github.com/paukul),
+[Ali Jelveh](http://github.com/dudemeister),
+[Bjoern Rochel](http://github.com/bjro) and
+[Sebastian Roebke](http://github.com/boosty).
 
-You can find out more about our work on our {dev blog}[http://devblog.xing.com].
+You can find out more about our work on our [dev blog](http://devblog.xing.com).
 
-Copyright (c) 2010-2019 {XING AG}[http://www.xing.com/]
+Copyright (c) 2010-2019 [XING AG](http://www.xing.com/)
 
 Released under the MIT license. For full details see MIT-LICENSE included in this
 distribution.
 
-== Contributing
+## Contributing
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
@@ -133,7 +136,7 @@ distribution.
 Don't increase the gem version in your pull requests. It will be done after merging the request,
 to allow merging of pull requests in a flexible order.
 
-== Compiling beetle and running tests
+## Compiling beetle and running tests
 
 In order to execute the unit tests, you need Ruby, a running rabbitmq server, a running
 redis-server, a running mysql server and a runnning consul server.
@@ -145,7 +148,7 @@ beetle go binary. Just invoke `make` in the top level directory.
 There are two ways to start the required test dependencies: using `docker-compose` or
 starting the services manually.
 
-=== Testing with docker-compose
+### Testing with docker-compose
 
 Open a separate terminal window and run
 
@@ -161,7 +164,7 @@ development node.
 Note: make sure to wait until all services are properly started.
 
 
-== Tesing with  locally installed services
+## Tesing with  locally installed services
 
 The top level Rakefile comes with targets to start several RabbitMQ instances locally.
 Make sure the corresponding binaries are in your search path. Open three shell windows and
@@ -189,18 +192,18 @@ Note: Cucumber will automatically run after the unit tests when you run `rake` w
 arguments.
 
 
-== How to release a new gem version
+## How to release a new gem version
 
-Update RELEASE_NOTES.rdoc!
+Update [RELEASE_NOTES.md](./RELEASE_NOTES.md)!
 
-We use {semantic versioning}[http://semver.org/] and create a git tag
+We use [semantic versioning](http://semver.org/) and create a git tag
 for each release.
 
 Edit `lib/beetle/version.rb` and
 `go/src/github.com/xing/beetle/version.go` to set the new version
 number (`Major.Minor.Patch`).
 
-In short (see {semver.org}[http://semver.org] for details):
+In short (see [semver.org](http://semver.org) for details):
 
 * *Major* version MUST be incremented if any backwards incompatible changes
   are introduced to the public API.

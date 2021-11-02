@@ -21,3 +21,4 @@ TAGS
 .byebug_history
 .packr
 /go/a_main-packr.go
+.yardoc

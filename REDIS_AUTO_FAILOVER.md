@@ -1,6 +1,6 @@
-= Automatic Redis Failover for Beetle
+# Automatic Redis Failover for Beetle
 
-== Introduction
+## Introduction
 
 Redis is used as the persistence layer in the AMQP message deduplication
 process. Because it is such a critical piece in our infrastructure, it is
@@ -13,7 +13,7 @@ worker, a switch would not be possible. This ensures that even in the case of a
 partitioned network it is impossible that two different workers use two
 different Redis servers for message deduplication.
 
-== Our goals
+## Our goals
 
 * opt-in, no need to use the redis-failover solution
 * no single point of failure
@@ -22,7 +22,7 @@ different Redis servers for message deduplication.
 * workers should be able to determine the current redis-master without asking
   another process (as long as the redis servers are working)
 
-== How it works
+## How it works
 
 To ensure consistency, a service (the Redis Configuration Server - RCS) is
 constantly checking the availability and configuration of the currently
@@ -55,13 +55,13 @@ Additionally, the RCS sends reconfigure messages with the current Redis master
 periodically, to allow new RCCs to pick up the current master. Plus it turns
 all other redis servers into slaves of the current master.
 
-=== Prerequisites
+### Prerequisites
 
 * one redis-configuration-server process ("RCS", on one server), one redis-configuration-client process ("RCC") on every worker server
 * the RCS knows about all possible RCCs using a list of client ids
 * the RCS and RCCs exchange messages via a "system queue"
 
-=== Flow of actions
+### Flow of actions
 
 * on startup, an RCC can consult its redis master file to determine the current master without the help of the RCS by checking that it's still a master (or wait for the periodic reconfigure message with the current master from the RCS)
 * when the RCS finds the master to be down, it will retry a couple of times before starting a reconfiguration round
@@ -75,42 +75,42 @@ all other redis servers into slaves of the current master.
 * the RCS sends a "reconfigure" message containing the new master to every RCC
 * the RCCs write the new master to their redis master file
 
-=== Configuration
+### Configuration
 
 See Beetle::Configuration for setting redis configuration server and client options.
 
 Please note:
 Beetle::Configuration#redis_server must be a file path (not a redis host:port string) to use the redis failover. The RCS and RCCs store the current redis master in that file, and the handlers read from it.
 
-== How to use it
+## How to use it
 
 This example uses two worker servers, identified by rcc-1 and rcc-2.
 
 Please note:
 All command line options can also be given as a yaml configuration file via the --config-file option.
 
-=== On one server
+### On one server
 
 Start the Redis Configuration Server:
 
-  beetle configuration_server --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
+    beetle configuration_server --redis-servers redis-1:6379,redis-2:6379 --client-ids rcc-1,rcc-2
 
 Get help for server options:
 
-  beetle configuration_server -h
+    beetle configuration_server -h
 
-=== On every worker server
+### On every worker server
 
 Start the Redis Configuration Client:
 
 On first worker server:
 
-  beetle configuration_client --client-id rcc-1
+    beetle configuration_client --client-id rcc-1
 
 On second worker server:
 
-  beetle configuration_client --client-id rcc-2
+    beetle configuration_client --client-id rcc-2
 
 Get help for client options:
 
-  beetle configuration_client -h
+    beetle configuration_client -h
