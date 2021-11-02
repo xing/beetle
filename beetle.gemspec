@@ -39,7 +39,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "mocha",               "~> 1.3.0"
   s.add_development_dependency "mysql2",              "~> 0.4.4"
   s.add_development_dependency "rake",                "~> 13.0"
-  s.add_development_dependency "rdoc",                "~> 4.0"
+  s.add_development_dependency "rdoc",                "~> 6.0"
   s.add_development_dependency "simplecov",           "~> 0.15"
   s.add_development_dependency "webmock",             "~> 3.0"
   s.add_development_dependency "websocket-eventmachine-client"
