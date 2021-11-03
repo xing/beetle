@@ -77,7 +77,9 @@ module Beetle
 
   class PublisherPublishingTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Configuration.new
+      @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+      @client = Client.new(@config)
       @pub = Publisher.new(@client)
       @pub.stubs(:bind_queues_for_exchange)
       @client.register_queue("mama", :exchange => "mama-exchange")
@@ -277,6 +279,7 @@ module Beetle
   class PublisherQueueManagementTest < Minitest::Test
     def setup
       @config = Configuration.new
+      @config.servers = ENV['RABBITMQ_SERVERS'] if ENV['RABBITMQ_SERVERS']
       @client = Client.new(@config)
       @pub = Publisher.new(@client)
     end
@@ -325,6 +328,7 @@ module Beetle
     end
 
     test "should declare queues only once even with many bindings" do
+
       @client.register_queue('test_queue', :exchange => 'test_exchange')
       @client.register_binding('test_queue', :exchange => 'test_exchange', :key => 'sir-message-a-lot')
       queue = mock("queue")
@@ -553,10 +557,11 @@ module Beetle
     end
   end
 
-
   class RPCTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Configuration.new
+      @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+      @client = Client.new(@config)
       @pub = Publisher.new(@client)
       @client.register_message(:test, :exchange => :some_exchange)
     end

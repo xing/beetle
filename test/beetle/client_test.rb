@@ -8,7 +8,7 @@ module Beetle
     end
 
     test "should have a default server" do
-      assert_equal ["localhost:5672"], @client.servers
+      assert !@client.servers.empty?
     end
 
     test "should have no additional subscription servers" do

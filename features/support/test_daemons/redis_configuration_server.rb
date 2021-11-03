@@ -25,9 +25,10 @@ module TestDaemons
 
     def self.daemon_controller
       clients_parameter_string = @@redis_configuration_clients.blank? ? "" : "--client-ids #{@@redis_configuration_clients}"
+      consul_host = ENV["CONSUL_HOST"] || "localhost:8500"
       DaemonController.new(
          :identifier    => "Redis configuration test server",
-         :start_command => "./beetle configuration_server -v -d --redis-master-file #{redis_master_file} --redis-servers '#{@@redis_servers}' #{clients_parameter_string} --redis-master-retry-interval 1 --pid-file #{pid_file} --log-file #{log_file} --redis-failover-confidence-level #{@@confidence_level} --consul http://localhost:8500",
+         :start_command => "./beetle configuration_server -v -d --redis-master-file #{redis_master_file} --redis-servers '#{@@redis_servers}' #{clients_parameter_string} --redis-master-retry-interval 1 --pid-file #{pid_file} --log-file #{log_file} --redis-failover-confidence-level #{@@confidence_level} --consul http://#{consul_host}",
          :ping_command  => lambda{ answers_text_requests? },
          :pid_file      => pid_file,
          :log_file      => log_file,
