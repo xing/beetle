@@ -93,7 +93,6 @@ Given /^an old redis master file for "([^\"]*)" with master "([^\"]*)" exists$/ 
   end
 end
 
-
 Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redis_name, role|
   expected_role = false
   10.times do
@@ -101,6 +100,16 @@ Then /^the role of redis server "([^\"]*)" should be "(master|slave)"$/ do |redi
     sleep 1
   end
   assert expected_role, "#{redis_name} is not a #{role}"
+end
+
+Then /^the redis server "([^\"]*)" is a slave of "([^\"]*)"$/ do |redis_name, redis_master_name|
+  master = TestDaemons::Redis[redis_master_name].redis
+  slave = TestDaemons::Redis[redis_name].redis
+  3.times do
+    sleep 1
+    break if slave.slave_of?(master.host, master.port)
+  end
+  assert slave.slave_of?(master.host, master.port)
 end
 
 Then /^the redis master of "([^\"]*)" (?:in system "([^"]*)" )?should be "([^\"]*)"$/ do |redis_configuration_client_name, system_name, redis_name|
