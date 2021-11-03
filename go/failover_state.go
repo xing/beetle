@@ -287,15 +287,13 @@ func (s *FailoverState) PublishMaster(server string) {
 	s.SendToWebSockets(msg)
 }
 
-// ConfigureSlaves turns all masters which are not the currently configured
-// master into slaves of the current master.
+// ConfigureSlaves turns all available servers into slaves of the current master.
 func (s *FailoverState) ConfigureSlaves(master *RedisShim) {
-	for _, r := range s.redis.Masters() {
+	for _, r := range s.redis.MastersAndSlaves() {
 		if r.server != master.server {
 			r.redis.SlaveOf(master.host, strconv.Itoa(master.port))
 		}
 	}
-	// TODO: shouldn't we also make sure all slaves are slaves of the correct master?
 }
 
 // WatcherPaused checks whether the redis watcher has been paused.

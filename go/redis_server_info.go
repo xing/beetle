@@ -21,7 +21,7 @@ func (shims RedisShims) Include(r *RedisShim) bool {
 	return false
 }
 
-// Servers returns a slice od server strings (host:port format).
+// Servers returns a slice of server strings (host:port format).
 func (shims RedisShims) Servers() []string {
 	servers := make([]string, 0)
 	for _, x := range shims {
@@ -98,6 +98,14 @@ func (si *RedisServerInfo) Masters() RedisShims {
 // Slaves returns all shims with role 'slave'.
 func (si *RedisServerInfo) Slaves() RedisShims {
 	return si.serverInfo[SLAVE]
+}
+
+// MastersAndSlaves returns masters ans slaves
+func (si *RedisServerInfo) MastersAndSlaves() RedisShims {
+	servers := make(RedisShims, 0)
+	servers = append(servers, si.Masters()...)
+	servers = append(servers, si.Slaves()...)
+	return servers
 }
 
 // Unknowns returns all shims with role 'unknown'.
