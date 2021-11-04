@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 3.5.2
+* fixed that not all available Redis servers where turned into proper slaves during a
+  master switch
+
 ## Version 3.5.1
 *  remove blank entries from server list strings
 *  make sure not to subscribe to any server twice

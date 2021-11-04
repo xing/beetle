@@ -164,7 +164,7 @@ development node.
 Note: make sure to wait until all services are properly started.
 
 
-## Tesing with  locally installed services
+## Testing with  locally installed services
 
 The top level Rakefile comes with targets to start several RabbitMQ instances locally.
 Make sure the corresponding binaries are in your search path. Open three shell windows and
