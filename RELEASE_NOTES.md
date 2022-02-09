@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 3.5.3
+* fixed that message publishing was never retried on Errno::ETIMEDOUT
+
 ## Version 3.5.2
 * fixed that not all available Redis servers where turned into proper slaves during a
   master switch
