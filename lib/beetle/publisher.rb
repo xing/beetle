@@ -34,7 +34,7 @@ module Beetle
         Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
         Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
         Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-        Errno::EHOSTUNREACH, Errno::ECONNRESET, Timeout::Error
+        Errno::EHOSTUNREACH, Errno::ECONNRESET, Errno::ETIMEDOUT, Timeout::Error
       ]
     end
 
@@ -66,6 +66,7 @@ module Beetle
         logger.debug "Beetle: message sent!"
         published = 1
       rescue *bunny_exceptions => e
+        logger.warn("Beetle: publishing exception #{e} #{e.backtrace[0..4].join("\n")}")
         stop!(e)
         tries -= 1
         # retry same server on receiving the first exception for it (might have been a normal restart)
@@ -98,6 +99,7 @@ module Beetle
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue *bunny_exceptions => e
+          logger.warn("Beetle: publishing exception #{e} #{e.backtrace[0..4].join("\n")}")
           stop!(e)
           retry if (tries += 1) == 1
           mark_server_dead
