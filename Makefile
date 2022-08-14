@@ -32,14 +32,13 @@ endif
 all: $(GO_TARGETS)
 
 clean:
-	cd $(GO_SRC) && packr clean
 	rm -rf go/pkg go/bin $(GO_TARGETS)
 
 tidy:
 	cd $(GO_SRC) && go mod tidy
 
 realclean: clean
-	rm -f .packr .lint
+	rm -f .lint
 	cd $(GO_SRC) && go clean -modcache
 
 install: $(GO_INSTALL_TARGETS)
@@ -50,14 +49,7 @@ uninstall:
 
 GO_MODULES = $(patsubst %,$(GO_SRC)/%, client.go server.go datatypes.go server_state.go failover_state.go redis.go redis_shim.go redis_server_info.go logging.go version.go garbage_collect_keys.go notification_mailer.go config.go delete_keys.go copy_keys.go dump_expiries.go consul/consul.go)
 
-.packr:
-	go get github.com/gobuffalo/packr/packr
-	touch .packr
-
-$(GO_SRC)/a_main-packr.go: $(wildcard $(GO_SRC)/templates/*.html) .packr
-	cd $(GO_SRC) && packr
-
-beetle: $(GO_SRC)/beetle.go $(GO_MODULES) $(GO_SRC)/a_main-packr.go
+beetle: $(GO_SRC)/beetle.go $(GO_MODULES)
 	cd $(GO_SRC) && $(GO_ENV) go build -o ../$@
 
 test: test-main test-server
