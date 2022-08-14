@@ -186,8 +186,12 @@ end
 
 Then /^a system notification for no slave available to become new master should be sent$/ do
   text = "Redis master could not be switched, no slave available to become new master"
-  lines = File.readlines(system_notification_log_path)
-  tail = (["","",""]+lines)[-3..-1].join("\n")
+  tail = ""
+  3.times do
+    lines = File.readlines(system_notification_log_path)
+    tail = (["","",""]+lines)[-3..-1].join("\n")
+    sleep 0.1 unless tail =~ /#{text}/
+  end
   assert_match /#{text}/, tail
 end
 
@@ -199,7 +203,7 @@ end
 
 Given /^an immediate master switch is initiated and responds with (\d+)$/ do |response_code|
   response = TestDaemons::RedisConfigurationServer.initiate_master_switch
-  assert_equal response_code, response.code, "unexpected response code #{response.code}, message: #{response.body}"
+  assert_equal response_code.to_s, response.code, "unexpected response code #{response.code}, message: #{response.body}"
   sleep 1
 end
 
