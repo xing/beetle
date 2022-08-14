@@ -7,9 +7,18 @@ import (
 	"syscall"
 	"time"
 
+	_ "embed"
+
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/gobuffalo/packr"
 	"github.com/xing/beetle/consul"
+)
+
+var (
+	//go:embed templates/index.html
+	htmlTemplate string
+	//go:embed templates/gcstats.html
+	gcStatsTemplate string
 )
 
 // waits on a sync.WaitGroup, but times out after given duration.
@@ -26,11 +35,6 @@ func waitForWaitGroupWithTimeout(wg *sync.WaitGroup, timeout time.Duration) bool
 		return true
 	}
 }
-
-var (
-	htmlTemplate    string
-	gcStatsTemplate string
-)
 
 func waitForInterrupt() {
 	done := make(chan os.Signal, 1)
