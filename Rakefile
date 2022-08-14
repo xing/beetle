@@ -98,7 +98,7 @@ namespace :consul do
 end
 
 Cucumber::Rake::Task.new(:cucumber) do |t|
-  t.cucumber_opts = "features --format progress"
+  t.cucumber_opts = ["features", "--format progress"]
 end
 
 task :cucumber => :clean
