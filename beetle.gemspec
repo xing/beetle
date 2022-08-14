@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   }
 
   s.specification_version = 3
-  s.add_runtime_dependency "bunny",                   "~> 0.7.13"
+  s.add_runtime_dependency "bunny",                   "~> 2.19.0"
   s.add_runtime_dependency "redis",                   ">= 4.2.1"
   s.add_runtime_dependency "hiredis",                 ">= 0.4.5"
   s.add_runtime_dependency "amq-protocol",            "= 2.3.2"

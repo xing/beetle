@@ -93,17 +93,21 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
     end
     config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|
       begin
-        Beetle.config.logger.info "received beetle policy update message': #{message.data}"
+        Beetle.config.logger.info "Received beetle policy update message': #{message.data}"
         client.update_queue_properties!(JSON.parse(message.data))
       rescue => e
         Beetle.config.logger.error("#{e}:#{e.backtrace.join("\n")}")
       end
     end
   end
+  Beetle.config.logger.info "Starting beetle handler for system: #{Beetle.config.system_name}"
   client.listen do
     puts "Started beetle handler for system: #{Beetle.config.system_name}"
 
     BeetleStatusServer.setup(client)
     EM.start_server '0.0.0.0', 10254, BeetleStatusServer
+
+    trap("TERM"){ client.stop_listening }
   end
+  Beetle.config.logger.info "Terminated beetle handler for system: #{Beetle.config.system_name}"
 end
