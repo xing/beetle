@@ -8,7 +8,7 @@ end
 require 'minitest/autorun'
 require 'minitest/unit'
 require 'minitest/pride' if ENV['RAINBOW_COLORED_TESTS'] == "1" && $stdout.tty?
-require 'mocha/setup'
+require 'mocha/minitest'
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require 'eventmachine'

@@ -41,9 +41,9 @@ module Beetle
 
     test "stop! should close all connections if the reactor is not running" do
       connection1 = mock('conection1')
-      connection1.expects(:close).yields
+      connection1.expects(:close)
       connection2 = mock('connection2')
-      connection2.expects(:close).yields
+      connection2.expects(:close)
       @sub.instance_variable_set "@connections", [["server1", connection1], ["server2", connection2]]
       EM.expects(:reactor_running?).returns(false)
       @sub.send(:stop!)

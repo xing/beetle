@@ -327,7 +327,9 @@ module Beetle
       client.register_queue("b_queue")
       client.register_queue("a_queue")
       client.send(:subscriber).expects(:listen_queues).with {|value| value.include?("a_queue") && value.include?("b_queue")}.yields
-      client.listen
+      called = false
+      client.listen { called = true }
+      assert called
     end
 
     test "trying to listen to a message is no longer supported and should raise an exception" do
@@ -338,7 +340,9 @@ module Beetle
       client = Client.new
       client.register_queue(:test)
       client.send(:subscriber).expects(:listen_queues).with(['test']).yields
-      client.listen_queues([:test])
+      called = false
+      client.listen_queues([:test]) { called = true }
+      assert called
     end
 
     test "trying to listen to an unknown queue should raise an exception" do
