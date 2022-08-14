@@ -39,12 +39,8 @@ module Beetle
   # determine the fully qualified domainname of the host we're running on
   def self.hostname
     name = Socket.gethostname
-    parts = name.split('.')
-    if parts.size > 1
-      name
-    else
-      Socket.gethostbyname(parts.first).first rescue name
-    end
+    host = name.split('.').first
+    Addrinfo.getaddrinfo(host, nil, nil, :STREAM, nil, Socket::AI_CANONNAME).first.canonname rescue name
   end
 
   # use ruby's autoload mechanism for loading beetle classes
