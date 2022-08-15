@@ -52,6 +52,12 @@ jobs:
         env:
           BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}.gemfile
 
+      - name: Collect Docker Logs
+        uses: jwalton/gh-docker-logs@v2.2.0
+        if: failure()
+        with:
+          images: 'rabbitmq'
+
       - name: Stop services
         run: docker-compose down
         if: always()
