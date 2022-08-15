@@ -243,7 +243,7 @@ module Beetle
       Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
-          bunny.__send__ :close_connection
+          bunny.__send__ :close_connection, false
         else
           channel.close if channel?
           bunny.stop
