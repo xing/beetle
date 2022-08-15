@@ -165,7 +165,7 @@ module Beetle
         :username              => @client.config.user,
         :password              => @client.config.password,
         :vhost                 => @client.config.vhost,
-        :automatically_recover => true,
+        :automatically_recover => false,
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
         :read_timeout          => @client.config.publishing_timeout,
