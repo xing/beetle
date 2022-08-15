@@ -24,7 +24,7 @@ module Beetle
         :username => "guest",
         :password => "guest",
         :vhost => "/",
-        :automatically_recover => false,
+        :automatically_recover => true,
         :read_timeout => 15,
         :write_timeout => 15,
         :continuation_timeout => 15,
