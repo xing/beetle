@@ -6,11 +6,14 @@ World do
   extend Minitest::Assertions
 end
 
+# Executed before each scenario
 Before do
   cleanup_master_files
   `ruby features/support/system_notification_logger start`
+  `ruby features/support/beetle_handler start -- --redis-master-file=#{redis_master_file('rc-client-1')}`
 end
 
+# Executed after each scenario
 After do
   cleanup_test_env
 end

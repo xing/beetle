@@ -1,1 +1,1 @@
-default: --publish-quiet
+default: --publish-quiet --tags 'not @ignored'
