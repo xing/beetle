@@ -85,10 +85,13 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
     config.message(:echo)
     config.handler(:echo) do |message|
       begin
+        Beetle.config.logger.info "Received echo request: reply_to: #{message.header.attributes[:reply_to]}"
         client.deduplication_store.redis.server
       rescue
         master_file_content = File.read(Beetle.config.redis_server)
-        "no redis master: exception: #{$!.class}(#{$!}), master_file: '#{master_file_content}'"
+        msg = "no redis master: exception: #{$!.class}(#{$!}), master_file: '#{master_file_content}'"
+        Beetle.config.logger.error msg
+        msg
       end
     end
     config.handler(Beetle.config.beetle_policy_updates_queue_name) do |message|

@@ -55,17 +55,22 @@ module Beetle
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
 
     test "stop!(exception) should close the bunny socket if an exception is not nil" do
       b = mock("bunny")
+      l = mock("loop")
       b.expects(:close_connection)
+      b.expects(:reader_loop).returns(l)
+      l.expects(:kill)
       @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b)
+      @pub.expects(:bunny).returns(b).twice
       @pub.send(:stop!, Exception.new)
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
 
     test "stop! should not create a new bunny " do
@@ -75,6 +80,7 @@ module Beetle
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
 
   end

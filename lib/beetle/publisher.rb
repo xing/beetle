@@ -244,6 +244,8 @@ module Beetle
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
           bunny.__send__ :close_connection, false
+          reader_loop = bunny.__send__ :reader_loop
+          reader_loop.kill if reader_loop
         else
           channel.close if channel?
           bunny.stop
