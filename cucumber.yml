@@ -1,1 +1,1 @@
-default: --publish-quiet --tags 'not @ignored'
+default: --publish-quiet --tags 'not @ignored' --color
