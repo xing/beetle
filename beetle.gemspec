@@ -36,6 +36,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "daemons",             ">= 1.2.0"
   s.add_development_dependency "i18n"
   s.add_development_dependency "minitest",            "~> 5.1"
+  s.add_development_dependency "minitest-reporters"
   s.add_development_dependency "mocha",               "~> 1.14"
   s.add_development_dependency "mysql2",              "~> 0.5"
   s.add_development_dependency "rake",                "~> 13.0"
