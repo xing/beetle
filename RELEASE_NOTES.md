@@ -1,6 +1,9 @@
 # Release Notes
 
 ## Version 3.5.3
+* restrict redis gem to have a version before 5.0 as this version is incompatible
+
+## Version 3.5.3
 * fixed that message publishing was never retried on Errno::ETIMEDOUT
 
 ## Version 3.5.2
