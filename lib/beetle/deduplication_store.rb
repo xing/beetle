@@ -62,7 +62,7 @@ module Beetle
     # store completion status for given <tt>msg_id</tt> if it doesn't exist yet. Returns whether the
     # operation was successful.
     def setnx_completed!(msg_id)
-      expiry = @config.redis_status_key_expiry_interval
+      expiry = @config.redis_status_key_expiry_interval.to_i
       return true if expiry == 0
       with_failover do
         redis.set(
@@ -109,7 +109,7 @@ module Beetle
 
     # delete all keys associated with the given <tt>msg_id</tt>.
     def del_keys(msg_id)
-      expiry = @config.redis_status_key_expiry_interval
+      expiry = @config.redis_status_key_expiry_interval.to_i
       keys = keys(msg_id)
       status_key = keys.shift if expiry > 0
       with_failover do
@@ -150,7 +150,7 @@ module Beetle
 
     # set current redis master instance (as specified in the Beetle::Configuration)
     def redis_master_from_server_string
-      @current_master ||= Redis.from_server_string(@config.redis_server, :db => @config.redis_db, :logger => @config.redis_logger)
+      @current_master ||= Redis.from_server_string(@config.redis_server, @config.redis_options)
     end
 
     # set current redis master from master file
@@ -168,7 +168,7 @@ module Beetle
     def set_current_redis_master_from_master_file
       @last_time_master_file_changed = File.mtime(@config.redis_server)
       server_string = extract_redis_master(read_master_file)
-      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, :db => @config.redis_db, :logger => @config.redis_logger) : nil
+      @current_master = !server_string.blank? ? Redis.from_server_string(server_string, @config.redis_options ) : nil
     end
 
     # extract redis master from file content and return the server for our system

@@ -72,15 +72,15 @@ module Beetle
 
     def setup(opts) #:nodoc:
       @server           = opts[:server]
-      @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT
-      @delay            = opts[:delay]      || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY
+      @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT.to_i
+      @delay            = (opts[:delay]     || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY).ceil
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
       @retry_on         = opts[:retry_on] || nil
       @store            = opts[:store]
       max_delay         = opts[:max_delay] || @delay
-      @max_delay        = max_delay if max_delay >= 2*@delay
+      @max_delay        = max_delay.ceil if max_delay >= 2*@delay
     end
 
     # extracts various values from the AMQP header properties
@@ -101,7 +101,7 @@ module Beetle
     def self.publishing_options(opts = {}) #:nodoc:
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
-      expires_at = now + (opts[:ttl] || DEFAULT_TTL)
+      expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s
       opts[:timestamp] = now
@@ -165,7 +165,7 @@ module Beetle
 
     # store handler timeout timestamp in the deduplication store
     def set_timeout!
-      @store.set(msg_id, :timeout, now + timeout)
+      @store.set(msg_id, :timeout, (now + timeout).ceil)
     end
 
     # handler timed out?
@@ -230,7 +230,7 @@ module Beetle
     # have we already seen this message? if not, set the status to "incomplete" and store
     # the message exipration timestamp in the deduplication store.
     def key_exists?
-      old_message = !@store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at, :timeout => now + timeout)
+      old_message = !@store.msetnx(msg_id, :status =>"incomplete", :expires => @expires_at.to_i, :timeout => (now + timeout).to_i)
       if old_message
         logger.debug "Beetle: received duplicate message: #{msg_id} on queue: #{@queue}"
       end

@@ -33,6 +33,12 @@ module Beetle
     attr_accessor :redis_servers
     # redis database number to use for the message deduplication store (defaults to <tt>4</tt>)
     attr_accessor :redis_db
+    # redis connect timeout. defaults to 5 seconds.
+    attr_accessor :redis_connect_timeout
+    # redis read timeout. defaults to 5 seconds.
+    attr_accessor :redis_read_timeout
+    # redis write timeout. defaults to 5 seconds.
+    attr_accessor :redis_write_timeout
 
     # how long we should repeatedly retry a redis operation before giving up, with a one
     # second sleep between retries (defaults to <tt>180.seconds</tt>). this value needs to be
@@ -157,6 +163,9 @@ module Beetle
       self.redis_server = "localhost:6379"
       self.redis_servers = ""
       self.redis_db = 4
+      self.redis_connect_timeout = 5.0
+      self.redis_read_timeout = 5.0
+      self.redis_write_timeout = 5.0
       self.redis_failover_timeout = 180.seconds
       self.redis_status_key_expiry_interval = 0.seconds
       self.redis_failover_client_heartbeat_interval = 10.seconds
@@ -215,6 +224,17 @@ module Beetle
           l.datetime_format = "%Y-%m-%d %H:%M:%S"
           l
         end
+    end
+
+    # redis optins to be passed to Redis.new
+    def redis_options
+      {
+        db: redis_db,
+        connect_timeout: redis_connect_timeout,
+        read_timeout: redis_read_timeout,
+        write_timeout: redis_write_timeout,
+        logger: redis_logger,
+      }
     end
 
     private

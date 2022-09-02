@@ -3,6 +3,7 @@ class Redis #:nodoc:
   def self.from_server_string(server_string, options = {})
     host, port = server_string.split(':')
     options = {:host => host, :port => port}.update(options)
+    options.delete(:logger) if Redis::VERSION >= "5.0"
     new(options)
   end
 
@@ -78,6 +79,19 @@ class Redis #:nodoc:
     def msetnx(*values)
       super != 0
     end
+
+  elsif Redis::VERSION >= "5.0.0"
+
+    # redis 5.0.0 has a shutdown method which raises if a connection to the redis server
+    # cannot be established.
+    module SaneShutdown
+      def shutdown
+        super
+      rescue RedisClient::CannotConnectError
+        nil
+      end
+    end
+    prepend SaneShutdown
 
   elsif Redis::VERSION >= "4.0.0"
 

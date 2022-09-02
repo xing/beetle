@@ -57,7 +57,11 @@ module Beetle
 
   class HiredisLoadedTest < Minitest::Test
     test "should be using hiredis instead of the redis ruby backend" do
-      assert defined?(Hiredis)
+      if Redis::VERSION < "5.0"
+        assert defined?(Hiredis)
+      else
+        assert_equal RedisClient.default_driver, RedisClient::HiredisConnection
+      end
     end
   end
 
