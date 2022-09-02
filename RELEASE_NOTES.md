@@ -1,6 +1,12 @@
 # Release Notes
 
-## Version 3.5.3
+## Version 3.5.5
+* Support Redis version 5.x.
+* Support setting Redis timeouts in the Beetle configuration. Default
+  is 5.0 seconds for all timeouts as this is the default for redis gem
+  versions before 5.0.0.
+
+## Version 3.5.4
 * restrict redis gem to have a version before 5.0 as this version is incompatible
 
 ## Version 3.5.3

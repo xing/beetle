@@ -107,7 +107,11 @@ For tests, you'll need
 * [activerecord](https://github.com/rails/rails/tree/master/activerecord)
 * [mysql2](https://github.com/brianmario/mysql2/)
 
-Dependencies are managed by bundler.
+Dependencies are managed by `bundler`.
+
+If you want to use a `redis-rb` version after 5.0.0, you must add the
+`hiredis-client` gem to your application.
+
 
 ## Authors
 
