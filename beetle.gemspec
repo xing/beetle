@@ -47,4 +47,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'redcarpet'
   s.add_development_dependency 'github-markup'
   s.add_development_dependency 'byebug'
+  s.add_development_dependency 'appraisal'
 end

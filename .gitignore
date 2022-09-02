@@ -22,3 +22,4 @@ TAGS
 .packr
 /go/a_main-packr.go
 .yardoc
+gemfiles/*
