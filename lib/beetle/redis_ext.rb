@@ -80,6 +80,19 @@ class Redis #:nodoc:
       super != 0
     end
 
+  elsif Redis::VERSION >= "5.0.0"
+
+    # redis 5.0.0 has a shutdown method which raises if a connection to the redis server
+    # cannot be established.
+    module SaneShutdown
+      def shutdown
+        super
+      rescue RedisClient::CannotConnectError
+        nil
+      end
+    end
+    prepend SaneShutdown
+
   elsif Redis::VERSION >= "4.0.0"
 
     # redis 4.0.0 has a shutdown method which raises if a connection to the redis server
