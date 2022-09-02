@@ -3,6 +3,7 @@ class Redis #:nodoc:
   def self.from_server_string(server_string, options = {})
     host, port = server_string.split(':')
     options = {:host => host, :port => port}.update(options)
+    options.delete(:logger) if Redis::VERSION >= "5.0"
     new(options)
   end
 
