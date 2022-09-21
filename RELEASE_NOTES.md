@@ -2,6 +2,8 @@
 
 ## Version 3.5.5
 * Support Redis version 5.x.
+* If you want to use a `redis-rb` gem version after 5.0.0, you must
+  add the `hiredis-client` gem to your application Gemfile.
 * Support setting Redis timeouts in the Beetle configuration. Default
   is 5.0 seconds for all timeouts as this is the default for redis gem
   versions before 5.0.0.
