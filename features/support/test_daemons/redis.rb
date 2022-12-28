@@ -131,11 +131,11 @@ module TestDaemons
     private
 
     def create_dir
-      FileUtils.mkdir(dir) unless File.exists?(dir)
+      FileUtils.mkdir(dir) unless File.exist?(dir)
     end
 
     def remove_dir
-      FileUtils.rm_r(dir) if File.exists?(dir)
+      FileUtils.rm_r(dir) if File.exist?(dir)
     end
 
     def create_config
@@ -145,11 +145,11 @@ module TestDaemons
     end
 
     def remove_config
-      FileUtils.rm(config_filename) if File.exists?(config_filename)
+      FileUtils.rm(config_filename) if File.exist?(config_filename)
     end
 
     def remove_pid_file
-      FileUtils.rm(pid_file) if File.exists?(pid_file)
+      FileUtils.rm(pid_file) if File.exist?(pid_file)
     end
 
     def tmp_path

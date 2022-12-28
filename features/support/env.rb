@@ -46,7 +46,7 @@ end
 
 def system_notification_log_path
   log_path = tmp_path + "/system_notifications.log"
-  `touch #{log_path}` unless File.exists?(log_path)
+  `touch #{log_path}` unless File.exist?(log_path)
   log_path
 end
 
