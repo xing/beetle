@@ -8,7 +8,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/yookoala/realpath v1.0.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gopkg.in/gorilla/websocket.v1 v1.4.0
 	gopkg.in/redis.v5 v5.2.9
 	gopkg.in/yaml.v2 v2.4.0
