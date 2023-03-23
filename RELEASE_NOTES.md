@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 3.5.6
+* Fixed that publishing additional AMQP headers crashed the publisher
+  since Ruby 3.2.0, due to missing Fixnum class.
+
 ## Version 3.5.5
 * Support Redis version 5.x.
 * If you want to use a `redis-rb` gem version after 5.0.0, you must
@@ -9,18 +13,18 @@
   versions before 5.0.0.
 
 ## Version 3.5.4
-* restrict redis gem to have a version before 5.0 as this version is incompatible
+* Restrict redis gem to have a version before 5.0 as this version is incompatible
 
 ## Version 3.5.3
-* fixed that message publishing was never retried on Errno::ETIMEDOUT
+* Fixed that message publishing was never retried on Errno::ETIMEDOUT
 
 ## Version 3.5.2
-* fixed that not all available Redis servers where turned into proper slaves during a
+* Fixed that not all available Redis servers where turned into proper slaves during a
   master switch
 
 ## Version 3.5.1
-*  remove blank entries from server list strings
-*  make sure not to subscribe to any server twice
+* Remove blank entries from server list strings
+* Make sure not to subscribe to any server twice
 
 ## Version 3.5.0
 * expose publisher method to setup queues/policies ahead of use
