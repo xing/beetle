@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 3.5.7
+* Require bunny versions (`~> 0.7.13`) that work for Ruby 3.2 out of
+  the box.
+
 ## Version 3.5.6
 * Fixed that publishing additional AMQP headers crashed the publisher
   since Ruby 3.2.0, due to missing Fixnum class.
