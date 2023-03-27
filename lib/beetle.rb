@@ -2,11 +2,6 @@ $:.unshift(File.expand_path('..', __FILE__))
 require 'bunny'                    # which bunny picks up
 require 'qrack/errors'             # needed by the publisher
 
-if Gem::Version.new(Bunny::VERSION) <= Gem::Version.new("0.7.12") && !defined?(::Fixnum)
-  require 'qrack/transport/buffer09'
-  Qrack::Transport09::Buffer.class_eval "Fixnum = Integer"
-end
-
 begin
   require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
   require 'redis'
