@@ -16,6 +16,8 @@ type Config struct {
 	ClientIds                string `yaml:"redis_configuration_client_ids"`
 	ClientHeartbeat          int    `yaml:"redis_configuration_client_heartbeat"`
 	ClientTimeout            int    `yaml:"redis_configuration_client_timeout"`
+	ClientProxyPort          int    `yaml:"redis_configuration_client_proxy_port"`
+	ClientProxyIP            string // This is never taken from a yaml file.
 	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
 	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
 	RedisMasterFile          string `yaml:"redis_server"`
@@ -99,6 +101,12 @@ func (c *Config) SetDefaults() *Config {
 	if c.ClientHeartbeat == 0 {
 		c.ClientHeartbeat = 5
 	}
+	if c.ClientProxyPort == 0 {
+		c.ClientProxyPort = 9700
+	}
+	if c.ClientProxyIP == "" {
+		c.ClientProxyIP = "127.0.0.1"
+	}
 	if c.RedisMasterRetries == 0 {
 		c.RedisMasterRetries = 3
 	}
@@ -155,6 +163,12 @@ func (c *Config) Merge(d *Config) *Config {
 	}
 	if c.ClientHeartbeat == 0 {
 		c.ClientHeartbeat = d.ClientHeartbeat
+	}
+	if c.ClientProxyPort == 0 {
+		c.ClientProxyPort = d.ClientProxyPort
+	}
+	if c.ClientProxyIP == "" {
+		c.ClientProxyIP = d.ClientProxyIP
 	}
 	if c.RedisMasterRetries == 0 {
 		c.RedisMasterRetries = d.RedisMasterRetries
@@ -215,6 +229,11 @@ func configFromConsulEnv(env consul.Env) *Config {
 	if v, ok := env["REDIS_CONFIGURATION_CLIENT_TIMEOUT"]; ok {
 		if d, err := strconv.Atoi(v); err == nil {
 			c.ClientTimeout = d
+		}
+	}
+	if v, ok := env["REDIS_CONFIGURATION_CLIENT_PROXY_PORT"]; ok {
+		if d, err := strconv.Atoi(v); err == nil {
+			c.ClientProxyPort = d
 		}
 	}
 	if v, ok := env["REDIS_GC_THRESHOLD"]; ok {

@@ -25,6 +25,8 @@ var opts struct {
 	ClientIds                string        `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
 	ClientTimeout            int           `long:"client-timeout" description:"Number of seconds to wait until considering a client dead (or unreachable). Defaults to 10."`
 	ClientHeartbeatInterval  int           `long:"client-heartbeat-interval" description:"Number of seconds between client heartbeats. Defaults to 5."`
+	ClientProxyPort          int           `long:"client-proxy-port" description:"Port to use for client proxy messages. Defaults to 9700."`
+	ClientProxyIP            string        `long:"client-proxy-ip" env:"BEETLE_CONFIGURATION_CLIENT_PROXY_IP" description:"IP address to use for client proxy messages. Defaults to 127.0.0.1."`
 	ConfigFile               string        `long:"config-file" description:"Config file path."`
 	RedisServers             string        `long:"redis-servers" description:"List of redis failover sets (separated by semicolon or newlines). Each set consists of comma separated host:port pairs, preceded by a system name and a slash. Example: primary/a1:4,a2:5;secondary/b1:3,b2:3"`
 	RedisMasterFile          string        `long:"redis-master-file" description:"Path of redis master file."`
@@ -183,6 +185,38 @@ func (x *CmdRunDumpExpiries) Execute(args []string) error {
 	})
 }
 
+// CmdRunClientProxy is used when the program arguments tell us to run a mailer.
+type CmdRunClientProxy struct{}
+
+var cmdRunClientProxy CmdRunClientProxy
+
+// Execute runs a mailer.
+func (x *CmdRunClientProxy) Execute(args []string) error {
+	return RunClientProxy(ClientProxyOptions{
+		RedisMasterFile:       initialConfig.RedisMasterFile,
+		ClientProxyPort:       initialConfig.ClientProxyPort,
+		ClientProxyIP:         initialConfig.ClientProxyIP,
+		ExitAfterFileReceived: false,
+		Verbose:               opts.Verbose,
+	})
+}
+
+// CmdRunClientProxyInit is used when the program arguments tell us to run a mailer.
+type CmdRunClientProxyInit struct{}
+
+var cmdRunClientProxyInit CmdRunClientProxyInit
+
+// Execute runs a mailer.
+func (x *CmdRunClientProxyInit) Execute(args []string) error {
+	return RunClientProxy(ClientProxyOptions{
+		RedisMasterFile:       initialConfig.RedisMasterFile,
+		ClientProxyPort:       initialConfig.ClientProxyPort,
+		ClientProxyIP:         initialConfig.ClientProxyIP,
+		ExitAfterFileReceived: true,
+		Verbose:               opts.Verbose,
+	})
+}
+
 func init() {
 	ReportVersionIfRequestedAndExit()
 	opts.Id = getFQDN()
@@ -274,6 +308,7 @@ func getProgramParameters() *Config {
 		ClientIds:                opts.ClientIds,
 		ClientHeartbeat:          opts.ClientHeartbeatInterval,
 		ClientTimeout:            opts.ClientTimeout,
+		ClientProxyPort:          opts.ClientProxyPort,
 		ConfidenceLevel:          opts.ConfidenceLevel,
 		RedisMasterRetries:       opts.RedisMasterRetries,
 		RedisMasterRetryInterval: opts.RedisMasterRetryInterval,
@@ -363,6 +398,8 @@ func main() {
 	parser.AddCommand("copy_queue_keys", "copy all keys for a given queue prefix from current master to a given redis server", "", &cmdRunCopyKeys)
 	parser.AddCommand("dump_expiries", "print all expiry values from redis master", "", &cmdRunDumpExpiries)
 	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
+	parser.AddCommand("configuration_client_proxy", "run redis configuration client proxy", "", &cmdRunClientProxy)
+	parser.AddCommand("configuration_client_proxy_init", "retrieve redis master file by running proxy until it arrives on socket", "", &cmdRunClientProxyInit)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()

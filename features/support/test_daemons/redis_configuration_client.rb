@@ -36,13 +36,17 @@ module TestDaemons
     def daemon_controller
       @daemon_controller ||= DaemonController.new(
          :identifier    => "Redis configuration test client #{@name}",
-         :start_command => "./beetle configuration_client -v -d --redis-master-file #{redis_master_file} --id #{@name} --pid-file #{pid_file} --log-file #{log_file}",
+         :start_command => "./beetle configuration_client -v -d --redis-master-file #{redis_master_file} --id #{@name} --pid-file #{pid_file} --log-file #{log_file} --client-proxy-port #{client_proxy_port}",
          :ping_command  => lambda{ true },
          :pid_file      => pid_file,
          :log_file      => log_file,
          :start_timeout => 10,
          :stop_timeout => 10,
       )
+    end
+
+    def client_proxy_port
+      9700 + @daemon_id
     end
 
     def redis_master_file

@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	zmq "github.com/pebbe/zmq4"
 	"github.com/xing/beetle/consul"
 	"gopkg.in/gorilla/websocket.v1"
 )
@@ -39,6 +40,7 @@ type ClientState struct {
 	readerDone    chan struct{}
 	configChanges chan consul.Env
 	redisSystems  map[string]*RedisSystem
+	lvcacheSocket *zmq.Socket
 }
 
 // GetConfig returns the client configuration in a thread safe way.
@@ -63,7 +65,7 @@ func (s *ClientState) SetConfig(config *Config) *Config {
 	return oldconfig
 }
 
-// ServerUrl constructs the webesocker URL to contact the server.
+// ServerUrl constructs the websocket URL to contact the server.
 func (s *ClientState) ServerUrl() string {
 	config := s.GetConfig()
 	addr := fmt.Sprintf("%s:%d", config.Server, config.Port)
@@ -71,7 +73,7 @@ func (s *ClientState) ServerUrl() string {
 	return u.String()
 }
 
-// Connect establishes a webscket connection to the server.
+// Connect establishes a websocket connection to the server.
 func (s *ClientState) Connect() (err error) {
 	url := s.ServerUrl()
 	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.GetConfig().DialTimeout) * time.Second
@@ -160,9 +162,7 @@ func (s *RedisSystem) NewMaster(server string) {
 	s.currentMaster = NewRedisShim(server)
 }
 
-// UpdateMasterFile writes the known masters information to the redis master file.
-func (s *ClientState) UpdateMasterFile() {
-	path := s.GetConfig().RedisMasterFile
+func (s *ClientState) CurrentMasterFileData() string {
 	systems := make(map[string]string, 0)
 	for system, rs := range s.redisSystems {
 		if rs.currentMaster == nil {
@@ -171,8 +171,39 @@ func (s *ClientState) UpdateMasterFile() {
 			systems[system] = rs.currentMaster.server
 		}
 	}
-	content := MarshalMasterFileContent(systems)
+	return MarshalMasterFileContent(systems)
+}
+
+// UpdateMasterFile writes the known masters information to the redis master file.
+func (s *ClientState) UpdateMasterFile() {
+	path := s.GetConfig().RedisMasterFile
+	content := s.CurrentMasterFileData()
 	WriteRedisMasterFile(path, content)
+	s.UpdateLVCache(content)
+}
+
+// UpdateLVCache send the current master file to the PUB socket.
+func (s *ClientState) UpdateLVCache(content string) {
+	if s.lvcacheSocket != nil {
+		s.lvcacheSocket.SendMessage("redis-master-file-content", content)
+	}
+}
+
+// Start the LV cache with the initial contents of the redis master file.
+func (s *ClientState) StartLVCache(content string) {
+	initialCacheData := map[string]string{"redis-master-file-content": content}
+	go RunLVCache(initialCacheData, s.GetConfig().ClientProxyPort)
+	var err error
+	s.lvcacheSocket, err = zmq.NewSocket(zmq.PUB)
+	if err != nil {
+		logError("could not create internal value cache PUB socket")
+		return
+	}
+	s.lvcacheSocket.SetLinger(0)
+	err = s.lvcacheSocket.Connect("inproc://lv-cache")
+	if err != nil {
+		logError("could not connect internal value cache PUB socket")
+	}
 }
 
 // DetermineInitialMasters tries to read the current masters from disk
@@ -183,7 +214,9 @@ func (s *ClientState) DetermineInitialMasters() {
 		s.UpdateMasterFile()
 		return
 	}
-	masters := RedisMastersFromMasterFile(path)
+	content := ReadRedisMasterFile(path)
+	s.StartLVCache(content)
+	masters := UnmarshalMasterFileContent(content)
 	invalidSystems := make([]string, 0)
 	for system, server := range masters {
 		rs := s.RegisterSystem(system)
@@ -235,7 +268,9 @@ func (s *ClientState) Reconfigure(msg MsgBody) error {
 	if rs.currentMaster == nil || rs.currentMaster.server != msg.Server {
 		rs.NewMaster(msg.Server)
 		s.UpdateMasterFile()
+		// return nil
 	}
+	// s.UpdateLVCache(s.CurrentMasterFileData())
 	return nil
 }
 
