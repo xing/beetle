@@ -1,6 +1,6 @@
 FROM buildpack-deps:jammy-scm as builder
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y && \
+RUN apt-get update -y -qq && \
     apt-get install -y -qq --no-install-recommends \
     build-essential \
     pkg-config \
@@ -24,7 +24,7 @@ RUN make beetle
 
 FROM ubuntu:jammy
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y && \
+RUN apt-get update -y -qq && \
     apt-get install -y -qq --no-install-recommends \
     libzmq5 \
     && apt-get clean \
