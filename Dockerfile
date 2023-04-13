@@ -1,9 +1,11 @@
 FROM buildpack-deps:jammy-scm as builder
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y -qq --no-install-recommends \
     build-essential \
     pkg-config \
     libzmq3-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # install go compiler
@@ -21,9 +23,11 @@ WORKDIR /app
 RUN make beetle
 
 FROM ubuntu:jammy
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y -qq --no-install-recommends \
     libzmq5 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
