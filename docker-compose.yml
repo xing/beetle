@@ -3,7 +3,7 @@ version: '2'
 services:
   mysql:
     container_name: beetle-mysql
-    image: mysql:5.7
+    image: mysql:8.0
     ports:
       - "6612:3306"
     environment:
