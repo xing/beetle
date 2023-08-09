@@ -111,7 +111,7 @@ func (s *ClientState) send(msg MsgBody) error {
 	return nil
 }
 
-// SendHeartBeat sneds a heartbeat message to the server.
+// SendHeartBeat sends a heartbeat message to the server.
 func (s *ClientState) SendHeartBeat() error {
 	return s.send(MsgBody{Name: HEARTBEAT, Id: s.opts.Id})
 }
@@ -269,7 +269,7 @@ func (s *ClientState) Reader() {
 }
 
 // Writer reads messages from an internal channel and dispatches them. It
-// peridocally sends a HERATBEAT message to the server. It if receives a config
+// periodically sends a HEARTBEAT message to the server. It if receives a config
 // change message, it replaces the current config with the new one. If the
 // config change implies that the server URL has changed it exits, relying on
 // the outer loop to restart the client.
