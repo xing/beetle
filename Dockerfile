@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:jammy
 WORKDIR /app
-ADD beetle /usr/bin/beetle
+ADD ./linux.tar.gz /usr/bin
 ENTRYPOINT ["/usr/bin/beetle"]

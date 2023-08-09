@@ -110,8 +110,8 @@ darwin:
 	cd release && $(TAR) czf darwin.tar.gz beetle*
 	rm -f release/beetle*
 
-container:
-	docker build -f Dockerfile -t=xingarchitects/gobeetle .
+container: linux
+	docker build --platform linux/amd64 -f Dockerfile -t=xingarchitects/gobeetle ./release
 
 tag:
 	docker tag xingarchitects/gobeetle xingarchitects/gobeetle:$(TAG:v%=%)
