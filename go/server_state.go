@@ -550,6 +550,7 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 	s.wsChannel <- &WsMsg{body: MsgBody{Name: START_NOTIFY}, channel: dispatcherInput}
 	go s.notificationWriter(ws, dispatcherInput)
 	for !interrupted {
+		ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := ws.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
 			logError("notificationReader: could not read msg: %s", err)
@@ -570,6 +571,7 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher
 				logInfo("Terminating notification websocket writer")
 				return
 			}
+			ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts (without doing a busy wait)
@@ -694,6 +696,7 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 	var body MsgBody
 
 	for !interrupted {
+		ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
@@ -720,7 +723,10 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDispatcher chan string) {
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
-	defer ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
+	defer func() {
+		ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+		ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
+	}()
 	for !interrupted {
 		select {
 		case data, ok := <-inputFromDispatcher:
@@ -728,6 +734,7 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 				logInfo("Closed channel for %s", clientID)
 				return
 			}
+			ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts
@@ -738,11 +745,12 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 // Initialize completes the state initialization by checking redis connectivity
 // and loading saved state.
 func (s *ServerState) Initialize() {
-	path := s.GetConfig().RedisMasterFile
-	VerifyMasterFileString(path)
+	config := s.GetConfig()
+	websocket.DefaultDialer.HandshakeTimeout = time.Duration(config.DialTimeout) * time.Second
+	VerifyMasterFileString(config.RedisMasterFile)
 	var masters map[string]string
-	if MasterFileExists(path) {
-		masters = RedisMastersFromMasterFile(path)
+	if MasterFileExists(config.RedisMasterFile) {
+		masters = RedisMastersFromMasterFile(config.RedisMasterFile)
 	} else if s.opts.ConsulClient != nil {
 		kv, err := s.opts.ConsulClient.GetState()
 		if err != nil {
