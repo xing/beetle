@@ -43,8 +43,8 @@ services:
       bash -c "echo redis1:6371 > redis-master-server.txt &&
       /usr/bin/beetle configuration_server -v --redis-master-file redis-master-server.txt --redis-servers redis1:6371,redis2:6381 --client-ids=client1,client2"
 
-  # beetle-notification-mailer:
-  #   container_name: beetle-notification-mailer
-  #   image: xingarchitects/gobeetle
-  #   entrypoint: >
-  #     /usr/bin/beetle configuration_mailer -v --server beetle-config-server
+  beetle-notification-mailer:
+     container_name: beetle-notification-mailer
+     image: xingarchitects/gobeetle
+     entrypoint: >
+       /usr/bin/beetle notification_mailer -v --server beetle-config-server
