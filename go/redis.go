@@ -60,12 +60,6 @@ func MarshalMasterFileContent(masters map[string]string) string {
 	return s
 }
 
-// ClearRedisMasterFile removes the entry for the given system from
-// the file at the given path.
-func ClearRedisMasterFile(path string) error {
-	return WriteRedisMasterFile(path, "")
-}
-
 // ReadRedisMasterFile reads the file at the given path, stripping a
 // potential newline from the last line read.
 func ReadRedisMasterFile(path string) string {

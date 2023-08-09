@@ -210,14 +210,16 @@ func (s *ClientState) RegisterSystem(system string) *RedisSystem {
 	return rs
 }
 
-// Invalidate clears the redis master file contents and sends a
+// Invalidate sets the current master for the given system to nil, removes the
+// corresponding line from the the redis master file and sends a
 // CLIENT_INVALIDATED message to the server, provided the token sent with the
 // message is valid.
 func (s *ClientState) Invalidate(msg MsgBody) error {
 	rs := s.RegisterSystem(msg.System)
 	if rs.RedeemToken(msg.Token) && (rs.currentMaster == nil || rs.currentMaster.Role() != MASTER) {
 		rs.currentMaster = nil
-		ClearRedisMasterFile(s.GetConfig().RedisMasterFile)
+		logInfo("Removing invalidated system '%s' from redis master file", msg.System)
+		s.UpdateMasterFile()
 		logInfo("Sending client_invalidated message with id '%s' and token '%s'", s.opts.Id, rs.currentToken)
 		return s.SendClientInvalidated(rs)
 	}
