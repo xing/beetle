@@ -16,8 +16,8 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/gorilla/websocket"
 	"github.com/xing/beetle/consul"
-	"gopkg.in/gorilla/websocket.v1"
 )
 
 // ServerOptions for our server.

@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/xing/beetle/consul"
-	"gopkg.in/gorilla/websocket.v1"
 )
 
 // ClientOptions consist of the id by which the client identifies itself with

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"gopkg.in/gorilla/websocket.v1"
+	"github.com/gorilla/websocket"
 )
 
 // MailerOptions contain a server addres for a listening websocket and a
