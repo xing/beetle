@@ -10,7 +10,6 @@ import (
 	_ "embed"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/gobuffalo/packr"
 	"github.com/xing/beetle/consul"
 )
 
@@ -62,21 +61,6 @@ func RunConfigurationServer(o ServerOptions) error {
 	} else {
 		state.configChanges = make(chan consul.Env)
 	}
-
-	// load html templates
-	box := packr.NewBox("./templates")
-	html, err := box.FindString("index.html")
-	if err != nil {
-		logError("could not load index.html")
-		os.Exit(1)
-	}
-	htmlTemplate = html
-	html, err = box.FindString("gcstats.html")
-	if err != nil {
-		logError("could not load gcstats.html")
-		os.Exit(1)
-	}
-	gcStatsTemplate = html
 
 	srv := state.setupClientHandler(state.GetConfig().Port)
 	go state.runClientHandler(srv)
