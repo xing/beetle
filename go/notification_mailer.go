@@ -44,7 +44,7 @@ func (s *MailerState) Connect() (err error) {
 // Close sends a Close message on the websocket and closes it.
 func (s *MailerState) Close() {
 	defer s.ws.Close()
-	s.ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+	// s.ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 	err := s.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		logError("writing websocket close failed: %s", err)
@@ -90,7 +90,7 @@ func (s *MailerState) SendMail(text string) {
 func (s *MailerState) Reader() {
 	for !interrupted {
 		logDebug("reading message")
-		s.ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+		// s.ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := s.ws.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
 			logError("error reading from server socket: %s", err)

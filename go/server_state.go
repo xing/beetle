@@ -550,7 +550,7 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 	s.wsChannel <- &WsMsg{body: MsgBody{Name: START_NOTIFY}, channel: dispatcherInput}
 	go s.notificationWriter(ws, dispatcherInput)
 	for !interrupted {
-		ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+		// ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := ws.ReadMessage()
 		if err != nil || msgType != websocket.TextMessage {
 			logError("notificationReader: could not read msg: %s", err)
@@ -571,7 +571,7 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher
 				logInfo("Terminating notification websocket writer")
 				return
 			}
-			ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+			// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts (without doing a busy wait)
@@ -696,7 +696,7 @@ func (s *ServerState) wsReader(ws *websocket.Conn) {
 	var body MsgBody
 
 	for !interrupted {
-		ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+		// ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
@@ -724,7 +724,7 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
 	defer func() {
-		ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+		// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
 	}()
 	for !interrupted {
@@ -734,7 +734,7 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 				logInfo("Closed channel for %s", clientID)
 				return
 			}
-			ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
+			// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 			ws.WriteMessage(websocket.TextMessage, []byte(data))
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts
