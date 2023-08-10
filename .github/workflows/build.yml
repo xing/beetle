@@ -48,7 +48,7 @@ jobs:
           MINITEST_REPORTER: SpecReporter
 
       - name: Run beetle failover tests
-        run: bundle exec cucumber || (tail -n 100 tmp/*.{log,output}; false)
+        run: bundle exec cucumber --fail-fast || (tail -n 100 tmp/*.{log,output}; false)
         env:
           BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}.gemfile
 
