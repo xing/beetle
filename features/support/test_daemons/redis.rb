@@ -65,6 +65,9 @@ module TestDaemons
       end
       daemon_controller.stop
       raise "FAILED TO STOP redis server on port #{port}" if running?
+    rescue DaemonController::StopTimeout
+      puts "force killing redis #{name}"
+      daemon_controller.send(:kill_daemon_with_signal, true)
     ensure
       cleanup
     end
