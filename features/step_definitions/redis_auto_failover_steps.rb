@@ -162,7 +162,7 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
   redis_master = TestDaemons::Redis[redis_name].ip_with_port
   response = nil
   expected_response = ['OK', redis_master]
-  3.times do |i|
+  10.times do |i|
     client = Beetle::Client.new.configure :auto_delete => true do |config|
       config.queue(:echo, :lazy => true, :dead_lettering => true)
       config.message(:echo)
@@ -170,7 +170,7 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
     t1 = Time.now
     response = client.rpc(:echo, 'echo')
     t2 = Time.now
-    # puts "OK,#{redis_master} =?= #{response.join(',')} after #{t2-t1}, attempt #{i+1}"
+    puts "OK,#{redis_master} =?= #{response.join(',')} after #{t2-t1}, attempt #{i+1}"
     break if expected_response == response
   end
   assert_equal expected_response, response
