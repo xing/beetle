@@ -78,6 +78,15 @@ module TestDaemons
       false
     end
 
+    def self.has_notification_channel?
+      response = get_status("/.json", "application/json")
+      return false unless response.code == '200' && response.content_type == "application/json"
+      data = JSON.parse(response.body)
+      return data["notification_channels"] == 1
+    rescue
+      false
+    end
+
     def self.get_status(path, content_type)
       uri = URI.parse("http://127.0.0.1:9650#{path}")
       http = Net::HTTP.new(uri.host, uri.port)

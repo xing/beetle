@@ -40,6 +40,12 @@ Given /^a redis configuration server using redis servers "([^\"]*)" with clients
     system_name.nil? ? servers : "#{system_name}/#{servers}"
   end.join(";")
   TestDaemons::RedisConfigurationServer.start(redis_servers, redis_configuration_client_names, (confidence_level || 100).to_i)
+  # wait until the notification logger has connected
+  100.times do
+    break if TestDaemons::RedisConfigurationServer.has_notification_channel? && `curl -s 127.0.0.1:9651`.chomp == "true"
+    sleep 0.1
+  end
+  raise "could not attach notification logger!!!!" unless TestDaemons::RedisConfigurationServer.has_notification_channel?
 end
 
 Given /^a redis configuration client "([^\"]*)" using redis servers "([^\"]*)" exists$/ do |redis_configuration_client_name, redis_names|
