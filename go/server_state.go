@@ -141,12 +141,13 @@ type FailoverStatus struct {
 
 // ServerStatus is used to faciliate JSON conversion of parts of the server state.
 type ServerStatus struct {
-	BeetleVersion       string           `json:"beetle_version"`
-	ConfiguredClientIds []string         `json:"configured_client_ids"`
-	UnknownClientIds    []string         `json:"unknown_client_ids"`
-	UnresponsiveClients []string         `json:"unresponsive_clients"`
-	UnseenClientIds     []string         `json:"unseen_client_ids"`
-	Systems             []FailoverStatus `json:"redis_systems"`
+	BeetleVersion        string           `json:"beetle_version"`
+	ConfiguredClientIds  []string         `json:"configured_client_ids"`
+	UnknownClientIds     []string         `json:"unknown_client_ids"`
+	UnresponsiveClients  []string         `json:"unresponsive_clients"`
+	UnseenClientIds      []string         `json:"unseen_client_ids"`
+	Systems              []FailoverStatus `json:"redis_systems"`
+	NotificationChannels int              `json:"notification_channels"`
 }
 
 func (s *ServerStatus) GetFailoverStatus(system string) *FailoverStatus {
@@ -183,12 +184,13 @@ func (s *ServerState) GetStatus() *ServerStatus {
 	}
 
 	return &ServerStatus{
-		BeetleVersion:       BEETLE_VERSION,
-		ConfiguredClientIds: s.clientIds.Keys(),
-		UnknownClientIds:    s.UnknownClientIds(),
-		UnresponsiveClients: s.UnresponsiveClients(),
-		UnseenClientIds:     s.UnseenClientIds(),
-		Systems:             failoverStats,
+		BeetleVersion:        BEETLE_VERSION,
+		ConfiguredClientIds:  s.clientIds.Keys(),
+		UnknownClientIds:     s.UnknownClientIds(),
+		UnresponsiveClients:  s.UnresponsiveClients(),
+		UnseenClientIds:      s.UnseenClientIds(),
+		Systems:              failoverStats,
+		NotificationChannels: len(s.notificationChannels),
 	}
 }
 
