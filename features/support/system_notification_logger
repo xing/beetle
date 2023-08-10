@@ -3,13 +3,30 @@
 require "rubygems"
 require "daemons"
 require "eventmachine"
+require "em-http-server"
 require "websocket-eventmachine-client"
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
 tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
 system_notification_log_file_path = "#{tmp_path}/system_notifications.log"
 
-DEBUG = false
+DEBUG = true
+$ws_connected = false
+
+class HTTPHandler < EM::HttpServer::Server
+  def process_http_request
+    response = EM::DelegatedHttpResponse.new(self)
+    response.status = 200
+    response.content_type 'text/plain'
+    response.content = $ws_connected.to_s
+    response.send_response
+  end
+
+  def http_request_errback e
+    puts e.inspect
+  end
+end
+
 
 Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
   Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
@@ -20,29 +37,38 @@ Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode =>
   log_file = File.open(system_notification_log_file_path, "a+")
   log_file.sync = true
 
-  @interrupted = false
-  def shutdown(ws)
-    @interrupted = true
-    ws.unbind
-  end
+  trap("INT") {  @interrupted = true }
+  trap("TERM") { @interrupted = true }
 
-  while !@interrupted
-    EventMachine.run do
-      ws = WebSocket::EventMachine::Client.connect(:uri => 'ws://127.0.0.1:9650/notifications')
-      ws.onopen do
-        puts "established connection" if DEBUG
-      end
-      ws.onclose do
-        puts "server closed connection" if DEBUG && !@interrupted
+  @interrupted = false
+  @ws = nil
+
+  EM.run do
+    EM::start_server("127.0.0.1", 9651, HTTPHandler)
+
+    EM.add_periodic_timer(0.1) do
+      if @interrupted
+        @ws.unbind if @ws
         EM.add_timer(0){ EM.stop_event_loop }
+      else
+        if @ws.nil?
+          @ws = WebSocket::EventMachine::Client.connect(:uri => 'ws://127.0.0.1:9650/notifications')
+          @ws.onopen do
+            $ws_connected = true
+            puts "established web socket connection" if DEBUG
+          end
+          @ws.onclose do
+            puts "server closed web socket connection" if DEBUG && !@interrupted && $ws_connected
+            $ws_connected = false
+            @ws = nil
+          end
+          @ws.onmessage do |text|
+            puts "writing message to #{system_notification_log_file_path}: #{text}"
+            log_file << (text + "\n")
+          end
+        end
       end
-      ws.onmessage do |text|
-        puts "writing message to #{system_notification_log_file_path}: #{text}"
-        log_file << (text + "\n")
-      end
-      puts "Started system notification logger"
-      trap("INT") {  shutdown(ws) }
-      trap("TERM") { shutdown(ws) }
     end
+
   end
 end

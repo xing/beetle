@@ -43,9 +43,10 @@ Gem::Specification.new do |s|
   s.add_development_dependency "simplecov",           "~> 0.15"
   s.add_development_dependency "webmock",             "~> 3.0"
   s.add_development_dependency "websocket-eventmachine-client"
-  s.add_development_dependency 'yard'
-  s.add_development_dependency 'redcarpet'
-  s.add_development_dependency 'github-markup'
-  s.add_development_dependency 'byebug'
-  s.add_development_dependency 'appraisal'
+  s.add_development_dependency "em-http-server"
+  s.add_development_dependency "yard"
+  s.add_development_dependency "redcarpet"
+  s.add_development_dependency "github-markup"
+  s.add_development_dependency "byebug"
+  s.add_development_dependency "appraisal"
 end
