@@ -170,8 +170,8 @@ Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_n
     t1 = Time.now
     response = client.rpc(:echo, 'echo')
     t2 = Time.now
-    puts "OK,#{redis_master} =?= #{response.join(',')} after #{t2-t1}, attempt #{i+1}"
     break if expected_response == response
+    puts "OK,#{redis_master} != #{response.join(',')} after #{t2-t1}, attempt #{i+1}"
   end
   assert_equal expected_response, response
 end
