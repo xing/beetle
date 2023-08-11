@@ -22,6 +22,8 @@ type Config struct {
 	GcThreshold              int    `yaml:"redis_gc_threshold"`
 	GcDatabases              string `yaml:"redis_gc_databases"`
 	MailTo                   string `yaml:"mail_to"`
+	MailFrom                 string `yaml:"mail_from"`
+	MailRelay                string `yaml:"mail_relay"`
 	DialTimeout              int    `yaml:"dial_timeout"`
 	ConfidenceLevel          string `yaml:"redis_failover_confidence_level"`
 }
@@ -54,7 +56,6 @@ func (c *Config) Sanitize() {
 	}
 }
 
-//
 type FailoverSet struct {
 	name string
 	spec string
@@ -120,6 +121,12 @@ func (c *Config) SetDefaults() *Config {
 	if c.MailTo == "" {
 		c.MailTo = "root@localhost"
 	}
+	if c.MailFrom == "" {
+		c.MailFrom = "root@localhost"
+	}
+	if c.MailRelay == "" {
+		c.MailRelay = "localhost:25"
+	}
 	if c.RedisMasterFile == "" {
 		c.RedisMasterFile = "/etc/beetle/redis-master"
 	}
@@ -174,8 +181,11 @@ func (c *Config) Merge(d *Config) *Config {
 	if c.MailTo == "" {
 		c.MailTo = d.MailTo
 	}
-	if c.DialTimeout == 0 {
-		c.DialTimeout = d.DialTimeout
+	if c.MailFrom == "" {
+		c.MailFrom = d.MailFrom
+	}
+	if c.MailRelay == "" {
+		c.MailRelay = d.MailRelay
 	}
 	if c.DialTimeout == 0 {
 		c.DialTimeout = d.DialTimeout
@@ -237,6 +247,12 @@ func configFromConsulEnv(env consul.Env) *Config {
 	}
 	if v, ok := env["MAIL_TO"]; ok {
 		c.MailTo = v
+	}
+	if v, ok := env["MAIL_FROM"]; ok {
+		c.MailFrom = v
+	}
+	if v, ok := env["MAIL_RELAY"]; ok {
+		c.MailRelay = v
 	}
 	if v, ok := env["BEETLE_REDIS_SERVER"]; ok {
 		c.RedisMasterFile = v

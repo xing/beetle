@@ -40,7 +40,9 @@ var opts struct {
 	GcDatabases              string        `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
 	GcSystem                 string        `long:"redis-gc-system" default:"system" description:"Redis system from which to collect keys."`
 	GcKeyFile                string        `long:"redis-gc-key-file" description:"File with keys to collect."`
-	MailTo                   string        `long:"mail-to" description:"Send notifcation mails to this address."`
+	MailTo                   string        `long:"mail-to" description:"Send notification mails to this address."`
+	MailFrom                 string        `long:"mail-from" description:"From address to be used for email notifications."`
+	MailRelay                string        `long:"mail-relay" description:"SMTP mail relay to be used for sending notifications."`
 	DialTimeout              int           `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
 	ConfidenceLevel          string        `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
 	DeleteBefore             time.Duration `long:"delete-before" description:"Delete keys which do expire before the given time."`
@@ -92,8 +94,28 @@ func (x *CmdRunMailer) Execute(args []string) error {
 	return RunNotificationMailer(MailerOptions{
 		Server:      initialConfig.Server,
 		Port:        initialConfig.Port,
-		Recipient:   initialConfig.MailTo,
 		DialTimeout: initialConfig.DialTimeout,
+		Sender:      initialConfig.MailFrom,
+		Recipients:  strings.Split(initialConfig.MailTo, ","),
+		MailRelay:   initialConfig.MailRelay,
+	})
+}
+
+// CmdSendMail is used when the program arguments tell us to send a
+// mail to the configured SMTP endpoint.
+type CmdSendMail struct{}
+
+var cmdSendMail CmdSendMail
+
+// Execute sends a mail.
+func (x *CmdSendMail) Execute(args []string) error {
+	return SendMail(strings.Join(args, " "), MailerOptions{
+		Server:      initialConfig.Server,
+		Port:        initialConfig.Port,
+		DialTimeout: initialConfig.DialTimeout,
+		Sender:      initialConfig.MailFrom,
+		Recipients:  strings.Split(initialConfig.MailTo, ","),
+		MailRelay:   initialConfig.MailRelay,
 	})
 }
 
@@ -281,6 +303,8 @@ func getProgramParameters() *Config {
 		GcThreshold:              opts.GcThreshold,
 		GcDatabases:              opts.GcDatabases,
 		MailTo:                   opts.MailTo,
+		MailFrom:                 opts.MailFrom,
+		MailRelay:                opts.MailRelay,
 		DialTimeout:              opts.DialTimeout,
 	}
 }
@@ -362,7 +386,8 @@ func main() {
 	parser.AddCommand("delete_queue_keys", "delete all keys for a given queue prefix on redis servers", "", &cmdRunDeleteKeys)
 	parser.AddCommand("copy_queue_keys", "copy all keys for a given queue prefix from current master to a given redis server", "", &cmdRunCopyKeys)
 	parser.AddCommand("dump_expiries", "print all expiry values from redis master", "", &cmdRunDumpExpiries)
-	parser.AddCommand("notification_mailer", "listen to system notifications and send them via /usr/sbin/sendmail", "", &cmdRunMailer)
+	parser.AddCommand("notification_mailer", "listen to system notifications and send them via SMTP", "", &cmdRunMailer)
+	parser.AddCommand("send_mail", "send a test mail to configured SMTP server", "", &cmdSendMail)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()

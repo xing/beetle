@@ -2,22 +2,24 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"net/smtp"
 	"net/url"
-	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-// MailerOptions contain a server addres for a listening websocket and a
+// MailerOptions contain a server address for a listening websocket and a
 // recipient address for notification emails, as well as timeout interval for
 // websocket connections.
 type MailerOptions struct {
 	Server      string
 	Port        int
-	Recipient   string
 	DialTimeout int
+	Sender      string
+	Recipients  []string
+	MailRelay   string
 }
 
 // MailerState contains mailer options and state variables.
@@ -50,38 +52,22 @@ func (s *MailerState) Close() {
 	}
 }
 
-// SendMail sends a notification mail with a given text as body. It opens a pipe
-// to a sendmail process.
-func (s *MailerState) SendMail(text string) {
-	logInfo("forking sendmail process")
-	logInfo("sending message: %s", text)
-	body := fmt.Sprintf("%s\n\nSENT %s", text, time.Now().Format(time.RFC3339))
-	from := s.opts.Recipient
-	to := s.opts.Recipient
-	header := fmt.Sprintf("Subject: Beetle system notification\nFrom: %s\nTo: %s\n\n", from, to)
-	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", from, to)
-	stdin, err := sendmail.StdinPipe()
+// SendMail sends a notification mail with a given text as body. It
+// uses the net/smtp.
+func SendMail(text string, opts MailerOptions) error {
+	logInfo("sending message: %s using %v", text, opts)
+	to := strings.Join(opts.Recipients, ",")
+	from := opts.Sender
+	subject := "Beetle system notification"
+	body := text + "\n\n" + "SENT: " + time.Now().Format(time.RFC3339)
+	msg := fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", to, subject, body)
+	err := smtp.SendMail(opts.MailRelay, nil, from, opts.Recipients, []byte(msg))
 	if err != nil {
-		logError("could not obtain stdin pipe from sendmail: %v", err)
-		return
+		logError("failed to send mail: %s", err)
+		return err
 	}
-	stdout, err := sendmail.StdoutPipe()
-	if err != nil {
-		logError("could not obtain stdout pipe from sendmail: %v", err)
-		return
-	}
-	sendmail.Start()
-	stdin.Write([]byte(header))
-	stdin.Write([]byte(body))
-	stdin.Close()
-	sendmailOutput, err := ioutil.ReadAll(stdout)
-	if err != nil {
-		logError("could not read sendmail output: %v", err)
-	} else if len(sendmailOutput) > 0 {
-		logInfo("sendmail command output: %s", string(sendmailOutput))
-	}
-	sendmail.Wait()
-	logInfo("sendmail finished!")
+	logInfo("sent notification mail!")
+	return nil
 }
 
 // Reader reads notification messages from a websocket and forwards them on an
@@ -119,7 +105,7 @@ func (s *MailerState) RunMailer() error {
 			// Run sendmail in a separate goroutine, because it can take a while
 			// and we don't want to miss notifications. And we want to ext
 			// cleanly and quickly.
-			go s.SendMail(msg)
+			go SendMail(msg, s.opts)
 		case err := <-s.readerDone:
 			// If the reader has terminated, so should we.
 			return err
