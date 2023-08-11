@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+require "redis"
+
+redis = Redis.new(:host => ARGV[0], :port => 6379, :db => 0)
+
+File.open(ARGV[0]).each_line.each_slice(10) do |s|
+  redis.pipelined do
+    s.each do |l|
+      l.chomp!
+      next if l =~ /^beetle:.*$/
+      redis.expire(l, 600)
+    end
+  end
+end

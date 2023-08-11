@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+
+require 'time'
+
+counts = Hash.new(0)
+expiries = Hash.new{|h,k| h[k] = Hash.new(0)}
+t = Time.now.to_i
+
+File.open(ARGV[0]).each_line do |l|
+  parts = l.split(':')
+  queue = parts[1]
+  counts[queue] += 1
+  expiry = parts[4].to_i
+  expires_in = ((expiry - t)/(3600.0)).ceil
+  expiries[queue][expires_in] += 1
+end
+
+counts.to_a.sort_by{|_,v| -v}.each do |q,v|
+  puts "------------------------------------------------------------------"
+  puts "#{q}: #{v}"
+  puts "------------------------------------------------------------------"
+  expiries[q].to_a.sort_by{|k,_| -k}.each do |expiry, count|
+    printf "%3dh: %6d\n", expiry, count
+  end
+end

@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+queue_counts = Hash.new { |h,k| h[k] = 0 }
+File.open(ARGV[0]).each_line do |l|
+  next if l == "lastgc" || l == "clients-last-seen"
+  a = l.split(':')
+  if a[0] == "msgid"
+    queue_counts[a[1]] += 1
+  else
+    queue_counts["none"] += 1
+  end
+end
+sorted_queues = queue_counts.to_a.sort_by{|a| -a[1]}
+sorted_queues.each do |q,c|
+  puts "#{c}:#{q}"
+end
