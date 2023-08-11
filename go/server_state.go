@@ -574,7 +574,11 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher
 				return
 			}
 			// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
-			ws.WriteMessage(websocket.TextMessage, []byte(data))
+			err := ws.WriteMessage(websocket.TextMessage, []byte(data))
+			if err != nil {
+				logError("Could not send notification: %s", err)
+				return
+			}
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts (without doing a busy wait)
 		}
@@ -727,7 +731,10 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 	defer s.waitGroup.Done()
 	defer func() {
 		// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
-		ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
+		err := ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(1000, "good bye"))
+		if err != nil {
+			logError("writing websocket close failed: %s", err)
+		}
 	}()
 	for !interrupted {
 		select {
@@ -737,7 +744,11 @@ func (s *ServerState) wsWriter(clientID string, ws *websocket.Conn, inputFromDis
 				return
 			}
 			// ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
-			ws.WriteMessage(websocket.TextMessage, []byte(data))
+			err := ws.WriteMessage(websocket.TextMessage, []byte(data))
+			if err != nil {
+				logError("Could not send message on websocket")
+				return
+			}
 		case <-time.After(100 * time.Millisecond):
 			// give the outer loop a chance to detect interrupts
 		}
