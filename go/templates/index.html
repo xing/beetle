@@ -37,7 +37,7 @@
     {{ range .Systems }}
     <h1 class="{{ if .RedisMasterAvailable }}available{{ else }}unavailable{{ end }}">Beetle Configuration Server Status</h1>
     {{ if not .RedisMasterAvailable }}
-    <form name='masterswitch' method='post' action='/initiate_master_switch&amp;system_name={{ .SystemName }}'>
+    <form name='masterswitch' method='post' action='/initiate_master_switch?system_name={{ .SystemName }}'>
       Master down!
       <a href='javascript: document.masterswitch.submit();'>Initiate master switch</a>
       or wait until it is performed it automatically.
