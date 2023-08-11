@@ -565,6 +565,9 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 		}
 		logInfo("ignored message from notification subscriber: %s", string(bytes))
 	}
+	// This message triggers termination of the notifcationWriter go
+	// routine, since the dispatcher will close the dispatcherInput
+	// channel when recceiving the STOP_NOTIFY message.
 	s.wsChannel <- &WsMsg{body: MsgBody{Name: STOP_NOTIFY}, channel: dispatcherInput}
 }
 

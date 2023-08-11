@@ -92,12 +92,8 @@ var cmdRunMailer CmdRunMailer
 // Execute runs a mailer.
 func (x *CmdRunMailer) Execute(args []string) error {
 	return RunNotificationMailer(MailerOptions{
-		Server:      initialConfig.Server,
-		Port:        initialConfig.Port,
-		DialTimeout: initialConfig.DialTimeout,
-		Sender:      initialConfig.MailFrom,
-		Recipients:  strings.Split(initialConfig.MailTo, ","),
-		MailRelay:   initialConfig.MailRelay,
+		Config:       initialConfig,
+		ConsulClient: getConsulClient(),
 	})
 }
 
@@ -110,12 +106,8 @@ var cmdSendMail CmdSendMail
 // Execute sends a mail.
 func (x *CmdSendMail) Execute(args []string) error {
 	return SendMail(strings.Join(args, " "), MailerOptions{
-		Server:      initialConfig.Server,
-		Port:        initialConfig.Port,
-		DialTimeout: initialConfig.DialTimeout,
-		Sender:      initialConfig.MailFrom,
-		Recipients:  strings.Split(initialConfig.MailTo, ","),
-		MailRelay:   initialConfig.MailRelay,
+		Config:       initialConfig,
+		ConsulClient: getConsulClient(),
 	})
 }
 

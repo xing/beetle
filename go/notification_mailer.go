@@ -5,15 +5,17 @@ import (
 	"net/smtp"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/xing/beetle/consul"
 )
 
-// MailerOptions contain a server address for a listening websocket and a
-// recipient address for notification emails, as well as timeout interval for
+// MailerSettings contain a server address for a listening websocket and a
+// recipient address for notification emails, as well as a timeout interval for
 // websocket connections.
-type MailerOptions struct {
+type MailerSettings struct {
 	Server      string
 	Port        int
 	DialTimeout int
@@ -22,19 +24,57 @@ type MailerOptions struct {
 	MailRelay   string
 }
 
+// MailerOptions contain pointers to the initial config and potentially a Consul
+// client.
+type MailerOptions struct {
+	Config       *Config
+	ConsulClient *consul.Client
+}
+
 // MailerState contains mailer options and state variables.
 type MailerState struct {
-	opts       MailerOptions
-	url        string
-	ws         *websocket.Conn
-	messages   chan string
-	readerDone chan error
+	opts          *MailerOptions
+	mutex         sync.Mutex
+	url           string
+	ws            *websocket.Conn
+	messages      chan string
+	readerDone    chan error
+	configChanges chan consul.Env
+}
+
+// GetConfig returns the client configuration in a thread safe way.
+func (s *MailerState) GetConfig() *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.opts.Config
+}
+
+// SetConfig sets replaces the current config with a new one in athread safe way
+// and returns the old config.
+func (s *MailerState) SetConfig(config *Config) *Config {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	oldconfig := s.opts.Config
+	s.opts.Config = config
+	return oldconfig
+}
+
+// MailerSettings returns the current mailer settings.
+func (opts *MailerOptions) GetMailerSettings() *MailerSettings {
+	return &MailerSettings{
+		Server:      opts.Config.Server,
+		Port:        opts.Config.Port,
+		DialTimeout: opts.Config.DialTimeout,
+		Sender:      opts.Config.MailFrom,
+		Recipients:  strings.Split(opts.Config.MailTo, ","),
+		MailRelay:   opts.Config.MailRelay,
+	}
 }
 
 // Connect connects to a websocket for reading notifcation messages.
 func (s *MailerState) Connect() (err error) {
 	logInfo("connecting to %s", s.url)
-	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.opts.DialTimeout) * time.Second
+	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.opts.Config.DialTimeout) * time.Second
 	s.ws, _, err = websocket.DefaultDialer.Dial(s.url, nil)
 	if err != nil {
 		return
@@ -55,13 +95,14 @@ func (s *MailerState) Close() {
 // SendMail sends a notification mail with a given text as body. It
 // uses the net/smtp.
 func SendMail(text string, opts MailerOptions) error {
-	logInfo("sending message: %s using %v", text, opts)
-	to := strings.Join(opts.Recipients, ",")
-	from := opts.Sender
+	settings := opts.GetMailerSettings()
+	logInfo("sending message: %s using %v", text, settings)
+	to := strings.Join(settings.Recipients, ",")
+	from := settings.Sender
 	subject := "Beetle system notification"
 	body := text + "\n\n" + "SENT: " + time.Now().Format(time.RFC3339)
 	msg := fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", to, subject, body)
-	err := smtp.SendMail(opts.MailRelay, nil, from, opts.Recipients, []byte(msg))
+	err := smtp.SendMail(settings.MailRelay, nil, from, settings.Recipients, []byte(msg))
 	if err != nil {
 		logError("failed to send mail: %s", err)
 		return err
@@ -92,7 +133,16 @@ func (s *MailerState) Reader() {
 // messages and sends notification emails. It exits when a TERM signal has been
 // received or wthe the reader as terminated.
 func (s *MailerState) RunMailer() error {
-	err := s.Connect()
+	var err error
+	if s.opts.ConsulClient != nil {
+		s.configChanges, err = s.opts.ConsulClient.WatchConfig()
+		if err != nil {
+			return err
+		}
+	} else {
+		s.configChanges = make(chan consul.Env)
+	}
+	err = s.Connect()
 	if err != nil {
 		return err
 	}
@@ -105,12 +155,19 @@ func (s *MailerState) RunMailer() error {
 			// Run sendmail in a separate goroutine, because it can take a while
 			// and we don't want to miss notifications. And we want to ext
 			// cleanly and quickly.
-			go SendMail(msg, s.opts)
+			go SendMail(msg, *s.opts)
 		case err := <-s.readerDone:
 			// If the reader has terminated, so should we.
 			return err
 		case <-ticker.C:
 			// Give outer loop a chance to detect interrupts.
+			}
+		case env := <-s.configChanges:
+			if env != nil {
+				newconfig := buildConfig(env)
+				s.SetConfig(newconfig)
+				logInfo("updated server config from consul: %s", s.GetConfig())
+			}
 		}
 	}
 	return nil
@@ -121,9 +178,9 @@ func (s *MailerState) RunMailer() error {
 func RunNotificationMailer(o MailerOptions) error {
 	logInfo("notification mailer started with options: %+v\n", o)
 	for !interrupted {
-		addr := fmt.Sprintf("%s:%d", o.Server, o.Port)
+		addr := fmt.Sprintf("%s:%d", o.Config.Server, o.Config.Port)
 		u := url.URL{Scheme: "ws", Host: addr, Path: "/notifications"}
-		state := &MailerState{opts: o, url: u.String(), messages: make(chan string, 100), readerDone: make(chan error, 1)}
+		state := &MailerState{opts: &o, url: u.String(), messages: make(chan string, 100), readerDone: make(chan error, 1)}
 		err := state.RunMailer()
 		if err != nil {
 			logError("%s", err)
