@@ -88,7 +88,6 @@ func (s *ClientState) Connect() (err error) {
 // Close sends a Close message to the server and closed the connection.
 func (s *ClientState) Close() {
 	defer s.ws.Close()
-	// s.ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 	err := s.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		logError("writing websocket close failed: %s", err)
@@ -103,7 +102,6 @@ func (s *ClientState) send(msg MsgBody) error {
 		return err
 	}
 	logDebug("sending message")
-	// s.ws.SetWriteDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 	err = s.ws.WriteMessage(websocket.TextMessage, b)
 	if err != nil {
 		logError("could not send message: %s", err)
@@ -255,7 +253,6 @@ func (s *ClientState) Reader() {
 		default:
 		}
 		logDebug("reading message")
-		// s.ws.SetReadDeadline(time.Now().Add(websocket.DefaultDialer.HandshakeTimeout))
 		msgType, bytes, err := s.ws.ReadMessage()
 		atomic.AddInt64(&processed, 1)
 		if err != nil || msgType != websocket.TextMessage {
