@@ -23,3 +23,6 @@ TAGS
 /go/a_main-packr.go
 .yardoc
 gemfiles/*
+/master-client.txt
+/master-server.txt
+/redis-master-rcc
