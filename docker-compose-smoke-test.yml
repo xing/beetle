@@ -22,29 +22,23 @@ services:
 
   beetle-config-client1:
     container_name: beetle-config-client1
-    image: ubuntu:jammy
-    volumes:
-      - .:/work
-    command: >
-      bash -c "echo redis1:6371 > /tmp/redis-master-client-1.txt &&
-      /work/beetle configuration_client -v --redis-master-file /tmp/redis-master-client-1.txt --id client1 --server beetle-config-server"
+    image: xingarchitects/gobeetle
+    entrypoint: >
+      bash -c "echo redis1:6371 > redis-master-client-1.txt &&
+      /usr/bin/beetle configuration_client -v --redis-master-file redis-master-client-1.txt --id client1 --server beetle-config-server"
 
   beetle-config-client2:
     container_name: beetle-config-client2
-    image: ubuntu:jammy
-    volumes:
-      - .:/work
-    command: >
-      bash -c "echo redis1:6371 > /tmp/redis-master-client-2.txt &&
-      /work/beetle configuration_client -v --redis-master-file /tmp/redis-master-client-2.txt --id client2 --server beetle-config-server"
+    image: xingarchitects/gobeetle
+    entrypoint: >
+      bash -c "echo redis1:6371 > redis-master-client-2.txt &&
+      /usr/bin/beetle configuration_client -v --redis-master-file redis-master-client-2.txt --id client2 --server beetle-config-server"
 
   beetle-config-server:
     container_name: beetle-config-server
-    image: ubuntu:jammy
-    volumes:
-      - .:/work
+    image: xingarchitects/gobeetle
     ports:
       - "9650:9650"
-    command: >
+    entrypoint: >
       bash -c "echo redis1:6371 > redis-master-server.txt &&
-      /work/beetle configuration_server -v --redis-master-file redis-master-server.txt --redis-servers redis1:6371,redis2:6381 --client-ids=client1,client2"
+      /usr/bin/beetle configuration_server -v --redis-master-file redis-master-server.txt --redis-servers redis1:6371,redis2:6381 --client-ids=client1,client2"
