@@ -212,7 +212,3 @@ Given /^an immediate master switch is initiated and responds with (\d+)$/ do |re
   assert_equal response_code.to_s, response.code, "unexpected response code #{response.code}, message: #{response.body}"
   sleep 1
 end
-
-Then /^the system can run for a while without dying$/ do
-  sleep 60
-end

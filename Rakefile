@@ -115,6 +115,10 @@ Rake::TestTask.new do |t|
   t.warning = false
 end
 
+task :smoke do
+  sh "script/smoke"
+end
+
 task :clean do
   sh "rm -f tmp/*.output tmp/*.log tmp/master-dir/* tmp/slave-dir/* tmp/*lock tmp/*pid test.log" unless ENV['GITHUB_ACTIONS']
 end

@@ -1,0 +1,50 @@
+version: '2'
+
+services:
+  redis1:
+    container_name: beetle-redis1
+    image: redis:6.0
+    ports:
+      - "6371:6371"
+    volumes:
+      - ./tmp/master-dir:/data
+    command:
+      redis-server --port 6371
+
+  redis2:
+    container_name: beetle-redis2
+    image: redis:6.0
+    ports:
+      - "6381:6381"
+    command: redis-server --port 6381
+    volumes:
+      - ./tmp/slave-dir:/data
+
+  beetle-config-client1:
+    container_name: beetle-config-client1
+    image: ubuntu:jammy
+    volumes:
+      - .:/work
+    command: >
+      bash -c "echo redis1:6371 > /tmp/redis-master-client-1.txt &&
+      /work/beetle configuration_client -v --redis-master-file /tmp/redis-master-client-1.txt --id client1 --server beetle-config-server"
+
+  beetle-config-client2:
+    container_name: beetle-config-client2
+    image: ubuntu:jammy
+    volumes:
+      - .:/work
+    command: >
+      bash -c "echo redis1:6371 > /tmp/redis-master-client-2.txt &&
+      /work/beetle configuration_client -v --redis-master-file /tmp/redis-master-client-2.txt --id client2 --server beetle-config-server"
+
+  beetle-config-server:
+    container_name: beetle-config-server
+    image: ubuntu:jammy
+    volumes:
+      - .:/work
+    ports:
+      - "9650:9650"
+    command: >
+      bash -c "echo redis1:6371 > redis-master-server.txt &&
+      /work/beetle configuration_server -v --redis-master-file redis-master-server.txt --redis-servers redis1:6371,redis2:6381 --client-ids=client1,client2"
