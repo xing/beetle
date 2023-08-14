@@ -18,6 +18,8 @@ var (
 	htmlTemplate string
 	//go:embed templates/gcstats.html
 	gcStatsTemplate string
+	//go:embed templates/message.html
+	messageTemplate string
 )
 
 // waits on a sync.WaitGroup, but times out after given duration.

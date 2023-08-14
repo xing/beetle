@@ -150,6 +150,12 @@ type ServerStatus struct {
 	NotificationChannels int              `json:"notification_channels"`
 }
 
+// TextMessage template for error pages with automatic redirects
+type TextMessage struct {
+	TextMessage string
+	Class       string
+}
+
 func (s *ServerStatus) GetFailoverStatus(system string) *FailoverStatus {
 	for _, fs := range s.Systems {
 		if fs.SystemName == system {
@@ -651,7 +657,7 @@ func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Not yet implemented")
 	case "/initiate_master_switch":
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/html")
 		s.initiateMasterSwitch(w, r)
 	case "/brokers":
 		w.Header().Set("Content-Type", "text/plain")
@@ -667,27 +673,41 @@ func (s *ServerState) dispatchRequest(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func renderErrorTemplate(w http.ResponseWriter, code int, msg string) {
+	tmpl, err := template.New("message.html").Parse(messageTemplate)
+	if err != nil {
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(code)
+	class := "info"
+	if code >= 400 {
+		class = "error"
+	}
+	err = tmpl.Execute(w, TextMessage{TextMessage: msg, Class: class})
+	if err != nil {
+		logError("template execution failed: %s", err)
+		return
+	}
+}
+
 func (s *ServerState) initiateMasterSwitch(w http.ResponseWriter, r *http.Request) {
 	system := r.URL.Query().Get("system_name")
 	if system == "" {
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "Missing parameter system_name\n")
+		renderErrorTemplate(w, 400, "Missing parameter: system_name")
 		return
 	}
 	fs := s.failovers[system]
 	if fs == nil {
-		w.WriteHeader(400)
-		fmt.Fprintf(w, "Master switch not possible for unknown system: '%s'\n", system)
+		renderErrorTemplate(w, 400, fmt.Sprintf("Master switch not possible for unknown system: '%s'", system))
 		return
 	}
 	var initiated bool
 	s.Evaluate(func() { initiated = fs.InitiateMasterSwitch() })
 	if initiated {
-		w.WriteHeader(201)
-		fmt.Fprintf(w, "Master switch initiated\n")
+		renderErrorTemplate(w, 201, "Master switch initiated")
 	} else {
-		w.WriteHeader(200)
-		fmt.Fprintf(w, "No master switch necessary\n")
+		renderErrorTemplate(w, 200, "No master switch necessary")
 	}
 }
 
