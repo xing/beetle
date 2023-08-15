@@ -575,6 +575,8 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher chan string) {
 	s.waitGroup.Add(1)
 	defer s.waitGroup.Done()
+	ticker := time.NewTicker(1 * time.Second)
+	tick := 0
 	for !interrupted {
 		select {
 		case data, ok := <-inputFromDispatcher:
@@ -587,8 +589,16 @@ func (s *ServerState) notificationWriter(ws *websocket.Conn, inputFromDispatcher
 				logError("Could not send notification: %s", err)
 				return
 			}
-		case <-time.After(100 * time.Millisecond):
-			// give the outer loop a chance to detect interrupts (without doing a busy wait)
+		case <-ticker.C:
+			tick++
+			interval := s.GetConfig().ClientHeartbeat
+			if tick%interval == 0 {
+				err := ws.WriteMessage(websocket.TextMessage, []byte("HEARTBEAT"))
+				if err != nil {
+					logError("Could not send notification HEARTBEAT: %s", err)
+					return
+				}
+			}
 		}
 	}
 }

@@ -63,8 +63,10 @@ Daemons.run_proc("system_notification_logger", :log_output => true, :dir_mode =>
             @ws = nil
           end
           @ws.onmessage do |text|
-            puts "writing message to #{system_notification_log_file_path}: #{text}"
-            log_file << (text + "\n")
+            if text != "HEARTBEAT"
+              puts "writing message to #{system_notification_log_file_path}: #{text}"
+              log_file << (text + "\n")
+            end
           end
         end
       end

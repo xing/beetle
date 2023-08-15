@@ -124,9 +124,7 @@ func (s *MailerState) Reader() {
 		}
 		str := string(bytes)
 		logDebug("received: %s", str)
-		if str != "HEARTBEAT" {
-			s.messages <- str
-		}
+		s.messages <- str
 	}
 	close(s.readerDone)
 }
@@ -155,10 +153,11 @@ func (s *MailerState) RunMailer() error {
 	for !interrupted {
 		select {
 		case msg := <-s.messages:
-			// Run sendmail in a separate goroutine, because it can take a while
-			// and we don't want to miss notifications. And we want to ext
-			// cleanly and quickly.
-			go SendMail(msg, *s.opts)
+			if msg == "HEARTBEAT" {
+				logInfo("received HEARTBEAT from configuration server")
+				break
+			}
+			SendMail(msg, *s.opts)
 		case err := <-s.readerDone:
 			// If the reader has terminated, so should we.
 			return err
@@ -170,7 +169,7 @@ func (s *MailerState) RunMailer() error {
 			if tick%interval == 0 {
 				err := s.ws.WriteMessage(websocket.TextMessage, []byte("HEARTBEAT"))
 				if err != nil {
-					logError("sending heartbeat to configuration server failed: %s", err)
+					logError("sending HEARTBEAT to configuration server failed: %s", err)
 					return err
 				}
 			}
