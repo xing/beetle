@@ -563,8 +563,13 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 			logError("notificationReader: could not read msg: %s", err)
 			break
 		}
-		// All we receive are heartbeats which we just throw away.
-		logInfo("ignored message from notification subscriber: %s", string(bytes))
+		// All we receive are heartbeats which we just log.
+		if string(bytes) == "HEARTBEAT" {
+			logInfo("recived HEARTBEAT from notification subscriber")
+			continue
+		}
+		// Anything else is an error.
+		logError("recived exepcped message from notification subscriber: %s", string(bytes))
 	}
 	// This message triggers termination of the notifcationWriter go
 	// routine, since the dispatcher will close the dispatcherInput
