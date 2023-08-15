@@ -155,7 +155,7 @@ func (s *MailerState) RunMailer() error {
 		case msg := <-s.messages:
 			if msg == "HEARTBEAT" {
 				logInfo("received HEARTBEAT from configuration server")
-				break
+				continue
 			}
 			SendMail(msg, *s.opts)
 		case err := <-s.readerDone:
