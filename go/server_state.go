@@ -565,11 +565,11 @@ func (s *ServerState) notificationReader(ws *websocket.Conn) {
 		}
 		// All we receive are heartbeats which we just log.
 		if string(bytes) == "HEARTBEAT" {
-			logInfo("recived HEARTBEAT from notification subscriber")
+			logInfo("received HEARTBEAT from notification subscriber")
 			continue
 		}
 		// Anything else is an error.
-		logError("recived exepcped message from notification subscriber: %s", string(bytes))
+		logError("received unexpected message from notification subscriber: %s", string(bytes))
 	}
 	// This message triggers termination of the notifcationWriter go
 	// routine, since the dispatcher will close the dispatcherInput
