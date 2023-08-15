@@ -124,7 +124,9 @@ func (s *MailerState) Reader() {
 		}
 		str := string(bytes)
 		logDebug("received: %s", str)
-		s.messages <- str
+		if str != "HEARTBEAT" {
+			s.messages <- str
+		}
 	}
 	close(s.readerDone)
 }
@@ -149,6 +151,7 @@ func (s *MailerState) RunMailer() error {
 	defer s.Close()
 	go s.Reader()
 	ticker := time.NewTicker(1 * time.Second)
+	tick := 0
 	for !interrupted {
 		select {
 		case msg := <-s.messages:
@@ -161,6 +164,15 @@ func (s *MailerState) RunMailer() error {
 			return err
 		case <-ticker.C:
 			// Give outer loop a chance to detect interrupts.
+			tick++
+			// Send heartbeat to config server.
+			interval := s.GetConfig().ClientHeartbeat
+			if tick%interval == 0 {
+				err := s.ws.WriteMessage(websocket.TextMessage, []byte("HEARTBEAT"))
+				if err != nil {
+					logError("sending heartbeat to configuration server failed: %s", err)
+					return err
+				}
 			}
 		case env := <-s.configChanges:
 			if env != nil {
