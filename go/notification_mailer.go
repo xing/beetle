@@ -73,9 +73,11 @@ func (opts *MailerOptions) GetMailerSettings() *MailerSettings {
 
 // Connect connects to a websocket for reading notifcation messages.
 func (s *MailerState) Connect() (err error) {
-	logInfo("connecting to %s", s.url)
-	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.opts.Config.DialTimeout) * time.Second
-	s.ws, _, err = websocket.DefaultDialer.Dial(s.url, nil)
+	// copy default dialer to avoid race conditions
+	dialer := *websocket.DefaultDialer
+	dialer.HandshakeTimeout = time.Duration(s.opts.Config.DialTimeout) * time.Second
+	logInfo("connecting to %s, timeout: %s", s.url, dialer.HandshakeTimeout)
+	s.ws, _, err = dialer.Dial(s.url, nil)
 	if err != nil {
 		return
 	}

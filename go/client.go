@@ -74,9 +74,11 @@ func (s *ClientState) ServerUrl() string {
 // Connect establishes a webscket connection to the server.
 func (s *ClientState) Connect() (err error) {
 	url := s.ServerUrl()
-	websocket.DefaultDialer.HandshakeTimeout = time.Duration(s.GetConfig().DialTimeout) * time.Second
-	logInfo("connecting to %s, timeout: %s", url, websocket.DefaultDialer.HandshakeTimeout)
-	s.ws, _, err = websocket.DefaultDialer.Dial(url, nil)
+	// copy default dialer to avoid race conditions
+	dialer := *websocket.DefaultDialer
+	dialer.HandshakeTimeout = time.Duration(s.opts.Config.DialTimeout) * time.Second
+	logInfo("connecting to %s, timeout: %s", url, dialer.HandshakeTimeout)
+	s.ws, _, err = dialer.Dial(url, nil)
 	if err != nil {
 		logError("could not establish web socket connection")
 		return
