@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec docker-compose -f docker-compose-smoke2-test.yml $@

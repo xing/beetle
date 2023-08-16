@@ -1,0 +1,70 @@
+version: '2'
+
+services:
+  redis1:
+    container_name: beetle-redis1
+    image: redis:6.0
+    ports:
+      - "6371:6371"
+    volumes:
+      - ./tmp/master-dir:/data
+    command:
+      redis-server --port 6371
+
+  redis2:
+    container_name: beetle-redis2
+    image: redis:6.0
+    ports:
+      - "6381:6381"
+    command: redis-server --port 6381
+    volumes:
+      - ./tmp/slave-dir:/data
+
+  redis3:
+    container_name: beetle-redis3
+    image: redis:6.0
+    ports:
+      - "6372:6372"
+    command:
+      redis-server --port 6372
+
+  redis4:
+    container_name: beetle-redis4
+    image: redis:6.0
+    ports:
+      - "6382:6382"
+    command: redis-server --port 6382
+
+  beetle-config-client1:
+    container_name: beetle-config-client1
+    image: xingarchitects/gobeetle
+    entrypoint: >
+      bash -c "echo system/redis1:6371 > redis-master-client-1.txt &&
+      echo system2/redis3:6372 >> redis-master-client-1.txt &&
+      cat redis-master-client-1.txt &&
+      /usr/bin/beetle configuration_client -v --redis-master-file redis-master-client-1.txt --id client1 --server beetle-config-server"
+
+  beetle-config-client2:
+    container_name: beetle-config-client2
+    image: xingarchitects/gobeetle
+    entrypoint: >
+      bash -c "echo system/redis1:6371 > redis-master-client-2.txt &&
+      echo system2/redis3:6372 >> redis-master-client-2.txt &&
+      cat redis-master-client-2.txt &&
+      /usr/bin/beetle configuration_client -v --redis-master-file redis-master-client-2.txt --id client2 --server beetle-config-server"
+
+  beetle-config-server:
+    container_name: beetle-config-server
+    image: xingarchitects/gobeetle
+    ports:
+      - "9650:9650"
+    entrypoint: >
+      bash -c "echo system/redis1:6371 > redis-master-server.txt &&
+      echo system2/redis3:6372 >> redis-master-server.txt &&
+      /usr/bin/beetle configuration_server -v --redis-master-file redis-master-server.txt --redis-servers 'system/redis1:6371,redis2:6381;system2/redis3:6372,redis4:6382' --client-ids=client1,client2"
+
+  beetle-notification-mailer:
+    container_name: beetle-notification-mailer
+    image: xingarchitects/gobeetle
+    entrypoint: >
+      /usr/bin/beetle notification_mailer -v --server beetle-config-server
