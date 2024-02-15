@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
@@ -236,7 +235,7 @@ var interrupted bool
 
 func installSignalHandler() {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, unix.SIGTERM)
 	go func() {
 		<-c
 		logInfo("received TERM signal")
