@@ -6,6 +6,64 @@ require "optparse"
 require 'json'
 require File.expand_path("../../lib/beetle", File.dirname(__FILE__))
 
+module BeetleStatusServer
+  def self.setup(beetle_client)
+    @@beetle_client = beetle_client
+  end
+
+  def receive_data(data)
+    begin
+      verb, uri, _ = data&.split(/[\r\n]+/)&.first&.split(' ', 3)
+      return reply(405, 'Only GET is supported') if verb != 'GET'
+
+      path = URI.parse(uri).path
+      route(path)
+    rescue => e
+      warn e.to_s
+      reply(400, e.to_s)
+    ensure
+      close_connection_after_writing
+    end
+  end
+
+  private
+
+  def route(path)
+    case path
+    when '/_system/alive' then render_alive
+    when '/redis_master' then render_redis_master
+    else reply(404, 'Not Found')
+    end
+  end
+
+  def reply(code, body)
+    reply_text = <<~EOF.chomp
+      HTTP/1.1 #{code}
+      Content-Type: text/plain
+      Content-Length: #{body.bytesize}
+
+      #{body}
+    EOF
+    send_data reply_text
+  end
+
+  def render_alive
+    reply(200, 'ALIVE')
+  end
+
+  def render_redis_master
+    redis_master = nil
+    begin
+      redis_master = @@beetle_client.deduplication_store.redis.server
+    rescue
+      master_file_content = File.read(Beetle.config.redis_server)
+      "no redis master: exception: #{$!.class}(#{$!}), master_file: '#{master_file_content}'"
+    end
+    reply(200, redis_master)
+  end
+end
+
+
 tmp_path = File.expand_path("../../tmp", File.dirname(__FILE__))
 
 Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :dir => tmp_path) do
@@ -44,5 +102,8 @@ Daemons.run_proc("beetle_handler", :log_output => true, :dir_mode => :normal, :d
   end
   client.listen do
     puts "Started beetle handler for system: #{Beetle.config.system_name}"
+
+    BeetleStatusServer.setup(client)
+    EM.start_server '0.0.0.0', 10254, BeetleStatusServer
   end
 end
