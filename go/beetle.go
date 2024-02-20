@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 	"github.com/xing/beetle/consul"
 	"github.com/xing/beetle/daemonize"
+	"golang.org/x/sys/unix"
 	"gopkg.in/yaml.v2"
 )
 
@@ -235,7 +235,7 @@ var interrupted bool
 
 func installSignalHandler() {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, unix.SIGTERM)
 	go func() {
 		<-c
 		logInfo("received TERM signal")
@@ -276,8 +276,8 @@ func redirectStdoutAndStderr(path string) {
 		fmt.Printf("could not open log file: %s\n", err)
 		return
 	}
-	syscall.Dup2(int(logFile.Fd()), 1)
-	syscall.Dup2(int(logFile.Fd()), 2)
+	unix.Dup2(int(logFile.Fd()), 1)
+	unix.Dup2(int(logFile.Fd()), 2)
 }
 
 func getProgramParameters() *Config {
