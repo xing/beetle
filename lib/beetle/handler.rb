@@ -32,8 +32,7 @@ module Beetle
       @__handler_called__ = nil
     end
 
-    # called when a message should be processed. if the message was caused by an RPC, the
-    # return value will be sent back to the caller. calls the initialized processor proc
+    # called when a message should be processed. calls the initialized processor proc
     # if a processor proc was specified when creating the Handler instance. calls method
     # process if no proc was given. make sure to call super if you override this method in
     # a subclass.

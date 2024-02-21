@@ -208,14 +208,6 @@ module Beetle
       publisher.publish(message_name, data, opts)
     end
 
-    # sends the given message to one of the configured servers and returns the result of running the associated handler.
-    #
-    # unexpected behavior can ensue if the message gets routed to more than one recipient, so be careful.
-    def rpc(message_name, data=nil, opts={})
-      message_name = validated_message_name(message_name)
-      publisher.rpc(message_name, data, opts)
-    end
-
     # purges the given queues on all configured servers
     def purge(*queues)
       queues = determine_queue_names(queues)

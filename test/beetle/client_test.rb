@@ -260,20 +260,8 @@ module Beetle
       assert_equal 1, client.publish(*args)
     end
 
-    test "should convert message name to a string on rpc" do
-      client = Client.new
-      client.register_message("deadletter")
-      args = [:deadletter, "x", {:a => 1}]
-      client.send(:publisher).expects(:rpc).with("deadletter", "x", :a => 1).returns(1)
-      assert_equal 1, client.rpc(*args)
-    end
-
     test "trying to publish an unknown message should raise an exception" do
       assert_raises(UnknownMessage) { Client.new.publish("foobar") }
-    end
-
-    test "trying to RPC an unknown message should raise an exception" do
-      assert_raises(UnknownMessage) { Client.new.rpc("foobar") }
     end
 
     test "should delegate stop_publishing to the publisher instance" do
@@ -312,14 +300,6 @@ module Beetle
       client.register_queue(:queue2)
       client.send(:publisher).expects(:purge).with(["queue1","queue2"]).returns("ha!")
       assert_equal "ha!", client.purge(:queue1, :queue2)
-    end
-
-    test "should delegate rpc calls to the publisher instance" do
-      client = Client.new
-      client.register_message("deadletter")
-      args = ["deadletter", "x", {:a => 1}]
-      client.send(:publisher).expects(:rpc).with(*args).returns("ha!")
-      assert_equal "ha!", client.rpc(*args)
     end
 
     test "should delegate listening to the subscriber instance" do
