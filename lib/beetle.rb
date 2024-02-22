@@ -1,6 +1,5 @@
 $:.unshift(File.expand_path('..', __FILE__))
 require 'bunny'                    # which bunny picks up
-require 'qrack/errors'             # needed by the publisher
 
 begin
   require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
