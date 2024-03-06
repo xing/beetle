@@ -71,7 +71,7 @@ func (opts *MailerOptions) GetMailerSettings() *MailerSettings {
 	}
 }
 
-// Connect connects to a websocket for reading notifcation messages.
+// Connect connects to a websocket for reading notification messages.
 func (s *MailerState) Connect() (err error) {
 	// copy default dialer to avoid race conditions
 	dialer := *websocket.DefaultDialer

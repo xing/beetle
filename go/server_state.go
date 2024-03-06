@@ -270,7 +270,7 @@ func (s *ServerState) UnseenClientIds() []string {
 	return res
 }
 
-// UnknownClientIds returns a list of client ids which we have senn, but which
+// UnknownClientIds returns a list of client ids which we have seen, but which
 // aren't configured.
 func (s *ServerState) UnknownClientIds() []string {
 	l := len(s.unknownClientIds)
@@ -325,7 +325,7 @@ func (s *ServerState) SendToWebSockets(msg *MsgBody) (err error) {
 	return
 }
 
-// SendNotification sends a notifcation on all registered notifcation channels.
+// SendNotification sends a notification on all registered notification channels.
 func (s *ServerState) SendNotification(text string) (err error) {
 	logInfo("Sending notification to %d subscribers", len(s.notificationChannels))
 	for c := range s.notificationChannels {
@@ -862,9 +862,18 @@ func (s *ServerState) ClientStarted(msg MsgBody) {
 		if !seen {
 			msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
 			logError(msg)
-			s.SendNotification(msg)
+
+			notification := fmt.Sprintf("%s %s", msg, getEnvOrDefault("UNKNOWN_CLIENT_ID_PLAYBOOK_URL"))
+			s.SendNotification(notification)
 		}
 	}
+}
+
+func getEnvOrDefault(key string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return ""
 }
 
 // Heartbeat handles a client's HEARTBEAT message.

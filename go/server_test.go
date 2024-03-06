@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 		testVerbosity = v
 	}
 	if testVerbosity == 0 {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 	cmd, err := exec.LookPath("redis-server")
 	if err != nil {
