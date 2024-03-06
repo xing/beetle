@@ -63,7 +63,7 @@ func (s *FailoverState) SendToWebSockets(msg *MsgBody) (err error) {
 	return s.server.SendToWebSockets(msg)
 }
 
-// SendNotification sends a notifcation on all registered notifcation channels.
+// SendNotification sends a notification on all registered notification channels.
 func (s *FailoverState) SendNotification(text string) (err error) {
 	return s.server.SendNotification(text)
 }
