@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -863,17 +864,35 @@ func (s *ServerState) ClientStarted(msg MsgBody) {
 			msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
 			logError(msg)
 
-			notification := fmt.Sprintf("%s %s", msg, getEnvOrDefault("UNKNOWN_CLIENT_ID_PLAYBOOK_URL"))
+			notification := getNotification(msg)
 			s.SendNotification(notification)
 		}
 	}
 }
 
-func getEnvOrDefault(key string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+func getNotification(defaultMessage string) string {
+	templateString, exists := os.LookupEnv("UNKNOWN_CLIENT_ID_MESSAGE_TEMPLATE")
+	if !exists {
+		logDebug("Template is missing using the default message")
+		return defaultMessage
 	}
-	return ""
+	tmpl, err := template.New("notificationTemplate").Parse(templateString)
+	if err != nil {
+		logInfo("Fallback to default message. Error parsing template:", err)
+		return defaultMessage
+	}
+	data := struct {
+		DefaultMessage string
+	}{
+		DefaultMessage: defaultMessage,
+	}
+	var renderedOutput bytes.Buffer
+	err = tmpl.Execute(&renderedOutput, data)
+	if err != nil {
+		logInfo("Fallback to default message. Error rendering template:", err)
+		return defaultMessage
+	}
+	return renderedOutput.String()
 }
 
 // Heartbeat handles a client's HEARTBEAT message.
