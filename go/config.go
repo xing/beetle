@@ -10,22 +10,23 @@ import (
 
 // Config holds externally configurable options.
 type Config struct {
-	Server                   string `yaml:"redis_configuration_server"`
-	Port                     int    `yaml:"redis_configuration_server_port"`
-	RedisServers             string `yaml:"redis_servers"`
-	ClientIds                string `yaml:"redis_configuration_client_ids"`
-	ClientHeartbeat          int    `yaml:"redis_configuration_client_heartbeat"`
-	ClientTimeout            int    `yaml:"redis_configuration_client_timeout"`
-	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
-	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
-	RedisMasterFile          string `yaml:"redis_server"`
-	GcThreshold              int    `yaml:"redis_gc_threshold"`
-	GcDatabases              string `yaml:"redis_gc_databases"`
-	MailTo                   string `yaml:"mail_to"`
-	MailFrom                 string `yaml:"mail_from"`
-	MailRelay                string `yaml:"mail_relay"`
-	DialTimeout              int    `yaml:"dial_timeout"`
-	ConfidenceLevel          string `yaml:"redis_failover_confidence_level"`
+	Server                            string `yaml:"redis_configuration_server"`
+	Port                              int    `yaml:"redis_configuration_server_port"`
+	RedisServers                      string `yaml:"redis_servers"`
+	ClientIds                         string `yaml:"redis_configuration_client_ids"`
+	ClientHeartbeat                   int    `yaml:"redis_configuration_client_heartbeat"`
+	ClientTimeout                     int    `yaml:"redis_configuration_client_timeout"`
+	RedisMasterRetries                int    `yaml:"redis_configuration_master_retries"`
+	RedisMasterRetryInterval          int    `yaml:"redis_configuration_master_retry_interval"`
+	RedisMasterFile                   string `yaml:"redis_server"`
+	GcThreshold                       int    `yaml:"redis_gc_threshold"`
+	GcDatabases                       string `yaml:"redis_gc_databases"`
+	MailTo                            string `yaml:"mail_to"`
+	MailFrom                          string `yaml:"mail_from"`
+	MailRelay                         string `yaml:"mail_relay"`
+	DialTimeout                       int    `yaml:"dial_timeout"`
+	ConfidenceLevel                   string `yaml:"redis_failover_confidence_level"`
+	UnknownClientIdMessageTemplateEnv string `yaml:"unknown_client_id_message_template_env"`
 }
 
 // Clone copies a give config.

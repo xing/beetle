@@ -864,14 +864,14 @@ func (s *ServerState) ClientStarted(msg MsgBody) {
 			msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
 			logError(msg)
 
-			notification := getNotification(msg)
+			notification := s.getNotification(msg)
 			s.SendNotification(notification)
 		}
 	}
 }
 
-func getNotification(defaultMessage string) string {
-	templateString, exists := os.LookupEnv("UNKNOWN_CLIENT_ID_MESSAGE_TEMPLATE")
+func (s *ServerState) getNotification(defaultMessage string) string {
+	templateString, exists := os.LookupEnv(s.opts.Config.UnknownClientIdMessageTemplateEnv)
 	if !exists {
 		logDebug("Template is missing using the default message")
 		return defaultMessage
