@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -270,7 +271,7 @@ func (s *ServerState) UnseenClientIds() []string {
 	return res
 }
 
-// UnknownClientIds returns a list of client ids which we have senn, but which
+// UnknownClientIds returns a list of client ids which we have seen, but which
 // aren't configured.
 func (s *ServerState) UnknownClientIds() []string {
 	l := len(s.unknownClientIds)
@@ -325,7 +326,7 @@ func (s *ServerState) SendToWebSockets(msg *MsgBody) (err error) {
 	return
 }
 
-// SendNotification sends a notifcation on all registered notifcation channels.
+// SendNotification sends a notification on all registered notification channels.
 func (s *ServerState) SendNotification(text string) (err error) {
 	logInfo("Sending notification to %d subscribers", len(s.notificationChannels))
 	for c := range s.notificationChannels {
@@ -862,9 +863,36 @@ func (s *ServerState) ClientStarted(msg MsgBody) {
 		if !seen {
 			msg := fmt.Sprintf("Received client_started message from unknown id '%s'", msg.Id)
 			logError(msg)
-			s.SendNotification(msg)
+
+			notification := s.getNotification(msg)
+			s.SendNotification(notification)
 		}
 	}
+}
+
+func (s *ServerState) getNotification(defaultMessage string) string {
+	templateString, exists := os.LookupEnv(s.opts.Config.UnknownClientIdMessageTemplateEnv)
+	if !exists {
+		logDebug("Template is missing using the default message")
+		return defaultMessage
+	}
+	tmpl, err := template.New("notificationTemplate").Parse(templateString)
+	if err != nil {
+		logInfo("Fallback to default message. Error parsing template:", err)
+		return defaultMessage
+	}
+	data := struct {
+		DefaultMessage string
+	}{
+		DefaultMessage: defaultMessage,
+	}
+	var renderedOutput bytes.Buffer
+	err = tmpl.Execute(&renderedOutput, data)
+	if err != nil {
+		logInfo("Fallback to default message. Error rendering template:", err)
+		return defaultMessage
+	}
+	return renderedOutput.String()
 }
 
 // Heartbeat handles a client's HEARTBEAT message.

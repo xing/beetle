@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/jessevdk/go-flags"
+	"github.com/xing/beetle/consul"
+	"github.com/xing/beetle/daemonize"
+	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"
 	"os"
@@ -9,46 +14,40 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	// "github.com/davecgh/go-spew/spew"
-	"github.com/jessevdk/go-flags"
-	"github.com/xing/beetle/consul"
-	"github.com/xing/beetle/daemonize"
-	"golang.org/x/sys/unix"
-	"gopkg.in/yaml.v2"
 )
 
 var opts struct {
-	Verbose                  bool          `short:"v" long:"verbose" description:"Be verbose."`
-	Daemonize                bool          `short:"d" long:"daemonize" description:"Run as a daemon. Use with --log-file."`
-	Id                       string        `long:"id" env:"HOST" description:"Set unique client id."`
-	ClientIds                string        `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
-	ClientTimeout            int           `long:"client-timeout" description:"Number of seconds to wait until considering a client dead (or unreachable). Defaults to 10."`
-	ClientHeartbeatInterval  int           `long:"client-heartbeat-interval" description:"Number of seconds between client heartbeats. Defaults to 5."`
-	ConfigFile               string        `long:"config-file" description:"Config file path."`
-	RedisServers             string        `long:"redis-servers" description:"List of redis failover sets (separated by semicolon or newlines). Each set consists of comma separated host:port pairs, preceded by a system name and a slash. Example: primary/a1:4,a2:5;secondary/b1:3,b2:3"`
-	RedisMasterFile          string        `long:"redis-master-file" description:"Path of redis master file."`
-	RedisMasterRetries       int           `long:"redis-master-retries" description:"How often to retry checking the availability of the current master before initiating a switch. Defaults to 3."`
-	RedisMasterRetryInterval int           `long:"redis-master-retry-interval" description:"Number of seconds to wait between master checks. Defaults to 10."`
-	PidFile                  string        `long:"pid-file" description:"Write process id into given path."`
-	LogFile                  string        `long:"log-file" description:"Redirect stdout and stderr to the given path."`
-	Server                   string        `long:"server" description:"Specifies config server address."`
-	Port                     int           `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
-	ConsulUrl                string        `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
-	ConsulToken              string        `long:"consul-token" env:"BEETLE_CONSUL_TOKEN" description:"Specifies consul authentication token."`
-	GcThreshold              int           `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
-	GcDatabases              string        `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
-	GcSystem                 string        `long:"redis-gc-system" default:"system" description:"Redis system from which to collect keys."`
-	GcKeyFile                string        `long:"redis-gc-key-file" description:"File with keys to collect."`
-	MailTo                   string        `long:"mail-to" description:"Send notification mails to this address."`
-	MailFrom                 string        `long:"mail-from" description:"From address to be used for email notifications."`
-	MailRelay                string        `long:"mail-relay" description:"SMTP mail relay to be used for sending notifications."`
-	DialTimeout              int           `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
-	ConfidenceLevel          string        `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
-	DeleteBefore             time.Duration `long:"delete-before" description:"Delete keys which do expire before the given time."`
-	CopyAfter                time.Duration `long:"copy-after" description:"Copy keys which do expire after the given time."`
-	TargetRedis              string        `long:"target-redis" description:"Specifies the target server for the copy_keys command (host:port)."`
-	QueuePrefix              string        `long:"queue-prefix" description:"Specifies the queue prefix for matching keys to be deleted/copied."`
+	Verbose                           bool          `short:"v" long:"verbose" description:"Be verbose."`
+	Daemonize                         bool          `short:"d" long:"daemonize" description:"Run as a daemon. Use with --log-file."`
+	Id                                string        `long:"id" env:"HOST" description:"Set unique client id."`
+	ClientIds                         string        `long:"client-ids" description:"Clients that have to acknowledge on master switch (e.g. client-id1,client-id2)."`
+	ClientTimeout                     int           `long:"client-timeout" description:"Number of seconds to wait until considering a client dead (or unreachable). Defaults to 10."`
+	ClientHeartbeatInterval           int           `long:"client-heartbeat-interval" description:"Number of seconds between client heartbeats. Defaults to 5."`
+	ConfigFile                        string        `long:"config-file" description:"Config file path."`
+	RedisServers                      string        `long:"redis-servers" description:"List of redis failover sets (separated by semicolon or newlines). Each set consists of comma separated host:port pairs, preceded by a system name and a slash. Example: primary/a1:4,a2:5;secondary/b1:3,b2:3"`
+	RedisMasterFile                   string        `long:"redis-master-file" description:"Path of redis master file."`
+	RedisMasterRetries                int           `long:"redis-master-retries" description:"How often to retry checking the availability of the current master before initiating a switch. Defaults to 3."`
+	RedisMasterRetryInterval          int           `long:"redis-master-retry-interval" description:"Number of seconds to wait between master checks. Defaults to 10."`
+	PidFile                           string        `long:"pid-file" description:"Write process id into given path."`
+	LogFile                           string        `long:"log-file" description:"Redirect stdout and stderr to the given path."`
+	Server                            string        `long:"server" description:"Specifies config server address."`
+	Port                              int           `long:"port" description:"Port to use for web socket connections. Defaults to 9650."`
+	ConsulUrl                         string        `long:"consul" optional:"t" optional-value:"http://127.0.0.1:8500" description:"Specifies consul server url to use for retrieving config values. If given without argument, tries to contact local consul agent."`
+	ConsulToken                       string        `long:"consul-token" env:"BEETLE_CONSUL_TOKEN" description:"Specifies consul authentication token."`
+	GcThreshold                       int           `long:"redis-gc-threshold" description:"Number of seconds to wait until considering an expired redis key eligible for garbage collection. Defaults to 3600 (1 hour)."`
+	GcDatabases                       string        `long:"redis-gc-databases" description:"Database numbers to collect keys from (e.g. 0,4). Defaults to 4."`
+	GcSystem                          string        `long:"redis-gc-system" default:"system" description:"Redis system from which to collect keys."`
+	GcKeyFile                         string        `long:"redis-gc-key-file" description:"File with keys to collect."`
+	MailTo                            string        `long:"mail-to" description:"Send notification mails to this address."`
+	MailFrom                          string        `long:"mail-from" description:"From address to be used for email notifications."`
+	MailRelay                         string        `long:"mail-relay" description:"SMTP mail relay to be used for sending notifications."`
+	DialTimeout                       int           `long:"dial-timeout" description:"Number of seconds to wait until a connection attempt to the master times out. Defaults to 5."`
+	ConfidenceLevel                   string        `long:"redis-failover-confidence-level" description:"A number between 0 and 100, defining the percent of clients which have to agree in an election process. Values are clamped to the interval [0,100]. Defaults to 100."`
+	DeleteBefore                      time.Duration `long:"delete-before" description:"Delete keys which do expire before the given time."`
+	CopyAfter                         time.Duration `long:"copy-after" description:"Copy keys which do expire after the given time."`
+	TargetRedis                       string        `long:"target-redis" description:"Specifies the target server for the copy_keys command (host:port)."`
+	QueuePrefix                       string        `long:"queue-prefix" description:"Specifies the queue prefix for matching keys to be deleted/copied."`
+	UnknownClientIdMessageTemplateEnv string        `long:"unknown-client-id-message-template-env" description:"The name of the environment variable which will contain a template for unknown client id message."`
 }
 
 // Verbose stores verbosity or logging purposoes.
