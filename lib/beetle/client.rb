@@ -1,10 +1,29 @@
 require 'json'
+require 'qrack/amq-client-url'
+require 'uri'
 
 # FIXME: this needs to go into a proper place
-class AMQ::URI
+module AMQ::Client::Settings
   # we need to monkey patch AMQ::URI because it's plain broken in the version we're using
-  def self.parse(*args)
-    ::URI.parse(*args)
+
+  def self.parse_amqp_url(connection_string)
+    uri = ::URI.parse(connection_string)
+    raise ArgumentError.new("Connection URI must use amqp or amqps schema (example: amqp://bus.megacorp.internal:5766), learn more at http://bit.ly/ks8MXK") unless %w{amqp amqps}.include?(uri.scheme)
+
+    opts = {}
+
+    opts[:scheme] = uri.scheme
+    opts[:user]   = ::CGI.unescape(uri.user) if uri.user
+    opts[:pass]   = ::CGI.unescape(uri.password) if uri.password
+    opts[:host]   = uri.host if uri.host
+    opts[:port]   = uri.port || AMQ::Client::Settings::AMQP_PORTS[uri.scheme]
+    opts[:ssl]    = uri.scheme == AMQ::Client::Settings::AMQPS
+    if uri.path =~ %r{^/(.*)}
+      raise ArgumentError.new("#{uri} has multiple-segment path; please percent-encode any slashes in the vhost name (e.g. /production => %2Fproduction). Learn more at http://bit.ly/amqp-gem-and-connection-uris") if $1.index('/')
+      opts[:vhost] = ::CGI.unescape($1)
+    end
+
+    opts
   end
 end
 
@@ -40,6 +59,14 @@ module Beetle
       @uri
     end
 
+    def host
+      @uri.host
+    end
+
+    def port
+      @uri.port
+    end
+
     def to_s
       @hostname_and_port
     end
@@ -70,7 +97,7 @@ module Beetle
       end
     end
   end
-  
+
   class Client
     include Logging
 

@@ -10,7 +10,7 @@ require File.expand_path("../lib/beetle", File.dirname(__FILE__))
 
 # set Beetle log level to info, less noisy than debug
 Beetle.config.logger.level = Logger::INFO
-
+Beetle.config.servers = 'amqp://guest:guest@localhost:5672/'
 # setup client
 client = Beetle::Client.new
 client.register_queue(:test)
@@ -34,4 +34,3 @@ puts client.publish(:test, 'bam')
 client.listen do
   EM.add_timer(0.1) { client.stop_listening }
 end
-

@@ -24,11 +24,11 @@ module Beetle
     end
 
     def current_host
-      @server.to_s.split(':').first
+      @server.host
     end
 
     def current_port
-      @server.to_s =~ /:(\d+)$/ ? $1.to_i : 5672
+      @server.port || 5672
     end
 
     def set_current_server(s)
