@@ -31,6 +31,18 @@ module Beetle
       @server.port || 5672
     end
 
+    def current_vhost
+      @server.to_uri.path.presence || '/'
+    end
+
+    def current_user
+      @server.to_uri.user
+    end
+
+    def current_password
+      @server.to_uri.password
+    end
+
     def set_current_server(s)
       @server = s
     end

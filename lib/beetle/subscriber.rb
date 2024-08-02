@@ -230,10 +230,15 @@ module Beetle
 
     def connection_settings
       {
-        :host => current_host, :port => current_port, :logging => false,
-        :user => @client.config.user, :pass => @client.config.password, :vhost => @client.config.vhost,
+        :host => current_host,
+        :port => current_port,
+        :user => current_user,
+        :pass => current_password,
+        :vhost => current_vhost,
+        :ssl => false,
         :on_tcp_connection_failure => on_tcp_connection_failure,
         :on_possible_authentication_failure => on_possible_authentication_failure,
+        :logging => false,
       }
     end
 

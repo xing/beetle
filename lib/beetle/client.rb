@@ -93,7 +93,7 @@ module Beetle
       if hostname_or_url.start_with?("amqp://", "amqps://")
         URI.parse(hostname_or_url)
       else
-        URI.parse("amqp://#{hostname_or_url}")
+        URI.parse("amqp://guest:guest@#{hostname_or_url}")
       end
     end
   end
