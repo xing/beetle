@@ -162,9 +162,13 @@ module Beetle
 
     def new_bunny
       b = Bunny.new(
-        @server.to_uri.to_s,
+        :ssl                => server.ssl,
+        :host               => server.host,
+        :port               => server.port,
+        :user               => server.user,
+        :pass               => server.password,
+        :vhost              => server.vhost,
         :logging            => !!@options[:logging],
-        :vhost              => @client.config.vhost,
         :frame_max          => @client.config.frame_max,
         :channel_max        => @client.config.channel_max,
         :socket_timeout     => @client.config.publishing_timeout,

@@ -50,21 +50,37 @@ module Beetle
 
 
   class ServerName
-    def initialize(hostname_or_url)
-      @uri = parse_uri(hostname_or_url)
-      @hostname_and_port = "#{@uri.host}:#{@uri.port}".freeze
+    def initialize(connection_string)
+      @settings = parse_settings(connection_string)
+      @hostname_and_port = "#{host}:#{port}".freeze
     end
 
-    def to_uri
-      @uri
+    def to_settings
+      @settings.dup
     end
 
     def host
-      @uri.host
+      @settings[:host]
     end
 
     def port
-      @uri.port
+      @settings[:port]
+    end
+
+    def vhost
+      @settings[:vhost]
+    end
+
+    def user
+      @settings[:user]
+    end
+
+    def password
+      @settings[:pass]
+    end
+
+    def ssl
+      @settings[:ssl]
     end
 
     def to_s
@@ -76,7 +92,14 @@ module Beetle
     end
 
     def ==(other)
-      self.to_s == other.to_s
+      case other
+      when ServerName
+        @settings == other.to_settings
+      when String
+        @hostname_and_port == other
+      else
+        false
+      end
     end
 
     def eql?(other)
@@ -84,16 +107,16 @@ module Beetle
     end
 
     def hash
-      @hostname_and_port.hash
+      @settings.hash
     end
 
     private
 
-    def parse_uri(hostname_or_url)
-      if hostname_or_url.start_with?("amqp://", "amqps://")
-        URI.parse(hostname_or_url)
+    def parse_settings(connection_string)
+      if connection_string.start_with?("amqp://", "amqps://")
+        AMQ::Settings.configure(connection_string)
       else
-        URI.parse("amqp://guest:guest@#{hostname_or_url}")
+        AMQ::Settings.configure("amqp://#{connection_string}")
       end
     end
   end
