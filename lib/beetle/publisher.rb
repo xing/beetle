@@ -164,8 +164,8 @@ module Beetle
       b = Bunny.new(
         :host            => current_server.host,
         :port            => current_server.port,
-        :user            => current_server.username,
-        :pass            => current_server.password,
+        :user            => current_server.user,
+        :pass            => current_server.pass,
         :vhost           => current_server.vhost,
         :logging         => !!@options[:logging],
         :frame_max       => @client.config.frame_max,

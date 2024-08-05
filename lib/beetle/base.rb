@@ -5,7 +5,8 @@ module Beetle
   class Base
     include Logging
 
-    attr_accessor :options, :servers, :server #:nodoc:
+    attr_accessor :options #:nodoc:
+    attr_reader :server, :servers
 
     def initialize(client, options = {}) #:nodoc:
       @options = options
@@ -31,10 +32,13 @@ module Beetle
       current_server.port || 5672
     end
 
+<<<<<<< HEAD
     def current_server
       @server
     end
 
+=======
+>>>>>>> 439cc0fcf025b35d190aa28811a52045a5144bc8
     def set_current_server(s)
       @server = s
     end

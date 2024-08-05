@@ -51,16 +51,17 @@ module Beetle
   # TODO: more like a ConnectionString?
   class ServerName
     def initialize(connection_string)
+      @connection_string = connection_string
       @settings = parse_settings(connection_string)
       @hostname_and_port = "#{host}:#{port}".freeze
     end
 
-    def host
-      @settings[:host]
+    def to_settings
+      @settings.dup
     end
 
-    def password
-      @settings[:pass]
+    def host
+      @settings[:host]
     end
 
     def port
@@ -73,6 +74,14 @@ module Beetle
 
     def ssl
       @settings[:ssl]
+    end
+
+    def user
+      @settings[:user]
+    end
+
+    def pass
+      @settings[:pass]
     end
 
     def to_settings
@@ -88,7 +97,14 @@ module Beetle
     end
 
     def ==(other)
-      to_settings == other.to_settings
+      case other
+      when ServerName
+        @settings == other.to_settings
+      when String
+        @hostname_and_port == other
+      else
+        false
+      end
     end
 
     def eql?(other)
@@ -96,18 +112,17 @@ module Beetle
     end
 
     def hash
-      to_settings.hash 
+      @settings.hash
     end
 
     private
 
     def parse_settings(connection_string)
-      normalized_connection_string = if connection_string.start_with?("amqp://", "amqps://")
-                                       connection_string
-                                     else
-                                       "amqp://guest:guest@#{connection_string}"
-                                     end
-      AMQ::Settings.configure(normalized_connection_string)
+      if connection_string.start_with?("amqp://", "amqps://")
+        AMQ::Settings.configure(connection_string)
+      else
+        AMQ::Settings.configure("amqp://#{connection_string}")
+      end
     end
   end
 
