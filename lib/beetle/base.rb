@@ -24,23 +24,15 @@ module Beetle
     end
 
     def current_host
-      @server.host
+      current_server.host
     end
 
     def current_port
-      @server.port || 5672
+      current_server.port || 5672
     end
 
-    def current_vhost
-      @server.to_uri.path.presence || '/'
-    end
-
-    def current_user
-      @server.to_uri.user
-    end
-
-    def current_password
-      @server.to_uri.password
+    def current_server
+      @server
     end
 
     def set_current_server(s)

@@ -1,6 +1,5 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
-
 module Beetle
   class PublisherTest < Minitest::Test
     def setup

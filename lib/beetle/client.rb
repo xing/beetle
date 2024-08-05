@@ -48,23 +48,35 @@ module Beetle
   # order, so that no message is lost if message producers are accidentally started before
   # the corresponding consumers.
 
-
+  # TODO: more like a ConnectionString?
   class ServerName
-    def initialize(hostname_or_url)
-      @uri = parse_uri(hostname_or_url)
-      @hostname_and_port = "#{@uri.host}:#{@uri.port}".freeze
-    end
-
-    def to_uri
-      @uri
+    def initialize(connection_string)
+      @settings = parse_settings(connection_string)
+      @hostname_and_port = "#{host}:#{port}".freeze
     end
 
     def host
-      @uri.host
+      @settings[:host]
+    end
+
+    def password
+      @settings[:pass]
     end
 
     def port
-      @uri.port
+      @settings[:port]
+    end
+
+    def vhost
+      @settings[:vhost]
+    end
+
+    def ssl
+      @settings[:ssl]
+    end
+
+    def to_settings
+      @settings.dup
     end
 
     def to_s
@@ -76,7 +88,7 @@ module Beetle
     end
 
     def ==(other)
-      self.to_s == other.to_s
+      to_settings == other.to_settings
     end
 
     def eql?(other)
@@ -84,17 +96,18 @@ module Beetle
     end
 
     def hash
-      @hostname_and_port.hash
+      to_settings.hash 
     end
 
     private
 
-    def parse_uri(hostname_or_url)
-      if hostname_or_url.start_with?("amqp://", "amqps://")
-        URI.parse(hostname_or_url)
-      else
-        URI.parse("amqp://guest:guest@#{hostname_or_url}")
-      end
+    def parse_settings(connection_string)
+      normalized_connection_string = if connection_string.start_with?("amqp://", "amqps://")
+                                       connection_string
+                                     else
+                                       "amqp://guest:guest@#{connection_string}"
+                                     end
+      AMQ::Settings.configure(normalized_connection_string)
     end
   end
 
