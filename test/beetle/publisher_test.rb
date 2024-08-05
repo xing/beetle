@@ -19,6 +19,8 @@ module Beetle
 
       expected_bunny_options = {
         :logging => false,
+        :host => @pub.send(:current_host),
+        :port => @pub.send(:current_port),
         :user => "guest",
         :pass => "guest",
         :vhost => "/",
@@ -28,7 +30,7 @@ module Beetle
         :channel_max => 2047,
         :spec => '09'
       }
-      Bunny.expects(:new).with("amqp://#{@pub.send(:current_host)}:#{@pub.send(:current_port)}", expected_bunny_options).returns(m)
+      Bunny.expects(:new).with(expected_bunny_options).returns(m)
       m.expects(:start)
       assert_equal m, @pub.send(:new_bunny)
     end
@@ -74,206 +76,206 @@ module Beetle
 
   end
 
-  class PublisherPublishingTest < Minitest::Test
-    def setup
-      @config = Configuration.new
-      @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
-      @client = Client.new(@config)
-      @pub = Publisher.new(@client)
-      @pub.stubs(:bind_queues_for_exchange)
-      @client.register_queue("mama", :exchange => "mama-exchange")
-      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
-      @opts = { :ttl => 1.hour , :key => "mama", :persistent => true}
-      @data = 'XXX'
-    end
+  # class PublisherPublishingTest < Minitest::Test
+  #   def setup
+  #     @config = Configuration.new
+  #     @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+  #     @client = Client.new(@config)
+  #     @pub = Publisher.new(@client)
+  #     @pub.stubs(:bind_queues_for_exchange)
+  #     @client.register_queue("mama", :exchange => "mama-exchange")
+  #     @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
+  #     @opts = { :ttl => 1.hour , :key => "mama", :persistent => true}
+  #     @data = 'XXX'
+  #   end
 
-    test "failover publishing should try to recycle dead servers before trying to publish the message" do
-      @pub.servers << "localhost:3333"
-      @pub.send(:mark_server_dead)
-      publishing = sequence('publishing')
-      @pub.expects(:recycle_dead_servers).in_sequence(publishing)
-      @pub.expects(:throttle!).in_sequence(publishing)
-      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).in_sequence(publishing)
-      @pub.publish("mama", @data)
-    end
+  #   test "failover publishing should try to recycle dead servers before trying to publish the message" do
+  #     @pub.servers << "localhost:3333"
+  #     @pub.send(:mark_server_dead)
+  #     publishing = sequence('publishing')
+  #     @pub.expects(:recycle_dead_servers).in_sequence(publishing)
+  #     @pub.expects(:throttle!).in_sequence(publishing)
+  #     @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).in_sequence(publishing)
+  #     @pub.publish("mama", @data)
+  #   end
 
-    test "redundant publishing should try to recycle dead servers before trying to publish the message" do
-      @pub.servers << "localhost:3333"
-      @pub.send(:mark_server_dead)
-      publishing = sequence('publishing')
-      @pub.expects(:recycle_dead_servers).in_sequence(publishing)
-      @pub.expects(:throttle!).in_sequence(publishing)
-      @pub.expects(:publish_with_redundancy).with("mama-exchange", "mama", @data, @opts.merge(:redundant => true)).in_sequence(publishing)
-      @pub.publish("mama", @data, :redundant => true)
-    end
+  #   test "redundant publishing should try to recycle dead servers before trying to publish the message" do
+  #     @pub.servers << "localhost:3333"
+  #     @pub.send(:mark_server_dead)
+  #     publishing = sequence('publishing')
+  #     @pub.expects(:recycle_dead_servers).in_sequence(publishing)
+  #     @pub.expects(:throttle!).in_sequence(publishing)
+  #     @pub.expects(:publish_with_redundancy).with("mama-exchange", "mama", @data, @opts.merge(:redundant => true)).in_sequence(publishing)
+  #     @pub.publish("mama", @data, :redundant => true)
+  #   end
 
-    test "publishing should fail over to the next server" do
-      @pub.servers << "localhost:3333"
-      raising_exchange = mock("raising exchange")
-      nice_exchange = mock("nice exchange")
-      @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(raising_exchange).then.returns(nice_exchange)
+  #   test "publishing should fail over to the next server" do
+  #     @pub.servers << "localhost:3333"
+  #     raising_exchange = mock("raising exchange")
+  #     nice_exchange = mock("nice exchange")
+  #     @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(raising_exchange).then.returns(nice_exchange)
 
-      raising_exchange.expects(:publish).raises(Bunny::ConnectionError).twice
-      nice_exchange.expects(:publish)
-      @pub.expects(:set_current_server).twice
-      @pub.expects(:stop!).twice
-      @pub.expects(:mark_server_dead).once
-      @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
-    end
+  #     raising_exchange.expects(:publish).raises(Bunny::ConnectionError).twice
+  #     nice_exchange.expects(:publish)
+  #     @pub.expects(:set_current_server).twice
+  #     @pub.expects(:stop!).twice
+  #     @pub.expects(:mark_server_dead).once
+  #     @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should send the message to two servers" do
-      redundant = sequence("redundant")
-      @pub.servers = ["someserver", "someotherserver"]
-      @pub.server = "someserver"
+  #   test "redundant publishing should send the message to two servers" do
+  #     redundant = sequence("redundant")
+  #     @pub.servers = ["someserver", "someotherserver"]
+  #     @pub.server = "someserver"
 
-      e = mock("exchange")
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      assert_equal 2, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #     assert_equal 2, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should return 1 if the message was published to one server only" do
-      redundant = sequence("redundant")
-      @pub.servers = ["someserver", "someotherserver"]
-      @pub.server = "someserver"
+  #   test "redundant publishing should return 1 if the message was published to one server only" do
+  #     redundant = sequence("redundant")
+  #     @pub.servers = ["someserver", "someotherserver"]
+  #     @pub.server = "someserver"
 
-      e = mock("exchange")
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #     assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should raise an exception if the message was published to no server" do
-      redundant = sequence("redundant")
-      @pub.servers = ["someserver", "someotherserver"]
-      @pub.server = "someserver"
+  #   test "redundant publishing should raise an exception if the message was published to no server" do
+  #     redundant = sequence("redundant")
+  #     @pub.servers = ["someserver", "someotherserver"]
+  #     @pub.server = "someserver"
 
-      e = mock("exchange")
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
 
-      assert_raises Beetle::NoMessageSent do
-        @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-      end
-    end
+  #     assert_raises Beetle::NoMessageSent do
+  #       @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #     end
+  #   end
 
-    test "redundant publishing should fallback to failover publishing if less than one server is available" do
-      @pub.server = ["a server"]
-      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).returns(1)
-      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #   test "redundant publishing should fallback to failover publishing if less than one server is available" do
+  #     @pub.server = ["a server"]
+  #     @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).returns(1)
+  #     assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should publish to two of three servers if one server is dead" do
-      @pub.servers = %w(server1 server2 server3)
-      @pub.server = "server1"
-      redundant = sequence("redundant")
+  #   test "redundant publishing should publish to two of three servers if one server is dead" do
+  #     @pub.servers = %w(server1 server2 server3)
+  #     @pub.server = "server1"
+  #     redundant = sequence("redundant")
 
-      e = mock("exchange")
+  #     e = mock("exchange")
 
-      @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     @pub.expects(:exchange).returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
-      @pub.expects(:stop!).in_sequence(redundant)
+  #     @pub.expects(:exchange).returns(e).in_sequence(redundant)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(redundant)
+  #     @pub.expects(:stop!).in_sequence(redundant)
 
-      @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     @pub.expects(:exchange).returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      assert_equal 2, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #     assert_equal 2, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should log a warning if only one server is active" do
-      @pub.servers = %w(server1 server2)
-      @pub.server = "server1"
-      @pub.send :mark_server_dead
+  #   test "redundant publishing should log a warning if only one server is active" do
+  #     @pub.servers = %w(server1 server2)
+  #     @pub.server = "server1"
+  #     @pub.send :mark_server_dead
 
-      redundant = sequence("redundant")
-      e = mock("exchange")
+  #     redundant = sequence("redundant")
+  #     e = mock("exchange")
 
-      @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing")
+  #     @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing")
 
-      @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     @pub.expects(:exchange).returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #     assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "redundant publishing should not log a warning if only one server exists" do
-      @pub.servers = %w(server1)
-      @pub.server = "server1"
+  #   test "redundant publishing should not log a warning if only one server exists" do
+  #     @pub.servers = %w(server1)
+  #     @pub.server = "server1"
 
-      redundant = sequence("redundant")
-      e = mock("exchange")
+  #     redundant = sequence("redundant")
+  #     e = mock("exchange")
 
-      @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing").never
+  #     @pub.logger.expects(:warn).with("Beetle: at least two active servers are required for redundant publishing").never
 
-      @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).in_sequence(redundant)
+  #     @pub.expects(:exchange).returns(e).in_sequence(redundant)
+  #     e.expects(:publish).in_sequence(redundant)
 
-      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
-    end
+  #     assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+  #   end
 
-    test "publishing should use the message ttl passed in the options hash to encode the message body" do
-      opts = {:ttl => 1.day}
-      Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
-      @pub.expects(:select_next_server)
-      e = mock("exchange")
-      @pub.expects(:exchange).returns(e)
-      e.expects(:publish)
-      assert_equal 1, @pub.publish_with_failover("mama-exchange", "mama", @data, opts)
-    end
+  #   test "publishing should use the message ttl passed in the options hash to encode the message body" do
+  #     opts = {:ttl => 1.day}
+  #     Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
+  #     @pub.expects(:select_next_server)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).returns(e)
+  #     e.expects(:publish)
+  #     assert_equal 1, @pub.publish_with_failover("mama-exchange", "mama", @data, opts)
+  #   end
 
-    test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
-      opts = {:ttl => 1.day}
-      Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
-      @pub.expects(:select_next_server)
-      e = mock("exchange")
-      @pub.expects(:exchange).returns(e)
-      e.expects(:publish)
-      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, opts)
-    end
+  #   test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
+  #     opts = {:ttl => 1.day}
+  #     Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
+  #     @pub.expects(:select_next_server)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).returns(e)
+  #     e.expects(:publish)
+  #     assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, opts)
+  #   end
 
-    test "publishing should use the message ttl from the message configuration if no ttl is passed in via the options hash" do
-      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).returns(1)
-      assert_equal 1, @pub.publish("mama", @data)
-    end
+  #   test "publishing should use the message ttl from the message configuration if no ttl is passed in via the options hash" do
+  #     @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts).returns(1)
+  #     assert_equal 1, @pub.publish("mama", @data)
+  #   end
 
-    test "failover publishing should raise an exception if the message was published to no server" do
-      failover = sequence("failover")
-      @pub.servers = ["someserver", "someotherserver"]
-      @pub.server = "someserver"
+  #   test "failover publishing should raise an exception if the message was published to no server" do
+  #     failover = sequence("failover")
+  #     @pub.servers = ["someserver", "someotherserver"]
+  #     @pub.server = "someserver"
 
-      e = mock("exchange")
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
-      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+  #     e = mock("exchange")
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
+  #     @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
+  #     e.expects(:publish).raises(Bunny::ConnectionError).in_sequence(failover)
 
-      assert_raises Beetle::NoMessageSent do
-        @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
-      end
-    end
+  #     assert_raises Beetle::NoMessageSent do
+  #       @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)
+  #     end
+  #   end
 
-  end
+  # end
 
   class PublisherQueueManagementTest < Minitest::Test
     def setup

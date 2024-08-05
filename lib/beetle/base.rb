@@ -6,7 +6,7 @@ module Beetle
     include Logging
 
     attr_accessor :options #:nodoc:
-    attr_reader :server, :servers
+    attr_accessor :server
 
     def initialize(client, options = {}) #:nodoc:
       @options = options
@@ -15,6 +15,14 @@ module Beetle
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
+    end
+
+    def servers=(servers_list)
+      @servers = Array(servers_list).map { |s| ServerName.new(s) }
+    end
+
+    def servers
+      @servers.clone
     end
 
     private
@@ -32,15 +40,12 @@ module Beetle
       current_server.port || 5672
     end
 
-<<<<<<< HEAD
     def current_server
       @server
     end
 
-=======
->>>>>>> 439cc0fcf025b35d190aa28811a52045a5144bc8
     def set_current_server(s)
-      @server = s
+      @server = ServerName.new(s)
     end
 
     def server_from_settings(settings)

@@ -1,31 +1,7 @@
 require 'json'
 require 'qrack/amq-client-url'
+require 'amq/settings'
 require 'uri'
-
-# FIXME: this needs to go into a proper place
-module AMQ::Client::Settings
-  # we need to monkey patch AMQ::URI because it's plain broken in the version we're using
-
-  def self.parse_amqp_url(connection_string)
-    uri = ::URI.parse(connection_string)
-    raise ArgumentError.new("Connection URI must use amqp or amqps schema (example: amqp://bus.megacorp.internal:5766), learn more at http://bit.ly/ks8MXK") unless %w{amqp amqps}.include?(uri.scheme)
-
-    opts = {}
-
-    opts[:scheme] = uri.scheme
-    opts[:user]   = ::CGI.unescape(uri.user) if uri.user
-    opts[:pass]   = ::CGI.unescape(uri.password) if uri.password
-    opts[:host]   = uri.host if uri.host
-    opts[:port]   = uri.port || AMQ::Client::Settings::AMQP_PORTS[uri.scheme]
-    opts[:ssl]    = uri.scheme == AMQ::Client::Settings::AMQPS
-    if uri.path =~ %r{^/(.*)}
-      raise ArgumentError.new("#{uri} has multiple-segment path; please percent-encode any slashes in the vhost name (e.g. /production => %2Fproduction). Learn more at http://bit.ly/amqp-gem-and-connection-uris") if $1.index('/')
-      opts[:vhost] = ::CGI.unescape($1)
-    end
-
-    opts
-  end
-end
 
 module Beetle
   # This class provides the interface through which messaging is configured for both
@@ -51,10 +27,22 @@ module Beetle
   # TODO: more like a ConnectionString?
   class ServerName
     def initialize(connection_string)
-      @connection_string = connection_string
-      @settings = parse_settings(connection_string)
-      @hostname_and_port = "#{host}:#{port}".freeze
+      @connection_string = connection_string.to_s
+
+      if @connection_string.start_with?("amqp://", "amqps://")
+        @settings = AMQ::Settings.configure(@connection_string)
+      else
+        @settings = AMQ::Settings.configure("amqp://#{@connection_string}")
+      end
+
+      if @settings.nil?
+        raise ArgumentError.new("invalid connection string: #{@connection_string.inspect}")
+      end
+
+      @amqp_uri = "#{scheme}://#{user}:#{pass}@#{host}:#{port}#{vhost}"
     end
+
+    delegate :to_s, :to_str, :==, :hash, :to => :@amqp_uri
 
     def to_settings
       @settings.dup
@@ -84,45 +72,12 @@ module Beetle
       @settings[:pass]
     end
 
-    def to_settings
-      @settings.dup
-    end
-
-    def to_s
-      @hostname_and_port
-    end
-
-    def to_str
-      @hostname_and_port
-    end
-
-    def ==(other)
-      case other
-      when ServerName
-        @settings == other.to_settings
-      when String
-        @hostname_and_port == other
-      else
-        false
-      end
+    def scheme
+      @settings[:ssl].present? ? "amqps" : "amqp"
     end
 
     def eql?(other)
       self == other
-    end
-
-    def hash
-      @settings.hash
-    end
-
-    private
-
-    def parse_settings(connection_string)
-      if connection_string.start_with?("amqp://", "amqps://")
-        AMQ::Settings.configure(connection_string)
-      else
-        AMQ::Settings.configure("amqp://#{connection_string}")
-      end
     end
   end
 
