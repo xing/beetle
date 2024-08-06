@@ -202,7 +202,7 @@ module Beetle
       if @servers.empty?
         logger.error("Beetle: no server available")
       else
-        set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
+        set_current_server(@servers.next_after(@server))
       end
     end
 

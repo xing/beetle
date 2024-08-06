@@ -46,7 +46,7 @@ module Beetle
 
     test "set_current_server shoud set the current server" do
       @bs.send(:set_current_server, "xxx:123")
-      assert_equal "amqp://guest:guest@xxx:123/", @bs.server.to_s
+      assert_equal "xxx:123", @bs.server.legacy_servername
     end
 
     test "server_from_settings should create a valid server string from an AMQP settings hash" do

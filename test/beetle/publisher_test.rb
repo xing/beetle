@@ -354,10 +354,10 @@ module Beetle
       @pub.servers = %w(a b)
       queue = mock("queue")
       s = sequence("purging")
-      @pub.expects(:set_current_server).with("a").in_sequence(s)
+      @pub.expects(:set_current_server).with(ConnectionString.new("a")).in_sequence(s)
       @pub.expects(:queue).with("queue").returns(queue).in_sequence(s)
       queue.expects(:purge).in_sequence(s)
-      @pub.expects(:set_current_server).with("b").in_sequence(s)
+      @pub.expects(:set_current_server).with(ConnectionString.new("b")).in_sequence(s)
       @pub.expects(:queue).with("queue").returns(queue).in_sequence(s)
       queue.expects(:purge).in_sequence(s)
       @pub.purge(["queue"])
@@ -370,10 +370,10 @@ module Beetle
       pub.servers = %w(a b)
 
       s = sequence("setup")
-      pub.expects(:set_current_server).with("a").in_sequence(s)
+      pub.expects(:set_current_server).with(ConnectionString.new("a")).in_sequence(s)
       pub.expects(:queue).with(client.config.beetle_policy_updates_queue_name).in_sequence(s)
       pub.expects(:queue).with("queue").in_sequence(s)
-      pub.expects(:set_current_server).with("b").in_sequence(s)
+      pub.expects(:set_current_server).with(ConnectionString.new("b")).in_sequence(s)
       pub.expects(:queue).with(client.config.beetle_policy_updates_queue_name).in_sequence(s)
       pub.expects(:queue).with("queue").in_sequence(s)
 
@@ -388,8 +388,8 @@ module Beetle
       pub.stubs(:queue).raises(StandardError)
 
       s = sequence("setup")
-      pub.expects(:set_current_server).with("a").in_sequence(s)
-      pub.expects(:set_current_server).with("b").in_sequence(s)
+      pub.expects(:set_current_server).with(ConnectionString.new("a")).in_sequence(s)
+      pub.expects(:set_current_server).with(ConnectionString.new("b")).in_sequence(s)
 
       pub.setup_queues_and_policies()
     end
@@ -490,9 +490,9 @@ module Beetle
       @pub.servers = ["localhost:1111", "localhost:2222"]
       @pub.send(:set_current_server, "localhost:2222")
       @pub.send(:mark_server_dead)
-      assert_equal ["localhost:1111"], @pub.servers
+      assert_equal ["localhost:1111"], @pub.servers.map(&:legacy_servername)
       dead = @pub.instance_variable_get "@dead_servers"
-      assert_equal ["localhost:2222"], dead.keys
+      assert_equal ["localhost:2222"], dead.keys.map(&:legacy_servername)
       assert_kind_of Time, dead["localhost:2222"]
     end
 
@@ -500,14 +500,14 @@ module Beetle
       @pub.servers = ["a:1", "b:2"]
       @pub.send(:set_current_server, "a:1")
       @pub.send(:mark_server_dead)
-      assert_equal ["b:2"], @pub.servers
+      assert_equal ["b:2"], @pub.servers.map(&:legacy_servername)
       dead = @pub.instance_variable_get("@dead_servers")
       dead["a:1"] = 9.seconds.ago
       @pub.send(:recycle_dead_servers)
-      assert_equal ["a:1"], dead.keys
+      assert_equal ["a:1"], dead.keys.legacy_servername
       dead["a:1"] = 11.seconds.ago
       @pub.send(:recycle_dead_servers)
-      assert_equal ["b:2", "a:1"], @pub.servers.map(&:to_s)
+      assert_equal ["b:2", "a:1"], @pub.servers.map(&:legacy_servername)
       assert_equal({}, dead)
     end
 
@@ -516,21 +516,21 @@ module Beetle
       @pub.send(:set_current_server, "a:1")
       @pub.send(:mark_server_dead)
       @pub.send(:mark_server_dead)
-      assert_equal [], @pub.servers
+      assert_equal [], @pub.servers.to_a
       dead = @pub.instance_variable_get("@dead_servers")
-      assert_equal ["a:1", "b:2"], dead.keys.sort
+      assert_equal ["a:1", "b:2"], dead.keys.sort.map(&:legacy_servername)
       @pub.send(:recycle_dead_servers)
-      assert_equal ["b:2"], dead.keys
-      assert_equal ["a:1"], @pub.servers
+      assert_equal ["b:2"], dead.keys.map(&:legacy_servername)
+      assert_equal ["a:1"], @pub.servers.map(&:legacy_servername)
     end
 
     test "select_next_server should cycle through the list of all servers" do
       @pub.servers = ["a:1", "b:2"]
       @pub.send(:set_current_server, "a:1")
       @pub.send(:select_next_server)
-      assert_equal "b:2", @pub.server
+      assert_equal "b:2", @pub.server.legacy_servername
       @pub.send(:select_next_server)
-      assert_equal "a:1", @pub.server
+      assert_equal "a:1", @pub.server.legacy_servername
     end
 
     test "select_next_server should log an error if there are no servers to publish to" do

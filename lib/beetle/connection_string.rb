@@ -7,22 +7,27 @@ module Beetle
   # It provides access to the individual components of the URI (host, port, vhost, user, pass, ssl).
   # It's a value object that bases its equality and hash on the URI string.
   class ConnectionString
+    include Comparable
     attr_reader :settings
 
     def initialize(connection_string)
-      @connection_string = connection_string.to_s
-      @settings = @connection_string.start_with?("amqp://", "amqps://") ?
-                    AMQ::Settings.configure(@connection_string) :
-                    AMQ::Settings.configure("amqp://#{@connection_string}")
+      case connection_string
+      when ConnectionString
+        @settings = connection_string.settings.dup
+      else
+        @settings = connection_string.to_s.start_with?("amqp://", "amqps://") ?
+                      AMQ::Settings.configure(connection_string.to_s) :
+                      AMQ::Settings.configure("amqp://#{connection_string}")
+      end
 
-      raise ArgumentError, "invalid connection string: #{@connection_string.inspect}" if @settings.nil?
+      raise ArgumentError, "invalid connection string: #{connection_string.inspect}" if @settings.nil?
 
       settings.freeze
 
       @amqp_uri = "#{scheme}://#{user}:#{pass}@#{host}:#{port}#{vhost}"
     end
 
-    delegate :to_str, :==, :hash, to: :@amqp_uri
+    delegate :to_str, :<=>, :==, :hash, to: :@amqp_uri
 
     def to_s(with_credentials: false)
       with_credentials ? @amqp_uri : amqp_uri_without_credentials
@@ -54,6 +59,10 @@ module Beetle
 
     def scheme
       @settings[:ssl].present? ? "amqps" : "amqp"
+    end
+
+    def legacy_servername
+      "#{host}:#{port}"
     end
 
     def eql?(other)

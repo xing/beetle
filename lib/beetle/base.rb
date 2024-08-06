@@ -23,6 +23,10 @@ module Beetle
       set_current_server(s)
     end
 
+    def servers=(s)
+      @servers = ConnectionStringSet.new(s)
+    end
+
     private
 
     def error(text)
