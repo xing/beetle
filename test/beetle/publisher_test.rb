@@ -507,7 +507,7 @@ module Beetle
       assert_equal ["a:1"], dead.keys
       dead["a:1"] = 11.seconds.ago
       @pub.send(:recycle_dead_servers)
-      assert_equal ["b:2", "a:1"], @pub.servers
+      assert_equal ["b:2", "a:1"], @pub.servers.map(&:to_s)
       assert_equal({}, dead)
     end
 

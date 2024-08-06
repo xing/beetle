@@ -3,8 +3,8 @@ require 'amqp'
 module Beetle
   # Manages subscriptions and message processing on the receiver side of things.
   class Subscriber < Base
-
     attr_accessor :tracing
+
     def tracing?
       @tracing
     end

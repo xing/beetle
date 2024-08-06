@@ -130,7 +130,7 @@ module Beetle
     end
 
     test "subscribers server list should contain additional subcription hosts" do
-      assert_equal ["localhost:5672", "localhost:1234"], @sub.servers
+      assert_equal ["localhost:5672", "localhost:1234"], @sub.servers.map(&:to_s)
     end
   end
 

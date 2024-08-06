@@ -1,6 +1,5 @@
 require 'json'
 require 'qrack/amq-client-url'
-require 'amq/settings'
 require 'uri'
 
 module Beetle
@@ -24,62 +23,6 @@ module Beetle
   # order, so that no message is lost if message producers are accidentally started before
   # the corresponding consumers.
 
-  # TODO: more like a ConnectionString?
-  class ServerName
-    def initialize(connection_string)
-      @connection_string = connection_string.to_s
-
-      if @connection_string.start_with?("amqp://", "amqps://")
-        @settings = AMQ::Settings.configure(@connection_string)
-      else
-        @settings = AMQ::Settings.configure("amqp://#{@connection_string}")
-      end
-
-      if @settings.nil?
-        raise ArgumentError.new("invalid connection string: #{@connection_string.inspect}")
-      end
-
-      @amqp_uri = "#{scheme}://#{user}:#{pass}@#{host}:#{port}#{vhost}"
-    end
-
-    delegate :to_s, :to_str, :==, :hash, :to => :@amqp_uri
-
-    def to_settings
-      @settings.dup
-    end
-
-    def host
-      @settings[:host]
-    end
-
-    def port
-      @settings[:port]
-    end
-
-    def vhost
-      @settings[:vhost]
-    end
-
-    def ssl
-      @settings[:ssl]
-    end
-
-    def user
-      @settings[:user]
-    end
-
-    def pass
-      @settings[:pass]
-    end
-
-    def scheme
-      @settings[:ssl].present? ? "amqps" : "amqp"
-    end
-
-    def eql?(other)
-      self == other
-    end
-  end
 
   class Client
     include Logging
@@ -443,7 +386,7 @@ module Beetle
     end
 
     def parse_server_list(s)
-      s.split(/ *, */).uniq.reject(&:blank?).map { |server| ServerName.new(server) }
+      s.split(/ *, */).uniq.reject(&:blank?).map { |server| ConnectionString.new(server) }
     end
   end
 end

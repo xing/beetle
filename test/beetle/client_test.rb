@@ -452,11 +452,19 @@ module Beetle
     end
 
     test "duplicates are removed from the server list" do
-      assert_equal ["localhost:5672"], @client.servers
+      assert_equal 1, @client.servers.size
+
+      server = @client.servers.first
+      assert_equal "localhost", server.host
+      assert_equal 5672, server.port
     end
 
     test "duplicates and servers in the server list are removed from the additional subscription server list" do
-      assert_equal ["localhost:1234"], @client.additional_subscription_servers
+      assert_equal 1, @client.additional_subscription_servers.size
+
+      server = @client.additional_subscription_servers.first
+      assert_equal "localhost", server.host
+      assert_equal 1234, server.port
     end
   end
 
@@ -469,15 +477,19 @@ module Beetle
     end
 
     test "empty strings are removed from the server list" do
-      assert_equal ["localhost:5672"], @client.servers
+      assert_equal 1, @client.servers.size
+
+      server = @client.servers.first
+      assert_equal "localhost", server.host
+      assert_equal 5672, server.port
     end
 
     test "empty strings are removed from the additional subscription server list" do
-      assert_equal ["localhost:1234"], @client.additional_subscription_servers
-    end
-  end
+      assert_equal 1, @client.additional_subscription_servers.size
 
-  class ServerURLTest < Minitest::Test
-    # TODO:
+      server = @client.additional_subscription_servers.first
+      assert_equal "localhost", server.host
+      assert_equal 1234, server.port
+    end
   end
 end

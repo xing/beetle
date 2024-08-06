@@ -1,4 +1,6 @@
 require 'json'
+require 'beetle/connection_string'
+require 'beetle/connection_string_set'
 
 module Beetle
   # Abstract base class shared by Publisher and Subscriber
@@ -6,29 +8,26 @@ module Beetle
     include Logging
 
     attr_accessor :options #:nodoc:
-    attr_accessor :server
+    attr_reader :server, :servers
 
     def initialize(client, options = {}) #:nodoc:
       @options = options
       @client = client
-      @servers = @client.servers.clone
-      @server = @servers[rand @servers.size]
+      @servers = ConnectionStringSet.new(@client.servers.clone)
+      @server = @servers.sample
       @exchanges = {}
       @queues = {}
     end
 
-    def servers=(servers_list)
-      @servers = Array(servers_list).map { |s| ServerName.new(s) }
-    end
-
-    def servers
-      @servers.clone
+    def server=(s)
+      set_current_server(s)
     end
 
     private
 
     def error(text)
       logger.error text
+
       raise Error.new(text)
     end
 
@@ -45,11 +44,14 @@ module Beetle
     end
 
     def set_current_server(s)
-      @server = ServerName.new(s)
+      @server = case s
+                when ConnectionString then s
+                else ConnectionString.new(s.to_s)
+                end
     end
 
     def server_from_settings(settings)
-      settings.values_at(:host,:port).join(':')
+      settings.values_at(:host, :port).join(':')
     end
 
     def each_server
@@ -57,7 +59,7 @@ module Beetle
     end
 
     def each_server_sorted_randomly
-      @servers.sort_by{rand}.each { |s| set_current_server(s); yield }
+      @servers.sort_by { rand }.each { |s| set_current_server(s); yield }
     end
 
     def exchanges
