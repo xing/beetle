@@ -24,25 +24,16 @@ module Beetle
     end
 
     def current_host
-      host_and_port(@server).first
+      @server.split(':').first
     end
 
     def current_port
-      host_and_port(@server).last
+      @server =~ /:(\d+)$/ ? $1.to_i : 5672
     end
 
-    def host_and_port(server)
-      host, port = server.split(':')
-      port ||= 5672
-
-      [host, port.to_i]
-    end
 
     def connection_options_for_server(server)
-      host, port = host_and_port(server)
-      default_opts = { host: host, port: port, user: @client.config.user, pass: @client.config.password, vhost: @client.config.vhost }
-
-      @client.config.server_connection_options.fetch(server, default_opts)
+      @client.config.connection_options_for_server(server)
     end
 
     def set_current_server(s)

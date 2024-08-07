@@ -243,6 +243,15 @@ module Beetle
       }
     end
 
+    def connection_options_for_server(server)
+      host, port = server.split(':')
+      port ||= 5672
+
+      default_opts = { host: host, port: port.to_i, user: user, pass: password, vhost: vhost }
+
+      server_connection_options.fetch(server, default_opts)
+    end
+
     private
     def load_config
       raw = ERB.new(IO.read(config_file)).result
