@@ -182,7 +182,7 @@ module Beetle
       self.redis_configuration_client_ids = ""
 
       self.servers = "localhost:5672"
-      self.server_connection_options = { }
+      self.server_connection_options = {}
       self.additional_subscription_servers = ""
       self.vhost = "/"
       self.user = "guest"
