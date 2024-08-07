@@ -23,6 +23,7 @@ module Beetle
         :user => "guest",
         :pass => "guest",
         :vhost => "/",
+        :ssl => nil,
         :socket_timeout => 0,
         :connect_timeout => 5,
         :frame_max => 131072,
