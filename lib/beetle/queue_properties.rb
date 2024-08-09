@@ -155,14 +155,18 @@ module Beetle
     end
 
     def run_rabbit_http_request(uri, request, &block)
-      request.basic_auth(config.user, config.password)
+      # TODO: is this good enough or should we pass in the server explicitly
+      server = uri.port ? "#{uri.hostname}:#{uri.port}" : uri.hostname
+      connection_options = config.connection_options_for_server(server)
+
+      request.basic_auth(connection_options.user, connection_options.pass)
       case request.class::METHOD
       when 'GET'
         request["Accept"] = "application/json"
       when 'PUT'
         request["Content-Type"] = "application/json"
       end
-      http = Net::HTTP.new(uri.hostname, config.api_port)
+      http = Net::HTTP.new(connection_options.host, connection_options.api_port)
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
       # don't do this in production:

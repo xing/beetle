@@ -253,7 +253,14 @@ module Beetle
       host, port = server.split(':')
       port ||= 5672
 
-      { host: host, port: port.to_i, user: user, pass: password, vhost: vhost }
+      {
+        host: host,
+        port: port.to_i,
+        user: user,
+        pass: password,
+        vhost: vhost,
+        api_port: "1#{port}".to_i
+      }
     end
 
     def load_config
