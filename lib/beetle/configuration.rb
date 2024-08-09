@@ -259,7 +259,7 @@ module Beetle
         user: user,
         pass: password,
         vhost: vhost,
-        api_port: "1#{port}".to_i
+        api_base_url: "http://#{host}:#{api_port}/api"
       }
     end
 
