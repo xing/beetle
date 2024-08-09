@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 module Beetle
   class SetDeadLetterPolicyTest < Minitest::Test
     def setup
-      @server = "localhost:15672"
+      @server = "localhost:5672"
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
@@ -20,6 +20,19 @@ module Beetle
       assert_raises ArgumentError do
         @queue_properties.set_queue_policy!("", @queue_name)
       end
+    end
+
+    test "uses server_connection_options to run http requests" do
+      config = Configuration.new
+      config.logger = Logger.new("/dev/null")
+      config.server_connection_options[@server] = {user: "other_user", pass: "other_pass"}
+      queue_properties = QueueProperties.new(config)
+
+      stub_request(:put, "http://localhost:15672/api/test")
+        .with(basic_auth: ['other_user', 'other_pass'])
+        .to_return(:status => 200)
+
+      queue_properties.run_rabbit_http_request(URI("http://localhost:15672/api/test"), Net::HTTP::Get.new("http://localhost:15672/api/test"))
     end
 
     test "update_queue_properties! calls set_queue_policy for both target queue and dead letter queue" do
