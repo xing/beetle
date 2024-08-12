@@ -167,8 +167,10 @@ module Beetle
         request["Content-Type"] = "application/json"
       end
       http = Net::HTTP.new(connection_options[:host], connection_options[:api_port])
+      http.use_ssl = !!connection_options[:ssl] 
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
+
       # don't do this in production:
       # http.set_debug_output(logger.instance_eval{ @logdev.dev })
       http.start do |instance|
