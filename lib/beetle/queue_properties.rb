@@ -159,6 +159,8 @@ module Beetle
       server = uri.port ? "#{uri.hostname}:#{uri.port}" : uri.hostname
       connection_options = config.connection_options_for_server(server)
 
+      $stderr.puts "Running request to #{uri} with options: #{connection_options.inspect}"
+
       request.basic_auth(connection_options[:user], connection_options[:pass])
       case request.class::METHOD
       when 'GET'
