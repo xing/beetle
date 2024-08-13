@@ -243,7 +243,9 @@ module Beetle
     # If no server specific options are set, it constructs defaults which
     # use the global user, password and vhost settings.
     def connection_options_for_server(server)
-      default_server_connection_options(server).merge(server_connection_options[server] || {})
+      overrides = server_connection_options[server] || {}
+
+      default_server_connection_options(server).merge(overrides)
     end
 
     private
@@ -257,7 +259,7 @@ module Beetle
         port: port.to_i,
         user: user,
         pass: password,
-        vhost: vhost
+        vhost: vhost,
       }
     end
 

@@ -1,5 +1,4 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
-require 'pry'
 
 module Beetle
   class RabbitMQApiConnectionTest < Minitest::Spec
@@ -22,7 +21,7 @@ module Beetle
                  .with(basic_auth: ['guest', 'guest'])
                  .to_return(status: 200)
 
-        queue_properties.run_rabbit_http_request(request_uri, request) { |http| http.request(request) }
+        queue_properties.run_api_request(server, Net::HTTP::Get, "/api/test")
 
         assert_requested(stub)
       end
@@ -37,7 +36,19 @@ module Beetle
                  .with(basic_auth: ['john', 'doe'])
                  .to_return(status: 200)
 
-        queue_properties.run_rabbit_http_request(request_uri, request) { |http| http.request(request) }
+        queue_properties.run_api_request(server, Net::HTTP::Get, "/api/test")
+
+        assert_requested(stub)
+      end
+    end
+
+    describe "when server does not specify a port" do
+      let(:server) { "noport.example.com" }
+
+      test "derives correct api port" do
+        stub = stub_request(:get, "http://noport.example.com:15672/api/test").to_return(status: 200)
+
+        queue_properties.run_api_request(server, Net::HTTP::Get, "/api/test")
 
         assert_requested(stub)
       end
