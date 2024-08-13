@@ -159,8 +159,6 @@ module Beetle
       server = uri.port ? "#{uri.hostname}:#{uri.port}" : uri.hostname
       connection_options = config.connection_options_for_server(server)
 
-      $stderr.puts "Running request to #{uri} with options: #{connection_options.inspect}"
-
       request.basic_auth(connection_options[:user], connection_options[:pass])
       case request.class::METHOD
       when 'GET'
@@ -168,7 +166,8 @@ module Beetle
       when 'PUT'
         request["Content-Type"] = "application/json"
       end
-      http = Net::HTTP.new(connection_options[:host], connection_options[:api_port])
+      api_port = "1#{connection_options[:port]}".to_i
+      http = Net::HTTP.new(connection_options[:host], api_port)
       http.use_ssl = !!connection_options[:ssl] 
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)

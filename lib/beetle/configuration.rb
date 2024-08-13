@@ -123,9 +123,6 @@ module Beetle
     # Write timeout for http requests to RabbitMQ HTTP API
     attr_accessor :rabbitmq_api_write_timeout
 
-    # Returns the port on which the Rabbit API is hosted
-    attr_accessor :api_port
-
     # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
@@ -187,7 +184,6 @@ module Beetle
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
-      self.api_port = 15672
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
@@ -258,8 +254,7 @@ module Beetle
         port: port.to_i,
         user: user,
         pass: password,
-        vhost: vhost,
-        api_port: 15672,
+        vhost: vhost
       }
     end
 
