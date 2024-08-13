@@ -239,6 +239,9 @@ module Beetle
       }
     end
 
+    # Returns a hash of connection options for the given server.
+    # If no server specific options are set, it constructs defaults which
+    # use the global user, password and vhost settings.
     def connection_options_for_server(server)
       default_server_connection_options(server).merge(server_connection_options[server] || {})
     end

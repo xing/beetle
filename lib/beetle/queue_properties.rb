@@ -155,10 +155,12 @@ module Beetle
     end
 
     def run_rabbit_http_request(uri, request, &block)
-      # TODO: is this good enough or should we pass in the server explicitly
-      server = uri.port ? "#{uri.hostname}:#{uri.port}" : uri.hostname
+      server             = uri.port ? "#{uri.hostname}:#{uri.port}" : uri.hostname
       connection_options = config.connection_options_for_server(server)
+      api_port           = "1#{connection_options[:port]}".to_i
 
+      require 'pry'
+      binding.pry if uri.hostname == "other.example.com"
       request.basic_auth(connection_options[:user], connection_options[:pass])
       case request.class::METHOD
       when 'GET'
@@ -166,14 +168,13 @@ module Beetle
       when 'PUT'
         request["Content-Type"] = "application/json"
       end
-      api_port = "1#{connection_options[:port]}".to_i
       http = Net::HTTP.new(connection_options[:host], api_port)
-      http.use_ssl = !!connection_options[:ssl] 
+      http.use_ssl = !!connection_options[:ssl]
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
 
       # don't do this in production:
-      # http.set_debug_output(logger.instance_eval{ @logdev.dev })
+      #http.set_debug_output(logger.instance_eval{ @logdev.dev })
       http.start do |instance|
         block.call(instance) if block_given?
       end

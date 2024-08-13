@@ -1,6 +1,54 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
+require 'pry'
 
 module Beetle
+  class RabbitMQApiConnectionTest < Minitest::Spec
+    let(:server) { "example.com:5672" }
+    let(:config) { Configuration.new }
+    let(:server_connection_options) { {} }
+    let(:queue_properties) { QueueProperties.new(config) }
+    let(:request_uri) { URI("http://#{server}/api/test") }
+    let(:request) { Net::HTTP::Get.new(request_uri) }
+
+    before do
+      config.logger = Logger.new("/dev/null")
+      config.server_connection_options = server_connection_options
+    end
+
+    def run_api_request
+      queue_properties.run_rabbit_http_request(request_uri, request) do |http|
+        http.request(request)
+      end
+    end
+
+    describe "when no server_connection_options are set" do
+      test "uses default credentials and derives correct api port" do
+        stub = stub_request(:get, "http://example.com:15672/api/test")
+                 .with(basic_auth: ['guest', 'guest'])
+                 .to_return(status: 200)
+
+        run_api_request
+
+        assert_requested(stub)
+      end
+    end
+
+    describe "when server_connection_options are set" do
+      let(:server) { "other.example.com:5671" }
+      let(:server_connection_options) { { "other.example.com:5671": { user: "john", pass: "doe"} } }
+
+      test "uses credentials from server_connection_options and derives correct api port" do
+        stub = stub_request(:get, "http://other.example.com:15671/api/test")
+                 .with(basic_auth: ['john', 'doe'])
+                 .to_return(status: 200)
+
+        run_api_request
+
+        assert_requested(stub)
+      end
+    end
+  end
+
   class SetDeadLetterPolicyTest < Minitest::Test
     def setup
       @server = "localhost:5672"
@@ -20,19 +68,6 @@ module Beetle
       assert_raises ArgumentError do
         @queue_properties.set_queue_policy!("", @queue_name)
       end
-    end
-
-    test "uses server_connection_options to run http requests" do
-      config = Configuration.new
-      config.logger = Logger.new("/dev/null")
-      config.server_connection_options[@server] = {user: "other_user", pass: "other_pass"}
-      queue_properties = QueueProperties.new(config)
-
-      stub_request(:put, "http://localhost:15672/api/test")
-        .with(basic_auth: ['other_user', 'other_pass'])
-        .to_return(:status => 200)
-
-      queue_properties.run_rabbit_http_request(URI("http://localhost:15672/api/test"), Net::HTTP::Get.new("http://localhost:15672/api/test"))
     end
 
     test "update_queue_properties! calls set_queue_policy for both target queue and dead letter queue" do
@@ -58,7 +93,7 @@ module Beetle
         .with(basic_auth: ['guest', 'guest'])
         .to_return(:status => 404)
 
-      stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
         .with(basic_auth: ['guest', 'guest'])
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
@@ -71,6 +106,8 @@ module Beetle
         .to_return(:status => 204)
 
       @queue_properties.set_queue_policy!(@server, @queue_name, :lazy => false, :dead_lettering => true, :routing_key => "QUEUE_NAME_dead_letter")
+
+      assert_requested(stub)
     end
 
     test "skips the PUT call to rabbitmq if the policy is already defined as desired" do

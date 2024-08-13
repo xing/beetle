@@ -70,6 +70,7 @@ module Beetle
   end
 
   class ConnectionOptionsForServerTest < Minitest::Test
+
     test "returns the options for the server provided" do
       config = Configuration.new
       config.servers = 'localhost:5672'
@@ -85,7 +86,7 @@ module Beetle
       end
     end
 
-    test "returns default options if no options are set for the server" do
+    test "returns default options if no specific options are set for the server" do
       config = Configuration.new
       config.servers = 'localhost:5672'
 
