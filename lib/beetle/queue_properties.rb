@@ -159,8 +159,6 @@ module Beetle
       connection_options = config.connection_options_for_server(server)
       api_port           = "1#{connection_options[:port]}".to_i
 
-      require 'pry'
-      binding.pry if uri.hostname == "other.example.com"
       request.basic_auth(connection_options[:user], connection_options[:pass])
       case request.class::METHOD
       when 'GET'

@@ -12,13 +12,8 @@ module Beetle
 
     before do
       config.logger = Logger.new("/dev/null")
+      config.servers = server 
       config.server_connection_options = server_connection_options
-    end
-
-    def run_api_request
-      queue_properties.run_rabbit_http_request(request_uri, request) do |http|
-        http.request(request)
-      end
     end
 
     describe "when no server_connection_options are set" do
@@ -27,7 +22,7 @@ module Beetle
                  .with(basic_auth: ['guest', 'guest'])
                  .to_return(status: 200)
 
-        run_api_request
+        queue_properties.run_rabbit_http_request(request_uri, request) { |http| http.request(request) }
 
         assert_requested(stub)
       end
@@ -35,14 +30,14 @@ module Beetle
 
     describe "when server_connection_options are set" do
       let(:server) { "other.example.com:5671" }
-      let(:server_connection_options) { { "other.example.com:5671": { user: "john", pass: "doe"} } }
+      let(:server_connection_options) { { "other.example.com:5671" => { user: "john", pass: "doe"} } }
 
       test "uses credentials from server_connection_options and derives correct api port" do
         stub = stub_request(:get, "http://other.example.com:15671/api/test")
                  .with(basic_auth: ['john', 'doe'])
                  .to_return(status: 200)
 
-        run_api_request
+        queue_properties.run_rabbit_http_request(request_uri, request) { |http| http.request(request) }
 
         assert_requested(stub)
       end
