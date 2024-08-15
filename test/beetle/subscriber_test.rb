@@ -420,7 +420,7 @@ module Beetle
     def setup
       @config = Beetle::Configuration.new
       @config.servers = "mickey:42"
-      @config.server_connection_options["mickey:42"] = { user: "john", pass: "doe", vhost: "test", ssl: "0" }
+      @config.server_connection_options["mickey:42"] = { user: "john", pass: "doe", vhost: "test", ssl: 0 }
 
       @client = Client.new(@config)
       @sub = @client.send(:subscriber)
@@ -490,7 +490,7 @@ module Beetle
       EM.expects(:run).yields
       EM.expects(:reactor_running?).returns(true)
 
-      AMQP.expects(:connect).once.with(has_entries(host: "mickey", port: 42, user: "john", pass: "doe", ssl: "0")).yields(connection)
+      AMQP.expects(:connect).once.with(has_entries(host: "mickey", port: 42, user: "john", pass: "doe", ssl: 0)).yields(connection)
 
       @sub.listen_queues(["a_queue"])
     end
