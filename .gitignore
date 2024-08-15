@@ -26,3 +26,5 @@ gemfiles/*
 /master-client.txt
 /master-server.txt
 /redis-master-rcc
+/gems
+/bundler

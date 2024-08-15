@@ -73,8 +73,13 @@ module Beetle
 
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
+
     # list of additional amqp servers to use for subscribers (defaults to <tt>""</tt>)
     attr_accessor :additional_subscription_servers
+
+    # a hash mapping a server name to a hash of connection options for that server or additional subscription server
+    attr_accessor :server_connection_options
+
     # the virtual host to use on the AMQP servers (defaults to <tt>"/"</tt>)
     attr_accessor :vhost
     # the AMQP user to use when connecting to the AMQP servers (defaults to <tt>"guest"</tt>)
@@ -117,9 +122,6 @@ module Beetle
     attr_accessor :rabbitmq_api_read_timeout
     # Write timeout for http requests to RabbitMQ HTTP API
     attr_accessor :rabbitmq_api_write_timeout
-
-    # Returns the port on which the Rabbit API is hosted
-    attr_accessor :api_port
 
     # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
@@ -177,11 +179,11 @@ module Beetle
       self.redis_configuration_client_ids = ""
 
       self.servers = "localhost:5672"
+      self.server_connection_options = {}
       self.additional_subscription_servers = ""
       self.vhost = "/"
       self.user = "guest"
       self.password = "guest"
-      self.api_port = 15672
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
@@ -237,7 +239,30 @@ module Beetle
       }
     end
 
+    # Returns a hash of connection options for the given server.
+    # If no server specific options are set, it constructs defaults which
+    # use the global user, password and vhost settings.
+    def connection_options_for_server(server)
+      overrides = server_connection_options[server] || {}
+
+      default_server_connection_options(server).merge(overrides)
+    end
+
     private
+
+    def default_server_connection_options(server)
+      host, port = server.split(':')
+      port ||= 5672
+
+      {
+        host: host,
+        port: port.to_i,
+        user: user,
+        pass: password,
+        vhost: vhost,
+      }
+    end
+
     def load_config
       raw = ERB.new(IO.read(config_file)).result
       hash = if config_file =~ /\.json$/

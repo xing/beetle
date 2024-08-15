@@ -68,4 +68,51 @@ module Beetle
       assert_equal "10.0.0.1:3001", config.additional_subscription_servers
     end
   end
+
+  class ConnectionOptionsForServerTest < Minitest::Test
+
+    test "returns the options for the server provided" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+      config.server_connection_options["localhost:5672"] = {host:  'localhost', port: 5672, user: "john", pass: "doe", vhost: "test", ssl: 0}
+
+      config.connection_options_for_server("localhost:5672").tap do |options|
+        assert_equal "localhost", options[:host]
+        assert_equal 5672, options[:port]
+        assert_equal "john", options[:user]
+        assert_equal "doe", options[:pass]
+        assert_equal "test", options[:vhost]
+        assert_equal 0, options[:ssl]
+      end
+    end
+
+    test "returns default options if no specific options are set for the server" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+
+      config.connection_options_for_server("localhost:5672").tap do |options|
+        assert_equal "localhost", options[:host]
+        assert_equal 5672, options[:port]
+        assert_equal "guest", options[:user]
+        assert_equal "guest", options[:pass]
+        assert_equal "/", options[:vhost]
+        assert_nil options[:ssl]
+      end
+    end
+
+    test "allows to set specific options while retaining defaults for the rest" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+      config.server_connection_options["localhost:5672"] = { pass: "another_pass", ssl: 1 }
+
+      config.connection_options_for_server("localhost:5672").tap do |options|
+        assert_equal "localhost", options[:host]
+        assert_equal 5672, options[:port]
+        assert_equal "guest", options[:user]
+        assert_equal "another_pass", options[:pass]
+        assert_equal "/", options[:vhost]
+        assert_equal 1, options[:ssl]
+      end
+    end
+  end
 end

@@ -46,10 +46,7 @@ module Beetle
 
       # no need to worry that the server has the port 5672. Net:HTTP will take care of this. See below.
       policy_name = "#{queue_name}_policy"
-      request_url = URI("http://#{server}/api/policies/#{vhost}/#{policy_name}")
-      get_request = Net::HTTP::Get.new(request_url)
-      put_request = Net::HTTP::Put.new(request_url)
-      delete_request = Net::HTTP::Delete.new(request_url)
+      request_path = "/api/policies/#{vhost}/#{policy_name}"
 
       # set up queue policy
       definition = {}
@@ -70,9 +67,7 @@ module Beetle
 
       is_default_policy = definition == config.broker_default_policy
 
-      get_response = run_rabbit_http_request(request_url, get_request) do |http|
-        http.request(get_request, nil)
-      end
+      get_response = run_api_request(server, Net::HTTP::Get, request_path)
 
       case get_response.code
       when "200"
@@ -80,19 +75,16 @@ module Beetle
         same_policy = put_request_body.all? { |k,v| response_body[k] == v }
         if same_policy
           if is_default_policy
-            run_rabbit_http_request(request_url, delete_request) do |http|
-              http.request(get_request, nil)
-            end
+            run_api_request(server, Net::HTTP::Delete, request_path)
           end
+
           return :ok
         end
       when "404"
         return :ok if is_default_policy
       end
 
-      put_response = run_rabbit_http_request(request_url, put_request) do |http|
-        http.request(put_request, put_request_body.to_json)
-      end
+      put_response = run_api_request(server, Net::HTTP::Put, request_path, put_request_body.to_json)
 
       unless %w(200 201 204).include?(put_response.code)
         log_error("Failed to create policy for queue #{queue_name}", put_response)
@@ -125,12 +117,7 @@ module Beetle
     end
 
     def retrieve_bindings(server, queue_name)
-      request_url = URI("http://#{server}/api/queues/#{vhost}/#{queue_name}/bindings")
-      request = Net::HTTP::Get.new(request_url)
-
-      response = run_rabbit_http_request(request_url, request) do |http|
-        http.request(request)
-      end
+      response = run_api_request(server, Net::HTTP::Get, "/api/queues/#{vhost}/#{queue_name}/bindings")
 
       unless response.code == "200"
         log_error("Failed to retrieve bindings for queue #{queue_name}", response)
@@ -141,12 +128,7 @@ module Beetle
     end
 
     def remove_binding(server, queue_name, exchange, properties_key)
-      request_url = URI("http://#{server}/api/bindings/#{vhost}/e/#{exchange}/q/#{queue_name}/#{properties_key}")
-      request = Net::HTTP::Delete.new(request_url)
-
-      response = run_rabbit_http_request(request_url, request) do |http|
-        http.request(request)
-      end
+      response = run_api_request(server, Net::HTTP::Delete, "/api/bindings/#{vhost}/e/#{exchange}/q/#{queue_name}/#{properties_key}")
 
       unless %w(200 201 204).include?(response.code)
         log_error("Failed to remove obsolete binding for queue #{queue_name}", response)
@@ -154,21 +136,29 @@ module Beetle
       end
     end
 
-    def run_rabbit_http_request(uri, request, &block)
-      request.basic_auth(config.user, config.password)
-      case request.class::METHOD
-      when 'GET'
-        request["Accept"] = "application/json"
-      when 'PUT'
-        request["Content-Type"] = "application/json"
+    def run_api_request(server, request_const, path, *request_args)
+      connection_options = config.connection_options_for_server(server)
+
+      derived_api_port = "1#{connection_options[:port]}".to_i
+      request_url = URI("http://#{connection_options[:host]}:#{derived_api_port}#{path}")
+
+      request = request_const.new(request_url).tap do |req|
+        req.basic_auth(connection_options[:user], connection_options[:pass])
+        case request_const::METHOD
+        when 'GET'
+          req["Accept"] = "application/json"
+        when 'PUT'
+          req["Content-Type"] = "application/json"
+        end
       end
-      http = Net::HTTP.new(uri.hostname, config.api_port)
+
+      http = Net::HTTP.new(connection_options[:host], derived_api_port)
+      http.use_ssl = !!connection_options[:ssl]
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
-      # don't do this in production:
-      # http.set_debug_output(logger.instance_eval{ @logdev.dev })
+
       http.start do |instance|
-        block.call(instance) if block_given?
+        instance.request(request, *request_args)
       end
     end
 

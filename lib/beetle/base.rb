@@ -31,6 +31,11 @@ module Beetle
       @server =~ /:(\d+)$/ ? $1.to_i : 5672
     end
 
+
+    def connection_options_for_server(server)
+      @client.config.connection_options_for_server(server)
+    end
+
     def set_current_server(s)
       @server = s
     end
