@@ -1,5 +1,3 @@
-version: '2'
-
 services:
   mysql:
     container_name: beetle-mysql
