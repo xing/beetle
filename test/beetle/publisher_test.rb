@@ -38,18 +38,18 @@ module Beetle
     test "new bunnies should be created using custom connection options and they should be started" do
       config = Configuration.new
       config.servers = 'localhost:5672'
-      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: "0" }
+      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: 0 }
       client = Client.new(config)
       pub = Publisher.new(client)
 
-      m = mock("dummy")
+      bunny_mock = mock("dummy_bunny")
       expected_bunny_options = {
         host: "localhost",
         port: 5672,
         user: "john",
         pass: "doe",
         vhost: "test",
-        ssl: "0",
+        ssl: 0,
         socket_timeout: 0,
         connect_timeout: 5,
         frame_max: 131072,
@@ -57,10 +57,10 @@ module Beetle
         spec: '09',
         logging: false
       }
-    
-      Bunny.expects(:new).with(expected_bunny_options).returns(m)
-      m.expects(:start)
-      assert_equal m, pub.send(:new_bunny)
+
+      Bunny.expects(:new).with(expected_bunny_options).returns(bunny_mock)
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
     test "initially there should be no bunnies" do
