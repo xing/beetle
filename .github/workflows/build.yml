@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        ruby-version: [3.3.0, 3.2.3, 3.1.4, 3.0.6]
+        ruby-version: [3.3.4, 3.2.5, 3.1.6]
         redis-version: [4, 5]
 
     steps:
@@ -33,7 +33,7 @@ jobs:
         run: sudo apt-get install redis
 
       - name: Start required services
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Install gems
         run: bundle install && bundle exec appraisal install
@@ -53,5 +53,5 @@ jobs:
           BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}.gemfile
 
       - name: Stop services
-        run: docker-compose down
+        run: docker compose down
         if: always()
