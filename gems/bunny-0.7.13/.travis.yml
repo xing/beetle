@@ -1,0 +1,20 @@
+language: ruby
+bundler_args: --without development
+cache: bundler
+before_script: "./bin/ci/before_build"
+script: "bundle exec rspec spec"
+dist: trusty
+rvm:
+  - "2.4.1"
+  - "2.3.4"
+  - "2.2.7"
+notifications:
+  email:
+    - skaes@railsexpress.de
+services:
+  - rabbitmq
+branches:
+  only:
+    - 0.7.x-stable
+env:
+  - CI=true

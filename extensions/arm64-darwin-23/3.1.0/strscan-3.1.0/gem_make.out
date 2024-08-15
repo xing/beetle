@@ -1,0 +1,17 @@
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/strscan-3.1.0/ext/strscan
+/Users/danylo.goncharov/.rbenv/versions/3.1.2/bin/ruby -I /Users/danylo.goncharov/.rbenv/versions/3.1.2/lib/ruby/3.1.0 -r ./siteconf20240815-10570-xdtp5.rb extconf.rb
+checking for onig_region_memsize() in ruby.h... yes
+checking for rb_reg_onig_match() in ruby.h... no
+creating Makefile
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/strscan-3.1.0/ext/strscan
+make DESTDIR\= clean
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/strscan-3.1.0/ext/strscan
+make DESTDIR\=
+compiling strscan.c
+linking shared-object strscan.bundle
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/strscan-3.1.0/ext/strscan
+make DESTDIR\= install
+/opt/homebrew/bin/ginstall -c -m 0755 strscan.bundle ./.gem.20240815-10570-bb49le

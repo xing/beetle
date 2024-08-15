@@ -1,0 +1,22 @@
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/websocket-native-1.0.0/ext/websocket_native_ext
+/Users/danylo.goncharov/.rbenv/versions/3.1.2/bin/ruby -I /Users/danylo.goncharov/.rbenv/versions/3.1.2/lib/ruby/3.1.0 -r ./siteconf20240815-10570-vndt3s.rb extconf.rb
+creating Makefile
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/websocket-native-1.0.0/ext/websocket_native_ext
+make DESTDIR\= clean
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/websocket-native-1.0.0/ext/websocket_native_ext
+make DESTDIR\=
+compiling websocket_native_ext.c
+websocket_native_ext.c:18:11: warning: implicit conversion loses integer precision: 'long' to 'int' [-Wshorten-64-to-32]
+  int n = RARRAY_LEN(payload), i, p, m;
+      ~   ^~~~~~~~~~~~~~~~~~~
+/Users/danylo.goncharov/.rbenv/versions/3.1.2/include/ruby-3.1.0/ruby/internal/core/rarray.h:68:36: note: expanded from macro 'RARRAY_LEN'
+#define RARRAY_LEN                 rb_array_len                 /**< @alias{rb_array_len} */
+                                   ^
+1 warning generated.
+linking shared-object websocket_native_ext.bundle
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/websocket-native-1.0.0/ext/websocket_native_ext
+make DESTDIR\= install
+/opt/homebrew/bin/ginstall -c -m 0755 websocket_native_ext.bundle ./.gem.20240815-10570-jids8p

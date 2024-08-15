@@ -1,0 +1,4 @@
+Gemfile.lock
+lib/websocket_native_ext.*
+pkg/*.gem
+tmp

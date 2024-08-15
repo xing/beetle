@@ -1,0 +1,19 @@
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/byebug-11.1.3/ext/byebug
+/Users/danylo.goncharov/.rbenv/versions/3.1.2/bin/ruby -I /Users/danylo.goncharov/.rbenv/versions/3.1.2/lib/ruby/3.1.0 -r ./siteconf20240815-10570-cha4v7.rb extconf.rb
+creating Makefile
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/byebug-11.1.3/ext/byebug
+make DESTDIR\= clean
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/byebug-11.1.3/ext/byebug
+make DESTDIR\=
+compiling breakpoint.c
+compiling byebug.c
+compiling context.c
+compiling locker.c
+compiling threads.c
+linking shared-object byebug/byebug.bundle
+
+current directory: /Users/danylo.goncharov/Documents/Code/New-Work/beetle/gems/byebug-11.1.3/ext/byebug
+make DESTDIR\= install
+/opt/homebrew/bin/ginstall -c -m 0755 byebug.bundle ./.gem.20240815-10570-7h3w0c/byebug

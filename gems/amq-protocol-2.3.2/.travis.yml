@@ -1,0 +1,17 @@
+dist: bionic
+language: ruby
+bundler_args: --without development
+cache: bundler
+script: "bundle exec rspec spec"
+rvm:
+  - ruby-head
+  - "2.6.3"
+  - "2.5.5"
+  - "2.4.5"
+  - "2.3.8"
+notifications:
+  recipients:
+    - michael@rabbitmq.com
+matrix:
+  allow_failures:
+    - rvm: ruby-head

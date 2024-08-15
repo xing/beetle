@@ -1,0 +1,20 @@
+require 'bundler'
+Bundler::GemHelper.install_tasks
+
+require 'rspec/core/rake_task'
+
+RSpec::Core::RakeTask.new do |t|
+  t.rspec_opts = ["-c", "-f progress"]
+  t.pattern = 'spec/**/*_spec.rb'
+end
+
+task :default => :spec
+
+spec = Gem::Specification.load('websocket.gemspec')
+if RUBY_PLATFORM =~ /java/
+  require 'rake/javaextensiontask'
+  Rake::JavaExtensionTask.new('websocket_native_ext', spec)
+else
+  require 'rake/extensiontask'
+  Rake::ExtensionTask.new('websocket_native_ext', spec)
+end
