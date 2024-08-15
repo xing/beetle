@@ -1,2 +1,0 @@
---with-opt-dir=/opt/homebrew/opt/openssl@3
---with-ldflags=-L/opt/homebrew/opt/zstd/lib

@@ -42,7 +42,7 @@ module Beetle
       client = Client.new(config)
       pub = Publisher.new(client)
 
-      bunny_mock = mock("dummy_bunny")
+      m = mock("dummy")
       expected_bunny_options = {
         host: "localhost",
         port: 5672,
@@ -58,9 +58,9 @@ module Beetle
         logging: false
       }
     
-      Bunny.expects(:new).with(expected_bunny_options).returns(bunny_mock)
-      bunny_mock.expects(:start)
-      assert_equal bunny_mock, pub.send(:new_bunny)
+      Bunny.expects(:new).with(expected_bunny_options).returns(m)
+      m.expects(:start)
+      assert_equal m, pub.send(:new_bunny)
     end
 
     test "initially there should be no bunnies" do
