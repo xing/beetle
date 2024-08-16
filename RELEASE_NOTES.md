@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 4.0.0.rc1
+* [breaking] Remove Beetle::Configuration.api_port without replacement. The port is now always derived from server port
+* Allow to specify connection options on a per server basis using a new setting Beetle::Configuration.server_connection_options.
+  This can be used to selectively overwrite credentials and ssl settings for specific servers. 
+  The latter change is backwards-compatible.
+
 ## Version 3.5.7
 * Require bunny versions (`~> 0.7.13`) that work for Ruby 3.2 out of
   the box.
