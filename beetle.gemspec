@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.require_paths      = ["lib"]
   s.test_files         = Dir['test/**/*.rb']
   s.metadata = {
+    'allowed_push_host' => "https://gems.xing.com",
     "changelog_uri"    => "https://github.com/xing/beetle/blob/master/RELEASE_NOTES.rdoc"
   }
 
