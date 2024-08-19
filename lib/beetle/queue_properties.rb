@@ -153,7 +153,7 @@ module Beetle
       end
 
       http = Net::HTTP.new(connection_options[:host], derived_api_port)
-      http.use_ssl = !!connection_options[:ssl]
+      http.use_ssl = connection_options[:ssl]
       http.read_timeout = config.rabbitmq_api_read_timeout
       http.write_timeout = config.rabbitmq_api_write_timeout if http.respond_to?(:write_timeout=)
 

@@ -23,7 +23,7 @@ module Beetle
         :user => "guest",
         :pass => "guest",
         :vhost => "/",
-        :ssl => nil,
+        :ssl => false,
         :socket_timeout => 0,
         :connect_timeout => 5,
         :frame_max => 131072,
@@ -38,7 +38,7 @@ module Beetle
     test "new bunnies should be created using custom connection options and they should be started" do
       config = Configuration.new
       config.servers = 'localhost:5672'
-      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: 0 }
+      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
       client = Client.new(config)
       pub = Publisher.new(client)
 
@@ -49,7 +49,7 @@ module Beetle
         user: "john",
         pass: "doe",
         vhost: "test",
-        ssl: 0,
+        ssl: false,
         socket_timeout: 0,
         connect_timeout: 5,
         frame_max: 131072,

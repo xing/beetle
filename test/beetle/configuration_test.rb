@@ -74,7 +74,7 @@ module Beetle
     test "returns the options for the server provided" do
       config = Configuration.new
       config.servers = 'localhost:5672'
-      config.server_connection_options["localhost:5672"] = {host:  'localhost', port: 5672, user: "john", pass: "doe", vhost: "test", ssl: 0}
+      config.server_connection_options["localhost:5672"] = {host:  'localhost', port: 5672, user: "john", pass: "doe", vhost: "test", ssl: false}
 
       config.connection_options_for_server("localhost:5672").tap do |options|
         assert_equal "localhost", options[:host]
@@ -82,7 +82,7 @@ module Beetle
         assert_equal "john", options[:user]
         assert_equal "doe", options[:pass]
         assert_equal "test", options[:vhost]
-        assert_equal 0, options[:ssl]
+        assert_equal false, options[:ssl]
       end
     end
 
@@ -103,7 +103,7 @@ module Beetle
     test "allows to set specific options while retaining defaults for the rest" do
       config = Configuration.new
       config.servers = 'localhost:5672'
-      config.server_connection_options["localhost:5672"] = { pass: "another_pass", ssl: 1 }
+      config.server_connection_options["localhost:5672"] = { pass: "another_pass", ssl: true }
 
       config.connection_options_for_server("localhost:5672").tap do |options|
         assert_equal "localhost", options[:host]
@@ -111,7 +111,7 @@ module Beetle
         assert_equal "guest", options[:user]
         assert_equal "another_pass", options[:pass]
         assert_equal "/", options[:vhost]
-        assert_equal 1, options[:ssl]
+        assert_equal true, options[:ssl]
       end
     end
   end

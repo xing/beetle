@@ -169,7 +169,7 @@ module Beetle
         :user               => options[:user],
         :pass               => options[:pass],
         :vhost              => options[:vhost],
-        :ssl                => options[:ssl],
+        :ssl                => options[:ssl] || false,
         :frame_max          => @client.config.frame_max,
         :channel_max        => @client.config.channel_max,
         :socket_timeout     => @client.config.publishing_timeout,
