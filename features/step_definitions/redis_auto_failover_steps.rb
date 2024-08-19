@@ -158,7 +158,7 @@ end
 
 Then /^the redis master of the beetle handler should be "([^\"]*)"$/ do |redis_name|
   Beetle.config.servers = "127.0.0.1:5672" # rabbitmq
-  Beetle.config.logger.level = Logger::INFO
+  Beetle.config.logger.level = Logger::FATAL
   redis_master = TestDaemons::Redis[redis_name].ip_with_port
   response = `curl -s 127.0.0.1:10254/redis_master`.chomp
   assert_equal redis_master, response
