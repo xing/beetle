@@ -31,7 +31,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "amqp",                    "= 1.8.0"
   s.add_runtime_dependency "activesupport",           ">= 2.3.4"
 
-  s.add_development_dependency "activerecord",        "~> 5.0"
+  s.add_development_dependency "activerecord",        ">= 6.1"
   s.add_development_dependency "cucumber",            "~> 8.0.0"
   s.add_development_dependency "daemon_controller",   "~> 1.2.0"
   s.add_development_dependency "daemons",             ">= 1.2.0"
@@ -49,5 +49,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "redcarpet"
   s.add_development_dependency "github-markup"
   s.add_development_dependency "byebug"
-  s.add_development_dependency "appraisal"
+  s.add_development_dependency "appraisal",          ">= 2.5.0"
 end
