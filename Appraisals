@@ -2,8 +2,8 @@
 rails_versions = [
   "6.1.7.8",
   "7.0.8.4",
-  "7.1.3.4",
-  "7.2.0"
+  "7.1.4",
+  "7.2.1"
 ]
 rails_versions.each do |rails_version|
   appraise "redis_4_rails_#{rails_version}" do
