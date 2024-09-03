@@ -1,9 +1,7 @@
 # Release Notes
 
-## Version 4.0.0.rc2
+## Version 4.0.0
 * The Beetle::Configuration.server_connection_options now take true and false for the SSL configuration. 
-
-## Version 4.0.0.rc1
 * [breaking] Remove Beetle::Configuration.api_port without replacement. The port is now always derived from server port
 * Allow to specify connection options on a per server basis using a new setting Beetle::Configuration.server_connection_options.
   This can be used to selectively overwrite credentials and ssl settings for specific servers. 
