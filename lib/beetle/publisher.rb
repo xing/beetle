@@ -161,18 +161,21 @@ module Beetle
     end
 
     def new_bunny
+      options = connection_options_for_server(@server)
+
       b = Bunny.new(
-        :host               => current_host,
-        :port               => current_port,
-        :logging            => !!@options[:logging],
-        :user               => @client.config.user,
-        :pass               => @client.config.password,
-        :vhost              => @client.config.vhost,
+        :host               => options[:host],
+        :port               => options[:port],
+        :user               => options[:user],
+        :pass               => options[:pass],
+        :vhost              => options[:vhost],
+        :ssl                => options[:ssl] || false,
         :frame_max          => @client.config.frame_max,
         :channel_max        => @client.config.channel_max,
         :socket_timeout     => @client.config.publishing_timeout,
         :connect_timeout    => @client.config.publisher_connect_timeout,
-        :spec => '09')
+        :spec               => '09',
+        :logging            => !!@options[:logging])
       b.start
       b
     end

@@ -118,7 +118,6 @@ module Beetle
       @sub.stubs(:queues).returns("a" => q)
       @sub.__send__(:resume, "a")
     end
-
   end
 
   class AdditionalSubscriptionServersTest < Minitest::Test
@@ -415,12 +414,15 @@ module Beetle
       assert_equal({:ack => true}, opts)
       assert_equal 42, block.call(1)
     end
-
   end
 
   class ConnectionTest < Minitest::Test
     def setup
-      @client = Client.new
+      @config = Beetle::Configuration.new
+      @config.servers = "mickey:42"
+      @config.server_connection_options["mickey:42"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
+
+      @client = Client.new(@config)
       @sub = @client.send(:subscriber)
       @sub.send(:set_current_server, "mickey:42")
       @settings = @sub.send(:connection_settings)
@@ -470,6 +472,30 @@ module Beetle
       assert_equal connection, @sub.instance_variable_get("@connections")["mickey:42"]
     end
 
+    test "uses server connection options" do
+      @client.register_exchange(:an_exchange)
+      @client.register_queue(:a_queue, :exchange => :an_exchange)
+      @client.register_message(:a_message, :key => "foo", :exchange => :an_exchange)
+
+      connection = mock("connection")
+
+      connection.expects(:on_tcp_connection_loss)
+      connection.expects(:next_channel_id).returns(1)
+      connection.expects(:auto_recovering?).returns(true)
+      connection.expects(:open?).returns(true)
+      connection.expects(:channel_max)
+      connection.expects(:on_connection)
+
+
+      EM.expects(:run).yields
+      EM.expects(:reactor_running?).returns(true)
+
+      AMQP.expects(:connect).once.with(has_entries(host: "mickey", port: 42, user: "john", pass: "doe", ssl: false)).yields(connection)
+
+      @sub.listen_queues(["a_queue"])
+    end
+
+
     test "channel opening, exchange creation, queue bindings and subscription" do
       connection = mock("connection")
       channel = mock("channel")
@@ -482,7 +508,5 @@ module Beetle
       @sub.send(:open_channel_and_subscribe, connection, @settings)
       assert_equal channel, @sub.instance_variable_get("@channels")["mickey:42"]
     end
-
   end
-
 end
