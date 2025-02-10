@@ -13,11 +13,13 @@ module Beetle
     attr_accessor :beetle_policy_updates_queue_name
     # Name of the policy update routing key
     attr_accessor :beetle_policy_updates_routing_key
-    # default logger (defaults to <tt>Logger.new(log_file)</tt>)
-    attr_accessor :broker_default_policy
     # set this to whatever your brokers have installed as default policy. For example, if you have installed
     # a policy that makes every queue lazy, it should be set to <tt>{"queue-moode" => "lazy"}</tt>.
+    attr_accessor :broker_default_policy
+    # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
+    
+
     # defaults to <tt>STDOUT</tt>
     attr_accessor :redis_logger
     # set this to a logger instance if you want redis operations to be logged. defaults to <tt>nil</tt>.
@@ -93,6 +95,8 @@ module Beetle
     # in bunny.
     attr_accessor :channel_max
 
+    # the heartbeat interval to set for connections in seconds (defaults to <tt>0</tt>)
+    attr_accessor :heartbeat
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
     # compatibility, they are disabled by default.
     attr_accessor :lazy_queues_enabled
@@ -187,6 +191,7 @@ module Beetle
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
+      self.heartbeat = 0
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second

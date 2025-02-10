@@ -175,7 +175,9 @@ module Beetle
         :socket_timeout     => @client.config.publishing_timeout,
         :connect_timeout    => @client.config.publisher_connect_timeout,
         :spec               => '09',
-        :logging            => !!@options[:logging])
+        :logging            => !!@options[:logging],
+        :heartbeat          => @client.config.heartbeat 
+      )
       b.start
       b
     end
