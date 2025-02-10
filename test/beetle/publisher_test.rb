@@ -28,7 +28,7 @@ module Beetle
         :connect_timeout => 5,
         :frame_max => 131072,
         :channel_max => 2047,
-        :spec => '09'
+        :spec => '09',
         :heartbeat => 0
       }
       Bunny.expects(:new).with(expected_bunny_options).returns(m)
