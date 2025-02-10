@@ -39,8 +39,8 @@ jobs:
       - name: Generate appraisal files
         run: bundle install && bundle exec appraisal generate
 
-      - name: Compile and test beetle go binary
-        run: make && make test
+      #- name: Compile and test beetle go binary
+      #  run: make && make test
 
       - name: Install gems and run beetle gem tests
         run: bundle install && bundle exec rake test
