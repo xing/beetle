@@ -18,7 +18,6 @@ module Beetle
     attr_accessor :broker_default_policy
     # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
-    
 
     # defaults to <tt>STDOUT</tt>
     attr_accessor :redis_logger
@@ -100,7 +99,7 @@ module Beetle
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
     # compatibility, they are disabled by default.
     attr_accessor :lazy_queues_enabled
-    alias_method :lazy_queues_enabled?, :lazy_queues_enabled
+    alias lazy_queues_enabled? lazy_queues_enabled
 
     # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
     # throughput degradation (when rejected messages block the processing of other messages
@@ -113,7 +112,7 @@ module Beetle
     #
     # By default this is turned off and needs to be explicitly enabled.
     attr_accessor :dead_lettering_enabled
-    alias_method :dead_lettering_enabled?, :dead_lettering_enabled
+    alias dead_lettering_enabled? dead_lettering_enabled
 
     # The time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
     # to the original queue
@@ -153,12 +152,12 @@ module Beetle
     # returns the configured amqp brokers
     def brokers
       {
-        'servers' => self.servers,
-        'additional_subscription_servers' => self.additional_subscription_servers
+        'servers' => servers,
+        'additional_subscription_servers' => additional_subscription_servers
       }
     end
 
-    def initialize #:nodoc:
+    def initialize # :nodoc:
       self.system_name = "system"
       self.beetle_policy_exchange_name = "beetle-policies"
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
@@ -204,14 +203,14 @@ module Beetle
       self.update_queue_properties_synchronously = false
 
       self.publishing_timeout = 0
-      self.publisher_connect_timeout = 5   # seconds
+      self.publisher_connect_timeout = 5 # seconds
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
     end
 
     # setting the external config file will load it on assignment
-    def config_file=(file_name) #:nodoc:
+    def config_file=(file_name) # :nodoc:
       @config_file = file_name
       load_config
     end
@@ -240,7 +239,7 @@ module Beetle
         connect_timeout: redis_connect_timeout,
         read_timeout: redis_read_timeout,
         write_timeout: redis_write_timeout,
-        logger: redis_logger,
+        logger: redis_logger
       }
     end
 
@@ -264,7 +263,7 @@ module Beetle
         port: port.to_i,
         user: user,
         pass: password,
-        vhost: vhost,
+        vhost: vhost
       }
     end
 
@@ -279,7 +278,7 @@ module Beetle
         send("#{key}=", value)
       end
     rescue Exception
-      Beetle::reraise_expectation_errors!
+      Beetle.reraise_expectation_errors!
       logger.error "Error loading beetle config file '#{config_file}': #{$!}"
       raise
     end
