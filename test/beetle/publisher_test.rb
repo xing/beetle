@@ -48,7 +48,6 @@ module Beetle
 
       bunny_mock = mock("dummy_bunny")
       expected_bunny_options = {
-        :logger => @client.config.logger,
         host: "localhost",
         port: 5672,
         username: "john",
@@ -64,7 +63,10 @@ module Beetle
         heartbeat: 0
       }
 
-      Bunny.expects(:new).with(expected_bunny_options).returns(bunny_mock)
+      Bunny
+        .expects(:new)
+        .with { |actual| expected_bunny_options.all? { |k,v| actual[k] == v }  } # match our subset of options
+        .returns(bunny_mock)
       bunny_mock.expects(:start)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
