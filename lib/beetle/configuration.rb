@@ -93,9 +93,6 @@ module Beetle
     # to 2047, which is the RabbitMQ default in 3.7.  We can't set this to 0 because of a bug
     # in bunny.
     attr_accessor :channel_max
-    # the heartbeat setting to be used for RabbitMQ heartbeats (defaults to 0).
-    attr_accessor :heartbeat
-
     # the heartbeat interval to set for connections in seconds (defaults to <tt>0</tt>)
     attr_accessor :heartbeat
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
