@@ -50,16 +50,16 @@ module Beetle
       expected_bunny_options = {
         host: "localhost",
         port: 5672,
-        user: "john",
-        pass: "doe",
+        username: "john",
+        password: "doe",
         vhost: "test",
         ssl: false,
-        socket_timeout: 0,
-        connect_timeout: 5,
-        frame_max: 131072,
+        automatically_recover: false,
+        read_timeout: 15,
+        write_timeout: 15,
+        continuation_timeout: 15,
+        connection_timeout: 5,
         channel_max: 2047,
-        spec: '09',
-        logging: false,
         heartbeat: 0
       }
 
