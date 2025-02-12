@@ -192,7 +192,7 @@ module Beetle
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
-      self.heartbeat = 0
+      self.heartbeat = :server # use the server's heartbeat setting
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second

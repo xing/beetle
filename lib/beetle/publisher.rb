@@ -166,9 +166,10 @@ module Beetle
         :username              => options[:user],
         :password              => options[:pass],
         :vhost                 => options[:vhost],
-        :ssl                   => options[:ssl] || false,
+        :tls                   => options[:ssl] || false,
+        :verify_peer           => options[:verify_peer] || false,
         :logger                => @client.config.logger,
-        :automatically_recover => false,
+        :automatically_recover => false, # what dis?
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
         :read_timeout          => @client.config.publishing_timeout,
