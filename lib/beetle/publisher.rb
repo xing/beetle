@@ -167,14 +167,13 @@ module Beetle
         :password              => options[:pass],
         :vhost                 => options[:vhost],
         :tls                   => options[:ssl] || false,
-        :verify_peer           => options[:verify_peer] || false,
         :logger                => @client.config.logger,
         :automatically_recover => false, # what dis?
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
         :read_timeout          => @client.config.publishing_timeout,
         :write_timeout         => @client.config.publishing_timeout,
-        :continuation_timeout  => @client.config.publishing_timeout,
+        :continuation_timeout  => @client.config.publishing_timeout * 1000, # continuation timeout is in milliseconds while the other timeouts are in seconds :/
         :connection_timeout    => @client.config.publisher_connect_timeout,
         :heartbeat             => @client.config.heartbeat
       )
