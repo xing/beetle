@@ -11,8 +11,8 @@ class AMQPGemBehaviorTest < Minitest::Test
           EM::Timer.new(1){ connection.close { EM.stop }}
           channel = AMQP::Channel.new(connection)
           channel.on_error { puts "woot"}
-          exchange = channel.topic("beetle_tests")
-          queue = AMQP::Queue.new(channel)
+          exchange = channel.topic("beetle_tests", :durable => false, :auto_delete => true)
+          queue = AMQP::Queue.new(channel, :durable => false, :auto_delete => true)
           queue.bind(exchange, :key => "#")
           queue.subscribe { }
           queue.subscribe { }

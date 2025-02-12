@@ -219,3 +219,15 @@ Feature: Redis auto failover
     And the redis master of "rc-client-2" should be "redis-1"
     And the redis master of the beetle handler should be "redis-1"
     And the role of redis server "redis-2" should be "slave"
+
+  @ignored
+  Scenario: Running the system for a few seconds to perform manual testing
+    Given a redis configuration server using redis servers "redis-1,redis-2" with clients "rc-client-1,rc-client-2" exists
+    And a redis configuration client "rc-client-1" using redis servers "redis-1,redis-2" exists
+    And a redis configuration client "rc-client-2" using redis servers "redis-1,redis-2" exists
+    And a beetle handler using the redis-master file from "rc-client-1" exists
+    And the redis master of "rc-client-1" should be "redis-1"
+    And the redis master of "rc-client-2" should be "redis-1"
+    And the redis master of the beetle handler should be "redis-1"
+    And the role of redis server "redis-2" should be "slave"
+    Then the system can run for a while without dying

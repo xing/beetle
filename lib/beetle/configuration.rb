@@ -93,7 +93,6 @@ module Beetle
     # to 2047, which is the RabbitMQ default in 3.7.  We can't set this to 0 because of a bug
     # in bunny.
     attr_accessor :channel_max
-
     # the heartbeat interval to set for connections in seconds (defaults to <tt>0</tt>)
     attr_accessor :heartbeat
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
@@ -126,7 +125,10 @@ module Beetle
     # Write timeout for http requests to RabbitMQ HTTP API
     attr_accessor :rabbitmq_api_write_timeout
 
-    # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
+    # Returns the port on which the Rabbit API is hosted
+    attr_accessor :api_port
+
+    # The socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
 
@@ -202,8 +204,9 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.publishing_timeout = 0
+      self.publishing_timeout = 15
       self.publisher_connect_timeout = 5 # seconds
+
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
