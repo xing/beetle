@@ -48,6 +48,7 @@ module Beetle
 
       bunny_mock = mock("dummy_bunny")
       expected_bunny_options = {
+        :logger => @client.config.logger,
         host: "localhost",
         port: 5672,
         username: "john",
