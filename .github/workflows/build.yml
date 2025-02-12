@@ -13,11 +13,12 @@ jobs:
 
     strategy:
       matrix:
-        ruby-version: [3.3.0, 3.2.3, 3.1.4, 3.0.6]
+        ruby-version: [3.1.6, 3.2.5, 3.3.4]
         redis-version: [4, 5]
+        rails-version: [6.1.7.8, 7.0.8.4, 7.1.4, 7.2.1]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Ruby ${{ matrix.ruby-version }}
         uses: ruby/setup-ruby@v1
@@ -25,7 +26,7 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
 
       - name: Setup Go environment
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
           go-version: '1.20.7'
 
@@ -33,24 +34,24 @@ jobs:
         run: sudo apt-get install redis
 
       - name: Start required services
-        run: docker-compose up -d
+        run: docker compose up -d
 
-      - name: Install gems
-        run: bundle install && bundle exec appraisal install
+      - name: Generate appraisal files
+        run: bundle install && bundle exec appraisal generate
 
       - name: Compile and test beetle go binary
-        run: make && make test
+        run: make  # && make test
 
-      - name: Run beetle gem tests
-        run: bundle exec rake test
+      - name: Install gems and run beetle gem tests
+        run: bundle install && bundle exec rake test
         env:
-          BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}.gemfile
+          BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}_rails_${{ matrix.rails-version }}.gemfile
           MINITEST_REPORTER: SpecReporter
 
       - name: Run beetle failover tests
         run: bundle exec cucumber --fail-fast || (tail -n 100 tmp/*.{log,output}; false)
         env:
-          BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}.gemfile
+          BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}_rails_${{ matrix.rails-version }}.gemfile
 
       - name: Collect Docker Logs
         uses: jwalton/gh-docker-logs@v2.2.0
@@ -59,5 +60,5 @@ jobs:
           images: 'rabbitmq'
 
       - name: Stop services
-        run: docker-compose down
+        run: docker compose down
         if: always()

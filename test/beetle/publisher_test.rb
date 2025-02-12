@@ -32,10 +32,40 @@ module Beetle
         :frame_max => 131072,
         :channel_max => 2047,
         :heartbeat => 0,
+        :ssl => false
       }
       Bunny.expects(:new).with(expected_bunny_options).returns(m)
       m.expects(:start)
       assert_equal m, @pub.send(:new_bunny)
+    end
+
+    test "new bunnies should be created using custom connection options and they should be started" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
+      client = Client.new(config)
+      pub = Publisher.new(client)
+
+      bunny_mock = mock("dummy_bunny")
+      expected_bunny_options = {
+        host: "localhost",
+        port: 5672,
+        user: "john",
+        pass: "doe",
+        vhost: "test",
+        ssl: false,
+        socket_timeout: 0,
+        connect_timeout: 5,
+        frame_max: 131072,
+        channel_max: 2047,
+        spec: '09',
+        logging: false,
+        heartbeat: 0
+      }
+
+      Bunny.expects(:new).with(expected_bunny_options).returns(bunny_mock)
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
     test "initially there should be no bunnies" do
@@ -124,7 +154,7 @@ module Beetle
       nice_exchange = mock("nice exchange")
       @pub.stubs(:exchange).with("mama-exchange").returns(raising_exchange).then.returns(raising_exchange).then.returns(nice_exchange)
 
-      raising_exchange.expects(:publish).raises(Bunny::ConnectionError,'').twice
+      raising_exchange.expects(:publish).raises(Bunny::ConnectionError, '').twice
       nice_exchange.expects(:publish)
       @pub.expects(:set_current_server).twice
       @pub.expects(:stop!).twice
@@ -153,9 +183,9 @@ module Beetle
 
       e = mock("exchange")
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).in_sequence(redundant)
 
@@ -169,13 +199,13 @@ module Beetle
 
       e = mock("exchange")
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
 
       assert_raises Beetle::NoMessageSent do
         @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
@@ -199,7 +229,7 @@ module Beetle
       e.expects(:publish).in_sequence(redundant)
 
       @pub.expects(:exchange).returns(e).in_sequence(redundant)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(redundant)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
       @pub.expects(:stop!).in_sequence(redundant)
 
       @pub.expects(:exchange).returns(e).in_sequence(redundant)
@@ -271,13 +301,13 @@ module Beetle
 
       e = mock("exchange")
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(failover)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(failover)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(failover)
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(failover)
-      e.expects(:publish).raises(Bunny::ConnectionError,'').in_sequence(failover)
+      e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(failover)
 
       assert_raises Beetle::NoMessageSent do
         @pub.publish_with_failover("mama-exchange", "mama", @data, @opts)

@@ -149,18 +149,18 @@ In addition, beetle ships with a cucumber feature to test the automatic redis fa
 an integration test. For this you need a recent Go installation in order to compile the
 beetle go binary. Just invoke `make` in the top level directory.
 
-There are two ways to start the required test dependencies: using `docker-compose` or
+There are two ways to start the required test dependencies: using `docker compose` or
 starting the services manually.
 
-### Testing with docker-compose
+### Testing with docker compose
 
 Open a separate terminal window and run
 
-     docker-compose pull
+     docker compose pull
 
 followed by
 
-     docker-compose up
+     docker compose up
 
 This will start mysql, two redis servers, two RabbitMQ instances and a single consul
 development node.

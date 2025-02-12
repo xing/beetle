@@ -33,6 +33,7 @@ module Beetle
     def listen_queues(queues) #:nodoc:
       @listened_queues = queues
       @exchanges_for_queues = exchanges_for_queues(queues)
+
       EM.run do
         each_server_sorted_randomly do
           connect_server connection_settings
@@ -229,9 +230,15 @@ module Beetle
     end
 
     def connection_settings
+      options = connection_options_for_server(@server)
       {
-        :host => current_host, :port => current_port, :logging => false,
-        :user => @client.config.user, :pass => @client.config.password, :vhost => @client.config.vhost,
+        :host => options[:host],
+        :port => options[:port],
+        :user => options[:user],
+        :pass => options[:pass],
+        :vhost => options[:vhost],
+        :ssl   => options[:ssl],
+        :logging => false,
         :on_tcp_connection_failure => on_tcp_connection_failure,
         :on_possible_authentication_failure => on_possible_authentication_failure,
       }

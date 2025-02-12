@@ -111,6 +111,5 @@ module Beetle
       @client.expects(:update_queue_properties!).with(options.merge(:server => "localhost:5672"))
       @bs.__send__(:publish_policy_options, options)
     end
-
   end
 end
