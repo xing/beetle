@@ -169,7 +169,7 @@ module Beetle
         :tls                   => options[:ssl] || false,
         :logger                => @client.config.logger,
         :automatically_recover => @client.config.automatically_recover,
-        :recovery_attempts     => @client.config.recovery_attempts,
+        :recovery_attempts     => @client.config.max_recovery_attempts,
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
         :read_timeout          => @client.config.publishing_timeout,

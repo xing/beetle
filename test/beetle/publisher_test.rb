@@ -25,16 +25,17 @@ module Beetle
         :password => "guest",
         :vhost => "/",
         :automatically_recover => false,
+        :recovery_attempts => nil,
         :read_timeout => 15,
         :write_timeout => 15,
-        :continuation_timeout => 15,
+        :continuation_timeout => 15_000,
         :connection_timeout => 5,
         :frame_max => 131072,
         :channel_max => 2047,
-        :heartbeat => 0,
-        :ssl => false
+        :heartbeat => :server,
+        :tls => false
       }
-      Bunny.expects(:new).with(expected_bunny_options).returns(m)
+      Bunny.expects(:new).with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v } }.returns(m)
       m.expects(:start)
       assert_equal m, @pub.send(:new_bunny)
     end
@@ -53,19 +54,20 @@ module Beetle
         username: "john",
         password: "doe",
         vhost: "test",
-        ssl: false,
+        tls: false,
         automatically_recover: false,
+        :recovery_attempts => nil,
         read_timeout: 15,
         write_timeout: 15,
-        continuation_timeout: 15,
+        continuation_timeout: 15_000,
         connection_timeout: 5,
         channel_max: 2047,
-        heartbeat: 0
+        heartbeat: :server
       }
 
       Bunny
         .expects(:new)
-        .with { |actual| expected_bunny_options.all? { |k,v| actual[k] == v }  } # match our subset of options
+        .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
         .returns(bunny_mock)
       bunny_mock.expects(:start)
       assert_equal bunny_mock, pub.send(:new_bunny)
