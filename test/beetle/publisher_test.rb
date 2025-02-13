@@ -223,6 +223,13 @@ module Beetle
       assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
     end
 
+    test "redundant publishing should remove redundant flag if less than two servers are available" do
+      @pub.servers = ["a server"]
+      @pub.server = "a server"
+      @pub.expects(:publish_with_failover).with("mama-exchange", "mama", @data, @opts.merge(redundant: false)).returns(1)
+      assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
+    end
+
     test "redundant publishing should publish to two of three servers if one server is dead" do
       @pub.servers = %w(server1 server2 server3)
       @pub.server = "server1"
@@ -274,6 +281,7 @@ module Beetle
       assert_equal 1, @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
     end
 
+
     test "publishing should use the message ttl passed in the options hash to encode the message body" do
       opts = {:ttl => 1.day}
       Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
@@ -286,7 +294,7 @@ module Beetle
 
     test "publishing with redundancy should use the message ttl passed in the options hash to encode the message body" do
       opts = {:ttl => 1.day}
-      Message.expects(:publishing_options).with(:ttl => 1.day).returns({})
+      Message.expects(:publishing_options).with(:ttl => 1.day, redundant: false).returns({})
       @pub.expects(:select_next_server)
       e = mock("exchange")
       @pub.expects(:exchange).returns(e)
