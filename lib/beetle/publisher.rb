@@ -55,6 +55,7 @@ module Beetle
       logger.debug "Beetle: sending #{message_name}"
       published = 0
       opts = Message.publishing_options(opts)
+
       begin
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
@@ -80,6 +81,7 @@ module Beetle
     def publish_with_redundancy(exchange_name, message_name, data, opts) #:nodoc:
       if @servers.size < 2
         logger.warn "Beetle: at least two active servers are required for redundant publishing" if @dead_servers.size > 0
+        opts[:redundant] = false # we have to clear this flag, so that message cleanup happens reliably when there is only one server left
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []

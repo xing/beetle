@@ -390,6 +390,8 @@ module Beetle
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
       return if simple?
+
+      # this assumes that we always have more than one server when using redundant flag, which is not true
       if !redundant? || @store.incr(msg_id, :ack_count) >= 2
         # we test for >= 2 here, because we retry increments in the
         # dedup store so the counter could be greater than two
