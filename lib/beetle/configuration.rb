@@ -148,6 +148,11 @@ module Beetle
     # directory to store large intermediate files (defaults '/tmp')
     attr_accessor :tmpdir
 
+    # enable auto recovery with bunny on network failures (defaults to <tt>false</tt>)
+    attr_accessor :automatically_recover
+    # how often should bunny try to recover from a network failure. nil means forever (defaults to <tt>nil</tt>)
+    attr_accessor :max_recovery_attempts
+
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
@@ -204,8 +209,11 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.publishing_timeout = 15
+      self.publishing_timeout = 15 # seconds
       self.publisher_connect_timeout = 5 # seconds
+
+      self.automatically_recover = false
+      self.max_recovery_attempts = nil
 
       self.tmpdir = "/tmp"
 
