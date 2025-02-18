@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 5.0.0
+* [breaking] Bunny upgrade fom 0.7.13 to 2.23.0 => changes from single threaded mode to multithreaded mode
+* [breaking] Heartbeats enabled if server offers them
+* [breaking] Publishing timeout enabled and configured by default
+
 ## Version 4.0.0
 * The Beetle::Configuration.server_connection_options now take true and false for the SSL configuration. 
 * [breaking] Remove Beetle::Configuration.api_port without replacement. The port is now always derived from server port
