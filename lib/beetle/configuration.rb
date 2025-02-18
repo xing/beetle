@@ -209,7 +209,7 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.publishing_timeout = 15 # seconds
+      self.publishing_timeout = 5 # seconds
       self.publisher_connect_timeout = 5 # seconds
 
       self.automatically_recover = false
