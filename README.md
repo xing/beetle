@@ -2,7 +2,7 @@
 
 High Availability AMQP Messaging with Redundant Queues
 
-## [!Important] Project Status
+## IMPORTANT: Project Status
 
 Beetle has been developed inside Xing for a long time and made available to the outside for interested people.
 Due to organizational changes, we are forced to make rapid changes to the project, to address requirements we face on our internal platform.
