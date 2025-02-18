@@ -5,22 +5,24 @@ High Availability AMQP Messaging with Redundant Queues
 ## [!Important] Project Status
 
 Beetle has been developed inside Xing for a long time and made available to the outside for interested people.
-Due to organizational changes, we are forced to make rapid changes to the project, to address requirements we 
-face on our internal platform.
+Due to organizational changes, we are forced to make rapid changes to the project, to address requirements we face on our internal platform.
+At the same time we don't have the knowledge and resources anymore do that in the same capacitity as we did in the past.
+The future of this project is unclear and it's likely to be discontinued in the future, as we move away from it internally.
 
-All of the development will happen on the master branch, and we do indicate the quality of changes using semantic versioning. 
+All of the future development will be integrated with the master branch, and we will indicate the quality of changes using semantic versioning. 
 We can't however invest any time making sure, that the changes we bring in are useful and or applicable to the broader audience.
 
+We created a [v3.x branch](https://github.com/xing/beetle/tree/v3.x) which has been created before the latest changes starting with version 4.0.0 have been broad in.
+We don't maintain this branch long term but leave it here for you to reference in a stable manner.
 
-However we created a v3.x branch which has been created before the latest changes starting with version 4.0.0 have been broad in.
-We don't maintain the this branch long term but leave it here for you to reference in a stable manner.
+We will NOT publish new releases on rubygems.org, so you have to reference this repository if you want to use a version beyond 3.x.
 
 To summarize:
 
-* Project master branch will change more frequently
+* Future of project unclear, and likely to be discontinued
+* Master branch will change more frequently
 * New releases will NOT be published on public rubygems.org
-* v3.x branch is available, and remains available for the time being, but we don't maintain it
-
+* [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available, and remains available for the time being, but we don't maintain it
 
 
 ## About
