@@ -1,5 +1,6 @@
 require 'erb'
 require 'yaml'
+require 'openssl'
 
 module Beetle
   class Configuration
