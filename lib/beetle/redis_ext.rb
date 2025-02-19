@@ -12,6 +12,7 @@ class Redis #:nodoc:
   def port; @client.port; end
   def server; "#{host}:#{port}"; end
 
+  # the following methods to manage the state of the redis are only used in tests
   def master!
     slaveof("no", "one")
   end

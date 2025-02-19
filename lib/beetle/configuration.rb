@@ -72,6 +72,12 @@ module Beetle
     # the redis configuration client ids living on the worker machines taking part in the redis failover, separated by comma (defaults to <tt>""</tt>)
     attr_accessor :redis_configuration_client_ids
 
+    # the redis username to use for auth (defaults to <tt>nil</tt>)
+    attr_accessor :redis_password
+
+    # enable tls for the redis connection (defaults to <tt>false</tt>)
+    attr_accessor :redis_tls
+
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
 
@@ -175,6 +181,8 @@ module Beetle
       self.redis_server = "localhost:6379"
       self.redis_servers = ""
       self.redis_db = 4
+      self.redis_password = nil
+      self.redis_tls = false
       self.redis_connect_timeout = 5.0
       self.redis_read_timeout = 5.0
       self.redis_write_timeout = 5.0
@@ -245,13 +253,16 @@ module Beetle
 
     # redis optins to be passed to Redis.new
     def redis_options
-      {
+      opts = {
         db: redis_db,
         connect_timeout: redis_connect_timeout,
         read_timeout: redis_read_timeout,
         write_timeout: redis_write_timeout,
-        logger: redis_logger
+        logger: redis_logger,
+        ssl: redis_tls
       }
+      opts[:password] = redis_password if redis_password
+      opts
     end
 
     # Returns a hash of connection options for the given server.
