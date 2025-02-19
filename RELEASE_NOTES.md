@@ -4,7 +4,8 @@
 * [breaking] Bunny upgrade fom 0.7.13 to 2.23.0 => changes from single threaded mode to multithreaded mode
 * [breaking] Heartbeats enabled if server offers them
 * [breaking] Publishing timeout enabled and configured by default
-* Add TLS support for redis in deduplication store
+* Add TLS support for redis in deduplication store (verified to work with Elasticache)
+* Add password support for redis in deduplication store 
 
 ## Version 4.0.0
 * The Beetle::Configuration.server_connection_options now take true and false for the SSL configuration. 
