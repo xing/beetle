@@ -10,18 +10,18 @@ At the same time we don't have the knowledge and resources anymore do that in th
 The future of this project is unclear and it's likely to be discontinued in the future, as we move away from it internally.
 
 All of the future development will be integrated with the master branch, and we will indicate the quality of changes using semantic versioning. 
-We can't however invest any time making sure, that the changes we bring in are useful and or applicable to the broader audience.
+We can't however invest any time to make sure, that the changes we bring in are useful and/or applicable to the broader audience.
 
-We created a [v3.x branch](https://github.com/xing/beetle/tree/v3.x) which has been created before the latest changes starting with version 4.0.0 have been broad in.
+We created a [v3.x branch](https://github.com/xing/beetle/tree/v3.x) which contains all the latest changes before we created the 4.0.0 version.
 We don't maintain this branch long term but leave it here for you to reference in a stable manner.
 
 We will NOT publish new releases on rubygems.org, so you have to reference this repository if you want to use a version beyond 3.x.
 
 To summarize:
 
-* Future of project unclear, and likely to be discontinued
-* Master branch will change more frequently
-* New releases will NOT be published on public rubygems.org
+* Future of project is unclear, and it's likely to be discontinued
+* Master branch will change more frequently in the near future
+* New releases will NOT be published on rubygems.org
 * [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available, and remains available for the time being, but we don't maintain it
 
 
