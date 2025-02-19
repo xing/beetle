@@ -1,0 +1,9 @@
+services:
+  redis:
+    image: "redis:6.0"
+    command: redis-server --tls-port 6379 --port 0  --tls-auth-clients no --tls-cert-file /tls/redis.crt --tls-key-file /tls/redis.key --tls-ca-cert-file /tls/ca.crt
+    container_name: redis-tls
+    ports:
+      - 6379:6379
+    volumes:
+      - ./docker/tls:/tls
