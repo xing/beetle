@@ -262,6 +262,7 @@ module Beetle
         ssl: redis_tls
       }
       opts[:password] = redis_password if redis_password
+      opts[:ssl_params] = { verify_mode: OpenSSL::SSL::VERIFY_NONE } if redis_tls && ENV['OPENSSL_SSL_VERIFY_NONE'] == '1'
       opts
     end
 

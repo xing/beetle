@@ -1,13 +1,9 @@
-require 'redis'
-require 'openssl'
+require 'beetle'
 
-redis = Redis.new(
-  host: 'localhost', # Or your Redis server hostname
-  port: 6379,
-  ssl: true,
-  ssl_params: {
-    verify_mode: OpenSSL::SSL::VERIFY_NONE # Disable verification
-  }
-)
+# make sure to run the server with docker compose -f docker-compose-redis-ssl.yml up
 
-puts redis.ping
+config = Beetle::Configuration.new
+config.redis_tls = true
+config.redis_server = "localhost:6379"
+dedup_store = Beetle::DeduplicationStore.new(config)
+puts dedup_store.ping

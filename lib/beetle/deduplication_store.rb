@@ -19,6 +19,10 @@ module Beetle
       @last_time_master_file_changed = nil
     end
 
+    def ping
+      redis.ping
+    end
+
     # get the Redis instance
     def redis
       redis_master_source = @config.redis_server =~ /^\S+\:\d+$/ ? "server_string" : "master_file"

@@ -1,13 +1,6 @@
 $:.unshift(File.expand_path('..', __FILE__))
-require 'bunny'                    # which bunny picks up
-
-begin
-  require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
-  require 'redis'
-rescue LoadError
-  require 'redis'
-  require 'hiredis-client'
-end
+require 'bunny'
+require 'redis'
 require 'active_support/all'
 require 'set'
 require 'socket'
