@@ -1,5 +1,6 @@
 $:.unshift(File.expand_path('..', __FILE__))
 require 'bunny'
+require 'qrack/errors' # needed by the publisher
 require 'redis'
 require 'active_support/all'
 require 'set'
