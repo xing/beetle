@@ -4,26 +4,21 @@ High Availability AMQP Messaging with Redundant Queues
 
 ## IMPORTANT: Project Status
 
-Beetle has been developed inside Xing for a long time and made available to the outside for interested people.
-Due to organizational changes, we are forced to make rapid changes to the project, to address requirements we face on our internal platform.
-At the same time we don't have the knowledge and resources anymore do that in the same capacitity as we did in the past.
-The future of this project is unclear and it's likely to be discontinued in the future, as we move away from it internally.
+Beetle has been developed within Xing for an extended period and made accessible to external parties. Due to organizational changes, we must implement rapid modifications to meet internal platform requirements. 
+However, we lack the resources and expertise to maintain this library for a broader audience. The project's future is uncertain and may be discontinued as we transition away from it internally.
 
-All of the future development will be integrated with the master branch, and we will indicate the quality of changes using semantic versioning. 
-We can't however invest any time to make sure, that the changes we bring in are useful and/or applicable to the broader audience.
+Future development will be merged into the master branch, with changes indicated by semantic versioning. We cannot guarantee that these changes will be beneficial or applicable to a wider audience.
 
-We created a [v3.x branch](https://github.com/xing/beetle/tree/v3.x) which contains all the latest changes before we created the 4.0.0 version.
-We don't maintain this branch long term but leave it here for you to reference in a stable manner.
+A [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available, containing all updates prior to version 4.0.0. This branch will not be maintained long-term but is available for stable reference.
 
-We will NOT publish new releases on rubygems.org, so you have to reference this repository if you want to use a version beyond 3.x.
+We will not publish new releases on rubygems.org; please reference this repository for versions beyond 3.x.
 
-To summarize:
+In summary:
 
-* Future of project is unclear, and it's likely to be discontinued
-* Master branch will change more frequently in the near future
-* New releases will NOT be published on rubygems.org
-* [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available, and remains available for the time being, but we don't maintain it
-
+* The project's future is uncertain and may be discontinued
+* The master branch will undergo frequent changes
+* New releases will not be published on rubygems.org
+* The [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available for reference but will not be maintained
 
 ## About
 
