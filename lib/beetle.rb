@@ -1,6 +1,5 @@
 $:.unshift(File.expand_path('..', __FILE__))
-require 'bunny'                    # which bunny picks up
-require 'qrack/errors'             # needed by the publisher
+require 'bunny'
 
 begin
   require 'redis/connection/hiredis' # require *before* redis as specified in the redis-rb gem docs
@@ -28,8 +27,10 @@ module Beetle
   class UnknownQueue < Error; end
   # raised when no redis master server can be found
   class NoRedisMaster < Error; end
-  # raise when no message could be sent by the publisher
+  # raised when no message could be sent by the publisher
   class NoMessageSent < Error; end
+  # logged when an RPC call timed outdated
+  class RPCTimedOut < Error; end
 
   # AMQP options for exchange creation
   EXCHANGE_CREATION_KEYS  = [:auto_delete, :durable, :internal, :nowait, :passive]

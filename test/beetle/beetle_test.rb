@@ -2,7 +2,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
   class HostnameTest < Minitest::Test
-   test "should use canonical name if possible " do
+    test "should use canonical name if possible " do
       addr = mock("addr")
       addr.expects(:canonname).returns("a.b.com")
       Socket.expects(:gethostname).returns("a.b.com")

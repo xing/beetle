@@ -9,6 +9,7 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @channels = {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
@@ -27,14 +28,10 @@ module Beetle
       @throttled ? 'throttled' : 'unthrottled'
     end
 
-    # list of exceptions potentially raised by bunny
-    # these need to be lazy, because qrack exceptions are only defined after a connection has been established
+    # List of exceptions potentially raised by bunny.
     def bunny_exceptions
       [
-        Bunny::ConnectionError, Bunny::ForcedChannelCloseError, Bunny::ForcedConnectionCloseError,
-        Bunny::MessageError, Bunny::ProtocolError, Bunny::ServerDownError, Bunny::UnsubscribeError,
-        Bunny::AcknowledgementError, Qrack::BufferOverflowError, Qrack::InvalidTypeError,
-        Errno::EHOSTUNREACH, Errno::ECONNRESET, Errno::ETIMEDOUT, Timeout::Error
+        Bunny::Exception, Errno::EHOSTUNREACH, Errno::ECONNRESET, Errno::ETIMEDOUT, Timeout::Error
       ]
     end
 
@@ -46,9 +43,9 @@ module Beetle
         recycle_dead_servers unless @dead_servers.empty?
         throttle!
         if opts[:redundant]
-          publish_with_redundancy(exchange_name, message_name, data, opts)
+          publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
         else
-          publish_with_failover(exchange_name, message_name, data, opts)
+          publish_with_failover(exchange_name, message_name, data.to_s, opts)
         end
       end
     end
@@ -58,6 +55,7 @@ module Beetle
       logger.debug "Beetle: sending #{message_name}"
       published = 0
       opts = Message.publishing_options(opts)
+
       begin
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
@@ -83,6 +81,7 @@ module Beetle
     def publish_with_redundancy(exchange_name, message_name, data, opts) #:nodoc:
       if @servers.size < 2
         logger.warn "Beetle: at least two active servers are required for redundant publishing" if @dead_servers.size > 0
+        opts[:redundant] = false # we have to clear this flag, so that message cleanup happens reliably when there is only one server left
         return publish_with_failover(exchange_name, message_name, data, opts)
       end
       published = []
@@ -157,27 +156,40 @@ module Beetle
     end
 
     def bunny?
-      @bunnies[@server]
+      !!@bunnies[@server]
     end
 
     def new_bunny
       options = connection_options_for_server(@server)
 
       b = Bunny.new(
-        :host               => options[:host],
-        :port               => options[:port],
-        :user               => options[:user],
-        :pass               => options[:pass],
-        :vhost              => options[:vhost],
-        :ssl                => options[:ssl] || false,
-        :frame_max          => @client.config.frame_max,
-        :channel_max        => @client.config.channel_max,
-        :socket_timeout     => @client.config.publishing_timeout,
-        :connect_timeout    => @client.config.publisher_connect_timeout,
-        :spec               => '09',
-        :logging            => !!@options[:logging])
+        :host                  => options[:host],
+        :port                  => options[:port],
+        :username              => options[:user],
+        :password              => options[:pass],
+        :vhost                 => options[:vhost],
+        :tls                   => options[:ssl] || false,
+        :logger                => @client.config.logger,
+        :automatically_recover => @client.config.automatically_recover,
+        :recovery_attempts     => @client.config.max_recovery_attempts,
+        :frame_max             => @client.config.frame_max,
+        :channel_max           => @client.config.channel_max,
+        :read_timeout          => @client.config.publishing_timeout,
+        :write_timeout         => @client.config.publishing_timeout,
+        :continuation_timeout  => @client.config.publishing_timeout * 1000, # continuation timeout is in milliseconds while the other timeouts are in seconds :/
+        :connection_timeout    => @client.config.publisher_connect_timeout,
+        :heartbeat             => @client.config.heartbeat
+      )
       b.start
       b
+    end
+
+    def channel
+      @channels[@server] ||= bunny.create_channel
+    end
+
+    def channel?
+      !!@channels[@server]
     end
 
     # retry dead servers after ignoring them for 10.seconds
@@ -210,7 +222,7 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
-      bunny.exchange(name, opts)
+      channel.exchange(name, opts)
     end
 
     def bind_queues_for_exchange(exchange_name)
@@ -221,9 +233,8 @@ module Beetle
 
     def declare_queue!(queue_name, creation_options)
       logger.debug("Beetle: creating queue with opts: #{creation_options.inspect}")
-      queue = bunny.queue(queue_name, creation_options)
-
-      policy_options = bind_dead_letter_queue!(bunny, queue_name, creation_options)
+      queue = channel.queue(queue_name, creation_options)
+      policy_options = bind_dead_letter_queue!(channel, queue_name, creation_options)
       publish_policy_options(policy_options)
       queue
     end
@@ -238,8 +249,11 @@ module Beetle
       Beetle::Timer.timeout(timeout) do
         logger.debug "Beetle: closing connection from publisher to #{server}"
         if exception
-          bunny.__send__ :close_socket
+          bunny.__send__ :close_connection, false
+          reader_loop = bunny.__send__ :reader_loop
+          reader_loop.kill if reader_loop
         else
+          channel.close if channel?
           bunny.stop
         end
       end
@@ -248,6 +262,7 @@ module Beetle
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
+      @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
     end

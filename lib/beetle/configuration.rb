@@ -1,5 +1,6 @@
 require 'erb'
 require 'yaml'
+require 'openssl'
 
 module Beetle
   class Configuration
@@ -13,11 +14,12 @@ module Beetle
     attr_accessor :beetle_policy_updates_queue_name
     # Name of the policy update routing key
     attr_accessor :beetle_policy_updates_routing_key
-    # default logger (defaults to <tt>Logger.new(log_file)</tt>)
-    attr_accessor :broker_default_policy
     # set this to whatever your brokers have installed as default policy. For example, if you have installed
     # a policy that makes every queue lazy, it should be set to <tt>{"queue-moode" => "lazy"}</tt>.
+    attr_accessor :broker_default_policy
+    # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
+
     # defaults to <tt>STDOUT</tt>
     attr_accessor :redis_logger
     # set this to a logger instance if you want redis operations to be logged. defaults to <tt>nil</tt>.
@@ -71,6 +73,12 @@ module Beetle
     # the redis configuration client ids living on the worker machines taking part in the redis failover, separated by comma (defaults to <tt>""</tt>)
     attr_accessor :redis_configuration_client_ids
 
+    # the redis username to use for auth (defaults to <tt>nil</tt>)
+    attr_accessor :redis_password
+
+    # enable tls for the redis connection (defaults to <tt>false</tt>)
+    attr_accessor :redis_tls
+
     # list of amqp servers to use (defaults to <tt>"localhost:5672"</tt>)
     attr_accessor :servers
 
@@ -92,11 +100,12 @@ module Beetle
     # to 2047, which is the RabbitMQ default in 3.7.  We can't set this to 0 because of a bug
     # in bunny.
     attr_accessor :channel_max
-
+    # the heartbeat interval to set for connections in seconds (defaults to <tt>0</tt>)
+    attr_accessor :heartbeat
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
     # compatibility, they are disabled by default.
     attr_accessor :lazy_queues_enabled
-    alias_method :lazy_queues_enabled?, :lazy_queues_enabled
+    alias lazy_queues_enabled? lazy_queues_enabled
 
     # In contrast to RabbitMQ 2.x, RabbitMQ 3.x preserves message order when requeing a message. This can lead to
     # throughput degradation (when rejected messages block the processing of other messages
@@ -109,7 +118,7 @@ module Beetle
     #
     # By default this is turned off and needs to be explicitly enabled.
     attr_accessor :dead_lettering_enabled
-    alias_method :dead_lettering_enabled?, :dead_lettering_enabled
+    alias dead_lettering_enabled? dead_lettering_enabled
 
     # The time a message spends in the dead letter queue if dead lettering is enabled, before it is returned
     # to the original queue
@@ -123,7 +132,10 @@ module Beetle
     # Write timeout for http requests to RabbitMQ HTTP API
     attr_accessor :rabbitmq_api_write_timeout
 
-    # the socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
+    # Returns the port on which the Rabbit API is hosted
+    attr_accessor :api_port
+
+    # The socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
     # consider this a highly experimental feature for now.
     attr_accessor :publishing_timeout
 
@@ -143,18 +155,23 @@ module Beetle
     # directory to store large intermediate files (defaults '/tmp')
     attr_accessor :tmpdir
 
+    # enable auto recovery with bunny on network failures (defaults to <tt>false</tt>)
+    attr_accessor :automatically_recover
+    # how often should bunny try to recover from a network failure. nil means forever (defaults to <tt>nil</tt>)
+    attr_accessor :max_recovery_attempts
+
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
     # returns the configured amqp brokers
     def brokers
       {
-        'servers' => self.servers,
-        'additional_subscription_servers' => self.additional_subscription_servers
+        'servers' => servers,
+        'additional_subscription_servers' => additional_subscription_servers
       }
     end
 
-    def initialize #:nodoc:
+    def initialize # :nodoc:
       self.system_name = "system"
       self.beetle_policy_exchange_name = "beetle-policies"
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
@@ -165,6 +182,8 @@ module Beetle
       self.redis_server = "localhost:6379"
       self.redis_servers = ""
       self.redis_db = 4
+      self.redis_password = nil
+      self.redis_tls = false
       self.redis_connect_timeout = 5.0
       self.redis_read_timeout = 5.0
       self.redis_write_timeout = 5.0
@@ -187,6 +206,7 @@ module Beetle
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
+      self.heartbeat = :server # use the server's heartbeat setting
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second
@@ -198,15 +218,19 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.publishing_timeout = 0
-      self.publisher_connect_timeout = 5   # seconds
+      self.publishing_timeout = 5 # seconds
+      self.publisher_connect_timeout = 5 # seconds
+
+      self.automatically_recover = false
+      self.max_recovery_attempts = nil
+
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
     end
 
     # setting the external config file will load it on assignment
-    def config_file=(file_name) #:nodoc:
+    def config_file=(file_name) # :nodoc:
       @config_file = file_name
       load_config
     end
@@ -230,13 +254,17 @@ module Beetle
 
     # redis optins to be passed to Redis.new
     def redis_options
-      {
+      opts = {
         db: redis_db,
         connect_timeout: redis_connect_timeout,
         read_timeout: redis_read_timeout,
         write_timeout: redis_write_timeout,
         logger: redis_logger,
+        ssl: redis_tls
       }
+      opts[:password] = redis_password if redis_password
+      opts[:ssl_params] = { verify_mode: OpenSSL::SSL::VERIFY_NONE } if redis_tls && ENV['OPENSSL_SSL_VERIFY_NONE'] == '1'
+      opts
     end
 
     # Returns a hash of connection options for the given server.
@@ -259,7 +287,7 @@ module Beetle
         port: port.to_i,
         user: user,
         pass: password,
-        vhost: vhost,
+        vhost: vhost
       }
     end
 
@@ -274,7 +302,7 @@ module Beetle
         send("#{key}=", value)
       end
     rescue Exception
-      Beetle::reraise_expectation_errors!
+      Beetle.reraise_expectation_errors!
       logger.error "Error loading beetle config file '#{config_file}': #{$!}"
       raise
     end

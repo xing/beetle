@@ -2,6 +2,24 @@
 
 High Availability AMQP Messaging with Redundant Queues
 
+## IMPORTANT: Project Status
+
+Beetle has been developed within Xing for an extended period and made accessible to external parties. Due to organizational changes, we must implement rapid modifications to meet internal platform requirements. 
+However, we lack the resources and expertise to maintain this library for a broader audience. The project's future is uncertain and may be discontinued as we transition away from it internally.
+
+Future development will be merged into the master branch, with changes indicated by semantic versioning. We cannot guarantee that these changes will be beneficial or applicable to a wider audience.
+
+A [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available, containing all updates prior to version 4.0.0. This branch will not be maintained long-term but is available for stable reference.
+
+We will not publish new releases on rubygems.org; please reference this repository for versions beyond 3.x.
+
+In summary:
+
+* The project's future is uncertain and may be discontinued
+* The master branch will undergo frequent changes
+* New releases will not be published on rubygems.org
+* The [v3.x branch](https://github.com/xing/beetle/tree/v3.x) is available for reference but will not be maintained
+
 ## About
 
 Beetle grew out of a project to improve an existing ActiveMQ based messaging
