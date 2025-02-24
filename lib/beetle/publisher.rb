@@ -10,7 +10,6 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
-      @channels = Thread.current[:beetle_publisher_channels] ||= {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
@@ -193,6 +192,10 @@ module Beetle
       !!Thread.current[:beetle_publisher_channels][@server]
     end
 
+    def reset_channel
+      Thread.current[:beetle_publisher_channels][@server] = nil 
+    end
+
     # retry dead servers after ignoring them for 10.seconds
     # if all servers are dead, retry the one which has been dead for the longest time
     def recycle_dead_servers
@@ -263,7 +266,7 @@ module Beetle
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
-      @channels[@server] = nil
+      reset_channel
       @exchanges[@server] = {}
       @queues[@server] = {}
     end
