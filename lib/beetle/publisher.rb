@@ -6,10 +6,11 @@ module Beetle
 
     def initialize(client, options = {}) #:nodoc:
       super
+      Thread.current[:beetle_publisher_channels] ||= {}
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
-      @channels = {}
+      @channels = Thread.current[:beetle_publisher_channels] ||= {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
@@ -185,11 +186,11 @@ module Beetle
     end
 
     def channel
-      @channels[@server] ||= bunny.create_channel
+      Thread.current[:beetle_publisher_channels][@server] ||= bunny.create_channel
     end
 
     def channel?
-      !!@channels[@server]
+      !!Thread.current[:beetle_publisher_channels][@server]
     end
 
     # retry dead servers after ignoring them for 10.seconds
