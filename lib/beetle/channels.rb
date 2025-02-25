@@ -8,11 +8,21 @@ module Beetle
   #
   # Performance: Normally you'd want to have fast access to local variables, and an ideal implementation uses an array, instead
   # of a hash as the underlying store (see also concurrent-ruby ThreadLocalVar). For our case however, this is good enough.
+  #
+  # Caution:
+  #
+  # Currently, there is the potential to create a space leak in the internal storage.
+  # If you create Channels instances, and you don't call #cleanup explicitely, the internal storage will not be garbage collected.
+  # Usually you have one Channels instance per publisher, so that should be fine.
+  #
+  # We can't use finalizers for that since they run on a different thread.
+  # Best practice would be use `ensure` to cleanup the Channels instance once it's no longer needed.
   class Channels
     def initialize
       @uuid = SecureRandom.uuid
       Thread.current[:beetle_publisher_channels] ||= {}
       Thread.current[:beetle_publisher_channels][@uuid] = {}
+      self.class.instances[self] = @uuid
     end
 
     def []=(server, channel)
@@ -21,6 +31,10 @@ module Beetle
 
     def [](server)
       Thread.current[:beetle_publisher_channels][@uuid][server]
+    end
+
+    def cleanup
+      Thread.current[:beetle_publisher_channels][@uuid] = {}
     end
   end
 end
