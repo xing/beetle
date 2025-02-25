@@ -1,6 +1,6 @@
 module Beetle
   # Provides a thread-local storage for channels which must not be shared between threads.
-  # The current implmentation claims the :beetle_publisher_channels key in the current thread
+  # The current implementation claims the :beetle_publisher_channels key in the current thread
   # and maintains a hash that indexes object_ids to their channels.
   # This way channels are thread scoped and instance scoped. (Multiple publishers can have distinct channels)
   # 
