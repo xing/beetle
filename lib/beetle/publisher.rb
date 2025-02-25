@@ -206,7 +206,7 @@ module Beetle
     end
 
     def channel
-      @channels[@sever] ||= bunny.create_channel
+      @channels[@server] ||= bunny.create_channel
     end
 
     def channel?
