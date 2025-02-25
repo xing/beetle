@@ -5,10 +5,10 @@ module Beetle
 
     def initialize(client, options = {}) #:nodoc:
       super
-      @channels = Channels.new
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @channels = Channels.new
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
