@@ -1,3 +1,5 @@
+require 'securerandom'
+
 module Beetle
   # Provides a thread-local storage for channels which must not be shared between threads.
   # The current implementation claims the :beetle_publisher_channels key in the current thread
@@ -8,16 +10,17 @@ module Beetle
   # of a hash as the underlying store (see also concurrent-ruby ThreadLocalVar). For our case however, this is good enough.
   class Channels
     def initialize
+      @uuid = SecureRandom.uuid
       Thread.current[:beetle_publisher_channels] ||= {}
-      Thread.current[:beetle_publisher_channels][object_id] = {}
+      Thread.current[:beetle_publisher_channels][@uuid] = {}
     end
 
     def []=(server, channel)
-      Thread.current[:beetle_publisher_channels][object_id][server] = channel
+      Thread.current[:beetle_publisher_channels][@uuid][server] = channel
     end
 
     def [](server)
-      Thread.current[:beetle_publisher_channels][object_id][server]
+      Thread.current[:beetle_publisher_channels][@uuid][server]
     end
   end
 end
