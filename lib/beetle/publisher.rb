@@ -192,7 +192,7 @@ module Beetle
       !!Thread.current[:beetle_publisher_channels][@server]
     end
 
-    def reset_channel
+    def reset_channel!
       Thread.current[:beetle_publisher_channels][@server] = nil 
     end
 
@@ -265,8 +265,8 @@ module Beetle
       logger.warn "Beetle: error closing down bunny: #{e}"
       Beetle::reraise_expectation_errors!
     ensure
-      @bunnies[@server] = nil
-      reset_channel
+      bunnies[@server] = nil
+      reset_channel!
       @exchanges[@server] = {}
       @queues[@server] = {}
     end
