@@ -1,12 +1,26 @@
 module Beetle
+  class Channels
+    def initialize
+      Thread.current[:beetle_publisher_channels] ||= {}
+      Thread.current[:beetle_publisher_channels][object_id] = {}
+    end
+
+    def []=(server, channel)
+      Thread.current[:beetle_publisher_channels][object_id][server] = channel
+    end
+
+    def [](server)
+      Thread.current[:beetle_publisher_channels][object_id][server]
+    end
+  end
+
   # Provides the publishing logic implementation.
   class Publisher < Base
-
     attr_reader :dead_servers
 
     def initialize(client, options = {}) #:nodoc:
       super
-      Thread.current[:beetle_publisher_channels] ||= {}
+      @channels = Channels.new
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
@@ -185,15 +199,15 @@ module Beetle
     end
 
     def channel
-      Thread.current[:beetle_publisher_channels][@server] ||= bunny.create_channel
+      @channels[@sever] ||= bunny.create_channel
     end
 
     def channel?
-      !!Thread.current[:beetle_publisher_channels][@server]
+      !!@channels[@server]
     end
 
     def reset_channel!
-      Thread.current[:beetle_publisher_channels][@server] = nil 
+      @channels[@server] = nil
     end
 
     # retry dead servers after ignoring them for 10.seconds
