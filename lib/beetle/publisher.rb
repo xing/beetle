@@ -265,7 +265,7 @@ module Beetle
       logger.warn "Beetle: error closing down bunny: #{e}"
       Beetle::reraise_expectation_errors!
     ensure
-      bunnies[@server] = nil
+      @bunnies[@server] = nil
       reset_channel!
       @exchanges[@server] = {}
       @queues[@server] = {}
