@@ -22,7 +22,6 @@ module Beetle
       @uuid = SecureRandom.uuid
       Thread.current[:beetle_publisher_channels] ||= {}
       Thread.current[:beetle_publisher_channels][@uuid] = {}
-      self.class.instances[self] = @uuid
     end
 
     def []=(server, channel)
