@@ -191,10 +191,6 @@ module Beetle
       !!@channels[@server]
     end
 
-    def reset_channel!
-      @channels[@server] = nil
-    end
-
     # retry dead servers after ignoring them for 10.seconds
     # if all servers are dead, retry the one which has been dead for the longest time
     def recycle_dead_servers
@@ -265,7 +261,7 @@ module Beetle
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
-      reset_channel!
+      @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
     end
