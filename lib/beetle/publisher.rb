@@ -5,7 +5,7 @@ module Beetle
   # This way channels are thread scoped and instance scoped. (Multiple publishers can have distinct channels)
   # 
   # Performance: Normally you'd want to have fast access to local variables, and an ideal implementation uses an array, instead
-  # of a hash as the underlying store (see also concurrent-ruby ThreadLocalVar). For our case howeverm, this is good enough.
+  # of a hash as the underlying store (see also concurrent-ruby ThreadLocalVar). For our case however, this is good enough.
   class Channels
     def initialize
       Thread.current[:beetle_publisher_channels] ||= {}
