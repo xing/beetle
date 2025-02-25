@@ -33,7 +33,7 @@ module Beetle
     end
 
     def cleanup!
-      Thread.current[:beetle_publisher_channels][@uuid] = {}
+      Thread.current[:beetle_publisher_channels].delete(@uuid)
     end
   end
 end
