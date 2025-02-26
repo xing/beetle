@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 5.0.1
+* Make channels thread local, to avoid problems with out-of-order amqp frames when the client is shared across threads 
+
 ## Version 5.0.0
 * [breaking] Bunny upgrade fom 0.7.13 to 2.23.0 => changes from single threaded mode to multithreaded mode
 * [breaking] Heartbeats enabled if server offers them
