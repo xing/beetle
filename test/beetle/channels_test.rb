@@ -5,8 +5,12 @@ module Beetle
     test "allows to set new channel with key" do
       @channels = Beetle::Channels.new
       o = Object.new
+      o2 = Object.new
 
       @channels["key"] = o
+      assert_equal @channels["key"].object_id, o.object_id
+
+      @channels["key"] ||= o2
       assert_equal @channels["key"].object_id, o.object_id
     end
 

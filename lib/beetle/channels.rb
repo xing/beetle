@@ -18,22 +18,24 @@ module Beetle
   # We can't use finalizers for that since they run on a different thread.
   # Best practice would be use `ensure` to cleanup the Channels instance once it's no longer needed.
   class Channels
+    THREAD_LOCAL_KEY = :beetle_publisher_channels
+
     def initialize
       @uuid = SecureRandom.uuid
-      Thread.current[:beetle_publisher_channels] ||= {}
-      Thread.current[:beetle_publisher_channels][@uuid] = {}
+      Thread.current[THREAD_LOCAL_KEY] ||= {}
+      Thread.current[THREAD_LOCAL_KEY][@uuid] = {}
     end
 
     def []=(server, channel)
-      Thread.current[:beetle_publisher_channels][@uuid][server] = channel
+      Thread.current[THREAD_LOCAL_KEY][@uuid][server] = channel
     end
 
     def [](server)
-      Thread.current[:beetle_publisher_channels][@uuid][server]
+      Thread.current[THREAD_LOCAL_KEY][@uuid][server]
     end
 
     def cleanup!
-      Thread.current[:beetle_publisher_channels].delete(@uuid)
+      Thread.current[THREAD_LOCAL_KEY].delete(@uuid)
     end
   end
 end
