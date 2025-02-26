@@ -1,7 +1,6 @@
 module Beetle
   # Provides the publishing logic implementation.
   class Publisher < Base
-
     attr_reader :dead_servers
 
     def initialize(client, options = {}) #:nodoc:
@@ -9,7 +8,7 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
-      @channels = {}
+      @channels = Channels.new
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
