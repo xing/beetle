@@ -33,35 +33,48 @@ class BunnyBehaviorTest < Minitest::Test
 
   test "publishing redundantly does not leave the garbage in dedup store" do
     Beetle.config.servers = "localhost:5672,localhost:5673"
-    client = Beetle::Client.new
-    client.register_queue(:test_garbage)
-    client.register_message(:test_garbage)
-
+    publisher = Beetle::Client.new
+    publisher.register_message(:test_garbage)
+    publisher.register_queue(:test_garbage)
     # purge the test queue
-    client.purge(:test_garbage)
-
+    publisher.purge(:test_garbage)
     # empty the dedup store
-    client.deduplication_store.flushdb
+    publisher.deduplication_store.flushdb
 
-    # register our handler to the message, check out the message.rb for more stuff you can get from the message object
-    message = nil
-    client.register_handler(:test_garbage) {|msg| 
-      message = msg; 
-      client.stop_listening 
+    Beetle.config.servers = "localhost:5672"
+    sub5672 = Beetle::Client.new
+    sub5672.register_queue(:test_garbage)
+
+    Beetle.config.servers = "localhost:5673"
+    sub5673 = Beetle::Client.new
+    sub5673.register_queue(:test_garbage)
+
+    
+    message5672 = nil
+    sub5672.register_handler(:test_garbage) {|msg| 
+      binding.pry
+      message5672 = msg; 
+      sub5672.stop_listening 
+      sub5673.stop_listening 
     }
 
-    published = client.publish(:test_garbage, 'bam', :redundant=>true) 
+    message5673 = nil
+    sub5673.register_handler(:test_garbage) {|msg| 
+      binding.pry
+      message5673 = msg; 
+      sub5673.stop_listening 
+    }
 
-    # start listening
-    client.listen
-    client.stop_publishing
-    
-    # binding.pry
-    
+    published = publisher.publish(:test_garbage, 'bam', :redundant =>true) 
+
+    sub5672.listen
+    sub5673.listen
+    publisher.stop_publishing
+  
     assert_equal 2, published
-    assert_equal "bam", message.data
+    assert_equal "bam", message5672.data
     Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
-      assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+      assert_equal false, publisher.deduplication_store.exists(message5672.msg_id, suffix)
     }
   end
 
