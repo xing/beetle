@@ -94,7 +94,7 @@ module Beetle
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
-          exchange(exchange_name).publish(data, opts)
+          exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue *bunny_exceptions => e

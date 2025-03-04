@@ -1,3 +1,4 @@
+require 'pry'
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 class BunnyBehaviorTest < Minitest::Test
@@ -29,4 +30,39 @@ class BunnyBehaviorTest < Minitest::Test
     assert_equal 1, headers["foo"]
     assert_equal({"bar" => "baz"}, headers["table"])
   end
+
+  test "publishing redundantly does not leave the garbage in dedup store" do
+    Beetle.config.servers = "localhost:5672,localhost:5673"
+    client = Beetle::Client.new
+    client.register_queue(:test_garbage)
+    client.register_message(:test_garbage)
+
+    # purge the test queue
+    client.purge(:test_garbage)
+
+    # empty the dedup store
+    client.deduplication_store.flushdb
+
+    # register our handler to the message, check out the message.rb for more stuff you can get from the message object
+    message = nil
+    client.register_handler(:test_garbage) {|msg| 
+      message = msg; 
+      client.stop_listening 
+    }
+
+    published = client.publish(:test_garbage, 'bam', :redundant=>true) 
+
+    # start listening
+    client.listen
+    client.stop_publishing
+    
+    # binding.pry
+    
+    assert_equal 2, published
+    assert_equal "bam", message.data
+    Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
+      assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+    }
+  end
+
 end
