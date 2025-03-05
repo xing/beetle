@@ -38,7 +38,7 @@ class BunnyBehaviorTest < Minitest::Test
     # empty the dedup store
     client.deduplication_store.flushdb
 
-    handler = TestHandler.new(stop_after_n_post_processes = 2, client = client)
+    handler = TestHandler.new(stop_listening_after_n_post_processes = 2, client = client)
     client.register_handler(:test_garbage, handler)
     published = client.publish(:test_garbage, 'bam', :redundant =>true)
     listen(client)
@@ -49,6 +49,34 @@ class BunnyBehaviorTest < Minitest::Test
     message = messages_processed.first
     assert_equal 2, published
     assert_equal "bam", message.data
+    Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
+        assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+    }
+  end
+
+  test "process redundant message once" do
+    Beetle.config.servers = "localhost:5672,localhost:5673"
+    client = Beetle::Client.new
+    client.register_queue(:test_processing)
+    client.register_message(:test_processing)
+    # purge the test queue
+    client.purge(:test_processing)
+    # empty the dedup store
+    client.deduplication_store.flushdb
+
+    handler = TestHandler.new(stop_listening_after_n_post_processes = 2, client = client)
+    client.register_handler(:test_processing, handler)
+    published = client.publish(:test_processing, 'bam', :redundant =>true)
+    listen(client)
+    client.stop_publishing
+
+    messages_processed = handler.messages_processed
+    assert_equal 1, messages_processed.length
+    message = messages_processed.first
+    assert_equal 2, published
+    assert_equal "bam", message.data
+    assert_equal 2, handler.post_process_invocations
+    assert_equal 2, handler.pre_process_invocations
     Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
         assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
     }
@@ -91,13 +119,20 @@ class BunnyBehaviorTest < Minitest::Test
   class TestHandler < Beetle::Handler
 
     attr_reader :messages_processed
+    attr_reader :pre_process_invocations
+    attr_reader :post_process_invocations
 
-    def initialize(stop_after_n_post_processes, client)
+    def initialize(stop_listening_after_n_post_processes, client)
       super()
-      @stop_after_n_post_processes = stop_after_n_post_processes
+      @stop_listening_after_n_post_processes = stop_listening_after_n_post_processes
       @client = client
-      @invocations = 0
+      @post_process_invocations = 0
+      @pre_process_invocations = 0
       @messages_processed = []
+    end
+
+    def pre_process(message)
+      @pre_process_invocations += 1
     end
     
     def process
@@ -105,8 +140,8 @@ class BunnyBehaviorTest < Minitest::Test
     end
 
     def post_process
-      @invocations += 1
-      if @invocations >= @stop_after_n_post_processes
+      @post_process_invocations += 1
+      if @post_process_invocations >= @stop_listening_after_n_post_processes
           @client.stop_listening
       end
     end
