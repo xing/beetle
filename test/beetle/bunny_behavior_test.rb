@@ -44,7 +44,9 @@ class BunnyBehaviorTest < Minitest::Test
     listen(client)
     client.stop_publishing
 
-    message = handler.messages_processed.first
+    messages_processed = handler.messages_processed
+    assert_equal 1, messages_processed.length
+    message = messages_processed.first
     assert_equal 2, published
     assert_equal "bam", message.data
     Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
