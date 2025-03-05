@@ -63,6 +63,30 @@ class BunnyBehaviorTest < Minitest::Test
        nil
   end
 
+  test "publishing redundantly to a single broker does not leave the garbage in dedup store and fallback to simple sending" do
+    Beetle.config.servers = "localhost:5672"
+    client = Beetle::Client.new
+    client.register_queue(:test_single)
+    client.register_message(:test_single)
+    # purge the test queue
+    client.purge(:test_single)
+    # empty the dedup store
+    client.deduplication_store.flushdb
+
+    message = nil
+    client.register_handler(:test_single) {|msg| message = msg; client.stop_listening }
+
+    published = client.publish(:test_single, 'bam', :redundant =>true)
+    listen(client)
+    client.stop_publishing
+
+    assert_equal 1, published
+    assert_equal "bam", message.data
+    Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
+        assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+    }
+  end
+
 
   class TestHandler < Beetle::Handler
 
