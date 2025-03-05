@@ -90,7 +90,7 @@ module Beetle
       dead_letter_queue_name = "#{target_queue}_dead_letter"
       if policy_options[:dead_lettering]
         logger.debug("Beetle: creating dead letter queue #{dead_letter_queue_name} with opts: #{creation_options.inspect}")
-        channel.queue(dead_letter_queue_name, creation_options)
+        channel.queue(dead_letter_queue_name, creation_options.dup)
       end
       return {
         :queue_name => target_queue,
@@ -115,7 +115,7 @@ module Beetle
           queue(@client.config.beetle_policy_updates_queue_name)
           data = payload.to_json
           opts = Message.publishing_options(:key => @client.config.beetle_policy_updates_routing_key, :persistent => true, :redundant => false)
-          exchange(@client.config.beetle_policy_exchange_name).publish(data, opts)
+          exchange(@client.config.beetle_policy_exchange_name).publish(data, opts.dup)
         end
       end
     end

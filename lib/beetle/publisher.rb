@@ -60,7 +60,7 @@ module Beetle
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}:#{opts[:message_id]} to #{@server}"
-        exchange(exchange_name).publish(data, opts)
+        exchange(exchange_name).publish(data, opts.dup)
         logger.debug "Beetle: message sent!"
         published = 1
       rescue *bunny_exceptions => e
@@ -222,7 +222,7 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
-      channel.exchange(name, opts)
+      channel.exchange(name, opts.dup)
     end
 
     def bind_queues_for_exchange(exchange_name)
@@ -233,14 +233,14 @@ module Beetle
 
     def declare_queue!(queue_name, creation_options)
       logger.debug("Beetle: creating queue with opts: #{creation_options.inspect}")
-      queue = channel.queue(queue_name, creation_options)
+      queue = channel.queue(queue_name, creation_options.dup)
       policy_options = bind_dead_letter_queue!(channel, queue_name, creation_options)
       publish_policy_options(policy_options)
       queue
     end
 
     def bind_queue!(queue, exchange_name, binding_options)
-      queue.bind(exchange(exchange_name), binding_options)
+      queue.bind(exchange(exchange_name), binding_option.dup)
     end
 
     def stop!(exception=nil)
