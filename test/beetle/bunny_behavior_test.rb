@@ -38,7 +38,7 @@ class BunnyBehaviorTest < Minitest::Test
     # empty the dedup store
     client.deduplication_store.flushdb
 
-    handler = TestHandler.new(stop_after = 2, client = client)
+    handler = TestHandler.new(stop_after_n_post_processes = 2, client = client)
     client.register_handler(:test_garbage, handler)
     published = client.publish(:test_garbage, 'bam', :redundant =>true)
     listen(client)
@@ -68,9 +68,9 @@ class BunnyBehaviorTest < Minitest::Test
 
     attr_reader :messages_processed
 
-    def initialize(stop_after, client)
+    def initialize(stop_after_n_post_processes, client)
       super()
-      @stop_after = stop_after
+      @stop_after_n_post_processes = stop_after_n_post_processes
       @client = client
       @invocations = 0
       @messages_processed = []
@@ -82,7 +82,7 @@ class BunnyBehaviorTest < Minitest::Test
 
     def post_process
       @invocations += 1
-      if @invocations >= @stop_after
+      if @invocations >= @stop_after_n_post_processes
           @client.stop_listening
       end
     end
