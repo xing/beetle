@@ -240,7 +240,7 @@ module Beetle
     end
 
     def bind_queue!(queue, exchange_name, binding_options)
-      queue.bind(exchange(exchange_name), binding_option.dup)
+      queue.bind(exchange(exchange_name), binding_options.dup)
     end
 
     def stop!(exception=nil)
