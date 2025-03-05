@@ -47,7 +47,7 @@ class BunnyBehaviorTest < Minitest::Test
     message = handler.messages_processed.first
     assert_equal 2, published
     assert_equal "bam", message.data
-    Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
+    Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
         assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
     }
   end
