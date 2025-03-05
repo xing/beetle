@@ -38,15 +38,10 @@ class BunnyBehaviorTest < Minitest::Test
     client.purge(:test_garbage)
     # empty the dedup store
     client.deduplication_store.flushdb
-    # register our handler to the message, check out the message.rb for more stuff you can get from the message object
-    message = nil
 
-    handler = TestHandler.new(2, client)
+    handler = TestHandler.new(stop_after = 2, client = client)
     client.register_handler(:test_garbage, handler)
-    
-    # publish our message (NOTE: empty message bodies don't work, most likely due to bugs in bunny/amqp)
     published = client.publish(:test_garbage, 'bam', :redundant =>true)
-    # start listening
     listen(client)
     client.stop_publishing
 
