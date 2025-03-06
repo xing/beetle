@@ -218,6 +218,7 @@ module Beetle
       else
         set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
       end
+      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.join(', ')}")
     end
 
     def create_exchange!(name, opts)
@@ -278,7 +279,6 @@ module Beetle
           each_server do
             len += queue(queue_name).status[:message_count]
           end
-          # logger.debug "Beetle: queue '#{queue_name}' has size #{len}"
           if len > max_length
             @throttled = true
             break
