@@ -598,7 +598,7 @@ module Beetle
     test "select_next_server should log an error if there are no servers to publish to" do
       @pub.servers = []
       logger = mock('logger')
-      logger.expects(:debug).with("Selected new server for publishing:localhost:5672.\n Dead servers are none")
+      logger.expects(:debug).with("Selected new server for publishing:#{@pub.server}.\n Dead servers are none")
       logger.expects(:error).returns(true)
       @pub.expects(:logger).twice.returns(logger)
       @pub.expects(:set_current_server).never
