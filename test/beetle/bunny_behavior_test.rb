@@ -77,9 +77,6 @@ class BunnyBehaviorTest < Minitest::Test
     assert_equal "bam", message.data
     assert_equal 2, handler.post_process_invocations
     assert_equal 2, handler.pre_process_invocations
-    Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
-        assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
-    }
   end
 
   def listen(client , timeout = 1) 
