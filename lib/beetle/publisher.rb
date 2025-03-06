@@ -218,7 +218,7 @@ module Beetle
       else
         set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
       end
-      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.join(', ')}")
+      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : "none"}")
     end
 
     def create_exchange!(name, opts)
