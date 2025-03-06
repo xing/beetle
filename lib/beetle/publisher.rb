@@ -58,7 +58,7 @@ module Beetle
       begin
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
-        logger.debug "Beetle: trying to send message #{message_name}:#{opts[:message_id]} to #{@server}"
+        logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         exchange(exchange_name).publish(data, opts.dup)
         logger.debug "Beetle: message sent!"
         published = 1
@@ -92,7 +92,7 @@ module Beetle
         begin
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
-          logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
+          logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
