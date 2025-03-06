@@ -246,7 +246,7 @@ module Beetle
         begin
           l = Logger.new(log_file)
           l.formatter = Logger::Formatter.new
-          l.level = Logger::INFO
+          l.level = ENV["BEETLE_LOG_LEVEL"] || Logger::INFO
           l.datetime_format = "%Y-%m-%d %H:%M:%S"
           l
         end
