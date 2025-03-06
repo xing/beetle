@@ -32,7 +32,8 @@ end
 
 I18n.enforce_available_locales = false
 
-Beetle.config.logger = Logger.new(File.dirname(__FILE__) + '/../test.log')
+ENV['BEETLE_LOG_LEVEL'] = 'debug'
+Beetle.config.log_file = File.dirname(__FILE__) + '/../test.log'
 Beetle.config.servers = ENV["RABBITMQ_SERVERS"] || "localhost:5672"
 
 if system('docker -v >/dev/null') && `docker inspect beetle-redis-master -f '{{.State.Status}}'`.chomp == "running"

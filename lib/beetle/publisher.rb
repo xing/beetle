@@ -58,7 +58,7 @@ module Beetle
       begin
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
-        logger.debug "Beetle: trying to send message #{message_name}:#{opts[:message_id]} to #{@server}"
+        logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         exchange(exchange_name).publish(data, opts.dup)
         logger.debug "Beetle: message sent!"
         published = 1
@@ -92,7 +92,7 @@ module Beetle
         begin
           next if published.include? @server
           bind_queues_for_exchange(exchange_name)
-          logger.debug "Beetle: trying to send #{message_name}:#{opts[:message_id]} to #{@server}"
+          logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
@@ -218,6 +218,7 @@ module Beetle
       else
         set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
       end
+      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : "none"}")
     end
 
     def create_exchange!(name, opts)
@@ -278,7 +279,6 @@ module Beetle
           each_server do
             len += queue(queue_name).status[:message_count]
           end
-          # logger.debug "Beetle: queue '#{queue_name}' has size #{len}"
           if len > max_length
             @throttled = true
             break
