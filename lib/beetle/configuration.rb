@@ -163,6 +163,7 @@ module Beetle
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
+    # set log-level for all beetle operations (defaults to <tt>INFO</tt>)
     attr_accessor :log_level
 
     # returns the configured amqp brokers
