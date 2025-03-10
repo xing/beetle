@@ -163,6 +163,8 @@ module Beetle
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
+    attr_accessor :log_level
+
     # returns the configured amqp brokers
     def brokers
       {
@@ -227,6 +229,7 @@ module Beetle
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
+      self.log_level = Logger::INFO
     end
 
     # setting the external config file will load it on assignment
@@ -246,7 +249,7 @@ module Beetle
         begin
           l = Logger.new(log_file)
           l.formatter = Logger::Formatter.new
-          l.level = ENV["BEETLE_LOG_LEVEL"] || Logger::INFO
+          l.level = log_level
           l.datetime_format = "%Y-%m-%d %H:%M:%S"
           l
         end
