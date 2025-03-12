@@ -60,6 +60,9 @@ module Beetle
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         exchange(exchange_name).publish(data, opts.dup)
+        if opts[:publisher_confirms]
+          raise Bunny::Exception, "Message confirmation failed" unless exchange(exchange_name).wait_for_confirms
+        end
         logger.debug "Beetle: message sent!"
         published = 1
       rescue *bunny_exceptions => e
