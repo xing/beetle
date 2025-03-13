@@ -62,9 +62,14 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         current_exchange = exchange(exchange_name)
         current_exchange.publish(data, opts.dup)
-        if is_publisher_confirms_enabled && !current_exchange.wait_for_confirms
-          logger.warn "Beetle: failed to confirm publishing message #{message_name}"
-          return published
+        if is_publisher_confirms_enabled
+          channel = current_exchange.channel
+          channel.confirm_select unless channel.using_publisher_confirmations?
+        
+          unless current_exchange.wait_for_confirms
+            logger.warn "Beetle: failed to confirm publishing message #{message_name}"
+            return published
+          end
         end
         logger.debug "Beetle: message sent!"
         published = 1
