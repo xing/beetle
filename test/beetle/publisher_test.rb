@@ -135,7 +135,7 @@ module Beetle
       @pub.stubs(:bind_queues_for_exchange)
       @client.register_queue("mama", :exchange => "mama-exchange")
       @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
-      @opts = { :ttl => 1.hour , :key => "mama", :persistent => true}
+      @opts = { :ttl => 1.hour , :key => "mama", :persistent => true, :publisher_confirms => false}
       @data = 'XXX'
     end
 
