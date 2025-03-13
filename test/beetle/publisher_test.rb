@@ -621,4 +621,45 @@ module Beetle
       @pub.stop
     end
   end
+
+  class PublisherPublishingWithConfirmTest < Minitest::Test
+    def setup
+      @config = Configuration.new
+      @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+      @client = Client.new(@config)
+      @pub = Publisher.new(@client)
+      @pub.stubs(:bind_queues_for_exchange)
+      @client.register_queue("mama", :exchange => "mama-exchange")
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange", :publisher_confirms => true)
+      @opts = { :ttl => 1.hour , :key => "mama", :persistent => false, :publisher_confirms => true}
+      @data = 'XXX'
+    end
+
+    test "should wait for publisher confirms" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+
+      e = mock("exchange")
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(confirms_sequence)
+      e.expects(:publish).in_sequence(confirms_sequence)
+      e.expects(:wait_for_confirms).returns(true).in_sequence(confirms_sequence)
+
+      assert_equal 1, @pub.publish("mama", @data, @opts)
+    end
+
+    test "should raise an exception when confirms return false" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+
+      e = mock("exchange")
+      @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(confirms_sequence)
+      e.expects(:publish).in_sequence(confirms_sequence)
+      e.expects(:wait_for_confirms).returns(false).in_sequence(confirms_sequence)
+
+      assert_equal 0, @pub.publish("mama", @data, @opts)
+    end
+  end
+  
 end

@@ -53,15 +53,17 @@ module Beetle
       tries = @servers.size * 2
       logger.debug "Beetle: sending #{message_name}"
       published = 0
+      is_publisher_confirms_enabled = opts[:publisher_confirms]
       opts = Message.publishing_options(opts)
 
       begin
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
-        exchange(exchange_name).publish(data, opts.dup)
-        if opts[:publisher_confirms]
-          raise Bunny::Exception, "Message confirmation failed" unless exchange(exchange_name).wait_for_confirms
+        current_exchange = exchange(exchange_name)
+        current_exchange.publish(data, opts.dup)
+        if is_publisher_confirms_enabled
+          raise Bunny::Exception, "Message confirmation failed" unless current_exchange.wait_for_confirms
         end
         logger.debug "Beetle: message sent!"
         published = 1
