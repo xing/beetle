@@ -641,9 +641,13 @@ module Beetle
       @pub.server = "someserver"
 
       exchange = mock("exchange")
+      channel = mock("channel")
 
       @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
       exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:channel).returns(channel).in_sequence(confirms_sequence)
+      channel.expects(:using_publisher_confirmations?).returns(false).in_sequence(confirms_sequence)
+      channel.expects(:confirm_select).in_sequence(confirms_sequence)
       exchange.expects(:wait_for_confirms).returns(true).in_sequence(confirms_sequence)
 
       assert_equal 1, @pub.publish("mama", @data, @opts)
@@ -655,12 +659,34 @@ module Beetle
       @pub.server = "someserver"
 
       exchange = mock("exchange")
+      channel = mock("channel")
 
       @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
       exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:channel).returns(channel).in_sequence(confirms_sequence)
+      channel.expects(:using_publisher_confirmations?).returns(false).in_sequence(confirms_sequence)
+      channel.expects(:confirm_select).in_sequence(confirms_sequence)
       exchange.expects(:wait_for_confirms).returns(false).in_sequence(confirms_sequence)
 
       assert_equal 0, @pub.publish("mama", @data, @opts)
+    end
+
+    test "if the confirm is enabled for channel the confirm select is not called second time" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+
+      exchange = mock("exchange")
+      channel = mock("channel")
+
+      @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
+      exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:channel).returns(channel).in_sequence(confirms_sequence)
+      channel.expects(:using_publisher_confirmations?).returns(true).in_sequence(confirms_sequence)
+      channel.expects(:confirm_select).never.in_sequence(confirms_sequence)
+      exchange.expects(:wait_for_confirms).returns(true).in_sequence(confirms_sequence)
+
+      assert_equal 1, @pub.publish("mama", @data, @opts)
     end
   end
   
