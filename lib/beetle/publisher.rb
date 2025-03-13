@@ -62,8 +62,9 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         current_exchange = exchange(exchange_name)
         current_exchange.publish(data, opts.dup)
-        if is_publisher_confirms_enabled
-          raise Bunny::Exception, "Message confirmation failed" unless current_exchange.wait_for_confirms
+        if is_publisher_confirms_enabled && !current_exchange.wait_for_confirms
+          logger.warn "Beetle: failed to confirm publishing message #{message_name}"
+          return published
         end
         logger.debug "Beetle: message sent!"
         published = 1
