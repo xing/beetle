@@ -218,6 +218,14 @@ module Beetle
     end
   end
 
+  class KeyManagementNoDedupTest < KeyManagementTest
+    def setup
+      super
+      @store = NoDeduplicationStore.new(@config)
+      @store.flushdb
+    end
+  end
+
   class AckingTest < Minitest::Test
 
     def setup
@@ -277,7 +285,7 @@ module Beetle
       assert_nil @store.get(message.msg_id, :ack_count)
       message.process(@null_handler)
       assert message.redundant?
-      assert_equal "1", @store.get(message.msg_id, :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
     test "acking a redundant message twice should remove the ack_count key" do
@@ -291,6 +299,14 @@ module Beetle
       assert !@store.exists(message.msg_id, :ack_count)
     end
 
+  end
+
+  class AckingNoDedupTest < AckingTest
+    def setup
+      super
+      @store = NoDeduplicationStore.new
+      @store.flushdb
+    end
   end
 
   class FreshMessageTest < Minitest::Test
@@ -324,9 +340,16 @@ module Beetle
       message.expects(:completed!).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.__send__(:process_internal, proc)
-      assert_equal "1", @store.get(message.msg_id, :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
+  end
+
+  class FreshMessageNoDedupTest < FreshMessageTest
+    def setup
+      @store = NoDeduplicationStore.new
+      @store.flushdb
+    end
   end
 
   class SimpleMessageTest < Minitest::Test
@@ -386,6 +409,16 @@ module Beetle
 
   end
 
+  class SimpleMessageNoDedupTest < SimpleMessageTest
+    def setup
+      @config = Configuration.new
+      @config.redis_server = Beetle.config.redis_server
+      @store = NoDeduplicationStore.new(@config)
+      @store.flushdb
+    end
+
+  end
+
   class HandlerCrashTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new
@@ -405,9 +438,9 @@ module Beetle
       header.expects(:ack).never
       assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert_equal "1", @store.get(message.msg_id, :exceptions)
-      assert_equal "0", @store.get(message.msg_id, :timeout)
-      assert_equal "52", @store.get(message.msg_id, :delay)
+      assert_equal "1", @store.get(message.msg_id, :exceptions).to_s
+      assert_equal "0", @store.get(message.msg_id, :timeout).to_s
+      assert_equal "52", @store.get(message.msg_id, :delay).to_s
     end
 
     test "a message should delete the mutex before resetting the timer if attempts and exception limits haven't been reached" do
@@ -492,6 +525,13 @@ module Beetle
       assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
     end
 
+  end
+
+  class HandlerCrashNoDedupTest < HandlerCrashTest
+    def setup
+      @store = NoDeduplicationStore.new
+      @store.flushdb
+    end
   end
 
   class SeenMessageTest < Minitest::Test
@@ -651,13 +691,13 @@ module Beetle
 
   end
 
-  class SeenMessageNoDeduplicationStoreTest < SeenMessageTest
-    def setup
-      @store = NoDeduplicationStore.new
-      @store.flushdb
-    end
-  end
-
+  # class SeenMessageNoDedupTest < SeenMessageTest
+  #   def setup
+  #     @store = NoDeduplicationStore.new
+  #     @store.flushdb
+  #   end
+  # end
+  #
   class ProcessingTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new

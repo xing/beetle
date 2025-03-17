@@ -12,11 +12,11 @@ module Beetle
     end
 
     def set(msg_id, suffix, value)
-      @data[key(msg_id, suffix)] = value
+      @data[key(msg_id, suffix)] = value.to_s
     end
 
     def setnx(msg_id, suffix, value)
-      @data[key(msg_id, suffix)] ||= value
+      @data[key(msg_id, suffix)] ||= value.to_s
     end
 
     def setnx_completed!(_msg_id)
@@ -53,6 +53,10 @@ module Beetle
       keys(msg_id).each do |key|
         @data[key] = nil
       end
+    end
+
+    def exists(msg_id, suffix)
+      @data.key?(key(msg_id, suffix))
     end
 
     def flushdb
