@@ -723,6 +723,8 @@ module Beetle
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
+      @no_store = NoDeduplicationStore.new
+      @no_store.flushdb
     end
 
     test "a handler running longer than the specified timeout should be aborted (when given a float timeout number)" do
@@ -735,6 +737,18 @@ module Beetle
       assert_equal RC::ExceptionsLimitReached, result
     end
 
+    test "[NODEDUP] a handler running longer than the specified timeout should be aborted (when given a float timeout number)" do
+      header = header_with_params({})
+      header.expects(:ack)
+      message = Message.new("somequeue", header, 'foo', :timeout => 0.1, :attempts => 2, :store => @no_store)
+      action = lambda{|*args| while true; end}
+      handler = Handler.create(action)
+      result = message.process(handler)
+      assert_equal RC::ExceptionsLimitReached, result
+    end
+
+
+
     test "a handler running longer than the specified timeout should be aborted (when using active_support seconds)" do
       header = header_with_params({})
       header.expects(:ack)
@@ -744,6 +758,17 @@ module Beetle
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
     end
+
+    test "[NODEDUP] a handler running longer than the specified timeout should be aborted (when using active_support seconds)" do
+      header = header_with_params({})
+      header.expects(:ack)
+      message = Message.new("somequeue", header, 'foo', :timeout => 1.seconds, :attempts => 2, :store => @no_store)
+      action = lambda{|*args| while true; end}
+      handler = Handler.create(action)
+      result = message.process(handler)
+      assert_equal RC::ExceptionsLimitReached, result
+    end
+
 
   end
 
