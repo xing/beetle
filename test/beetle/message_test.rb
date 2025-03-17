@@ -651,6 +651,13 @@ module Beetle
 
   end
 
+  class SeenMessageNoDeduplicationStoreTest < SeenMessageTest
+    def setup
+      @store = NoDeduplicationStore.new
+      @store.flushdb
+    end
+  end
+
   class ProcessingTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new
@@ -717,6 +724,13 @@ module Beetle
       assert result.failure?
     end
 
+  end
+
+  class ProcessingNoDeduplicationStoreTest < ProcessingTest
+    def setup
+      @store = NoDeduplicationStore.new
+      @store.flushdb
+    end
   end
 
   class HandlerTimeoutTest < Minitest::Test
