@@ -166,6 +166,9 @@ module Beetle
     # set log-level for all beetle operations (defaults to <tt>INFO</tt>)
     attr_accessor :log_level
 
+    # enable publisher confirms (defaults to <tt>false</tt>)
+    attr_reader :publisher_confirms
+
     # returns the configured amqp brokers
     def brokers
       {
@@ -231,6 +234,8 @@ module Beetle
 
       self.log_file = STDOUT
       self.log_level = Logger::INFO
+
+      self.publisher_confirms = false
     end
 
     # setting the external config file will load it on assignment

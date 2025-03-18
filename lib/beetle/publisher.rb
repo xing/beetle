@@ -53,7 +53,6 @@ module Beetle
       tries = @servers.size * 2
       logger.debug "Beetle: sending #{message_name}"
       published = 0
-      is_publisher_confirms_enabled = opts[:publisher_confirms]
       opts = Message.publishing_options(opts)
 
       begin
@@ -61,7 +60,7 @@ module Beetle
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         current_exchange = exchange(exchange_name)
-        if is_publisher_confirms_enabled
+        if @client.config.publisher_confirms
           channel = current_exchange.channel
           channel.confirm_select unless channel.using_publisher_confirmations?
           current_exchange.publish(data, opts.dup) 

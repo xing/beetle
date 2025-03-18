@@ -138,7 +138,6 @@ module Beetle
       raise ConfigurationError.new("message #{name} already configured") if messages.include?(name)
       opts = {:exchange => name, :key => name}.merge!(options.symbolize_keys)
       opts.merge! :persistent => true
-      opts.merge!(publisher_confirms: false) unless opts.key?(:publisher_confirms)
       exchange = opts[:exchange] = opts[:exchange].to_s
       register_exchange(exchange) unless exchanges.include?(exchange)
       messages[name] = opts
