@@ -79,15 +79,6 @@ class BunnyBehaviorTest < Minitest::Test
     assert_equal 2, handler.pre_process_invocations
   end
 
-  def listen(client , timeout = 1) 
-    Timeout.timeout(timeout) do 
-      client.listen 
-    end
-  rescue Timeout::Error 
-       puts "Client listen timed out after #{timeout} seconds"
-       nil
-  end
-
   test "publishing redundantly to a single broker does not leave the garbage in dedup store and fallback to simple sending" do
     Beetle.config.servers = "localhost:5672"
     client = Beetle::Client.new
@@ -110,6 +101,36 @@ class BunnyBehaviorTest < Minitest::Test
     Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
         assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
     }
+  end
+
+  test "publishing with confirms works as expected" do
+    Beetle.config.servers = "localhost:5672"
+    client = Beetle::Client.new
+    client.register_queue(:test_publisher_confirms)
+    client.register_message(:test_publisher_confirms, :publisher_confirms => true)
+    # purge the test queue
+    client.purge(:test_publisher_confirms)
+
+    message = nil
+    client.register_handler(:test_publisher_confirms) {|msg| message = msg; client.stop_listening }
+
+    published = client.publish(:test_publisher_confirms, 'bam')
+    listen(client)
+    client.stop_publishing
+
+    assert_equal 1, published
+    assert_equal "bam", message.data 
+
+  end
+
+
+  def listen(client , timeout = 1) 
+    Timeout.timeout(timeout) do 
+      client.listen 
+    end
+  rescue Timeout::Error 
+       puts "Client listen timed out after #{timeout} seconds"
+       nil
   end
 
 

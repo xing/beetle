@@ -128,6 +128,7 @@ module Beetle
       assert_equal({:durable => true, :type => :topic, :queues => []}, @client.exchanges["some_exchange"])
     end
 
+
     test "registering a message should not fail if the exchange has already been registered" do
       opts = { "exchange" => "some_exchange" }
       @client.register_exchange("some_exchange")

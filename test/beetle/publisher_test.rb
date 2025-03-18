@@ -621,4 +621,60 @@ module Beetle
       @pub.stop
     end
   end
+
+  class PublisherPublishingWithConfirmTest < Minitest::Test
+    def setup
+      @config = Configuration.new
+      @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+      @config.publisher_confirms = true
+      @client = Client.new(@config)
+      @pub = Publisher.new(@client)
+      @pub.stubs(:bind_queues_for_exchange)
+      @client.register_queue("mama", :exchange => "mama-exchange")
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
+      @opts = { :ttl => 1.hour , :key => "mama", :persistent => false}
+      @data = 'XXX'
+    end
+
+    test "should wait for publisher confirms" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+
+      exchange = mock("exchange")
+
+      @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
+      exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:wait_for_confirms).returns(true).in_sequence(confirms_sequence)
+
+      assert_equal 1, @pub.publish("mama", @data, @opts)
+    end
+
+    test "should raise an exception when confirms return false" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+
+      exchange = mock("exchange")
+
+      @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
+      exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:wait_for_confirms).returns(false).in_sequence(confirms_sequence)
+
+      assert_equal 0, @pub.publish("mama", @data, @opts)
+    end
+
+    test "if the confirm is enabled for channel the confirm select is not called second time" do
+      confirms_sequence = sequence("confirms")
+      @pub.servers = ["someserver"]
+      @pub.server = "someserver"
+      exchange = mock("exchange")
+
+      @pub.expects(:exchange).with("mama-exchange").returns(exchange).in_sequence(confirms_sequence)
+      exchange.expects(:publish).in_sequence(confirms_sequence)
+      exchange.expects(:wait_for_confirms).returns(true).in_sequence(confirms_sequence)
+      assert_equal 1, @pub.publish("mama", @data, @opts)
+    end
+  end
+  
 end
