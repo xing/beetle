@@ -167,7 +167,7 @@ module Beetle
     attr_accessor :log_level
 
     # enable publisher confirms (defaults to <tt>false</tt>)
-    attr_reader :publisher_confirms
+    attr_accessor :publisher_confirms
 
     # returns the configured amqp brokers
     def brokers
