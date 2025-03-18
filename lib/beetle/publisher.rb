@@ -61,8 +61,6 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
         current_exchange = exchange(exchange_name)
         if @client.config.publisher_confirms
-          channel = current_exchange.channel
-          channel.confirm_select unless channel.using_publisher_confirmations?
           current_exchange.publish(data, opts.dup) 
           unless current_exchange.wait_for_confirms
             logger.warn "Beetle: failed to confirm publishing message #{message_name}"
@@ -195,7 +193,9 @@ module Beetle
     end
 
     def channel
-      @channels[@server] ||= bunny.create_channel
+      @channels[@server] ||= bunny.create_channel.tap do |ch|
+        ch.confirm_select if @client.config.publisher_confirms
+      end
     end
 
     def channel?
