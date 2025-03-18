@@ -20,6 +20,12 @@ require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
 require 'eventmachine'
 
 class Minitest::Test
+  require 'minitest/reporters'
+  if ENV['MINITEST_REPORTER']
+    Minitest::Reporters.use! [Minitest::Reporters::SpecReporter.new(:color => true)]
+  else
+    Minitest::Reporters.use! [Minitest::Reporters::DefaultReporter.new(:color => true)]
+  end
   require "active_support/testing/declarative"
   extend ActiveSupport::Testing::Declarative
   require "webmock"
