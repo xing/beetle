@@ -11,9 +11,9 @@ require 'mocha/minitest'
 
 require 'minitest/reporters'
 if ENV['MINITEST_REPORTER']
-  Minitest::Reporters.use!
+  Minitest::Reporters.use! [Minitest::Reporters::SpecReporter.new(:color => true)]
 else
-  Minitest::Reporters.use!([Minitest::Reporters::DefaultReporter.new(:color => true)])
+  Minitest::Reporters.use! [Minitest::Reporters::DefaultReporter.new(:color => true)]
 end
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
