@@ -1,28 +1,76 @@
 module Beetle
   class SingleBrokerMessage < Message
+    def initialize(*args, **kwargs)
+      super(*args, **kwargs)
+      @store = nil
+    end
+
     def ack!
       logger.debug "Beetle: ack! for message #{msg_id}"
       header.ack
     end
 
-    def set_timeout!; end
-    def timed_out?(_t = nil) = false
-    def timed_out!; end
+    def set_delay!
+      log_not_supported("delay between retries")
+    end
+
+    def delayed?
+      log_not_supported("delay between retries")
+      false
+    end
 
     def redundant?
       false
     end
 
-    def aquire_mutex!
-      true
+    def increment_execution_attempts!; end
+
+    def attempts_limit_reached?(_attempts = nil)
+      # TODO: implement
+      false
     end
 
-    def delete_mutex!
-      true
+    def exceptions_limit_reached?
+      # TODO: implement
+      false
     end
 
     private
 
+    def log_not_supported(what)
+      logger.warn "Beetle: Feature not supported in single broker mode => #{what}"
+    end
+
+    def run_handler!(handler)
+      case result = run_handler(handler)
+      when RC::OK
+        ack!
+        result
+      else
+        handler_failed!(result)
+      end
+    end
+
+    def handler_failed!(result)
+      if attempts_limit_reached?
+        ack!
+        logger.debug "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        RC::AttemptsLimitReached
+      elsif exceptions_limit_reached?
+        ack!
+        logger.debug "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        RC::ExceptionsLimitReached
+      elsif !exception_accepted?
+        ack!
+        logger.debug "Beetle: `#{@exception.class.name}` not accepted: `retry_on`=[#{retry_on.join(',')}] on #{msg_id}"
+        RC::ExceptionNotAccepted
+      else
+        result
+      end
+    end
+
+    # Open questions:
+    # - do we need to support timeouts that span executions?
     def process_internal(handler)
       if @exception
         ack!
@@ -36,41 +84,17 @@ module Beetle
         RC::Ancient
       elsif simple?
         ack!
-        if @store.setnx_completed!(msg_id)
-          run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
-        else
-          RC::OK
-        end
-      elsif !key_exists?
-        run_handler!(handler)
+        run_handler(handler) == RC::HandlerCrash ? RC::AttemptsLimitReached : RC::OK
+      elsif attempts_limit_reached?
+        ack!
+        logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
+        RC::AttemptsLimitReached
+      elsif exceptions_limit_reached?
+        ack!
+        logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
+        RC::ExceptionsLimitReached
       else
-        status, delay, timeout, attempts, exceptions = fetch_status_delay_timeout_attempts_exceptions
-        if status == "completed"
-          ack!
-          RC::OK
-        elsif delay && delayed?(delay)
-          logger.warn "Beetle: ignored delayed message (#{msg_id})!"
-          RC::Delayed
-        elsif !(timeout && timed_out?(timeout))
-          RC::HandlerNotYetTimedOut
-        elsif attempts && attempts_limit_reached?(attempts)
-          completed!
-          ack!
-          logger.warn "Beetle: reached the handler execution attempts limit: #{attempts_limit} on #{msg_id}"
-          RC::AttemptsLimitReached
-        elsif exceptions && exceptions_limit_reached?(exceptions)
-          completed!
-          ack!
-          logger.warn "Beetle: reached the handler exceptions limit: #{exceptions_limit} on #{msg_id}"
-          RC::ExceptionsLimitReached
-        else
-          set_timeout!
-          if aquire_mutex!
-            run_handler!(handler)
-          else
-            RC::MutexLocked
-          end
-        end
+        run_handler!(handler)
       end
     end
   end

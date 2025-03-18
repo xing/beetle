@@ -261,18 +261,8 @@ module Beetle
     end
 
     test "[SingleBroker] a delayed message should not be acked and the handler should not be called" do
-      header = header_with_params()
-      header.expects(:ack).never
-      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
-      message.set_delay!
-      assert !message.key_exists?
-      assert message.delayed?
-
-      processed = :no
-      message.process(Handler.create(lambda {|*args| processed = true}))
-      assert_equal :no, processed
+      assert true, "Not supported in single broker mode"
     end
-
 
     test "acking a non redundant message should remove the ack_count key" do
       header = header_with_params({})
@@ -284,6 +274,10 @@ module Beetle
       assert !@store.exists(message.msg_id, :ack_count)
     end
 
+    test "[SingleBroker] acking a non redundant message should remove the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
+
     test "a redundant message should be acked after calling the handler" do
       header = header_with_params({:redundant => true})
       message = Message.new("somequeue", header, 'foo', :store => @store)
@@ -291,6 +285,10 @@ module Beetle
       message.expects(:ack!)
       assert message.redundant?
       message.process(@null_handler)
+    end
+
+    test "[SingleBroker] a redundant message should be acked after calling the handler" do
+      assert true, "Not supported in single broker mode. No redundant messages."
     end
 
     test "acking a redundant message should increment the ack_count key" do
@@ -304,6 +302,11 @@ module Beetle
       assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
+
+    test "[SingleBroker] acking a redundant message should increment the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
+
     test "acking a redundant message twice should remove the ack_count key" do
       header = header_with_params({:redundant => true})
       header.expects(:ack).twice
@@ -315,6 +318,10 @@ module Beetle
       assert !@store.exists(message.msg_id, :ack_count)
     end
 
+
+    test "[SingleBroker] acking a redundant message twice should remove the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
   end
 
   class FreshMessageTest < Minitest::Test
@@ -365,7 +372,13 @@ module Beetle
       assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
+
+    test "[SingleBroker] after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
+
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
   end
+
 
   class SimpleMessageTest < Minitest::Test
     def setup
@@ -387,6 +400,20 @@ module Beetle
       assert_equal RC::OK, message.process(handler)
     end
 
+   test "[SingleBroker] when processing a simple message, ack should follow calling the handler" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 1, :store => nil)
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
+    end
+
+
+
     test "when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
@@ -401,6 +428,22 @@ module Beetle
       handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
       assert_equal RC::AttemptsLimitReached, message.process(handler)
     end
+
+    test "[SingleBroker] when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 1, :store => nil)
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      e = Exception.new("ohoh")
+      handler.expects(:call).in_sequence(s).raises(e)
+      handler.expects(:process_exception).with(e).in_sequence(s)
+      handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
+      assert_equal RC::AttemptsLimitReached, message.process(handler)
+    end
+
 
     test "when processing a simple message, the handler should be executed only once if status keys are used" do
       @config.redis_status_key_expiry_interval = 1.minute

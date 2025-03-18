@@ -26,8 +26,6 @@ class BunnyBehaviorTest < Minitest::Test
     assert_equal({"bar" => "baz"}, headers["table"])
   end
 
-
-  
   test "publishing redundantly does not leave the garbage in dedup store" do
     Beetle.config.servers = "localhost:5672,localhost:5673"
     client = Beetle::Client.new
@@ -38,7 +36,7 @@ class BunnyBehaviorTest < Minitest::Test
     # empty the dedup store
     client.deduplication_store.flushdb
 
-    handler = TestHandler.new(stop_listening_after_n_post_processes = 2, client = client)
+    handler = TestHandler.new(2, client = client)
     client.register_handler(:test_garbage, handler)
     published = client.publish(:test_garbage, 'bam', :redundant =>true)
     listen(client)
@@ -49,9 +47,9 @@ class BunnyBehaviorTest < Minitest::Test
     message = messages_processed.first
     assert_equal 2, published
     assert_equal "bam", message.data
-    Beetle::DeduplicationStore::KEY_SUFFIXES.each{|suffix| 
-        assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
-    }
+    Beetle::DeduplicationStore::KEY_SUFFIXES.each do |suffix|
+      assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+    end
   end
 
   test "process redundant message once" do
@@ -64,7 +62,7 @@ class BunnyBehaviorTest < Minitest::Test
     # empty the dedup store
     client.deduplication_store.flushdb
 
-    handler = TestHandler.new(stop_listening_after_n_post_processes = 2, client = client)
+    handler = TestHandler.new(2, client = client)
     client.register_handler(:test_processing, handler)
     published = client.publish(:test_processing, 'bam', :redundant =>true)
     listen(client)
@@ -98,16 +96,20 @@ class BunnyBehaviorTest < Minitest::Test
 
     assert_equal 1, published
     assert_equal "bam", message.data
-    Beetle::DeduplicationStore::KEY_SUFFIXES.map{|suffix| 
-        assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
-    }
+    Beetle::DeduplicationStore::KEY_SUFFIXES.map do |suffix|
+      assert_equal false, client.deduplication_store.exists(message.msg_id, suffix)
+    end
   end
 
+  # FIXME: that's not really testing that publisher confirms work
   test "publishing with confirms works as expected" do
-    Beetle.config.servers = "localhost:5672"
-    client = Beetle::Client.new
+    config = Beetle::Configuration.new
+    config.servers = "localhost:5672"
+    config.publisher_confirms = true
+    client = Beetle::Client.new(config)
+
     client.register_queue(:test_publisher_confirms)
-    client.register_message(:test_publisher_confirms, :publisher_confirms => true)
+    client.register_message(:test_publisher_confirms)
     # purge the test queue
     client.purge(:test_publisher_confirms)
 
@@ -119,26 +121,21 @@ class BunnyBehaviorTest < Minitest::Test
     client.stop_publishing
 
     assert_equal 1, published
-    assert_equal "bam", message.data 
-
+    assert_equal "bam", message.data
   end
 
-
-  def listen(client , timeout = 1) 
-    Timeout.timeout(timeout) do 
-      client.listen 
+  def listen(client, timeout = 1)
+    Timeout.timeout(timeout) do
+      client.listen
     end
-  rescue Timeout::Error 
-       puts "Client listen timed out after #{timeout} seconds"
-       nil
+  rescue Timeout::Error
+    puts "Client listen timed out after #{timeout} seconds"
+    nil
   end
-
 
   class TestHandler < Beetle::Handler
 
-    attr_reader :messages_processed
-    attr_reader :pre_process_invocations
-    attr_reader :post_process_invocations
+    attr_reader :messages_processed, :pre_process_invocations, :post_process_invocations
 
     def initialize(stop_listening_after_n_post_processes, client)
       super()
@@ -149,22 +146,20 @@ class BunnyBehaviorTest < Minitest::Test
       @messages_processed = []
     end
 
-    def pre_process(message)
+    def pre_process(_message)
       @pre_process_invocations += 1
     end
-    
+
     def process
       @messages_processed << message
     end
 
     def post_process
       @post_process_invocations += 1
-      if @post_process_invocations >= @stop_listening_after_n_post_processes
-          @client.stop_listening
-      end
+      return unless @post_process_invocations >= @stop_listening_after_n_post_processes
+      @client.stop_listening
     end
 
   end
-
 
 end
