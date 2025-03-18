@@ -219,7 +219,6 @@ module Beetle
   end
 
   class AckingTest < Minitest::Test
-
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -230,6 +229,17 @@ module Beetle
       header = header_with_params(:ttl => -1)
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
+      assert message.expired?
+
+      processed = :no
+      message.process(Handler.create(lambda {|*args| processed = true}))
+      assert_equal :no, processed
+    end
+
+    test "[SingleBroker] an expired message should be acked without calling the handler" do
+      header = header_with_params(:ttl => -1)
+      header.expects(:ack)
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :store => @store)
       assert message.expired?
 
       processed = :no
@@ -249,6 +259,20 @@ module Beetle
       message.process(Handler.create(lambda {|*args| processed = true}))
       assert_equal :no, processed
     end
+
+    test "[SingleBroker] a delayed message should not be acked and the handler should not be called" do
+      header = header_with_params()
+      header.expects(:ack).never
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
+      message.set_delay!
+      assert !message.key_exists?
+      assert message.delayed?
+
+      processed = :no
+      message.process(Handler.create(lambda {|*args| processed = true}))
+      assert_equal :no, processed
+    end
+
 
     test "acking a non redundant message should remove the ack_count key" do
       header = header_with_params({})
@@ -311,6 +335,20 @@ module Beetle
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.process(handler)
     end
+
+    test "[SingleBroker] processing a fresh message sucessfully should first run the handler and then ack it" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
+      assert !message.attempts_limit_reached?
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
+    end
+
 
     test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
       header = header_with_params({:redundant => true})
