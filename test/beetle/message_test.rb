@@ -218,14 +218,6 @@ module Beetle
     end
   end
 
-  class KeyManagementNoDedupTest < KeyManagementTest
-    def setup
-      super
-      @store = NoDeduplicationStore.new(@config)
-      @store.flushdb
-    end
-  end
-
   class AckingTest < Minitest::Test
 
     def setup
@@ -301,14 +293,6 @@ module Beetle
 
   end
 
-  class AckingNoDedupTest < AckingTest
-    def setup
-      super
-      @store = NoDeduplicationStore.new
-      @store.flushdb
-    end
-  end
-
   class FreshMessageTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new
@@ -343,13 +327,6 @@ module Beetle
       assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
-  end
-
-  class FreshMessageNoDedupTest < FreshMessageTest
-    def setup
-      @store = NoDeduplicationStore.new
-      @store.flushdb
-    end
   end
 
   class SimpleMessageTest < Minitest::Test
@@ -405,16 +382,6 @@ module Beetle
       header.expects(:ack).in_sequence(s2)
       handler2.expects(:call).in_sequence(s2).never
       assert_equal RC::OK, message.process(handler2)
-    end
-
-  end
-
-  class SimpleMessageNoDedupTest < SimpleMessageTest
-    def setup
-      @config = Configuration.new
-      @config.redis_server = Beetle.config.redis_server
-      @store = NoDeduplicationStore.new(@config)
-      @store.flushdb
     end
 
   end
@@ -525,13 +492,6 @@ module Beetle
       assert_equal RC::AttemptsLimitReached, message.__send__(:process_internal, proc)
     end
 
-  end
-
-  class HandlerCrashNoDedupTest < HandlerCrashTest
-    def setup
-      @store = NoDeduplicationStore.new
-      @store.flushdb
-    end
   end
 
   class SeenMessageTest < Minitest::Test
@@ -691,13 +651,6 @@ module Beetle
 
   end
 
-  # class SeenMessageNoDedupTest < SeenMessageTest
-  #   def setup
-  #     @store = NoDeduplicationStore.new
-  #     @store.flushdb
-  #   end
-  # end
-  #
   class ProcessingTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new
@@ -766,13 +719,6 @@ module Beetle
 
   end
 
-  class ProcessingNoDeduplicationStoreTest < ProcessingTest
-    def setup
-      @store = NoDeduplicationStore.new
-      @store.flushdb
-    end
-  end
-
   class HandlerTimeoutTest < Minitest::Test
     def setup
       @store = DeduplicationStore.new
@@ -797,13 +743,6 @@ module Beetle
       handler = Handler.create(action)
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
-    end
-  end
-
-  class HandlerTimeoutWitoutDedupStoreTest < HandlerTimeoutTest
-    def setup
-      @store = NoDeduplicationStore.new
-      @store.flushdb
     end
   end
 

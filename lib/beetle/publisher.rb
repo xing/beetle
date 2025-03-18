@@ -39,14 +39,45 @@ module Beetle
         opts = @client.messages[message_name].merge(opts.symbolize_keys)
         exchange_name = opts.delete(:exchange)
         opts.delete(:queue)
-        recycle_dead_servers unless @dead_servers.empty?
-        throttle!
-        if opts[:redundant]
-          publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
+
+        if single_broker_mode?
+          throttle!
+          # TODO: add circuit breaker here to give a single server time to recover. `with_circuit_breaker { }`
+          publish_single_broker(exchange_name, message_name, data.to_s, opts) 
         else
-          publish_with_failover(exchange_name, message_name, data.to_s, opts)
+          recycle_dead_servers unless @dead_servers.empty?
+          throttle!
+          if opts[:redundant]
+            publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
+          else
+            publish_with_failover(exchange_name, message_name, data.to_s, opts)
+          end
         end
       end
+    end
+
+    def publish_single_broker(exchange_name, message_name, data, opts) #:nodoc:
+      published = 0
+      tries = 2
+      logger.debug "Beetle: sending #{message_name}"
+      opts = Message.publishing_options(opts.merge(redundant: false))
+
+      begin
+        select_next_server 
+        bind_queues_for_exchange(exchange_name)
+        logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
+        exchange(exchange_name).publish(data, opts.dup)
+        logger.debug "Beetle: message sent!"
+        published = 1
+      rescue *bunny_exceptions => e
+        logger.warn("Beetle: publishing exception #{e} #{e.backtrace[0..4].join("\n")}")
+        stop!(e)
+        tries -= 1
+        retry if tries > 0
+        logger.error "Beetle: message could not be delivered: #{message_name}"
+        raise NoMessageSent.new
+      end
+      published
     end
 
     def publish_with_failover(exchange_name, message_name, data, opts) #:nodoc:
@@ -218,7 +249,7 @@ module Beetle
       else
         set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
       end
-      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : "none"}")
+      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : 'none'}")
     end
 
     def create_exchange!(name, opts)
