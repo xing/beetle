@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 5.1.0
+* Add publisher confirms
+* Add defensive copying against options mutation when passing to bunny library
+
 ## Version 5.0.1
 * Make channels thread local, to avoid problems with out-of-order amqp frames when the client is shared across threads 
 
