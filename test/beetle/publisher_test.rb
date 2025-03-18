@@ -135,7 +135,7 @@ module Beetle
       @pub.stubs(:bind_queues_for_exchange)
       @client.register_queue("mama", :exchange => "mama-exchange")
       @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
-      @opts = { :ttl => 1.hour , :key => "mama", :persistent => true, :publisher_confirms => false}
+      @opts = { :ttl => 1.hour , :key => "mama", :persistent => true}
       @data = 'XXX'
     end
 
@@ -626,12 +626,13 @@ module Beetle
     def setup
       @config = Configuration.new
       @config.servers = ENV['RABBITMQ_SERVERS'].split(',').first if ENV['RABBITMQ_SERVERS']
+      @config.publisher_confirms = true
       @client = Client.new(@config)
       @pub = Publisher.new(@client)
       @pub.stubs(:bind_queues_for_exchange)
       @client.register_queue("mama", :exchange => "mama-exchange")
-      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange", :publisher_confirms => true)
-      @opts = { :ttl => 1.hour , :key => "mama", :persistent => false, :publisher_confirms => true}
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
+      @opts = { :ttl => 1.hour , :key => "mama", :persistent => false}
       @data = 'XXX'
     end
 
