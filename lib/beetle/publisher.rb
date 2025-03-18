@@ -34,6 +34,10 @@ module Beetle
       ]
     end
 
+    def publisher_confirms?
+      @client.config.publisher_confirms 
+    end
+
     def publish(message_name, data, opts={}) #:nodoc:
       ActiveSupport::Notifications.instrument('publish.beetle') do
         opts = @client.messages[message_name].merge(opts.symbolize_keys)
@@ -59,16 +63,15 @@ module Beetle
         select_next_server if tries.even?
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
+
         current_exchange = exchange(exchange_name)
-        if @client.config.publisher_confirms
-          current_exchange.publish(data, opts.dup) 
-          unless current_exchange.wait_for_confirms
-            logger.warn "Beetle: failed to confirm publishing message #{message_name}"
-            return published
-          end
-        else
-          current_exchange.publish(data, opts.dup)
+        current_exchange.publish(data, opts.dup) 
+
+        if publisher_confirms? && !current_exchange.wait_for_confirms
+          logger.warn "Beetle: failed to confirm publishing message #{message_name}"
+          return published
         end
+
         logger.debug "Beetle: message sent!"
         published = 1
       rescue *bunny_exceptions => e
@@ -194,7 +197,7 @@ module Beetle
 
     def channel
       @channels[@server] ||= bunny.create_channel.tap do |ch|
-        ch.confirm_select if @client.config.publisher_confirms
+        ch.confirm_select if publisher_confirms?
       end
     end
 
@@ -229,7 +232,7 @@ module Beetle
       else
         set_current_server(@servers[((@servers.index(@server) || 0)+1) % @servers.size])
       end
-      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : "none"}")
+      logger.debug("Selected new server for publishing:#{server}.\n Dead servers are #{dead_servers.keys.any? ? dead_servers.keys.join(', ') : 'none'}")
     end
 
     def create_exchange!(name, opts)
