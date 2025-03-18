@@ -489,6 +489,7 @@ module Beetle
       config = Configuration.new
       config.servers = "localhost:5672,localhost:5673"
       client = Client.new(config)
+
       refute client.single_broker_mode?
     end
   end
