@@ -13,7 +13,7 @@ require 'minitest/reporters'
 if ENV['MINITEST_REPORTER']
   Minitest::Reporters.use!
 else
-  Minitest::Reporters.use!([Minitest::Reporters::DefaultReporter.new])
+  Minitest::Reporters.use!([Minitest::Reporters::DefaultReporter.new(:color => true)])
 end
 
 require File.expand_path(File.dirname(__FILE__) + '/../lib/beetle')
