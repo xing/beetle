@@ -22,20 +22,26 @@ module Beetle
 
     def initialize
       @uuid = SecureRandom.uuid
-      Thread.current[THREAD_LOCAL_KEY] ||= {}
-      Thread.current[THREAD_LOCAL_KEY][@uuid] = {}
     end
 
     def []=(server, channel)
-      Thread.current[THREAD_LOCAL_KEY][@uuid][server] = channel
+      thread_local[server] = channel
     end
 
     def [](server)
-      Thread.current[THREAD_LOCAL_KEY][@uuid][server]
+      thread_local[server]
     end
 
     def cleanup!
+      return unless Thread.current[THREAD_LOCAL_KEY]
+
       Thread.current[THREAD_LOCAL_KEY].delete(@uuid)
+    end
+
+    def thread_local
+      Thread.current[THREAD_LOCAL_KEY] ||= {}
+      Thread.current[THREAD_LOCAL_KEY][@uuid] ||= {}
+      Thread.current[THREAD_LOCAL_KEY][@uuid]
     end
   end
 end
