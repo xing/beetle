@@ -3,6 +3,7 @@
 ## Version 5.1.0
 * Add possibility to enable publisher confirms on a per client basis 
 * [BUGFIX] Add defensive copying against options mutation when passing to bunny library
+* [BUGFIX] Thread local channels don't cause errors when a client is created in a different thread than where its used
 
 ## Version 5.0.1
 * Make channels thread local, to avoid problems with out-of-order amqp frames when the client is shared across threads 
