@@ -49,7 +49,7 @@ module Beetle
       request_path = "/api/policies/#{vhost}/#{policy_name}"
 
       # set up queue policy
-      definition = {}
+      definition = @config.beetle_policy_default_attributes || {}
       if options[:dead_lettering]
         definition["dead-letter-routing-key"] = options[:routing_key]
         definition["dead-letter-exchange"] = ""
