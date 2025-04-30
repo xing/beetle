@@ -60,7 +60,7 @@ module Beetle
 
       put_request_body = {
         "pattern" => "^#{queue_name}$",
-        "priority" => 1,
+        "priority" => @config.beetle_policy_priority,
         "apply-to" => "queues",
         "definition" => definition,
       }

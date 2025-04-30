@@ -10,6 +10,9 @@ module Beetle
     # messages to set up queue policies. Whenever a queue is declared in the client, either by publisher or
     # consumer, a message with the queue policy parameters is sent to this exachange. (defaults to <tt>beetle</tt>)
     attr_accessor :beetle_policy_exchange_name
+    # set the priority for queue policies set via policy updates (defaults to <tt>1</tt>)
+    # see also <tt>https://www.rabbitmq.com/docs/policies#priorities<tt>
+    attr_accessor :beetle_policy_priority
     # Name of the policy update queue
     attr_accessor :beetle_policy_updates_queue_name
     # Name of the policy update routing key
@@ -17,6 +20,7 @@ module Beetle
     # set this to whatever your brokers have installed as default policy. For example, if you have installed
     # a policy that makes every queue lazy, it should be set to <tt>{"queue-moode" => "lazy"}</tt>.
     attr_accessor :broker_default_policy
+
     # default logger (defaults to <tt>Logger.new(log_file)</tt>)
     attr_accessor :logger
 
@@ -182,6 +186,7 @@ module Beetle
       self.beetle_policy_exchange_name = "beetle-policies"
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
       self.beetle_policy_updates_routing_key = "beetle.policy.update"
+      self.beetle_policy_priority = 1
       self.broker_default_policy = {}
 
       self.gc_threshold = 1.hour.to_i
