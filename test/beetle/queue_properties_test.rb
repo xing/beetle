@@ -55,6 +55,70 @@ module Beetle
     end
   end
 
+  class ApplyDefaultAttributesTest < Minitest::Test 
+    def setup
+      @server = "localhost:5672"
+      @queue_name = "QUEUE_NAME"
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @config.beetle_policy_default_attributes = { "max-length" => 8_000_000, "overflow" => "reject-publish" }
+      @queue_properties = QueueProperties.new(@config)
+    end
+
+    test "applies default attributes to the queue" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^QUEUE_NAME$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "max-length" => 8_000_000,
+                "overflow" => "reject-publish",
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, @queue_name, lazy: true)
+      assert_requested(stub)
+    end
+  end
+
+  class SetPolicyPriorityTest < Minitest::Test 
+    def setup
+      @server = "localhost:5672"
+      @queue_name = "QUEUE_NAME"
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @config.beetle_policy_priority = 2
+      @queue_properties = QueueProperties.new(@config)
+    end
+
+    test "applies default attributes to the queue" do
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^QUEUE_NAME$",
+               "priority" => 2,
+               "apply-to" => "queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, @queue_name, lazy: true)
+      assert_requested(stub)
+    end
+  end
+
   class SetDeadLetterPolicyTest < Minitest::Test
     def setup
       @server = "localhost:5672"
@@ -66,7 +130,7 @@ module Beetle
 
     test "raises exception when queue name wasn't specified" do
       assert_raises ArgumentError do
-        @queue_properties.set_queue_policy!(@server, "")
+        @queue_properties.set_queue_policy!(server: "localhost:5672", queue_name: "QUEUE_NAME")
       end
     end
 
