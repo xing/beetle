@@ -15,7 +15,7 @@ module Beetle
       CGI.escape(@config.vhost)
     end
 
-    def update_queue_properties!(options)
+    def update_queue_properties!(options, request_overrides = {})
       logger.info "Updating queue properties: #{options.inspect}"
       options = options.symbolize_keys
       server = options[:server]
@@ -29,14 +29,14 @@ module Beetle
       # applied and stay in the dead letter queue forever (or until manually consumed), thus
       # blocking the head of the queue.
       dead_letter_queue_options = policy_options.merge(:routing_key => target_queue, :message_ttl => options[:message_ttl])
-      set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options)
+      set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options, request_overrides)
       target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
-      set_queue_policy!(server, target_queue, target_queue_options)
+      set_queue_policy!(server, target_queue, target_queue_options, request_overrides)
 
       remove_obsolete_bindings(server, target_queue, options[:bindings]) if options.has_key?(:bindings)
     end
 
-    def set_queue_policy!(server, queue_name, options={})
+    def set_queue_policy!(server, queue_name, options={}, request_overrides = {})
       logger.info "Setting queue policy: #{server}, #{queue_name}, #{options.inspect}"
 
       raise ArgumentError.new("server missing")     if server.blank?
@@ -63,7 +63,7 @@ module Beetle
         "priority" => @config.beetle_policy_priority,
         "apply-to" => "queues",
         "definition" => definition,
-      }
+      }.merge(request_overrides)
 
       is_default_policy = definition == config.broker_default_policy
 
