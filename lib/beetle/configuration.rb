@@ -17,8 +17,9 @@ module Beetle
     attr_accessor :beetle_policy_updates_queue_name
     # Name of the policy update routing key
     attr_accessor :beetle_policy_updates_routing_key
-    # The default attributes that are the basis for all policies of target queues (not dead letter queues).
-    # More specific attributes will override these. The default attributes are: <tt>{}<tt>
+    # The default attributes that are the basis for all policies of target queues with given queue type.
+    # More specific attributes will override these. The default attributes are: <tt>{ quorum: {}, classic: {} }<tt>
+    # Only suypported queue types are <tt>quorum</tt> and <tt>classic</tt>.
     # These are raw rabbitmq policy attributes. See the rabbitmq documentation for details.
     attr_accessor :beetle_policy_default_attributes
     # set this to whatever your brokers have installed as default policy. For example, if you have installed
@@ -191,7 +192,7 @@ module Beetle
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
       self.beetle_policy_updates_routing_key = "beetle.policy.update"
       self.beetle_policy_priority = 1
-      self.beetle_policy_default_attributes = {}
+      self.beetle_policy_default_attributes = { quorum: {}, classic: {} }
       self.broker_default_policy = {}
 
       self.gc_threshold = 1.hour.to_i

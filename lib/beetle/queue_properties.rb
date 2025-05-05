@@ -49,7 +49,9 @@ module Beetle
       request_path = "/api/policies/#{vhost}/#{policy_name}"
 
       # set up queue policy
-      definition = @config.beetle_policy_default_attributes || {}
+      queue_type = options[:queue_type] || :classic
+      definition = @config.beetle_policy_default_attributes[queue_type].dup
+
       if options[:dead_lettering]
         definition["dead-letter-routing-key"] = options[:routing_key]
         definition["dead-letter-exchange"] = ""
@@ -58,12 +60,22 @@ module Beetle
 
       definition["queue-mode"] = "lazy" if options[:lazy]
 
+      apply_to = case queue_type
+                 when :classic
+                   "classic-queues"
+                 when :quorum
+                   "quorum-queues"
+                 else "queues"
+                 end
+
       put_request_body = {
         "pattern" => "^#{queue_name}$",
         "priority" => @config.beetle_policy_priority,
-        "apply-to" => "queues",
+        "apply-to" => apply_to,
         "definition" => definition,
-      }.merge(request_overrides)
+      }
+
+      logger.debug "Setting queue policy: #{put_request_body.inspect}"
 
       is_default_policy = definition == config.broker_default_policy
 
