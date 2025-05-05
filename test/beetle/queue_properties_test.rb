@@ -61,7 +61,7 @@ module Beetle
       @queue_name = "QUEUE_NAME"
       @config = Configuration.new
       @config.logger = Logger.new("/dev/null")
-      @config.beetle_policy_default_attributes = { "max-length" => 8_000_000, "overflow" => "reject-publish" }
+      @config.beetle_policy_default_attributes = { classic: { "max-length" => 8_000_000, "overflow" => "reject-publish" }, quorum: { } }
       @queue_properties = QueueProperties.new(@config)
     end
 
@@ -75,7 +75,7 @@ module Beetle
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
                "priority" => 1,
-               "apply-to" => "quorum_queues",
+               "apply-to" => "queues",
                "definition" => {
                  "max-length" => 8_000_000,
                 "overflow" => "reject-publish",
@@ -108,7 +108,7 @@ module Beetle
         .with(:body => {
                "pattern" => "^QUEUE_NAME$",
                "priority" => 2,
-               "apply-to" => "quorum_queues",
+               "apply-to" => "queues",
                "definition" => {
                  "queue-mode" => "lazy"
                }}.to_json)
@@ -117,6 +117,86 @@ module Beetle
       @queue_properties.set_queue_policy!(@server, @queue_name, lazy: true)
       assert_requested(stub)
     end
+  end
+
+  class SelectApplyToTest < Minitest::Test 
+    def setup
+      @server = "localhost:5672"
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @queue_properties = QueueProperties.new(@config)
+    end
+
+    def generate_queue_name
+      "TEST_QUEUE_NAME_#{rand(1000)}"
+    end
+
+    test "when queue type is nil, apply-to is `queues`" do
+      queue_name = generate_queue_name
+
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^#{queue_name}$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, queue_name, lazy: true)
+      assert_requested(stub)
+    end
+
+    test "when queue type is classic, apply-to is `queues`" do
+      queue_name = generate_queue_name
+
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^#{queue_name}$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, queue_name, lazy: true, queue_type: :classic)
+      assert_requested(stub)
+    end
+
+    test "when queue type is quorum, apply-to is `quorum_queues`" do
+      queue_name = generate_queue_name
+
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^#{queue_name}$",
+               "priority" => 1,
+               "apply-to" => "quorum_queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, queue_name, lazy: true, queue_type: :quorum)
+      assert_requested(stub)
+    end
+     
   end
 
   class SetDeadLetterPolicyTest < Minitest::Test

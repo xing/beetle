@@ -69,7 +69,7 @@ module Beetle
         "definition" => definition,
       }
 
-      logger.debug "Setting queue policy: #{put_request_body.inspect}"
+      logger.info "Setting queue policy: #{put_request_body.inspect}"
 
       is_default_policy = definition == config.broker_default_policy
 
