@@ -122,7 +122,8 @@ module Beetle
     end
 
     def queue_type(server_name, queue_name)
-      queue_arguments = @client.queues[queue_name][:arguments] || {}
+      queue_opts = @client.queues[queue_name] || {}
+      queue_arguments = queue_opts[:arguments] || {}
       queue_type = queue_arguments["x-queue-type"] || queue_arguments[:"x-queue-type"]
 
       case queue_type

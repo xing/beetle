@@ -19,6 +19,138 @@ module Beetle
     end
   end
 
+  class PublishPolicyOptionsTest < Minitest::Test
+    class RecordingExchange
+      attr_reader :messages
+
+      def initialize
+        @messages = []
+      end
+
+      def publish(data, _ignored_options)
+        @messages << data
+      end
+    end
+
+    test "default queue_type not set, and x-queue-type not set, results in `:classic`" do
+      config = Configuration.new
+      client = Client.new(config)
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "classic")
+    end
+
+    test "default queue_type not set, and x-queue-type set to quorum, results in `:quorum`" do
+      config = Configuration.new
+      client = Client.new(config)
+      client.register_queue("test_queue", arguments: { "x-queue-type" => "quorum" })
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "quorum")
+    end
+
+
+    test "default queue_type not set, and x-queue-type set to `classic`, results in `:classic`" do
+      config = Configuration.new
+      client = Client.new(config)
+      client.register_queue("test_queue", arguments: { "x-queue-type" => "classic" })
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "classic")
+    end
+
+    test "default queue_type set to `quorum`, and x-queue-type not set, results in `:quorum`" do
+      config = Configuration.new
+      config.broker_default_queue_type["localhost:5672"] = :quorum
+      client = Client.new(config)
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "quorum")
+    end
+
+    test "default queue_type set to `quorum`, and x-queue-type :classic, results in `:classic`" do
+      config = Configuration.new
+      config.broker_default_queue_type["localhost:5672"] = :quorum
+      client = Client.new(config)
+      client.register_queue("test_queue", arguments: { "x-queue-type" => "classic" })
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "classic")
+    end
+
+    test "default queue_type set to `classic`, and x-queue-type :quorum, results in `:quorum`" do
+      config = Configuration.new
+      config.broker_default_queue_type["localhost:5672"] = :quorum
+      client = Client.new(config)
+      client.register_queue("test_queue", arguments: { "x-queue-type" => "quorum" })
+      bs = Base.new(client)
+
+      exchange = RecordingExchange.new
+
+      bs.stubs(:exchange).returns(exchange)
+      bs.stubs(:bind_queue!).returns(true)
+      bs.stubs(:queue).returns("test_queue")
+      bs.__send__(:publish_policy_options, queue_name: "test_queue", server: "localhost:5672")
+
+      assert_equal(exchange.messages.size, 1)
+      message = JSON.parse(exchange.messages.first)
+
+      assert_equal(message["queue_type"], "quorum")
+    end
+
+
+  end
+
   class BaseServerManagementTest < Minitest::Test
     def setup
       @client = Client.new
@@ -108,7 +240,7 @@ module Beetle
       options = { queue_name: @queue_name, :lazy => true, :dead_lettering => true }
       @bs.logger.stubs(:debug)
       @client.config.expects(:update_queue_properties_synchronously).returns(true)
-      @client.expects(:update_queue_properties!).with(options.merge(:server => "localhost:5672", queue_type: nil))
+      @client.expects(:update_queue_properties!).with(options.merge(:server => "localhost:5672", queue_type: :classic))
       @bs.__send__(:publish_policy_options, options)
     end
 
