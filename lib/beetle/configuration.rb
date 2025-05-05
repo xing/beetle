@@ -22,6 +22,11 @@ module Beetle
     # Only suypported queue types are <tt>quorum</tt> and <tt>classic</tt>.
     # These are raw rabbitmq policy attributes. See the rabbitmq documentation for details.
     attr_accessor :beetle_policy_default_attributes
+
+    # A hash definining the default queue type for a queue. Queue type must be either "classic" or "quorum". Default value is <tt>{}</tt>.
+    # If a server can't be found in the hash we assume queue type "classic"
+    attr_accessor :broker_default_queue_type
+
     # set this to whatever your brokers have installed as default policy. For example, if you have installed
     # a policy that makes every queue lazy, it should be set to <tt>{"queue-moode" => "lazy"}</tt>.
     attr_accessor :broker_default_policy
@@ -194,6 +199,7 @@ module Beetle
       self.beetle_policy_priority = 1
       self.beetle_policy_default_attributes = { quorum: {}, classic: {} }
       self.broker_default_policy = {}
+      self.broker_default_queue_type = {}
 
       self.gc_threshold = 1.hour.to_i
       self.redis_server = "localhost:6379"

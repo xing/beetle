@@ -60,14 +60,8 @@ module Beetle
 
       definition["queue-mode"] = "lazy" if options[:lazy]
 
-      apply_to = case queue_type
-                 when :classic
-                   "classic-queues"
-                 when :quorum
-                   "quorum-queues"
-                 else "queues"
-                 end
-
+      # be compatible with on-prem and only explicitly set the queue type for quorum queues
+      apply_to = queue_type == :quorum ? "quorum_queues" : "queues"
       put_request_body = {
         "pattern" => "^#{queue_name}$",
         "priority" => @config.beetle_policy_priority,

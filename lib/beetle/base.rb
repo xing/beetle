@@ -104,7 +104,7 @@ module Beetle
     def publish_policy_options(options)
       # avoid endless recursion
       return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
-      payload = options.merge(:server => @server, :queue_type => queue_type(options[:queue_name]))
+      payload = options.merge(:server => @server, :queue_type => queue_type(@server, options[:queue_name]))
 
       if @client.config.update_queue_properties_synchronously
         logger.debug("Beetle: updating policy options on #{@server}: #{payload.inspect}")
@@ -121,16 +121,16 @@ module Beetle
       end
     end
 
-    def queue_type(queue_name)
-      queue_opts = @client.queues[queue_name]
-      return nil unless queue_opts
-
-      queue_arguments = queue_opts[:arguments] || {}
+    def queue_type(server_name, queue_name)
+      queue_arguments = @client.queues[queue_name][:arguments] || {}
       queue_type = queue_arguments["x-queue-type"] || queue_arguments[:"x-queue-type"]
 
-      if queue_type.nil? || queue_type.empty? || queue_type == "quorum"
+      case queue_type
+      when nil, ""
+        @client.config.broker_default_queue_type[server_name] || :classic
+      when "quorum"
         :quorum
-      elsif queue_type == "classic"
+      else
         :classic
       end
     end
