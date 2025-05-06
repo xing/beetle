@@ -15,7 +15,7 @@ module Beetle
       CGI.escape(@config.vhost)
     end
 
-    def update_queue_properties!(options)
+    def update_queue_properties!(options, &block)
       logger.info "Updating queue properties: #{options.inspect}"
       options = options.symbolize_keys
       server = options[:server]
@@ -29,9 +29,9 @@ module Beetle
       # applied and stay in the dead letter queue forever (or until manually consumed), thus
       # blocking the head of the queue.
       dead_letter_queue_options = policy_options.merge(:routing_key => target_queue, :message_ttl => options[:message_ttl])
-      set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options)
+      set_queue_policy!(server, dead_letter_queue_name, dead_letter_queue_options, &block)
       target_queue_options = policy_options.merge(:routing_key => dead_letter_queue_name)
-      set_queue_policy!(server, target_queue, target_queue_options)
+      set_queue_policy!(server, target_queue, target_queue_options, &block)
 
       remove_obsolete_bindings(server, target_queue, options[:bindings]) if options.has_key?(:bindings)
     end
@@ -49,7 +49,7 @@ module Beetle
       request_path = "/api/policies/#{vhost}/#{policy_name}"
 
       # set up queue policy
-      definition = @config.beetle_policy_default_attributes || {}
+      definition = {}
       if options[:dead_lettering]
         definition["dead-letter-routing-key"] = options[:routing_key]
         definition["dead-letter-exchange"] = ""
@@ -64,6 +64,11 @@ module Beetle
         "apply-to" => "queues",
         "definition" => definition,
       }
+
+      # Allow caller to modify the request body
+      if block_given?
+        put_request_body = yield(put_request_body, server, queue_name, options)
+      end
 
       is_default_policy = definition == config.broker_default_policy
 
@@ -92,6 +97,17 @@ module Beetle
       end
 
       :ok
+    end
+
+    def retrieve_queue_properties(server, queue_name)
+      response = run_api_request(server, Net::HTTP::Get, "/api/queues/#{vhost}/#{queue_name}")
+
+      unless response.code == "200"
+        log_error("Failed to retrieve queue properties for #{queue_name}")
+        raise FailedRabbitRequest.new("Could not retrieve queue properties")
+      end
+
+      JSON.parse(response.body)
     end
 
     def remove_obsolete_bindings(server, queue_name, bindings)

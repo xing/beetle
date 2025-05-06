@@ -55,39 +55,6 @@ module Beetle
     end
   end
 
-  class ApplyDefaultAttributesTest < Minitest::Test 
-    def setup
-      @server = "localhost:5672"
-      @queue_name = "QUEUE_NAME"
-      @config = Configuration.new
-      @config.logger = Logger.new("/dev/null")
-      @config.beetle_policy_default_attributes = { "max-length" => 8_000_000, "overflow" => "reject-publish" }
-      @queue_properties = QueueProperties.new(@config)
-    end
-
-    test "applies default attributes to the queue" do
-      stub_request(:get, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
-        .with(basic_auth: ['guest', 'guest'])
-        .to_return(:status => 404)
-
-      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/QUEUE_NAME_policy")
-        .with(basic_auth: ['guest', 'guest'])
-        .with(:body => {
-               "pattern" => "^QUEUE_NAME$",
-               "priority" => 1,
-               "apply-to" => "queues",
-               "definition" => {
-                 "max-length" => 8_000_000,
-                "overflow" => "reject-publish",
-                 "queue-mode" => "lazy"
-               }}.to_json)
-        .to_return(:status => 204)
-
-      @queue_properties.set_queue_policy!(@server, @queue_name, lazy: true)
-      assert_requested(stub)
-    end
-  end
-
   class SetPolicyPriorityTest < Minitest::Test 
     def setup
       @server = "localhost:5672"
@@ -115,6 +82,79 @@ module Beetle
         .to_return(:status => 204)
 
       @queue_properties.set_queue_policy!(@server, @queue_name, lazy: true)
+      assert_requested(stub)
+    end
+  end
+
+  class ExtendedQueuePropertyManagementTest < Minitest::Test
+    def setup
+      @server = "localhost:5672"
+      @config = Configuration.new
+      @config.logger = Logger.new("/dev/null")
+      @queue_properties = QueueProperties.new(@config)
+    end
+
+    def generate_queue_name
+      "TEST_QUEUE_NAME_#{rand(1000)}"
+    end
+
+    test "set_queue_policy! when block is provided, it can overwrite the request" do
+      queue_name = generate_queue_name
+
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^#{queue_name}$",
+               "priority" => 10,
+               "apply-to" => "quorum_queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, queue_name, lazy: true) do |put_request_body, _server_name, _queue_name, _options|
+        put_request_body.merge("priority" => 10, "apply-to" => "quorum_queues")
+      end
+
+      assert_requested(stub)
+    end
+
+    test "set_queue_policy! when block is not provided, it uses default request" do
+      queue_name = generate_queue_name
+
+      stub_request(:get, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(:status => 404)
+
+      stub = stub_request(:put, "http://localhost:15672/api/policies/%2F/#{queue_name}_policy")
+        .with(basic_auth: ['guest', 'guest'])
+        .with(:body => {
+               "pattern" => "^#{queue_name}$",
+               "priority" => 1,
+               "apply-to" => "queues",
+               "definition" => {
+                 "queue-mode" => "lazy"
+               }}.to_json)
+        .to_return(:status => 204)
+
+      @queue_properties.set_queue_policy!(@server, queue_name, lazy: true)
+      assert_requested(stub)
+    end
+
+    test "retrieve_queue_properties returns the queue properties" do
+      queue_name = generate_queue_name
+
+      stub = stub_request(:get, "http://localhost:15672/api/queues/%2F/#{queue_name}")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(status: 200, body: '{"consumer_details": [], "arguments": { "x-queue-type": "quorum"}}')
+
+      queue_properties = @queue_properties.retrieve_queue_properties(@server, queue_name)
+      assert_equal queue_properties["arguments"]["x-queue-type"], "quorum"
+       
       assert_requested(stub)
     end
   end

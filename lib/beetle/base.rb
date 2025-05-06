@@ -104,7 +104,9 @@ module Beetle
     def publish_policy_options(options)
       # avoid endless recursion
       return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
+
       payload = options.merge(:server => @server)
+
       if @client.config.update_queue_properties_synchronously
         logger.debug("Beetle: updating policy options on #{@server}: #{payload.inspect}")
         @client.update_queue_properties!(payload)

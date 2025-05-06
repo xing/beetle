@@ -322,8 +322,8 @@ module Beetle
       @subscriber = nil
     end
 
-    def update_queue_properties!(message_payload)
-      @queue_properties.update_queue_properties!(message_payload)
+    def update_queue_properties!(message_payload, &block)
+      @queue_properties.update_queue_properties!(message_payload, &block)
     end
 
     private
