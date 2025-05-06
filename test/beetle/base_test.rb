@@ -105,7 +105,7 @@ module Beetle
     end
 
     test "publish_policy_options calls the RabbitMQ API if asked to do so" do
-      options = { :lazy => true, :dead_lettering => true, queue_type: :default }
+      options = { :lazy => true, :dead_lettering => true }
       @bs.logger.stubs(:debug)
       @client.config.expects(:update_queue_properties_synchronously).returns(true)
       @client.expects(:update_queue_properties!).with(options.merge(:server => "localhost:5672"))
