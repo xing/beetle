@@ -105,12 +105,7 @@ module Beetle
       # avoid endless recursion
       return if options[:queue_name] == @client.config.beetle_policy_updates_queue_name
 
-      queue_name = options[:queue_name]
-      queue_opts = @client.queues[queue_name] || {}
-      queue_arguments = queue_opts[:arguments] || {}
-      queue_type = queue_arguments["x-queue-type"] || queue_arguments[:"x-queue-type"] || :default
-
-      payload = options.merge(:server => @server, queue_type: queue_type)
+      payload = options.merge(:server => @server)
 
       if @client.config.update_queue_properties_synchronously
         logger.debug("Beetle: updating policy options on #{@server}: #{payload.inspect}")
