@@ -99,6 +99,17 @@ module Beetle
       :ok
     end
 
+    def retrieve_queue_properties(server, queue_name)
+      response = run_api_request(server, Net::HTTP::Get, "/api/queues/#{vhost}/#{queue_name}")
+
+      unless response.code == "200"
+        log_error("Failed to retrieve queue properties for #{queue_name}")
+        raise FailedRabbitRequest.new("Could not retrieve queue properties")
+      end
+
+      JSON.parse(response.body)
+    end
+
     def remove_obsolete_bindings(server, queue_name, bindings)
       logger.debug "Removing obsolete bindings"
       raise ArgumentError.new("server missing")     if server.blank?
