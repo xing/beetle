@@ -157,6 +157,47 @@ module Beetle
        
       assert_requested(stub)
     end
+
+    test "retrieve_queue_properties returns nil when the queue does not exist" do
+      queue_name = generate_queue_name
+
+      stub = stub_request(:get, "http://localhost:15672/api/queues/%2F/#{queue_name}")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(status: 404)
+
+      queue_properties = @queue_properties.retrieve_queue_properties(@server, queue_name)
+      assert_nil queue_properties
+       
+      assert_requested(stub)
+    end
+
+    test "retrieve_queue_properties returns nil when the queue is gone" do
+      queue_name = generate_queue_name
+
+      stub = stub_request(:get, "http://localhost:15672/api/queues/%2F/#{queue_name}")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(status: 410)
+
+      queue_properties = @queue_properties.retrieve_queue_properties(@server, queue_name)
+      assert_nil queue_properties
+       
+      assert_requested(stub)
+    end
+
+    test "retrieve_queue_properties raises an error when the request fails" do
+      queue_name = generate_queue_name
+
+      stub = stub_request(:get, "http://localhost:15672/api/queues/%2F/#{queue_name}")
+        .with(basic_auth: ['guest', 'guest'])
+        .to_return(status: 500)
+
+      assert_raises QueueProperties::FailedRabbitRequest do
+        @queue_properties.retrieve_queue_properties(@server, queue_name)  
+      end
+       
+      assert_requested(stub)
+    end
+
   end
 
   class SetDeadLetterPolicyTest < Minitest::Test

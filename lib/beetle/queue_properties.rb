@@ -101,8 +101,11 @@ module Beetle
 
     def retrieve_queue_properties(server, queue_name)
       response = run_api_request(server, Net::HTTP::Get, "/api/queues/#{vhost}/#{queue_name}")
+      code = response.code.to_i
 
-      unless response.code == "200"
+      return nil if [404, 410].include?(code)
+
+      if code >= 400
         log_error("Failed to retrieve queue properties for #{queue_name}", response)
         raise FailedRabbitRequest.new("Could not retrieve queue properties")
       end
