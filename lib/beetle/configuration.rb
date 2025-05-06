@@ -187,7 +187,6 @@ module Beetle
       self.beetle_policy_updates_queue_name = "beetle-policy-updates"
       self.beetle_policy_updates_routing_key = "beetle.policy.update"
       self.beetle_policy_priority = 1
-      self.beetle_policy_default_attributes = {}
       self.broker_default_policy = {}
 
       self.gc_threshold = 1.hour.to_i
