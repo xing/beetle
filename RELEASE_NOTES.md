@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 5.1.1
+* Give more control over how queue policy updates are performed
+* Introduce new configuration option `beetle_policy_priority` to set the priority of queue policies
+
 ## Version 5.1.0
 * Add possibility to enable publisher confirms on a per client basis 
 * [BUGFIX] Add defensive copying against options mutation when passing to bunny library
