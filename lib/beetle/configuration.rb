@@ -148,6 +148,15 @@ module Beetle
     # consider this a highly experimental feature for now.
     attr_accessor :publisher_connect_timeout
 
+    # the connect/disconnect timeout in seconds for the subscription connection (defaults to <tt>5</tt>).
+    attr_accessor :subscriber_connect_timeout
+
+    # the delay in seconds between reconnects on connection loss (defaults to <tt>10</tt>)
+    attr_accessor :subscriber_reconnect_delay
+
+    # the heartbeats to use for the subscriber connection (defaults to <tt>false</tt>)
+    attr_accessor :subscriber_heartbeats
+
     # Prefetch count for subscribers (defaults to 1). Setting this higher
     # than 1 can potentially increase throughput, but comes at the cost of
     # decreased parallelism.
@@ -231,6 +240,10 @@ module Beetle
 
       self.publishing_timeout = 5 # seconds
       self.publisher_connect_timeout = 5 # seconds
+
+      self.subscriber_connect_timeout = 5 # seconds
+      self.subscriber_reconnect_delay = 10 # seconds
+      self.subscriber_heartbeats = false
 
       self.automatically_recover = false
       self.max_recovery_attempts = nil
