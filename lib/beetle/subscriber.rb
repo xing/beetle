@@ -248,8 +248,8 @@ module Beetle
 
     def on_tcp_connection_failure
       Proc.new do |settings|
-        logger.warn "Beetle: connection failed: #{server_from_settings(settings)}"
-        EM::Timer.new(10) { connect_server(settings) }
+        logger.warn "Beetle: connection failed: #{server_from_settings(settings)}. Timeout: #{@client.config.subscriber_connect_timeout} seconds. Delay before retry: #{@client.config.subscriber_reconnect_delay} seconds."
+        EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
       end
     end
 
