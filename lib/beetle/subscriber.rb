@@ -239,6 +239,8 @@ module Beetle
         :vhost => options[:vhost],
         :ssl   => options[:ssl],
         :logging => false,
+        :timeout => @client.config.subscriber_connect_timeout,
+        :heartbeat => @client.config.subscriber_hearbeats,
         :on_tcp_connection_failure => on_tcp_connection_failure,
         :on_possible_authentication_failure => on_possible_authentication_failure,
       }
