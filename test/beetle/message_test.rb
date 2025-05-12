@@ -2,6 +2,16 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
+  class RedeliveryInformationTest < Minitest::Test
+    test "#redelivered is true if the message has been redelivered" do
+      header = header_with_params({})
+      header.subjects(:redelivered?).returns(true)
+
+      m = Message.new("queue", header, 'foo')
+
+      assert m.redelivered?
+    end
+  end
 
   class EncodingTest < Minitest::Test
     test "an exception during decoding should be stored in the exception attribute" do

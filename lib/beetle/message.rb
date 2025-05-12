@@ -253,6 +253,10 @@ module Beetle
       logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
+    def redelivered?
+      header.redelivered?
+    end
+
     def fetch_status_delay_timeout_attempts_exceptions
       @store.mget(msg_id, [:status, :delay, :timeout, :attempts, :exceptions])
     end
