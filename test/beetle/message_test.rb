@@ -5,11 +5,25 @@ module Beetle
   class RedeliveryInformationTest < Minitest::Test
     test "#redelivered is true if the message has been redelivered" do
       header = header_with_params({})
-      header.subjects(:redelivered?).returns(true)
+      header.stubs(:redelivered?).returns(true)
 
       m = Message.new("queue", header, 'foo')
 
       assert m.redelivered?
+    end
+
+    test "#delivery_count returns the value of the x-delivery-count header if present" do
+      header = header_with_params({ "x-delivery-count" => 5 })
+      m = Message.new("queue", header, 'foo')
+
+      assert_equal 5, m.delivery_count
+    end
+
+    test "#delivery_count returns nil if the x-delivery-count header is not present" do
+      header = header_with_params()
+      m = Message.new("queue", header, 'foo')
+
+      assert_nil m.delivery_count
     end
   end
 
