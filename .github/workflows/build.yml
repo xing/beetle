@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         ruby-version: [3.1.6, 3.2.5, 3.3.4]
-        redis-version: [4, 5]
+        redis-version: [6]
         rails-version: [6.1.7.8, 7.0.8.4, 7.1.4, 7.2.1]
 
     steps:
