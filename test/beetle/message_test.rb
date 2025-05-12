@@ -13,7 +13,7 @@ module Beetle
     end
 
     test "#delivery_count returns the value of the x-delivery-count header if present" do
-      header = header_with_params({ "x-delivery-count" => 5 })
+      header = header_with_params({ headers: { "x-delivery-count" => 5 } })
       m = Message.new("queue", header, 'foo')
 
       assert_equal 5, m.delivery_count

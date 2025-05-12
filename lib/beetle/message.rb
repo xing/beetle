@@ -258,9 +258,10 @@ module Beetle
     end
 
     def delivery_count
-      return unless header
+      headers = header.attributes[:headers] 
+      return nil unless headers
 
-      cnt = header.attributes['x-delivery-count']
+      cnt = headers['x-delivery-count']
       return unless cnt
 
       cnt.to_i
