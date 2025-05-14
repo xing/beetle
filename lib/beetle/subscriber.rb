@@ -190,7 +190,7 @@ module Beetle
             logger.debug "Beetle: rejected #{msg_id} RC: #{result.name}"
           elsif reply_to = header.attributes[:reply_to]
             logger.debug "Beetle: sending reply to queue #{reply_to} for #{msg_id}"
-            status = result == Beetle::RC::OK ? "OK" : "FAILED e"
+            status = result == Beetle::RC::OK ? "OK" : "FAILED"
             exchange = AMQP::Exchange.new(channel(server), :direct, "")
             exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
           end
