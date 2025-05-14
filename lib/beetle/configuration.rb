@@ -154,8 +154,8 @@ module Beetle
     # the delay in seconds between reconnects on connection loss (defaults to <tt>10</tt>)
     attr_accessor :subscriber_reconnect_delay
 
-    # the heartbeats to use for the subscriber connection (defaults to <tt>false</tt>)
-    attr_accessor :subscriber_heartbeats
+    # the heartbeats to use for the subscriber connection (defaults to <tt>0</tt>)
+    attr_accessor :subscriber_heartbeat
 
     # Prefetch count for subscribers (defaults to 1). Setting this higher
     # than 1 can potentially increase throughput, but comes at the cost of
@@ -243,7 +243,7 @@ module Beetle
 
       self.subscriber_connect_timeout = 5 # seconds
       self.subscriber_reconnect_delay = 10 # seconds
-      self.subscriber_heartbeats = false
+      self.subscriber_heartbeat = 0
 
       self.automatically_recover = false
       self.max_recovery_attempts = nil

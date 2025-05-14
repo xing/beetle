@@ -190,7 +190,7 @@ module Beetle
             logger.debug "Beetle: rejected #{msg_id} RC: #{result.name}"
           elsif reply_to = header.attributes[:reply_to]
             logger.debug "Beetle: sending reply to queue #{reply_to} for #{msg_id}"
-            status = result == Beetle::RC::OK ? "OK" : "FAILED"
+            status = result == Beetle::RC::OK ? "OK" : "FAILED e"
             exchange = AMQP::Exchange.new(channel(server), :direct, "")
             exchange.publish(m.handler_result.to_s, :routing_key => reply_to, :persistent => false, :headers => {:status => status})
           end
@@ -240,7 +240,7 @@ module Beetle
         :ssl   => options[:ssl],
         :logging => false,
         :timeout => @client.config.subscriber_connect_timeout,
-        :heartbeat => @client.config.subscriber_heartbeats,
+        :heartbeat => @client.config.subscriber_heartbeat,
         :on_tcp_connection_failure => on_tcp_connection_failure,
         :on_possible_authentication_failure => on_possible_authentication_failure,
       }
