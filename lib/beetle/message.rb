@@ -253,20 +253,6 @@ module Beetle
       logger.debug "Beetle: deleted mutex: #{msg_id}"
     end
 
-    def redelivered?
-      header.redelivered?
-    end
-
-    def delivery_count
-      headers = header.attributes[:headers] 
-      return nil unless headers
-
-      cnt = headers['x-delivery-count']
-      return unless cnt
-
-      cnt.to_i
-    end
-
     def fetch_status_delay_timeout_attempts_exceptions
       @store.mget(msg_id, [:status, :delay, :timeout, :attempts, :exceptions])
     end

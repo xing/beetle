@@ -438,7 +438,7 @@ module Beetle
       cb = @sub.send(:on_tcp_connection_failure)
       EM::Timer.expects(:new).with(10).yields
       @sub.expects(:connect_server).with(@settings)
-      @sub.logger.expects(:warn).with("Beetle: connection failed: mickey:42. Timeout: 5 seconds. Delay before retry: 10 seconds.")
+      @sub.logger.expects(:warn).with("Beetle: connection failed: mickey:42")
       cb.call(@settings)
     end
 
