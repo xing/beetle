@@ -95,7 +95,7 @@ module Beetle
     end
 
     def generate_queue_name
-      "TEST_QUEUE_NAME_#{rand(1000)}"
+      unique_name("TEST_QUEUE_NAME")
     end
 
     test "set_queue_policy! when block is provided, it can overwrite the request" do
