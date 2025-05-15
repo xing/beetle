@@ -2,6 +2,30 @@ require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 
 module Beetle
+  class RedeliveryInformationTest < Minitest::Test
+    test "#redelivered is true if the message has been redelivered" do
+      header = header_with_params({})
+      header.stubs(:redelivered?).returns(true)
+
+      m = Message.new("queue", header, 'foo')
+
+      assert m.redelivered?
+    end
+
+    test "#delivery_count returns the value of the x-delivery-count header if present" do
+      header = header_with_params({ headers: { "x-delivery-count" => 5 } })
+      m = Message.new("queue", header, 'foo')
+
+      assert_equal 5, m.delivery_count
+    end
+
+    test "#delivery_count returns nil if the x-delivery-count header is not present" do
+      header = header_with_params()
+      m = Message.new("queue", header, 'foo')
+
+      assert_nil m.delivery_count
+    end
+  end
 
   class EncodingTest < Minitest::Test
     test "an exception during decoding should be stored in the exception attribute" do

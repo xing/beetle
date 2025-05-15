@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         ruby-version: [3.1.6, 3.2.5, 3.3.4]
-        redis-version: [4, 5]
+        redis-version: [4,5]
         rails-version: [6.1.7.8, 7.0.8.4, 7.1.4, 7.2.1]
 
     steps:
@@ -28,7 +28,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.20.7'
-
+          
+      - name: Upgrade Docker Compose
+        uses: docker/setup-compose-action@v1
+        with:
+          version: latest
+          
       - name: Install dependencies
         run: sudo apt-get install redis
 
