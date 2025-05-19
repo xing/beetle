@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'securerandom'
 require 'simplecov'
 SimpleCov.start do
   add_filter "/test/"
@@ -57,6 +58,10 @@ def redis_stub(name, opts = {})
   default_host = opts['host'] || "foo"
   opts = {'host' => default_host, 'port' => default_port, 'server' => "#{default_host}:#{default_port}"}.update(opts)
   stub(name, opts)
+end
+
+def unique_name(prefix)
+  "#{prefix}_#{SecureRandom.uuid}"
 end
 
 if system('docker -v >/dev/null') && `docker inspect beetle-mysql -f '{{.State.Status}}'`.chomp == "running"
