@@ -27,7 +27,7 @@ jobs:
         run: docker compose up -d
 
       - name: Compile and test beetle go binary
-        run: make  && make test
+        run: make  && make test-main
 
       - name: Collect Docker Logs
         uses: jwalton/gh-docker-logs@v2.2.0
