@@ -161,7 +161,8 @@ func (s *ClientState) SendClientStarted() error {
 // one.
 func (s *RedisSystem) NewMaster(server string) {
 	logInfo("setting new master: %s", server)
-	s.currentMaster = NewRedisShim(server)
+	cfg := s.GetConfig()
+	s.currentMaster = NewRedisShim(server, cfg.RedisPassword, cfg.RedisTls)
 }
 
 // UpdateMasterFile writes the known masters information to the redis master file.

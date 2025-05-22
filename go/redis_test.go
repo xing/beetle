@@ -6,7 +6,7 @@ import (
 )
 
 func TestRedisIsMaster(t *testing.T) {
-	r := NewRedisShim("127.0.0.1:7001")
+	r := NewRedisShim("127.0.0.1:7001", "", false)
 	isMaster := r.IsMaster()
 	if !isMaster {
 		t.Errorf("current redis is not a master")
@@ -26,7 +26,7 @@ func TestReadMasterFile(t *testing.T) {
 }
 
 func TestRedisIsAvailable(t *testing.T) {
-	r := NewRedisShim("127.0.0.1:7001")
+	r := NewRedisShim("127.0.0.1:7001", "", false)
 	isAvailable := r.IsAvailable()
 	if !isAvailable {
 		t.Errorf("current redis is not available, but should be")
@@ -34,7 +34,7 @@ func TestRedisIsAvailable(t *testing.T) {
 }
 
 func TestRedisNotAvailable(t *testing.T) {
-	r := NewRedisShim("127.0.0.1:7003")
+	r := NewRedisShim("127.0.0.1:7003", "", false)
 	isAvailable := r.IsAvailable()
 	if isAvailable {
 		t.Errorf("current redis is available, but should not be")
@@ -42,7 +42,7 @@ func TestRedisNotAvailable(t *testing.T) {
 }
 
 func TestRedisMakeMaster(t *testing.T) {
-	r := NewRedisShim("127.0.0.1:7001")
+	r := NewRedisShim("127.0.0.1:7001", "", false)
 	err := r.MakeMaster()
 	if err != nil {
 		t.Errorf("current redis could not be made master: %s", err)
@@ -53,7 +53,7 @@ func TestRedisMakeMaster(t *testing.T) {
 }
 
 func TestRedisIsSlaveOf(t *testing.T) {
-	r := NewRedisShim("127.0.0.1:7002")
+	r := NewRedisShim("127.0.0.1:7002", "", false)
 	if !r.IsSlaveOf("127.0.0.1", 7001) {
 		t.Errorf("redis should be slave")
 	}

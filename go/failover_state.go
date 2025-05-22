@@ -152,7 +152,8 @@ func (s *FailoverState) CheckRedisConfiguration() {
 // loop will start a vote later on.
 func (s *FailoverState) DetermineInitialMaster(mastersFromFile map[string]string) {
 	if server := mastersFromFile[s.system]; server != "" {
-		s.currentMaster = NewRedisShim(server)
+		cfg := s.GetConfig()
+		s.currentMaster = NewRedisShim(server, cfg.RedisPassword, cfg.RedisTls)
 	}
 	if s.currentMaster != nil {
 		logInfo("initial master from redis master file: %s", s.currentMaster.server)

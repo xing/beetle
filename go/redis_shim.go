@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -28,18 +29,25 @@ type RedisShim struct {
 
 // NewRedisShim creates a new shim from a server:port string, where the port
 // part is optional.
-func NewRedisShim(server string) *RedisShim {
+func NewRedisShim(server string, password string, tls bool) *RedisShim {
 	ri := new(RedisShim)
 	ri.server = server
 	parts := strings.Split(server, ":")
 	ri.host = parts[0]
 	ri.port, _ = strconv.Atoi(parts[1])
-	ri.redis = redisInstanceFromServerString(server)
+	ri.redis = redisInstanceFromServerString(server, password, tls)
 	return ri
 }
 
-func redisInstanceFromServerString(server string) *redis.Client {
-	return redis.NewClient(&redis.Options{Addr: server})
+func redisInstanceFromServerString(server string, password string, enableTLS bool) *redis.Client {
+	opts := redis.Options{Addr: server}
+	if enableTLS {
+		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+	}
+	if password != "" {
+		opts.Password = password
+	}
+	return redis.NewClient(&opts)
 }
 
 func dumpMap(m map[string]string) {
