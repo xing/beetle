@@ -50,6 +50,12 @@ func (s *ClientState) GetConfig() *Config {
 
 // GetConfig returns the client configuration in a thread safe way.
 func (s *RedisSystem) GetConfig() *Config {
+	if s == nil {
+		return nil
+	}
+	if s.client == nil {
+		return nil
+	}
 	return s.client.GetConfig()
 }
 
