@@ -136,7 +136,7 @@ func TestSplitProperties(t *testing.T) {
 
 func TestSavingAndLoadingState(t *testing.T) {
 	s := NewServerState(serverTestOptions)
-	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
+	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001", "", false)
 	s.ClientSeen("xxx")
 	s.ClientSeen("yyy")
 	s.SaveState()
@@ -150,7 +150,7 @@ func TestSavingAndLoadingState(t *testing.T) {
 
 func TestClientSeen(t *testing.T) {
 	s := NewServerState(serverTestOptions)
-	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001")
+	s.failovers[s.systemNames[0]].currentMaster = NewRedisShim("127.0.0.1:7001", "", false)
 	if s.ClientSeen("xxx") {
 		t.Errorf("server claims he's seen a client which it hasn't seen before. nuts?")
 	}

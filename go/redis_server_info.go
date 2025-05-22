@@ -47,7 +47,7 @@ func NewRedisServerInfo(servers string) *RedisServerInfo {
 		serverList := regexp.MustCompile(" *, *").Split(servers, -1)
 		for _, s := range serverList {
 			logInfo("adding redis server: %s", s)
-			si.instances = append(si.instances, NewRedisShim(s))
+			si.instances = append(si.instances, NewRedisShim(s, "", false)) // FIXME: make this do the right thing :D
 		}
 	}
 	si.Reset()

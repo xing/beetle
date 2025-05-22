@@ -19,6 +19,8 @@ type Config struct {
 	RedisMasterRetries       int    `yaml:"redis_configuration_master_retries"`
 	RedisMasterRetryInterval int    `yaml:"redis_configuration_master_retry_interval"`
 	RedisMasterFile          string `yaml:"redis_server"`
+	RedisPassword            string `yaml:"redis_password"`
+	RedisTls                 bool   `yaml:"redis_tls"`
 	GcThreshold              int    `yaml:"redis_gc_threshold"`
 	GcDatabases              string `yaml:"redis_gc_databases"`
 	MailTo                   string `yaml:"mail_to"`
@@ -171,6 +173,12 @@ func (c *Config) Merge(d *Config) *Config {
 	}
 	if c.RedisMasterFile == "" {
 		c.RedisMasterFile = d.RedisMasterFile
+	}
+	if c.RedisPassword == "" {
+		c.RedisPassword = d.RedisPassword
+	}
+	if c.RedisTls != d.RedisTls {
+		c.RedisTls = d.RedisTls
 	}
 	if c.GcThreshold == 0 {
 		c.GcThreshold = d.GcThreshold

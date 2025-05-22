@@ -30,6 +30,8 @@ var opts struct {
 	RedisMasterFile          string        `long:"redis-master-file" description:"Path of redis master file."`
 	RedisMasterRetries       int           `long:"redis-master-retries" description:"How often to retry checking the availability of the current master before initiating a switch. Defaults to 3."`
 	RedisMasterRetryInterval int           `long:"redis-master-retry-interval" description:"Number of seconds to wait between master checks. Defaults to 10."`
+	RedisPassword            string        `long:"redis-password" env:"REDIS_TLS" description:"Password to use for redis connections."`
+	RedisEnableTLS           bool          `long:"redis-tls" description:"Enable TLS for redis connections. Defaults to false"`
 	PidFile                  string        `long:"pid-file" description:"Write process id into given path."`
 	LogFile                  string        `long:"log-file" description:"Redirect stdout and stderr to the given path."`
 	Server                   string        `long:"server" description:"Specifies config server address."`
@@ -195,6 +197,14 @@ func (x *CmdRunDumpExpiries) Execute(args []string) error {
 		Databases:       initialConfig.GcDatabases,
 		System:          opts.GcSystem,
 	})
+}
+
+type CmdRunPingRedis struct{}
+
+var cmdRunPingRedis CmdRunPingRedis
+
+func (x *CmdRunPingRedis) Execute(args []string) error {
+	return nil
 }
 
 func init() {
@@ -380,6 +390,7 @@ func main() {
 	parser.AddCommand("dump_expiries", "print all expiry values from redis master", "", &cmdRunDumpExpiries)
 	parser.AddCommand("notification_mailer", "listen to system notifications and send them via SMTP", "", &cmdRunMailer)
 	parser.AddCommand("send_mail", "send a test mail to configured SMTP server", "", &cmdSendMail)
+	parser.AddCommand("ping_redis", "connect to redis and ping it", "", &cmdRunPingRedis)
 	parser.CommandHandler = cmdHandler
 
 	_, err := parser.Parse()
