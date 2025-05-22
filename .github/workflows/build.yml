@@ -24,6 +24,11 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby-version }}
 
+      - name: Setup Go environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.0'
+
       - name: Upgrade Docker Compose
         uses: docker/setup-compose-action@v1
         with:
@@ -37,6 +42,9 @@ jobs:
 
       - name: Generate appraisal files
         run: bundle install && bundle exec appraisal generate
+
+      - name: Compile gobeetle 
+        run: make  
 
       - name: Install gems and run beetle gem tests
         run: bundle install && bundle exec rake test
