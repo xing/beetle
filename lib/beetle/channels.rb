@@ -32,6 +32,10 @@ module Beetle
       thread_local[server]
     end
 
+    def inspect
+      "#{self.class.name}(@uuid=#{@uuid}, channels=#{thread_local.inspect})"
+    end
+
     def cleanup!
       return unless Thread.current[THREAD_LOCAL_KEY]
 

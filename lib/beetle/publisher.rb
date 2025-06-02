@@ -1,7 +1,7 @@
 module Beetle
   # Provides the publishing logic implementation.
   class Publisher < Base
-    attr_reader :dead_servers
+    attr_reader :dead_servers, :channels
 
     def initialize(client, options = {}) #:nodoc:
       super
