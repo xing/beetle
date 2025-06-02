@@ -33,7 +33,7 @@ module Beetle
     end
 
     def inspect
-      "#{self.class.name}(@uuid=#{@uuid}, channels=#{thread_local.inspect})"
+      "#{self.class.name}(@uuid=#{@uuid}, channels=#{Thread.current[THREAD_LOCAL_KEY].inspect})"
     end
 
     def cleanup!
