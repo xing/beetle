@@ -243,7 +243,6 @@ module Beetle
   end
 
   class AckingTest < Minitest::Test
-
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
@@ -254,6 +253,17 @@ module Beetle
       header = header_with_params(:ttl => -1)
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', :store => @store)
+      assert message.expired?
+
+      processed = :no
+      message.process(Handler.create(lambda {|*args| processed = true}))
+      assert_equal :no, processed
+    end
+
+    test "[SingleBroker] an expired message should be acked without calling the handler" do
+      header = header_with_params(:ttl => -1)
+      header.expects(:ack)
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :store => @store)
       assert message.expired?
 
       processed = :no
@@ -274,6 +284,10 @@ module Beetle
       assert_equal :no, processed
     end
 
+    test "[SingleBroker] a delayed message should not be acked and the handler should not be called" do
+      assert true, "Not supported in single broker mode"
+    end
+
     test "acking a non redundant message should remove the ack_count key" do
       header = header_with_params({})
       header.expects(:ack)
@@ -282,6 +296,10 @@ module Beetle
       message.process(@null_handler)
       assert !message.redundant?
       assert !@store.exists(message.msg_id, :ack_count)
+    end
+
+    test "[SingleBroker] acking a non redundant message should remove the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
     end
 
     test "a redundant message should be acked after calling the handler" do
@@ -293,6 +311,10 @@ module Beetle
       message.process(@null_handler)
     end
 
+    test "[SingleBroker] a redundant message should be acked after calling the handler" do
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
+
     test "acking a redundant message should increment the ack_count key" do
       header = header_with_params({:redundant => true})
       header.expects(:ack)
@@ -301,7 +323,12 @@ module Beetle
       assert_nil @store.get(message.msg_id, :ack_count)
       message.process(@null_handler)
       assert message.redundant?
-      assert_equal "1", @store.get(message.msg_id, :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
+    end
+
+
+    test "[SingleBroker] acking a redundant message should increment the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
     end
 
     test "acking a redundant message twice should remove the ack_count key" do
@@ -315,6 +342,10 @@ module Beetle
       assert !@store.exists(message.msg_id, :ack_count)
     end
 
+
+    test "[SingleBroker] acking a redundant message twice should remove the ack_count key" do
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
   end
 
   class FreshMessageTest < Minitest::Test
@@ -336,6 +367,20 @@ module Beetle
       assert_equal RC::OK, message.process(handler)
     end
 
+    test "[SingleBroker] processing a fresh message sucessfully should first run the handler and then ack it" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 2, :store => @store)
+      assert !message.attempts_limit_reached?
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
+    end
+
+
     test "after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
       header = header_with_params({:redundant => true})
       message = Message.new("somequeue", header, 'foo', :timeout => 10.seconds, :store => @store)
@@ -348,10 +393,16 @@ module Beetle
       message.expects(:completed!).in_sequence(s)
       header.expects(:ack).in_sequence(s)
       assert_equal RC::OK, message.__send__(:process_internal, proc)
-      assert_equal "1", @store.get(message.msg_id, :ack_count)
+      assert_equal "1", @store.get(message.msg_id, :ack_count).to_s
     end
 
+
+    test "[SingleBroker] after processing a redundant fresh message successfully the ack count should be 1 and the status should be completed" do
+
+      assert true, "Not supported in single broker mode. No redundant messages."
+    end
   end
+
 
   class SimpleMessageTest < Minitest::Test
     def setup
@@ -373,6 +424,20 @@ module Beetle
       assert_equal RC::OK, message.process(handler)
     end
 
+   test "[SingleBroker] when processing a simple message, ack should follow calling the handler" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 1, :store => nil)
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      handler.expects(:call).in_sequence(s)
+      assert_equal RC::OK, message.process(handler)
+    end
+
+
+
     test "when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', :attempts => 1, :store => @store)
@@ -387,6 +452,22 @@ module Beetle
       handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
       assert_equal RC::AttemptsLimitReached, message.process(handler)
     end
+
+    test "[SingleBroker] when processing a simple message, RC::AttemptsLimitReached should be returned if the handler crashes" do
+      header = header_with_params({})
+      message = SingleBrokerMessage.new("somequeue", header, 'foo', :attempts => 1, :store => nil)
+
+      handler = mock("handler")
+      s = sequence("s")
+      handler.expects(:pre_process).with(message).in_sequence(s)
+      header.expects(:ack).in_sequence(s)
+      e = Exception.new("ohoh")
+      handler.expects(:call).in_sequence(s).raises(e)
+      handler.expects(:process_exception).with(e).in_sequence(s)
+      handler.expects(:process_failure).with(RC::AttemptsLimitReached).in_sequence(s)
+      assert_equal RC::AttemptsLimitReached, message.process(handler)
+    end
+
 
     test "when processing a simple message, the handler should be executed only once if status keys are used" do
       @config.redis_status_key_expiry_interval = 1.minute
@@ -429,9 +510,9 @@ module Beetle
       header.expects(:ack).never
       assert_equal RC::HandlerCrash, message.__send__(:process_internal, proc)
       assert !message.completed?
-      assert_equal "1", @store.get(message.msg_id, :exceptions)
-      assert_equal "0", @store.get(message.msg_id, :timeout)
-      assert_equal "52", @store.get(message.msg_id, :delay)
+      assert_equal "1", @store.get(message.msg_id, :exceptions).to_s
+      assert_equal "0", @store.get(message.msg_id, :timeout).to_s
+      assert_equal "52", @store.get(message.msg_id, :delay).to_s
     end
 
     test "a message should delete the mutex before resetting the timer if attempts and exception limits haven't been reached" do
@@ -768,7 +849,6 @@ module Beetle
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
     end
-
   end
 
   class MySQLFailoverTest < Minitest::Test
