@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 5.1.3.pre
+
+* Drop support of thread local channels as a source of memory leaks
+
 ## Version 5.1.2.pre
 
 * Allow to configure consumer timeouts and heartbeat

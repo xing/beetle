@@ -8,7 +8,7 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
-      @channels = Channels.new
+      @channels = {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
