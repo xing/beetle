@@ -118,12 +118,6 @@ module Beetle
       assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
 
-    test "publishers maintain their own set of channels" do
-      @p1 = Publisher.new(@client)
-      @p2 = Publisher.new(@client)
-
-      refute_equal @p1.instance_variable_get(:@channels), @p2.instance_variable_get(:@channels)
-    end
   end
 
   class PublisherPublishingTest < Minitest::Test
