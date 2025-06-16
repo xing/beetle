@@ -145,7 +145,7 @@ module Beetle
     end
 
     def setup_queues_and_policies
-      warn "[DEPRECATION] Beetle: eager queue setup is deprecated and will be removed in a future version." 
+      warn "[DEPRECATION] eager queue setup is deprecated and will be removed in a future version." 
       logger.warn("Beetle: eager queue setup is deprecated and will be removed in a future version.")
 
       each_server do
