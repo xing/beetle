@@ -35,7 +35,7 @@ module Beetle
     end
 
     def publisher_confirms?
-      @client.config.publisher_confirms 
+      @client.config.publisher_confirms
     end
 
     def publish(message_name, data, opts={}) #:nodoc:
@@ -65,7 +65,7 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
         current_exchange = exchange(exchange_name)
-        current_exchange.publish(data, opts.dup) 
+        current_exchange.publish(data, opts.dup)
 
         if publisher_confirms? && !current_exchange.wait_for_confirms
           logger.warn "Beetle: failed to confirm publishing message #{message_name}"
@@ -75,14 +75,22 @@ module Beetle
         logger.debug "Beetle: message sent!"
         published = 1
       rescue *bunny_exceptions => e
-        logger.warn("Beetle: publishing exception #{e} #{e.backtrace[0..4].join("\n")}")
+        log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
         tries -= 1
         # retry same server on receiving the first exception for it (might have been a normal restart)
         # in this case you'll see either a broken pipe or a forced connection shutdown error
-        retry if tries.odd?
+        if tries.odd?
+          logger.warn "Beetle: retrying publishing"
+          retry
+        end
+
         mark_server_dead
-        retry if tries > 0
+
+        if tries > 0
+          logger.warn "Beetle: retrying publishing"
+          retry
+        end
         logger.error "Beetle: message could not be delivered: #{message_name}"
         raise NoMessageSent.new
       end
@@ -109,9 +117,12 @@ module Beetle
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue *bunny_exceptions => e
-          logger.warn("Beetle: publishing exception #{e} #{e.backtrace[0..4].join("\n")}")
+          log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
-          retry if (tries += 1) == 1
+          if (tries += 1) == 1
+            logger.warn "Beetle: retrying publishing"
+            retry
+          end
           mark_server_dead
         end
       end
@@ -205,6 +216,10 @@ module Beetle
       !!@channels[@server]
     end
 
+    def log_publishing_exception(exception:, tries:, server:, message_name:, exchange_name:)
+      logger.warn("Beetle: publishing exception server=#{@server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
+    end
+
     # retry dead servers after ignoring them for 10.seconds
     # if all servers are dead, retry the one which has been dead for the longest time
     def recycle_dead_servers
@@ -220,7 +235,7 @@ module Beetle
     end
 
     def mark_server_dead
-      logger.info "Beetle: server #{@server} down: #{$!}"
+      logger.warn "Beetle: server down. marking server dead:#{@server} #{$!}"
       @dead_servers[@server] = Time.now
       @servers.delete @server
       @server = @servers[rand @servers.size]
