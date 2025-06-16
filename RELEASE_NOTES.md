@@ -1,9 +1,11 @@
 # Release Notes
 
+## Version 5.2.0.rc1
+* Add more logging on publishing exceptions
+
 ## Version 5.1.3.pre
 
 * Drop support of thread local channels as a source of memory leaks
-* Add more logging on publishing exceptions
 
 ## Version 5.1.2.pre
 
