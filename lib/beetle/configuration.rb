@@ -176,9 +176,6 @@ module Beetle
     # external config file (defaults to <tt>no file</tt>)
     attr_reader :config_file
 
-    # set log-level for all beetle operations (defaults to <tt>INFO</tt>)
-    attr_accessor :log_level
-
     # enable publisher confirms (defaults to <tt>false</tt>)
     attr_accessor :publisher_confirms
 
@@ -251,7 +248,6 @@ module Beetle
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
-      self.log_level = Logger::INFO
 
       self.publisher_confirms = false
     end
@@ -273,7 +269,7 @@ module Beetle
         begin
           l = Logger.new(log_file)
           l.formatter = Logger::Formatter.new
-          l.level = log_level
+          l.level = Logger::INFO
           l.datetime_format = "%Y-%m-%d %H:%M:%S"
           l
         end
