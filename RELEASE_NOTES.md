@@ -3,36 +3,37 @@
 ## Version 5.1.3.pre
 
 * Drop support of thread local channels as a source of memory leaks
+* Add more logging on publishing exceptions
 
 ## Version 5.1.2.pre
 
 * Allow to configure consumer timeouts and heartbeat
-* Surface delivery count information 
+* Surface delivery count information
 
 ## Version 5.1.1
 * Give more control over how queue policy updates are performed
 * Introduce new configuration option `beetle_policy_priority` to set the priority of queue policies
 
 ## Version 5.1.0
-* Add possibility to enable publisher confirms on a per client basis 
+* Add possibility to enable publisher confirms on a per client basis
 * [BUGFIX] Add defensive copying against options mutation when passing to bunny library
 * [BUGFIX] Thread local channels don't cause errors when a client is created in a different thread than where its used
 
 ## Version 5.0.1
-* Make channels thread local, to avoid problems with out-of-order amqp frames when the client is shared across threads 
+* Make channels thread local, to avoid problems with out-of-order amqp frames when the client is shared across threads
 
 ## Version 5.0.0
 * [breaking] Bunny upgrade fom 0.7.13 to 2.23.0 => changes from single threaded mode to multithreaded mode
 * [breaking] Heartbeats enabled if server offers them
 * [breaking] Publishing timeout enabled and configured by default
 * Add TLS support for redis in deduplication store (verified to work with Elasticache)
-* Add password support for redis in deduplication store 
+* Add password support for redis in deduplication store
 
 ## Version 4.0.0
-* The Beetle::Configuration.server_connection_options now take true and false for the SSL configuration. 
+* The Beetle::Configuration.server_connection_options now take true and false for the SSL configuration.
 * [breaking] Remove Beetle::Configuration.api_port without replacement. The port is now always derived from server port
 * Allow to specify connection options on a per server basis using a new setting Beetle::Configuration.server_connection_options.
-  This can be used to selectively overwrite credentials and ssl settings for specific servers. 
+  This can be used to selectively overwrite credentials and ssl settings for specific servers.
   The latter change is backwards-compatible.
 
 ## Version 3.5.7
