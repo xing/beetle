@@ -119,7 +119,10 @@ module Beetle
         rescue *bunny_exceptions => e
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
-          retry if (tries += 1) == 1
+          if (tries += 1) == 1
+            logger.warn "retrying publishing"
+            retry
+          end
           mark_server_dead
         end
       end
