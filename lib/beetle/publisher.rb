@@ -81,14 +81,14 @@ module Beetle
         # retry same server on receiving the first exception for it (might have been a normal restart)
         # in this case you'll see either a broken pipe or a forced connection shutdown error
         if tries.odd?
-          logger.warn "retrying publishing"
+          logger.warn "Beetle: retrying publishing"
           retry
         end
 
         mark_server_dead
 
         if tries > 0
-          logger.warn "retrying publishing"
+          logger.warn "Beetle: retrying publishing"
           retry
         end
         logger.error "Beetle: message could not be delivered: #{message_name}"
@@ -120,7 +120,7 @@ module Beetle
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
           if (tries += 1) == 1
-            logger.warn "retrying publishing"
+            logger.warn "Beetle: retrying publishing"
             retry
           end
           mark_server_dead
