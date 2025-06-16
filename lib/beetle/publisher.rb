@@ -235,7 +235,7 @@ module Beetle
     end
 
     def mark_server_dead
-      logger.info "Beetle: server #{@server} down: #{$!}"
+      logger.warn "Beetle: server down. marking server dead:#{@server} #{$!}"
       @dead_servers[@server] = Time.now
       @servers.delete @server
       @server = @servers[rand @servers.size]
