@@ -15,6 +15,10 @@ module Beetle
       at_exit { stop }
     end
 
+    def queues_for_exchange_declared?(exchange_name)
+      @exchanges_with_bound_queues.include?(exchange_name)
+    end
+
     def throttled?
       @throttled
     end
