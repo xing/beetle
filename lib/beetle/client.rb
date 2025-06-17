@@ -68,6 +68,10 @@ module Beetle
       )
     end
 
+    def single_broker_mode?
+      servers.size == 1
+    end
+
     # register an exchange with the given _name_ and a set of _options_:
     # [<tt>:type</tt>]
     #   the type option will be overwritten and always be <tt>:topic</tt>, beetle does not allow fanout exchanges

@@ -18,6 +18,10 @@ module Beetle
 
     private
 
+    def single_broker_mode?
+      @client.single_broker_mode?
+    end
+
     def error(text)
       logger.error text
       raise Error.new(text)

@@ -62,6 +62,14 @@ module Beetle
     # value returned by handler execution
     attr_reader :handler_result
 
+    def self.create(queue, header, body, opts = {})
+      new(queue, header, body, opts)
+    end
+
+    def self.single_broker(queue, header, body, opts = {})
+      SingleBrokerMessage.new(queue, header, body, opts)
+    end
+
     def initialize(queue, header, body, opts = {})
       @queue  = queue
       @header = header
@@ -101,6 +109,7 @@ module Beetle
     def self.publishing_options(opts = {}) #:nodoc:
       flags = 0
       flags |= FLAG_REDUNDANT if opts[:redundant]
+
       expires_at = now + (opts[:ttl] || DEFAULT_TTL).to_i
       opts = opts.slice(*PUBLISHING_KEYS)
       opts[:message_id] = generate_uuid.to_s

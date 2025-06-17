@@ -477,4 +477,22 @@ module Beetle
     end
   end
 
+  class SingleBrokerModeTest < Minitest::Test
+    test "when only one server is configured we set single broker mode" do
+      config = Configuration.new
+      config.servers = "localhost:5672"
+      client = Client.new(config)
+
+      assert client.single_broker_mode?
+    end
+
+    test "when more than one server is configured we set single broker mode to false" do
+      config = Configuration.new
+      config.servers = "localhost:5672,localhost:5673"
+      client = Client.new(config)
+
+      refute client.single_broker_mode?
+    end
+  end
+
 end
