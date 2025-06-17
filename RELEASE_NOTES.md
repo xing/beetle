@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 5.2.0.rc2
+* Publisher exposes information of whether the queues for a certain exchange have been bound 
+
 ## Version 5.2.0.rc1
 * Add more logging on publishing exceptions
 
