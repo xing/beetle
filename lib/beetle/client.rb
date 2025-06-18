@@ -279,6 +279,11 @@ module Beetle
       publisher.setup_queues_and_policies
     end
 
+    # same as #setup_queues_and_policies, but raises an error if the setup fails.
+    def setup_queues_and_policies!
+      publisher.setup_queues_and_policies!
+    end
+
     # traces queues without consuming them. useful for debugging message flow.
     def trace(queue_names=self.queues.keys, tracer=nil, &block)
       queues_to_trace = self.queues.slice(*queue_names)
