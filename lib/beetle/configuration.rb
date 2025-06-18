@@ -170,6 +170,7 @@ module Beetle
 
     # enable auto recovery with bunny on network failures (defaults to <tt>false</tt>)
     attr_accessor :automatically_recover
+
     # how often should bunny try to recover from a network failure. nil means forever (defaults to <tt>nil</tt>)
     attr_accessor :max_recovery_attempts
 
@@ -178,6 +179,10 @@ module Beetle
 
     # enable publisher confirms (defaults to <tt>false</tt>)
     attr_accessor :publisher_confirms
+
+    # enable lazy queue setup (defaults to <tt>true</tt>)
+    # this means that on first publish to an exchange we declare all the queues that are bound to it
+    attr_accessor :publisher_lazy_queue_setup
 
     # returns the configured amqp brokers
     def brokers
@@ -250,6 +255,7 @@ module Beetle
       self.log_file = STDOUT
 
       self.publisher_confirms = false
+      self.publisher_lazy_queue_setup = true
     end
 
     # setting the external config file will load it on assignment

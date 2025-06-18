@@ -371,6 +371,26 @@ module Beetle
       @pub.send(:bind_queues_for_exchange, 'test_exchange_2')
     end
 
+    test "when lazy_queue_setup is fals it does not bind queues for the used  exchange when publishing" do
+      @client.register_queue('test_queue_1', :exchange => 'test_exchange')
+      @client.register_queue('test_queue_2', :exchange => 'test_exchange')
+      @client.register_queue('test_queue_3', :exchange => 'test_exchange_2')
+      @client.register_message("mama", :ttl => 1.hour, :exchange => "mama-exchange")
+
+      begin
+        @client.config.publisher_lazy_queue_setup = false
+        exchange = mock("exchange")
+        exchange.expects(:publish).returns(nil)
+
+        @pub.expects(:exchange).with("mama-exchange").returns(exchange)
+        @pub.expects(:declare_queue!).never
+        @pub.expects(:bind_queue!).never
+        @pub.publish('mama', "XXX")
+      ensure
+        @client.config.publisher_lazy_queue_setup = true
+      end
+    end
+
     test "should not rebind the defined queues for the used exchanges if they already have been bound" do
       @client.register_queue('test_queue_1', :exchange => 'test_exchange')
       @client.register_queue('test_queue_2', :exchange => 'test_exchange')
@@ -670,5 +690,4 @@ module Beetle
       assert_equal 1, @pub.publish("mama", @data, @opts)
     end
   end
-  
 end

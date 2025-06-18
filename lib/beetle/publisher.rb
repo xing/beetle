@@ -259,6 +259,11 @@ module Beetle
     end
 
     def bind_queues_for_exchange(exchange_name)
+      unless @client.config.publisher_lazy_queue_setup
+        logger.debug "Lazy queue setup is disabled. Will not bind queues for exchange #{exchange_name}."
+        return
+      end
+
       return if @exchanges_with_bound_queues.include?(exchange_name)
       @client.exchanges[exchange_name][:queues].each {|q| queue(q) }
       @exchanges_with_bound_queues[exchange_name] = true
