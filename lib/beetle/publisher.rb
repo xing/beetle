@@ -171,6 +171,14 @@ module Beetle
       end
     end
 
+    def setup_queues_and_policies!
+      each_server do
+        @client.queues.keys.each do |name|
+          queue(name)
+        end
+      end
+    end
+
     def stop #:nodoc:
       each_server { stop! }
     end
