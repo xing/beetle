@@ -203,6 +203,7 @@ module Beetle
         :password              => options[:pass],
         :vhost                 => options[:vhost],
         :tls                   => options[:ssl] || false,
+        :automatically_recover => false,
         :logger                => @client.config.logger,
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
