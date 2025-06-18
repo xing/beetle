@@ -1,13 +1,9 @@
 # Release Notes
 
-## Version 5.2.0.rc2
+## Version 5.2.0 (rc)
+* Disable bunnny's auto-recovery in publishers (the configuration option has been removed as well)
 * Publisher exposes information of whether the queues for a certain exchange have been bound 
-
-## Version 5.2.0.rc1
 * Add more logging on publishing exceptions
-
-## Version 5.1.3.pre
-
 * Drop support of thread local channels as a source of memory leaks
 
 ## Version 5.1.2.pre
