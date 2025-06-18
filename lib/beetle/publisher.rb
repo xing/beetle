@@ -206,6 +206,11 @@ module Beetle
         :logger                => @client.config.logger,
         :automatically_recover => @client.config.automatically_recover,
         :recovery_attempts     => @client.config.max_recovery_attempts,
+        :recover_from_connection_close => true, 
+        :reset_recovery_attempts_after_reconnection => true,
+        :recovery_attempt_started => on_recovery_started(logger, @server),
+        :recovery_completed       => on_recovery_completed(logger, @server),
+        :recovery_attempt_exhausted => on_recovery_exhausted(logger, @server),
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
         :read_timeout          => @client.config.publishing_timeout,
@@ -230,6 +235,24 @@ module Beetle
 
     def log_publishing_exception(exception:, tries:, server:, message_name:, exchange_name:)
       logger.warn("Beetle: publishing exception server=#{@server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
+    end
+
+    def on_recovery_started(logger, server)
+      proc do
+        logger.warn("Beetle: starting recovery for server: #{server}")
+      end
+    end
+
+    def on_recovery_completed(logger, server)
+      proc do
+        logger.info("Beetle: recovery completed for server: #{server}")
+      end
+    end
+
+    def on_recovery_exhausted(logger, server)
+      proc do
+        logger.error("Beetle: recovery exhausted for server: #{server}")
+      end
     end
 
     # retry dead servers after ignoring them for 10.seconds
