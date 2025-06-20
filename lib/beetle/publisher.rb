@@ -17,6 +17,12 @@ module Beetle
       at_exit { stop }
     end
 
+    def exceptions?
+      @bunny_error_handlers.any? do |_, error_handler|
+        error_handler.exceptions?
+      end
+    end
+
     def queues_for_exchange_declared?(exchange_name)
       @exchanges_with_bound_queues.include?(exchange_name)
     end
@@ -130,8 +136,9 @@ module Beetle
         tries = 0
         select_next_server
         begin
+          next if published.include? @server
+
           synchronize_bunny_errors! do
-            next if published.include? @server
             bind_queues_for_exchange(exchange_name)
             logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
             exchange(exchange_name).publish(data, opts.dup)
