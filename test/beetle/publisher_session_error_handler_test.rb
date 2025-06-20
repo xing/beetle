@@ -108,6 +108,21 @@ module Beetle
       bg.join(0.2)
     end
 
+    def test_never_kills_the_thread_in_which_handler_is_created
+      th = Thread.new do
+        handler = Beetle::PublisherSessionErrorHandler.new(@logger, @publisher, "test-server")
+        sleep 0.1
+        handler.raise(DelayedError.new("Should not kill main thread"))
+        sleep 1
+      end
+
+      assert th.alive?, "Thread should be alive even after raising an error"
+
+      assert_nothing_raised do
+        th.join(1) # wait for the thread to finish
+      end
+    end
+
     def test_logs_errors
       error_message = "Test error"
       @handler.raise(DelayedError.new(error_message))
