@@ -38,7 +38,7 @@ module Beetle
     # @param args [Array] the arguments to raise, usually an exception class and a message
     def raise(*args)
       current_thread = Thread.current
-      @logger.error "Beetle: bunny session handler errror. server=#{@server} reraise=#{@reraise_errors} raised_in=#{current_thread.inspect}."
+      @logger.error "Beetle: bunny session handler error. server=#{@server} reraise=#{@reraise_errors} raised_in=#{current_thread.inspect}."
 
       deliver_to_reraise_target!(*args)
       record_and_terminate_thread!(current_thread, *args)
