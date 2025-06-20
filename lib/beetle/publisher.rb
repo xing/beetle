@@ -203,7 +203,6 @@ module Beetle
         :password              => options[:pass],
         :vhost                 => options[:vhost],
         :tls                   => options[:ssl] || false,
-        :automatically_recover => false,
         :logger                => @client.config.logger,
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
@@ -211,7 +210,12 @@ module Beetle
         :write_timeout         => @client.config.publishing_timeout,
         :continuation_timeout  => @client.config.publishing_timeout * 1000, # continuation timeout is in milliseconds while the other timeouts are in seconds :/
         :connection_timeout    => @client.config.publisher_connect_timeout,
-        :heartbeat             => @client.config.heartbeat
+        :heartbeat             => @client.config.heartbeat,
+
+        # make sure auto recovery is actually deactived
+        :automatically_recover => false, # normal network errors are not recovered
+        :recover_from_connection_close => false, # force close from server are not recovered 
+        :network_recovery_interval => 0 # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
       )
       b.start
       b
