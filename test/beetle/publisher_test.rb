@@ -91,7 +91,6 @@ module Beetle
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
-
     test "initially there should be no bunnies" do
       assert_equal({}, @pub.instance_variable_get("@bunnies"))
     end

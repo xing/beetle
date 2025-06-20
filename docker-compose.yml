@@ -21,6 +21,16 @@ services:
       - "5673:5672"
       - "15673:15672"
 
+  toxiproxy:
+    container_name: beetle-toxiproxy
+    image: shopify/toxiproxy
+    ports:
+      - "8474:8474"   # HTTP API
+      - "5674:5674"   # rabbit1 
+      - "15674:15674"   # rabbit1-api
+      - "5675:5675"   # rabbit2 
+      - "15675:15675"   # rabbit2-api
+
   consul:
     container_name: beetle-consul
     image: consul:1.7.2
