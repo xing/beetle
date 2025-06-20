@@ -59,13 +59,13 @@ module Beetle
       end
     end
 
-    def raise_bunny_errors_for!(server, &block)
-      error_handler = @bunny_error_handlers[server]
+    def synchronize_bunny_errors!(&block)
+      error_handler = bunny_error_handler
 
       if error_handler
-        error_handler.reraising_errors(&block)
+        error_handler.synchronize_errors(&block)
       else
-        logger.error "Beetle: no error handler for server #{server} found. This should not happen."
+        logger.error "Beetle: no session error handler for server #{server} found. This should not happen."
         block.call
       end
     end
@@ -79,7 +79,7 @@ module Beetle
       begin
         select_next_server if tries.even?
 
-        raise_bunny_errors_for!(@server) do
+        synchronize_bunny_errors! do
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
@@ -130,7 +130,7 @@ module Beetle
         tries = 0
         select_next_server
         begin
-          raise_bunny_errors_for!(@server) do
+          synchronize_bunny_errors! do
             next if published.include? @server
             bind_queues_for_exchange(exchange_name)
             logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
@@ -211,6 +211,14 @@ module Beetle
       !!@bunnies[@server]
     end
 
+    def bunny_error_handler
+      @bunny_error_handlers[@server]
+    end
+
+    def bunny_error_handler?
+      !!@bunny_error_handlers[@server]
+    end
+
     def new_bunny
       options = connection_options_for_server(@server)
       error_handler = PublisherSessionErrorHandler.new(logger, self, @server)
@@ -244,7 +252,7 @@ module Beetle
         :session_error_handler => error_handler
       )
 
-      error_handler.reraising_errors do
+      error_handler.synchronize_errors do
         b.start 
       end
 
