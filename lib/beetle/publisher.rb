@@ -39,10 +39,14 @@ module Beetle
       @throttled ? 'throttled' : 'unthrottled'
     end
 
-    # List of exceptions potentially raised by bunny.
     def bunny_exceptions
       [
-        Bunny::Exception, Errno::EHOSTUNREACH, Errno::ECONNRESET, Errno::ETIMEDOUT, Timeout::Error
+        AMQ::Protocol::EmptyResponseError,
+        Bunny::Exception, 
+        Errno::EHOSTUNREACH, 
+        Errno::ECONNRESET, 
+        Errno::ETIMEDOUT, 
+        Timeout::Error
       ]
     end
 
