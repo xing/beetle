@@ -4,19 +4,19 @@ module Beetle
     attr_reader :server, :reraise_target
 
     def initialize(logger, publisher, server_name, session_thread = Thread.current)
+      @publisher = publisher
+      @server = server_name
+      @logger = logger
+
       # the thread which has a reference to the session and this error handler
       @session_thread = session_thread
 
       # the thread in which the error will be raised if re-reaise is enabled
       @reraise_target = nil
-      @publisher = publisher
-      @server = server_name
+      @reraise_errors = false
 
       @error_mutex = Mutex.new
       @error_args = nil
-
-      @reraise_errors = false
-      @logger = logger
     end
 
     def exceptions?
