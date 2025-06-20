@@ -1,53 +1,6 @@
+require_relative './publisher_session_error_handler'
+
 module Beetle
-  # A bunny session error handler that handles errors occuring in background threads of bunny
-  class SessionErrorHandler 
-    def initialize(logger, publisher, server_name)
-      @publisher = publisher
-      @server = server_name
-
-      @errors_mutex = Mutex.new
-      @error_args = nil
-
-      @reraise_errors = false
-      # TODO: think through if we need this mutex
-      @reraise_mutex = Mutex.new
-      @logger = logger
-    end
-
-    def raise(*args)
-      @logger.error "Beetle: bunny session error on server #{@server}" 
-      should_reraise = @reraise_mutex.synchronize { @reraise_errors }
-
-      @logger.debug "Beetle: bunny session error reraise is: #{should_reraise} for server #{@server}"
-      Kernel.raise(*args) if should_reraise
-
-      @errors_mutex.synchronize { @error_args = args }
-    end
-
-    # Executes block which has to be prepared to handle errors from this session error handler
-    # If the error handler has an exeption recorded it will be raised before the block is called
-    # If the error handler does not have an exception recorded it will execute block, and every exception handled during execution 
-    # of the block, including those raised from another thread, will be re-raised here.
-    def reraising_errors(&block)
-      reraise_last_error!
-      @reraise_mutex.synchronize { @reraise_errors = true }
-      block.call
-    ensure
-      @reraise_mutex.synchronize { @reraise_errors = false }
-    end
-
-    private
-
-    def reraise_last_error!
-      return unless @error_args
-
-      error = @error_args
-      @error_args = nil
-      Kernel.raise(*error)
-    end
-
-  end
-
   class Publisher < Base
     attr_reader :dead_servers
 
@@ -260,7 +213,7 @@ module Beetle
 
     def new_bunny
       options = connection_options_for_server(@server)
-      error_handler = SessionErrorHandler.new(logger, self, @server)
+      error_handler = PublisherSessionErrorHandler.new(logger, self, @server)
       @bunny_error_handlers[@server] = error_handler
 
       b = Bunny.new(
