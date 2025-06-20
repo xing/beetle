@@ -4,19 +4,23 @@ module Beetle
     def initialize(logger, publisher, server_name)
       @publisher = publisher
       @server = server_name
+
+      @errors_mutex = Mutex.new
       @error_args = nil
+
       @reraise_errors = false
-      @mutex = Mutex.new
+      @reraise_mutex = Mutex.new
       @logger = logger
     end
 
     def raise(*args)
       @logger.error "Beetle: bunny session error on server #{@server}" 
-      should_reraise = @mutex.synchronize { @reraise_errors }
+      should_reraise = @reraise_mutex.synchronize { @reraise_errors }
 
       @logger.debug "Beetle: bunny session error reraise is: #{should_reraise} for server #{@server}"
       Kernel.raise(*args) if should_reraise
-      @error_args = args
+
+      @errors_mutex.synchronize { @error_args = args }
     end
 
     # Executes block which has to be prepared to handle errors from this session error handler
@@ -25,10 +29,10 @@ module Beetle
     # of the block, including those raised from another thread, will be re-raised here.
     def reraising_errors(&block)
       reraise_last_error!
-      @mutex.synchronize { @reraise_errors = true }
+      @reraise_mutex.synchronize { @reraise_errors = true }
       block.call
     ensure
-      @mutex.synchronize { @reraise_errors = false}
+      @reraise_mutex.synchronize { @reraise_errors = false }
     end
 
     private
