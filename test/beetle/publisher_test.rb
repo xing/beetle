@@ -69,6 +69,29 @@ module Beetle
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
+    test "new bunnies should be created with auto-recovery disabled" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+      config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
+      client = Client.new(config)
+      pub = Publisher.new(client)
+
+      bunny_mock = mock("dummy_bunny")
+      expected_bunny_options = {
+        automatically_recover: false,
+        recover_from_connection_close: false,
+        network_recovery_interval: 0
+      }
+
+      Bunny
+        .expects(:new)
+        .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
+        .returns(bunny_mock)
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
+    end
+
+
     test "initially there should be no bunnies" do
       assert_equal({}, @pub.instance_variable_get("@bunnies"))
     end
