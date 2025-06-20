@@ -4,7 +4,7 @@ module Beetle
   class PublisherSessionErrorHandlerTest < Minitest::Test
     class DummyPublisher; end
     BackgroundError = Class.new(StandardError)
-    ForgroundError = Class.new(StandardError)
+    ForegroundError = Class.new(StandardError)
     DelayedError = Class.new(StandardError)
 
     def setup
