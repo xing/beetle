@@ -75,7 +75,7 @@ module Beetle
       if error_handler
         error_handler.synchronize_errors(&block)
       else
-        logger.error "Beetle: no session error handler for server #{server} found. This should not happen."
+        logger.error "Beetle: no session error handler for server #{@server} found. This should not happen."
         block.call
       end
     end
