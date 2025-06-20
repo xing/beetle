@@ -48,9 +48,9 @@ module Beetle
     end
 
     def test_synchronize_errors_with_errors_from_main_thread
-      assert_raises(ForgroundError) do
+      assert_raises(ForegroundError) do
         @handler.synchronize_errors do
-          raise ForgroundError.new("Foreground error")
+          raise ForegroundError.new("Foreground error")
         end
       end
     end
