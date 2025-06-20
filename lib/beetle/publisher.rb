@@ -9,6 +9,7 @@ module Beetle
       @error_args = nil
 
       @reraise_errors = false
+      # TODO: think through if we need this mutex
       @reraise_mutex = Mutex.new
       @logger = logger
     end
