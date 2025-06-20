@@ -1,5 +1,48 @@
 module Beetle
-  # Provides the publishing logic implementation.
+  # A bunny session error handler that handles errors occuring in background threads of bunny
+  class SessionErrorHandler 
+    def initialize(logger, publisher, server_name)
+      @publisher = publisher
+      @server = server_name
+      @error_args = nil
+      @reraise_errors = false
+      @mutex = Mutex.new
+      @logger = logger
+    end
+
+    def raise(*args)
+      @logger.error "Beetle: bunny session error on server #{@server}" 
+      should_reraise = @mutex.synchronize { @reraise_errors }
+
+      @logger.debug "Beetle: bunny session error reraise is: #{should_reraise} for server #{@server}"
+      Kernel.raise(*args) if should_reraise
+      @error_args = args
+    end
+
+    # Executes block which has to be prepared to handle errors from this session error handler
+    # If the error handler has an exeption recorded it will be raised before the block is called
+    # If the error handler does not have an exception recorded it will execute block, and every exception handled during execution 
+    # of the block, including those raised from another thread, will be re-raised here.
+    def reraising_errors(&block)
+      reraise_last_error!
+      @mutex.synchronize { @reraise_errors = true }
+      block.call
+    ensure
+      @mutex.synchronize { @reraise_errors = false}
+    end
+
+    private
+
+    def reraise_last_error!
+      return unless @error_args
+
+      error = @error_args
+      @error_args = nil
+      Kernel.raise(*error)
+    end
+
+  end
+
   class Publisher < Base
     attr_reader :dead_servers
 
@@ -8,6 +51,7 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @bunny_error_handlers = {}
       @channels = {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
@@ -57,6 +101,17 @@ module Beetle
       end
     end
 
+    def raise_bunny_errors_for!(server, &block)
+      error_handler = @bunny_error_handlers[server]
+
+      if error_handler
+        error_handler.reraising_errors(&block)
+      else
+        logger.error "Beetle: no error handler for server #{server} found. This should not happen."
+        block.call
+      end
+    end
+
     def publish_with_failover(exchange_name, message_name, data, opts) #:nodoc:
       tries = @servers.size * 2
       logger.debug "Beetle: sending #{message_name}"
@@ -65,19 +120,22 @@ module Beetle
 
       begin
         select_next_server if tries.even?
-        bind_queues_for_exchange(exchange_name)
-        logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
-        current_exchange = exchange(exchange_name)
-        current_exchange.publish(data, opts.dup)
+        raise_bunny_errors_for!(@server) do
+          bind_queues_for_exchange(exchange_name)
+          logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
-        if publisher_confirms? && !current_exchange.wait_for_confirms
-          logger.warn "Beetle: failed to confirm publishing message #{message_name}"
-          return published
+          current_exchange = exchange(exchange_name)
+          current_exchange.publish(data, opts.dup)
+
+          if publisher_confirms? && !current_exchange.wait_for_confirms
+            logger.warn "Beetle: failed to confirm publishing message #{message_name}"
+            return published
+          end
+
+          logger.debug "Beetle: message sent!"
+          published = 1
         end
-
-        logger.debug "Beetle: message sent!"
-        published = 1
       rescue *bunny_exceptions => e
         log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
@@ -114,12 +172,14 @@ module Beetle
         tries = 0
         select_next_server
         begin
-          next if published.include? @server
-          bind_queues_for_exchange(exchange_name)
-          logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
-          exchange(exchange_name).publish(data, opts.dup)
-          published << @server
-          logger.debug "Beetle: message sent (#{published})!"
+          raise_bunny_errors_for!(@server) do
+            next if published.include? @server
+            bind_queues_for_exchange(exchange_name)
+            logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
+            exchange(exchange_name).publish(data, opts.dup)
+            published << @server
+            logger.debug "Beetle: message sent (#{published})!"
+          end
         rescue *bunny_exceptions => e
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
@@ -195,6 +255,8 @@ module Beetle
 
     def new_bunny
       options = connection_options_for_server(@server)
+      error_handler = SessionErrorHandler.new(logger, self, @server)
+      @bunny_error_handlers[@server] = error_handler
 
       b = Bunny.new(
         :host                  => options[:host],
@@ -213,11 +275,21 @@ module Beetle
         :heartbeat             => @client.config.heartbeat,
 
         # make sure auto recovery is actually deactived
-        :automatically_recover => false, # normal network errors are not recovered
-        :recover_from_connection_close => false, # force close from server are not recovered 
-        :network_recovery_interval => 0 # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        # normal network errors are not recovered
+        :automatically_recover => false, 
+        # force close from server are not recovered 
+        :recover_from_connection_close => false, 
+        # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :network_recovery_interval => 0, 
+        # register our own error handler, because the default is Thread.current which is a super bad idea
+        # because it will raise exceptions originating in background threads (reader_loop, heartbeat_sender) in the main thread
+        :session_error_handler => error_handler
       )
-      b.start
+
+      error_handler.reraising_errors do
+        b.start 
+      end
+
       b
     end
 
