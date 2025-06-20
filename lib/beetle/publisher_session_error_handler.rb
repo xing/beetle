@@ -2,6 +2,7 @@ module Beetle
   # A bunny session error handler that handles errors occuring in background threads of bunny
   class PublisherSessionErrorHandler
     def initialize(logger, publisher, server_name)
+      @creating_thread = Thread.current
       @raise_in = nil
       @publisher = publisher
       @server = server_name
