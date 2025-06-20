@@ -97,7 +97,7 @@ module Beetle
         err
       end
 
-      Kernel.raise(*error) if error
+      deliver_to_reraise_target!(*error) if error
     end
   end
 end
