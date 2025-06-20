@@ -2,6 +2,7 @@ module Beetle
   # A bunny session error handler that handles errors occuring in background threads of bunny
   class PublisherSessionErrorHandler
     def initialize(logger, publisher, server_name)
+      @raise_in = nil
       @publisher = publisher
       @server = server_name
 
@@ -25,13 +26,16 @@ module Beetle
     # This essentially delays the raise of excpeptions in the main thread until the code that is prepared to handle them is executed.
     def raise(*args)
       current_thread = Thread.current
-      @logger.error "Beetle: bunny session handler errror. server=#{@server} reraise=#{@reraise_errors}  raised_in=#{current_thread.inspect}."
+      @logger.error "Beetle: bunny session handler errror. server=#{@server} reraise=#{@reraise_errors} raised_in=#{current_thread.inspect}."
 
       # reraise in thread that created the session?
-      Kernel.raise(*args) if @reraise_errors
+      @raise_in.raise(*args) if @reraise_errors && @raise_in
 
       # don't reraise but record
       @error_mutex.synchronize { @error_args = args }
+
+      # finally schedule the thread that caused the exception for termination
+      current_thread.kill if current_thread != @creating_thread
     end
 
     # Executes block which has to be prepared to handle errors from this session error handler
@@ -41,9 +45,11 @@ module Beetle
     def reraising_errors(&block)
       reraise_last_error!
       @reraise_errors = true
+      @raise_in = Thread.current
       block.call
     ensure
       @reraise_errors = false
+      @raise_in = nil
     end
 
     private
