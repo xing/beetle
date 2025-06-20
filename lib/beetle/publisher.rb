@@ -41,7 +41,7 @@ module Beetle
 
     def bunny_exceptions
       [
-        AMQ::Protocol::EmptyResponseError, # QUESTION: should we handle all of AMQ::Protocol::Error instead? 
+        AMQ::Protocol::Error,
         Bunny::Exception, 
         Errno::EHOSTUNREACH, 
         Errno::ECONNRESET, 
