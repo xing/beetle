@@ -28,12 +28,12 @@ module Beetle
     end
 
     # Raise is called when a bunny component wants to signal an error
-    # This method will mostly be called from a background thread of bunny.
-    # The logic of this method depends on the value of @reraise_errors.
-    # If @reraise_errors is true, the error will be raised in the thread that is bound to @reraise_target.
-    # @reraise_target is set when the session error handler is used in a block that calls `synchronize_errors`.
+    # This method will mostly be called from a background thread of bunny (reader_loop, heartbeat_sender).
     #
-    # In effect, unless @reraise_errors is true, this will delay throwing of the error until the next call to `synchronize_errors`.
+    # The logic of this method depends on when it is invoked.
+    #
+    # If it is invoked in the context of `synchronize_errors`, it will raise the error in the thread that is bound to `@reraise_target`.
+    # If it is invoked outside of `synchronize_errors`, it will record the error and kill the thread that called this method.
     #
     # @param args [Array] the arguments to raise, usually an exception class and a message
     def raise(*args)
