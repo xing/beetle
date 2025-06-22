@@ -271,7 +271,9 @@ module Beetle
       error_handler.synchronize_errors do
         b.start 
       end
-    rescue StandardError => e
+
+      b
+    rescue Exception => e
       @bunny_error_handlers[@server] = nil
       raise e
     end
