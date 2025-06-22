@@ -215,7 +215,8 @@ module Beetle
         # make sure auto recovery is actually deactived
         :automatically_recover => false, # normal network errors are not recovered
         :recover_from_connection_close => false, # force close from server are not recovered 
-        :network_recovery_interval => 0 # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :network_recovery_interval => 0, # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :recovery_attempts => 0 # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
       )
       b.start
       b
