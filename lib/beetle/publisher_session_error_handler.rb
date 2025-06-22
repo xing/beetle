@@ -3,17 +3,19 @@ module Beetle
   class PublisherSessionErrorHandler
     attr_reader :server, :reraise_target
 
-    def initialize(logger, publisher, server_name, session_thread = Thread.current)
-      @publisher = publisher
+    class SynchronizationError < StandardError; end
+
+    def initialize(logger, server_name, terminate_thread = true)
+      # the thread which has a reference to the session and this error handler
+      @session_thread = Thread.current
+
       @server = server_name
       @logger = logger
+      @terminate_thread = terminate_thread # shall threads be terminated when raise is invoked?
 
-      # the thread which has a reference to the session and this error handler
-      @session_thread = session_thread
-
-      # the thread in which the error will be raised if re-reaise is enabled
-      @reraise_target = nil
-      @reraise_errors = false
+      @synchronous_errors = false
+      @synchronous_error_target = nil
+      @synchronous_errors_mutex = Mutex.new
 
       @error_mutex = Mutex.new
       @error_args = nil
@@ -23,8 +25,8 @@ module Beetle
       @error_mutex.synchronize { !@error_args.nil? }
     end
 
-    def reraise_errors?
-      @reraise_errors
+    def synchronous_errors?
+      @synchronous_errors_mutex.synchronize { @synchronous_errors }
     end
 
     # Raise is called when a bunny component wants to signal an error
@@ -37,10 +39,10 @@ module Beetle
     #
     # @param args [Array] the arguments to raise, usually an exception class and a message
     def raise(*args)
-      current_thread = Thread.current
-      @logger.error "Beetle: bunny session handler error. server=#{@server} reraise=#{@reraise_errors} raised_in=#{current_thread.inspect}."
+      current_thread = Thread.current # the thread that invoked this method
+      @logger.error "Beetle: bunny session handler error. server=#{@server} reraise=#{@synchronous_errors} raised_in=#{current_thread.inspect}."
 
-      deliver_to_reraise_target!(*args)
+      reraise!(*args) if synchronous_errors?
       record_and_terminate_thread!(current_thread, *args)
     end
 
@@ -70,34 +72,52 @@ module Beetle
     #
     # ```
     def synchronize_errors
-      @reraise_errors = true
-      @reraise_target = Thread.current
-      flush_pending_errors!
+      Kernel.raise SynchronizationError, "synchronize_errors must be called from the thread that created the error handler." unless Thread.current == @session_thread
+      Kernel.raise SynchronizationError, "synchronize_errors cannot be nested / re-entered" if @synchronous_errors
+
+      @synchronous_errors_mutex.synchronize do
+        @synchronous_errors = true
+        @synchronous_error_target = Thread.current
+      end
+
+      raise_pending_error!
       yield if block_given?
     ensure
-      @reraise_errors = false
-      @reraise_target = nil
+      @synchronous_errors_mutex.synchronize do
+        @synchronous_errors = false
+        @synchronous_error_target = nil
+      end
     end
 
     private
 
-    def deliver_to_reraise_target!(*args)
-      @reraise_target.raise(*args) if @reraise_errors && @reraise_target
+    def synchronous_error_target
+      @synchronous_errors_mutex.synchronize { @synchronous_error_target }
     end
 
-    def record_and_terminate_thread!(thread, *args)
-      @error_mutex.synchronize { @error_args = args }
-      thread.kill if thread != @session_thread
+    # safes the first recorded error since it is closes to be the root cause
+    # kill the thread that called this method, unless it is the session thread
+    def record_and_terminate_thread!(source_thread, *args)
+      @error_mutex.synchronize { @error_args ||= args }
+
+      return unless @terminate_thread
+      return if source_thread == @session_thread
+
+      source_thread.kill
     end
 
-    def flush_pending_errors!
+    def raise_pending_error!
       error = @error_mutex.synchronize do
         err = @error_args
         @error_args = nil
         err
       end
 
-      deliver_to_reraise_target!(*error) if error
+      reraise!(*error) if error
+    end
+
+    def reraise!(*args)
+      synchronous_error_target.raise(*args)
     end
   end
 end

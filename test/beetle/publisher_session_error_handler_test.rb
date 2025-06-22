@@ -10,8 +10,7 @@ module Beetle
     def setup
       @logger_output = StringIO.new
       @logger = Logger.new(@logger_output)
-      @publisher = DummyPublisher.new
-      @handler = Beetle::PublisherSessionErrorHandler.new(@logger, @publisher, "test-server")
+      @handler = Beetle::PublisherSessionErrorHandler.new(@logger, "test-server")
     end
 
     def test_synchronize_errors_with_recorded_errors_from_background_thread
@@ -31,15 +30,20 @@ module Beetle
     end
 
     def test_synchronize_errors_with_errors_from_background_thread_during_reraising
+      raise_now = false
+
       background = Thread.new do
-        sleep 0.5 # give the main thread time to call synchronize_errors
+        loop do
+          sleep 0.1 # give the main thread time to call synchronize_errors
+          break if raise_now
+        end
         @handler.raise(BackgroundError.new("Background error"))
       end
 
       assert_raises(BackgroundError) do
         @handler.synchronize_errors do
-          sleep 0.7 # wait for the background thread to raise
-
+          raise_now = true
+          sleep 0.5
           assert false, "synchronize_errors was expected to raise"
         end
       end
@@ -110,7 +114,7 @@ module Beetle
 
     def test_never_kills_the_thread_in_which_handler_is_created
       th = Thread.new do
-        handler = Beetle::PublisherSessionErrorHandler.new(@logger, @publisher, "test-server")
+        handler = Beetle::PublisherSessionErrorHandler.new(@logger, "test-server")
         sleep 0.1
         handler.raise(DelayedError.new("Should not kill main thread"))
         sleep 1
@@ -123,6 +127,29 @@ module Beetle
       end
     end
 
+    def test_nesting_calls_to_synchronize_errors_prohibited
+      assert_raises(Beetle::PublisherSessionErrorHandler::SynchronizationError) do
+        @handler.synchronize_errors do
+          @handler.synchronize_errors do
+            sleep 0.1
+          end
+        end
+      end
+    end
+
+    def test_synchronize_errors_on_different_thread_prohibited
+      Thread.report_on_exception = false # prevent the thread from reporting exceptions just for this test
+      other_thread = Thread.new do
+        @handler.synchronize_errors {}
+      end
+
+      assert_raises(Beetle::PublisherSessionErrorHandler::SynchronizationError) do
+        other_thread.join # join will re-raise any exception before
+      end
+    ensure
+      Thread.report_on_exception = true # restore the default behavior
+    end
+
     def test_logs_errors
       error_message = "Test error"
       @handler.raise(DelayedError.new(error_message))
@@ -131,7 +158,7 @@ module Beetle
         @handler.synchronize_errors {}
       end
 
-      assert_match(/Beetle: bunny session handler errror. server=test-server reraise=false/, @logger_output.string)
+      assert_match(/Beetle: bunny session handler error. server=test-server reraise=false/, @logger_output.string)
     end
   end
 end
