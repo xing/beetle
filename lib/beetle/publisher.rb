@@ -235,7 +235,7 @@ module Beetle
 
       # The order of creating the error handler and the Bunny instance is important.
       # The error handler has exist and it has to be assigned before we start the bunny connection.
-      error_handler = PublisherSessionErrorHandler.new(logger, self, @server)
+      error_handler = PublisherSessionErrorHandler.new(logger, @server)
       @bunny_error_handlers[@server] = error_handler
 
       b = Bunny.new(
