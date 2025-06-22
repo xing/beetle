@@ -116,14 +116,16 @@ module Beetle
       b = mock("bunny")
       l = mock("loop")
       b.expects(:close_connection)
+      b.expects(:maybe_shutdown_heartbeat_sender).returns(true)
       b.expects(:reader_loop).returns(l)
       l.expects(:kill)
       @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).twice
+      @pub.expects(:bunny).returns(b).times(3)
       @pub.send(:stop!, Exception.new)
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@bunny_error_handlers)[@pub.server]
       assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
 

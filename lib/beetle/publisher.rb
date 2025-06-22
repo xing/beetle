@@ -351,19 +351,11 @@ module Beetle
 
     def stop!(exception=nil)
       return unless bunny?
-      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
-      Beetle::Timer.timeout(timeout) do
-        logger.debug "Beetle: closing connection from publisher to #{server}"
-        if exception
-          bunny.__send__ :close_connection, false
-          reader_loop = bunny.__send__ :reader_loop
-          reader_loop.kill if reader_loop
 
-          # FIXME: what about the heartbeat sender?
-        else
-          channel.close if channel?
-          bunny.stop
-        end
+      if exception
+        stop_bunny_forcefully!
+      else
+        stop_bunny_gracefully!
       end
     rescue Exception => e
       logger.warn "Beetle: error closing down bunny: #{e}"
@@ -374,6 +366,36 @@ module Beetle
       @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
+    end
+
+    def with_publishing_timeout(&block)
+      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
+
+      Beetle::Timer.timeout(timeout, &block)
+    end
+
+    def stop_bunny_gracefully!
+      with_publishing_timeout do
+        logger.debug "Beetle: closing connection from publisher to #{server} gracefully"
+        channel.close if channel?
+        bunny.stop
+      end
+    end
+
+    def stop_bunny_forcefully!
+      logger.debug "Beetle: closing connection from publisher to #{server} forcefully"
+
+      # kill heartbeat sender if it exists
+      bunny.__send__ :maybe_shutdown_heartbeat_sender rescue nil
+
+      # kill reader loop if it exists
+      reader_loop = bunny.__send__ :reader_loop
+      reader_loop.kill if reader_loop
+
+      # now close the connection
+      with_publishing_timeout do
+        bunny.__send__ :close_connection, false
+      end
     end
 
     def refresh_throttling!
