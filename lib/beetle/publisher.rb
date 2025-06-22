@@ -268,13 +268,12 @@ module Beetle
         :session_error_handler => error_handler
       )
 
-      error_handler.synchronize_errors do
-        b.start 
-      end
-
+      b.start 
       b
-    rescue Exception => e
+    rescue StandardError => e
+      # make sure we let the error handler linger around 
       @bunny_error_handlers[@server] = nil
+
       raise e
     end
 
@@ -289,7 +288,7 @@ module Beetle
     end
 
     def log_publishing_exception(exception:, tries:, server:, message_name:, exchange_name:)
-      logger.warn("Beetle: publishing exception server=#{@server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
+      logger.warn("Beetle: publishing exception server=#{server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
     end
 
     # retry dead servers after ignoring them for 10.seconds
