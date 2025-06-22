@@ -227,7 +227,7 @@ module Beetle
     end
 
     def bunny_error_handler?
-      !!@bunny_error_handlers[@server]
+      !!bunny_error_handler
     end
 
     def new_bunny
