@@ -271,7 +271,7 @@ module Beetle
       b.start 
       b
     rescue StandardError => e
-      # make sure we let the error handler linger around 
+      # make sure we let no error handler linger around 
       @bunny_error_handlers[@server] = nil
 
       raise e
