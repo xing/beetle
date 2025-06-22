@@ -80,7 +80,8 @@ module Beetle
       expected_bunny_options = {
         automatically_recover: false,
         recover_from_connection_close: false,
-        network_recovery_interval: 0
+        network_recovery_interval: 0,
+        recovery_attempts: 0
       }
 
       Bunny

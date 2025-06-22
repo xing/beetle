@@ -257,7 +257,9 @@ module Beetle
         # force close from server are not recovered 
         :recover_from_connection_close => false, 
         # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
-        :network_recovery_interval => 0, 
+        :network_recovery_interval => 0,
+        # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :recovery_attempts => 0,
         # register our own error handler, because the default is Thread.current which is a super bad idea
         # because it will raise exceptions originating in background threads (reader_loop, heartbeat_sender) in the main thread
         :session_error_handler => error_handler
