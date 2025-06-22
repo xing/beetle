@@ -56,6 +56,7 @@ module Beetle
     #    while `block` is executing.
     #
     # This method is not thread-safe, so it should only be called from the same thread that has a reference to this error handler.
+    # In fact we will enforce this, by raising a `SynchronizationError` if this method is called where its not allowed.
     #
     # Example usage:
     #

@@ -55,6 +55,9 @@ class PublisherIntegrationTest < Minitest::Test
   end
 
   # TODO: add tests for multiple servers
+  # TODO: add more tests for scenarios:
+  # * server down immediatly, fails, server comes up, succeeds
+  # *
 
   test "connect, timeout + empty response, publish succeeds again" do
     config = Beetle.config.clone
