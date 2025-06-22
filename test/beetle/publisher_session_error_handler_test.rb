@@ -137,6 +137,20 @@ module Beetle
       end
     end
 
+    def test_nested_call_error_does_not_change_state_of_synchronization
+      @handler.synchronize_errors do
+        # now the internal state is that we synchronize
+        assert @handler.synchronous_errors?, "Expected to be in synchronized state after first call"
+        assert_raises(Beetle::PublisherSessionErrorHandler::SynchronizationError) do
+          @handler.synchronize_errors do
+            sleep 0.1
+          end
+        end
+        # previous block raised but we still expect to be in the synchronized state
+        assert @handler.synchronous_errors?, "Expected to still be in synchronized state after nested call error"
+      end
+    end
+
     def test_synchronize_errors_on_different_thread_prohibited
       Thread.report_on_exception = false # prevent the thread from reporting exceptions just for this test
       other_thread = Thread.new do

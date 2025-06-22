@@ -74,19 +74,21 @@ module Beetle
     # ```
     def synchronize_errors
       Kernel.raise SynchronizationError, "synchronize_errors must be called from the thread that created the error handler." unless Thread.current == @session_thread
-      Kernel.raise SynchronizationError, "synchronize_errors cannot be nested / re-entered" if @synchronous_errors
+      Kernel.raise SynchronizationError, "synchronize_errors cannot be nested / re-entered" if synchronous_errors?
 
-      @synchronous_errors_mutex.synchronize do
-        @synchronous_errors = true
-        @synchronous_error_target = Thread.current
-      end
+      begin
+        @synchronous_errors_mutex.synchronize do
+          @synchronous_errors = true
+          @synchronous_error_target = Thread.current
+        end
 
-      raise_pending_error!
-      yield if block_given?
-    ensure
-      @synchronous_errors_mutex.synchronize do
-        @synchronous_errors = false
-        @synchronous_error_target = nil
+        raise_pending_error!
+        yield if block_given?
+      ensure
+        @synchronous_errors_mutex.synchronize do
+          @synchronous_errors = false
+          @synchronous_error_target = nil
+        end
       end
     end
 
