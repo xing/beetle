@@ -232,6 +232,9 @@ module Beetle
 
     def new_bunny
       options = connection_options_for_server(@server)
+
+      # The order of creating the error handler and the Bunny instance is important.
+      # The error handler has exist and it has to be assigned before we start the bunny connection.
       error_handler = PublisherSessionErrorHandler.new(logger, self, @server)
       @bunny_error_handlers[@server] = error_handler
 
@@ -268,8 +271,9 @@ module Beetle
       error_handler.synchronize_errors do
         b.start 
       end
-
-      b
+    rescue StandardError => e
+      @bunny_error_handlers[@server] = nil
+      raise e
     end
 
     def channel
@@ -352,6 +356,8 @@ module Beetle
           bunny.__send__ :close_connection, false
           reader_loop = bunny.__send__ :reader_loop
           reader_loop.kill if reader_loop
+
+          # FIXME: what about the heartbeat sender?
         else
           channel.close if channel?
           bunny.stop
@@ -362,6 +368,7 @@ module Beetle
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
+      @bunny_error_handlers[@server] = nil
       @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
