@@ -347,7 +347,7 @@ module Beetle
       queue.bind(exchange(exchange_name), binding_options.dup)
     end
 
-    def stop!(_exception=nil)
+    def stop!
       return unless bunny?
       stop_bunny_forcefully!
     rescue Exception => e
