@@ -70,17 +70,6 @@ module Beetle
       end
     end
 
-    def synchronize_bunny_errors!(&block)
-      error_handler = bunny_error_handler
-
-      if error_handler
-        error_handler.synchronize_errors(&block)
-      else
-        logger.error "Beetle: no session error handler for server #{@server} found. This should not happen."
-        block.call
-      end
-    end
-
     def publish_with_failover(exchange_name, message_name, data, opts) #:nodoc:
       tries = @servers.size * 2
       logger.debug "Beetle: sending #{message_name}"
