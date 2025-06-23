@@ -347,9 +347,9 @@ module Beetle
       queue.bind(exchange(exchange_name), binding_options.dup)
     end
 
-    def stop!
+    def stop!(exception = nil) #:nodoc:
       return unless bunny?
-      stop_bunny_forcefully!
+      stop_bunny_forcefully!(exception) 
     rescue Exception => e
       logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
       Beetle::reraise_expectation_errors!
@@ -367,8 +367,8 @@ module Beetle
       Beetle::Timer.timeout(timeout, &block)
     end
 
-    def stop_bunny_forcefully!
-      logger.debug "Beetle: closing connection from publisher to #{@server} forcefully"
+    def stop_bunny_forcefully!(exception = nil) 
+      logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
 
       # kill heartbeat sender if it exists
       begin
