@@ -23,7 +23,7 @@ services:
 
   toxiproxy:
     container_name: beetle-toxiproxy
-    image: shopify/toxiproxy
+    image: ghcr.io/shopify/toxiproxy:2.12.0
     ports:
       - "8474:8474"   # HTTP API
       - "5674:5674"   # rabbit1 

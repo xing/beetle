@@ -14,6 +14,11 @@ class PublisherIntegrationTest < Minitest::Test
     Toxiproxy[:rabbitmq2].enable
   end
 
+  def teardown
+    rabbit1.disable
+    rabbit2.disable
+  end
+
   def rabbit1
     Toxiproxy[:rabbitmq1]
   end
@@ -27,127 +32,238 @@ class PublisherIntegrationTest < Minitest::Test
     config.servers = servers
     client = Beetle::Client.new(config)
     client.register_message(:test_message)
+    client.register_message(:redundant_message, redundant: true)
     block.call(client)
   ensure
     client.send(:publisher)&.stop
   end
 
-  test "recreating bunnies does not leave threads behind" do
-    with_client("127.0.0.1:5674") do |client|
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-
-      # connected(1 heartbeat sender)
-      rabbit1.down do
-        sleep 0.5 # give bunny time to recognize the server is down
-      end
-
-      # bunny is now exception state, 1 hearbeat sender
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-
-      rabbit1.down do
-        sleep 0.5 # give bunny time to recognize the server is down
-      end
-
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-
-      bunny_threads = Thread.list.select { |t| t.inspect.include?("lib/bunny") }
-      assert 2, bunny_threads.size
-    end
-  end
-
-  test "connect, server goes down, publish failure (twice), server comes back up, publish succeeds" do
-    with_client("127.0.0.1:5674") do |client|
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-
-      rabbit1.down do
+  [:test_message, :redundant_message].each do |msg|
+    test "[#{msg}] recreating bunnies does not leave threads behind" do
+      with_client("127.0.0.1:5674") do |client|
         assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        # connected(1 heartbeat sender)
+        rabbit1.down do
+          sleep 0.5 # give bunny time to recognize the server is down
+        end
+
+        # bunny is now exception state, 1 hearbeat sender
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        rabbit1.down do
+          sleep 0.5 # give bunny time to recognize the server is down
+        end
+
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        bunny_threads = Thread.list.select { |t| t.inspect.include?("lib/bunny") }
+        assert 2, bunny_threads.size
+      end
+    end
+
+    test "[multiserver][#{msg}] recreating bunnies does not leave threads behind" do
+      with_client("127.0.0.1:5674, 127.0.0.1:5675") do |client|
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        # connected(1 heartbeat sender)
+        rabbit1.down do
+          rabbit2.down do
+            sleep 0.5 # give bunny time to recognize the server is down
+          end
+        end
+
+        # bunny is now exception state, 1 hearbeat sender
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        rabbit1.down do
+          rabbit2.down do
+            sleep 0.5 # give bunny time to recognize the server is down
+          end
+        end
+
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        bunny_threads = Thread.list.select { |t| t.inspect.include?("lib/bunny") }
+        assert 2, bunny_threads.size
+      end
+    end
+
+    test "[#{msg}] server down, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.down do
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[multiserver][#{msg}] server down, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.down do
+          rabbit2.down do
+            assert_raises(Beetle::NoMessageSent) do
+              client.publish(msg, "test data")
+            end
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[#{msg}] server resets, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.downstream(:reset_peer, timeout: 0).apply do
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[multiserver][#{msg}] server resets, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.downstream(:reset_peer, timeout: 0).apply do
+          rabbit2.downstream(:reset_peer, timeout: 0).apply do
+            assert_raises(Beetle::NoMessageSent) do
+              client.publish(msg, "test data")
+            end
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[#{msg}] server timeout, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.downstream(:timeout, timeout: 3).apply do
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[multiserver][#{msg}]  server timeout, publish fails" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.downstream(:timeout, timeout: 3).apply do
+          rabbit2.downstream(:timeout, timeout: 3).apply do
+            assert_raises(Beetle::NoMessageSent) do
+              client.publish(msg, "test data")
+            end
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+      end
+    end
+
+    test "[#{msg}] connect, server goes down, publish failure (twice), server comes back up, publish succeeds" do
+      with_client("127.0.0.1:5674") do |client|
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        rabbit1.down do
+          assert_nothing_raised do
+            sleep 1 # give bunny time to recognize the server is down
+          end
+
+          assert client.send(:publisher).exceptions?
+
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
+
+        refute client.send(:publisher).send(:bunny?) # no bunny active
+
+        # now we recover and we are fine again
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+      end
+    end
+
+    test "[#{msg}] connect, server goes down, background error is detected, server comes up, publish succeeds (with new bunny)" do
+      with_client("127.0.0.1:5674") do |client|
+        # connect and send
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
+        end
+
+        rabbit1.down do
           sleep 1 # give bunny time to recognize the server is down
         end
 
-        assert client.send(:publisher).exceptions?
+        assert client.send(:publisher).exceptions?, "Publisher should have detected the server down"
 
-        assert_raises(Beetle::NoMessageSent) do
-          client.publish(:test_message, "test data")
+        # server should be up again and we recover
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
         end
-
-        assert_raises(Beetle::NoMessageSent) do
-          client.publish(:test_message, "test data")
-        end
-      end
-
-      # now we recover and we are fine again
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
       end
     end
-  end
 
-  test "connect, server goes down, error is detected, server comes up, publish succeeds" do
-    with_client("127.0.0.1:5674") do |client|
-      # connect and send
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
+    test "[#{msg}] server down, publish fails, server comes up, publish succeeds" do
+      with_client("127.0.0.1:5674") do |client|
+        rabbit1.down do
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
 
-      rabbit1.down do
-        sleep 1 # give bunny time to recognize the server is down
-      end
-
-      assert client.send(:publisher).exceptions?, "Publisher should have detected the server down"
-
-      # server should be up again and we recover
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-    end
-  end
-
-  # TODO: add tests for multiple servers
-
-  test "server down, publish fails, server comes up, publish succeeds" do
-    with_client("127.0.0.1:5674") do |client|
-      rabbit1.down do
-        assert_raises(Beetle::NoMessageSent) do
-          client.publish(:test_message, "test data")
+        # server should be up again and we recover
+        assert_nothing_raised do
+          client.publish(msg, "test data")
         end
       end
-
-      # server should be up again and we recover
-      assert_nothing_raised do
-        client.publish(:test_message, "test data")
-      end
     end
-  end
 
-  # TODO: verify that reset (between 2 heartbeats) is leading to a publishing error
-  # connect, publish success, tcp reset on next publish, no hearbeat send yet, publish should fail
-
-  test "connect, timeout + empty response, publish succeeds again" do
-    with_client("127.0.0.1:5674") do |client|
-      # connect
-      assert_nothing_raised do
-        assert_equal 1, client.publish(:test_message, "test data")
-      end
-
-      refute client.send(:publisher).exceptions?
-      # now publish with failure
-      rabbit1.downstream(:timeout, timeout: 1).apply do
-        sleep 0.5
-        assert_raises(Beetle::NoMessageSent) do
-          client.publish(:test_message, "test data")
+    test "[#{msg}] connect, timeout + empty response, publish succeeds again" do
+      with_client("127.0.0.1:5674") do |client|
+        # connect
+        assert_nothing_raised do
+          assert_equal 1, client.publish(msg, "test data")
         end
-      end
 
-      assert_nothing_raised do
-        client.publish(:test_message, "test data")
+        refute client.send(:publisher).exceptions?
+        # now publish with failure
+        rabbit1.downstream(:timeout, timeout: 1).apply do
+          sleep 0.5
+          assert_raises(Beetle::NoMessageSent) do
+            client.publish(msg, "test data")
+          end
+        end
+
+        assert_nothing_raised do
+          client.publish(msg, "test data")
+        end
       end
     end
   end
