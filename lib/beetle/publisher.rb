@@ -19,7 +19,7 @@ module Beetle
 
     def exceptions?
       @bunny_error_handlers.any? do |_, error_handler|
-        error_handler.exceptions?
+        error_handler.exception?
       end
     end
 
@@ -61,6 +61,7 @@ module Beetle
         opts.delete(:queue)
         recycle_dead_servers unless @dead_servers.empty?
         throttle!
+
         if opts[:redundant]
           publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
         else
@@ -88,22 +89,21 @@ module Beetle
 
       begin
         select_next_server if tries.even?
+        stop_on_bunny_error!
 
-        synchronize_bunny_errors! do
-          bind_queues_for_exchange(exchange_name)
-          logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
+        bind_queues_for_exchange(exchange_name)
+        logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
-          current_exchange = exchange(exchange_name)
-          current_exchange.publish(data, opts.dup)
+        current_exchange = exchange(exchange_name)
+        current_exchange.publish(data, opts.dup)
 
-          if publisher_confirms? && !current_exchange.wait_for_confirms
-            logger.warn "Beetle: failed to confirm publishing message #{message_name}"
-            return published
-          end
-
-          logger.debug "Beetle: message sent!"
-          published = 1
+        if publisher_confirms? && !current_exchange.wait_for_confirms
+          logger.warn "Beetle: failed to confirm publishing message #{message_name}"
+          return published
         end
+
+        logger.debug "Beetle: message sent!"
+        published = 1
       rescue *bunny_exceptions => e
         log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
@@ -139,16 +139,16 @@ module Beetle
         break if published.size == 2 || @servers.empty? || published == @servers
         tries = 0
         select_next_server
+
         begin
           next if published.include? @server
+          stop_on_bunny_error! # stop the connection to this server if it's faulty
 
-          synchronize_bunny_errors! do
-            bind_queues_for_exchange(exchange_name)
-            logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
-            exchange(exchange_name).publish(data, opts.dup)
-            published << @server
-            logger.debug "Beetle: message sent (#{published})!"
-          end
+          bind_queues_for_exchange(exchange_name)
+          logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
+          exchange(exchange_name).publish(data, opts.dup)
+          published << @server
+          logger.debug "Beetle: message sent (#{published})!"
         rescue *bunny_exceptions => e
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
@@ -228,6 +228,16 @@ module Beetle
 
     def bunny_error_handler?
       !!bunny_error_handler
+    end
+
+    def bunny_error?
+      bunny_error_handler? && bunny_error_handler.exception?
+    end
+
+    def stop_on_bunny_error!
+      bunny_error_handler&.raise_pending_error! 
+    rescue StandardError => e
+      stop!(e)
     end
 
     def new_bunny
