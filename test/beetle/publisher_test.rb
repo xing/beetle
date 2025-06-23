@@ -100,45 +100,94 @@ module Beetle
       assert_equal({}, @pub.instance_variable_get("@dead_servers"))
     end
 
-    test "stop! should shut down bunny and clean internal data structures" do
+    test "stop_bunny_forcefully! closes the bunny socket and all threads" do
       b = mock("bunny")
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b)
-      @pub.send(:stop!)
-      assert_equal({}, @pub.send(:exchanges))
-      assert_equal({}, @pub.send(:queues))
-      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
-      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
-    end
+      reader_loop = mock("reader_loop")
 
-    test "stop!(exception) should close the bunny socket if an exception is not nil" do
-      b = mock("bunny")
-      l = mock("loop")
-      b.expects(:close_connection)
       b.expects(:maybe_shutdown_heartbeat_sender).returns(true)
-      b.expects(:reader_loop).returns(l)
-      l.expects(:kill)
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).times(3)
-      @pub.send(:stop!, Exception.new)
-      assert_equal({}, @pub.send(:exchanges))
-      assert_equal({}, @pub.send(:queues))
-      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
-      assert_nil @pub.instance_variable_get(:@bunny_error_handlers)[@pub.server]
-      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
+      b.expects(:reader_loop).returns(reader_loop)
+      reader_loop.expects(:kill)
+      b.expects(:close_connection, false)
+
+      @pub.expects(:bunny).returns(b).at_least_once
+
+      @pub.send(:stop_bunny_forcefully!, Exception.new)
     end
 
-    test "stop!(exception) with error on shutdown of hearbeat sender continues to close the rest" do
+    test "stop_bunny_forcefully! fails on shutdown of heartbeat sender, but continues to cleanup " do
       b = mock("bunny")
-      l = mock("loop")
-      b.expects(:close_connection)
-      b.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error on shutdown of heartbeat sender")
+      reader_loop = mock("reader_loop")
 
-      b.expects(:reader_loop).returns(l)
-      l.expects(:kill)
+      b.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error on shutdown of heartbeat sender")
+      b.expects(:reader_loop).returns(reader_loop)
+      reader_loop.expects(:kill)
+      b.expects(:close_connection, false)
+
+      @pub.expects(:bunny).returns(b).at_least_once
+
+      assert_raises(Beetle::PublisherShutdownError) do
+        @pub.send(:stop_bunny_forcefully!, Exception.new)
+      end
+    end
+
+    test "stop_bunny_forcefully! fails on shutdown of reader_loop, but continues to cleanup " do
+      b = mock("bunny")
+      reader_loop = mock("reader_loop")
+
+      b.expects(:maybe_shutdown_heartbeat_sender).returns(true)
+      b.expects(:reader_loop).returns(reader_loop)
+      reader_loop.expects(:kill).raises(RuntimeError, "error on shutdown of reader_loop")
+      b.expects(:close_connection, false)
+
+      @pub.expects(:bunny).returns(b).at_least_once
+
+      assert_raises(Beetle::PublisherShutdownError) do
+        @pub.send(:stop_bunny_forcefully!, Exception.new)
+      end
+    end
+
+    test "stop_bunny_forcefully! fails on close connection" do
+      b = mock("bunny")
+      reader_loop = mock("reader_loop")
+
+      b.expects(:maybe_shutdown_heartbeat_sender).returns(true)
+      b.expects(:reader_loop).returns(reader_loop)
+      reader_loop.expects(:kill)
+      b.expects(:close_connection, false).raises(Timeout::Error, "error on close connection")
+
+      @pub.expects(:bunny).returns(b).at_least_once
+
+      assert_raises(Beetle::PublisherShutdownError) do
+        @pub.send(:stop_bunny_forcefully!, Exception.new)
+      end
+    end
+
+    test "stop_bunny_forcefully! raises partial shutdown error with collected errors" do
+      b = mock("bunny")
+      reader_loop = mock("reader_loop")
+
+      b.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error on shutdown of heartbeat sender")
+      b.expects(:reader_loop).returns(reader_loop)
+      reader_loop.expects(:kill)
+      b.expects(:close_connection, false).raises(Timeout::Error, "error on close connection")
+
+      @pub.expects(:bunny).returns(b).at_least_once
+
+      begin
+        @pub.send(:stop_bunny_forcefully!, Exception.new)
+        assert false, "Expected PublisherShutdownError to be raised"
+      rescue Beetle::PublisherShutdownError => e
+        assert_equal 2, e.errors.size
+        assert_equal RuntimeError, e.errors.first.class
+        assert_equal Timeout::Error, e.errors.last.class
+        assert_match(/Publisher failed to shutdown bunny for server localhost:5672/, e.message)
+      end
+    end
+
+    test "stop! should shut down bunny and clean internal data structures" do
       @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).times(3)
-      @pub.send(:stop!, Exception.new)
+      @pub.expects(:stop_bunny_forcefully!).with(nil).returns(true)
+      @pub.send(:stop!)
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
@@ -155,7 +204,6 @@ module Beetle
       assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
       assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
     end
-
   end
 
   class PublisherPublishingTest < Minitest::Test

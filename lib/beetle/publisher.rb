@@ -374,10 +374,13 @@ module Beetle
     def stop_bunny_forcefully!(exception = nil) 
       logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
 
+      partial_failures = []
+
       # kill heartbeat sender if it exists
       begin
         bunny.__send__ :maybe_shutdown_heartbeat_sender 
       rescue StandardError => e
+        partial_failures << e
         logger.warn "Beetle: error shutting down heartbeat sender: #{e}"
       end
 
@@ -386,15 +389,23 @@ module Beetle
         reader_loop = bunny.__send__ :reader_loop
         reader_loop.kill if reader_loop
       rescue StandardError => e
+        partial_failures << e
         logger.warn "Beetle: error shutting down reader loop: #{e}"
       end
 
       # now close the connection
       # it's fine that we don't have a reader loop here anymore, since we don't expect
       # an answer from the server
-      with_publishing_timeout do
-        bunny.__send__ :close_connection, false
+      begin
+        with_publishing_timeout do
+          bunny.__send__ :close_connection, false
+        end
+      rescue StandardError => e
+        partial_failures << e
       end
+
+      return if partial_failures.empty?
+      raise PublisherShutdownError.new(@server, partial_failures) 
     end
 
     def refresh_throttling!
