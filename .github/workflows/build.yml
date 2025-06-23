@@ -49,13 +49,10 @@ jobs:
       - name: Install gems and run beetle gem tests
         run: bundle install && bundle exec rake test
         env:
-          #BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}_rails_${{ matrix.rails-version }}.gemfile
           MINITEST_REPORTER: SpecReporter
 
       - name: Run beetle failover tests
         run: bundle exec cucumber --fail-fast || (tail -n 100 tmp/*.{log,output}; false)
-        #env:
-          #BUNDLE_GEMFILE: gemfiles/redis_${{ matrix.redis-version }}_rails_${{ matrix.rails-version }}.gemfile
 
       - name: Collect Docker Logs
         uses: jwalton/gh-docker-logs@v2.2.0
