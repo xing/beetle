@@ -36,7 +36,7 @@ module Beetle
     def initialize(server, errors = [])
       @errors = errors
       @server = server
-      super("Publisher failed to shutdown bunny for server #{@server}: #{errors.join(', ')}")
+      super("Publisher failed to shutdown bunny for server #{server}: #{errors.join(', ')}")
     end
   end
 
