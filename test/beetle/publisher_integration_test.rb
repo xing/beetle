@@ -22,11 +22,16 @@ class PublisherIntegrationTest < Minitest::Test
     Toxiproxy[:rabbitmq2]
   end
 
-  test "connect, server goes down, publish failure (twice), server comes back up, publish succeeds" do
+  def create_client(servers)
     config = Beetle.config.clone
-    config.servers = "127.0.0.1:5674"
+    config.servers = servers
     client = Beetle::Client.new(config)
     client.register_message(:test_message)
+    client
+  end
+
+  test "connect, server goes down, publish failure (twice), server comes back up, publish succeeds" do
+    client = create_client("127.0.0.1:5674")
 
     assert_nothing_raised do
       assert_equal 1, client.publish(:test_message, "test data")
@@ -54,16 +59,33 @@ class PublisherIntegrationTest < Minitest::Test
     end
   end
 
+  test "connect, server goes down, error is detected, server comes up, publish succeeds" do
+    client = create_client("127.0.0.1:5674")
+
+    # connect and send
+    assert_nothing_raised do
+      assert_equal 1, client.publish(:test_message, "test data")
+    end
+
+    rabbit1.down do
+      sleep 1 # give bunny time to recognize the server is down
+    end
+
+    assert client.send(:publisher).exceptions?, "Publisher should have detected the server down"
+
+    # server should be up again and we recover
+    assert_nothing_raised do
+      assert_equal 1, client.publish(:test_message, "test data")
+    end
+  end
+
   # TODO: add tests for multiple servers
   # TODO: add more tests for scenarios:
   # * server down immediatly, fails, server comes up, succeeds
   # *
 
   test "connect, timeout + empty response, publish succeeds again" do
-    config = Beetle.config.clone
-    config.servers = "127.0.0.1:5674"
-    client = Beetle::Client.new(config)
-    client.register_message(:test_message)
+    client = create_client("127.0.0.1:5674")
 
     # connect
     assert_nothing_raised do
