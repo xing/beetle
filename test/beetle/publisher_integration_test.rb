@@ -30,10 +30,12 @@ class PublisherIntegrationTest < Minitest::Test
   def with_client(servers, &block)
     config = Beetle.config.clone
     config.servers = servers
+    logbuffer = StringIO.new
+    config.logger = Logger.new(logbuffer)
     client = Beetle::Client.new(config)
     client.register_message(:test_message)
     client.register_message(:redundant_message, redundant: true)
-    block.call(client)
+    block.call(client, logbuffer)
   ensure
     client.send(:publisher)&.stop
   end
@@ -102,7 +104,7 @@ class PublisherIntegrationTest < Minitest::Test
     end
 
     test "[#{msg}] server down, publish fails" do
-      with_client("127.0.0.1:5674") do |client|
+      with_client("127.0.0.1:5674") do |client, logs|
         rabbit1.down do
           assert_raises(Beetle::NoMessageSent) do
             client.publish(msg, "test data")
@@ -110,6 +112,7 @@ class PublisherIntegrationTest < Minitest::Test
         end
 
         refute client.send(:publisher).send(:bunny?) # no bunny active
+        assert_match(/Connection reset by peer/, logs.string)
       end
     end
 
@@ -180,7 +183,7 @@ class PublisherIntegrationTest < Minitest::Test
     end
 
     test "[#{msg}] connect, server goes down, publish failure (twice), server comes back up, publish succeeds" do
-      with_client("127.0.0.1:5674") do |client|
+      with_client("127.0.0.1:5674") do |client, logs|
         assert_nothing_raised do
           assert_equal 1, client.publish(msg, "test data")
         end
@@ -200,6 +203,10 @@ class PublisherIntegrationTest < Minitest::Test
             client.publish(msg, "test data")
           end
         end
+
+        assert_match(/Beetle: message sent!/, logs.string)
+        assert_match(/Beetle: closing connection from publisher to 127.0.0.1:5674 forcefully/, logs.string)
+        assert_match(/Beetle: message could not be delivered/, logs.string)
 
         refute client.send(:publisher).send(:bunny?) # no bunny active
 
