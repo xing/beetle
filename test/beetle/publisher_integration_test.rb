@@ -80,9 +80,21 @@ class PublisherIntegrationTest < Minitest::Test
   end
 
   # TODO: add tests for multiple servers
-  # TODO: add more tests for scenarios:
-  # * server down immediatly, fails, server comes up, succeeds
-  # *
+
+  test "server down, publish fails, server comes up, publish succeeds" do
+    client = create_client("127.0.0.1:5674")
+
+    rabbit1.down do
+      assert_raises(Beetle::NoMessageSent) do
+        client.publish(:test_message, "test data")
+      end
+    end
+
+    # server should be up again and we recover
+    assert_nothing_raised do
+      client.publish(:test_message, "test data")
+    end
+  end
 
   test "connect, timeout + empty response, publish succeeds again" do
     client = create_client("127.0.0.1:5674")
