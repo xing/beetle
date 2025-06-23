@@ -37,7 +37,7 @@ module Beetle
       end
     end
 
-    def raise_pending_error!
+    def raise_pending_exception!
       error = clear_exception!
       Kernel.raise(*error) if error
     end

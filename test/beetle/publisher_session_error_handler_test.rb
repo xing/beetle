@@ -21,7 +21,7 @@ module Beetle
       assert @handler.exception?, "Handler should have recorded an exception"
 
       assert_raises(BackgroundError) do
-        @handler.raise_pending_error!
+        @handler.raise_pending_exception!
       end
 
       refute background.alive?, "Background thread should be terminated after raising an error"
@@ -65,23 +65,23 @@ module Beetle
       assert_match(/Beetle: bunny session handler error. server=test-server/, @logger_output.string)
     end
 
-    test "#raise_pending_error! raises the recorded error" do
+    test "#raise_pending_exception! raises the recorded error" do
       @handler.raise(ForegroundError.new("Foreground error"))
       assert_raises(ForegroundError) do
-        @handler.raise_pending_error!
+        @handler.raise_pending_exception!
       end
     end
 
-    test "#raise_pending_error! does not raise if no error was recorded" do
+    test "#raise_pending_exception! does not raise if no error was recorded" do
       assert_nothing_raised do
-        @handler.raise_pending_error!
+        @handler.raise_pending_exception!
       end
     end
 
-    test "#raise_pending_error! clears the recorded error" do
+    test "#raise_pending_exception! clears the recorded error" do
       @handler.raise(ForegroundError.new("Foreground error"))
       assert_raises(ForegroundError) do
-        @handler.raise_pending_error!
+        @handler.raise_pending_exception!
       end
 
       refute @handler.exception?, "Handler should not have any recorded exceptions after raising"

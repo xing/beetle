@@ -224,7 +224,7 @@ module Beetle
     end
 
     def stop_on_bunny_error!
-      bunny_error_handler&.raise_pending_error! 
+      bunny_error_handler&.raise_pending_exception! 
     rescue StandardError => e
       stop!(e)
     end
