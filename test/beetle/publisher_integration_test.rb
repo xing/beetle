@@ -112,7 +112,7 @@ class PublisherIntegrationTest < Minitest::Test
         end
 
         refute client.send(:publisher).send(:bunny?) # no bunny active
-        assert_match(/Connection reset by peer/, logs.string)
+        assert_match(/Beetle: publishing exception/, logs.string)
       end
     end
 
