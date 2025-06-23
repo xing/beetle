@@ -102,7 +102,6 @@ module Beetle
 
     test "stop! should shut down bunny and clean internal data structures" do
       b = mock("bunny")
-      b.expects(:stop).raises(Exception.new)
       @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b)
       @pub.send(:stop!)
@@ -117,6 +116,24 @@ module Beetle
       l = mock("loop")
       b.expects(:close_connection)
       b.expects(:maybe_shutdown_heartbeat_sender).returns(true)
+      b.expects(:reader_loop).returns(l)
+      l.expects(:kill)
+      @pub.expects(:bunny?).returns(true)
+      @pub.expects(:bunny).returns(b).times(3)
+      @pub.send(:stop!, Exception.new)
+      assert_equal({}, @pub.send(:exchanges))
+      assert_equal({}, @pub.send(:queues))
+      assert_nil @pub.instance_variable_get(:@bunnies)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@bunny_error_handlers)[@pub.server]
+      assert_nil @pub.instance_variable_get(:@channels)[@pub.server]
+    end
+
+    test "stop!(exception) with error on shutdown of hearbeat sender continues to close the rest" do
+      b = mock("bunny")
+      l = mock("loop")
+      b.expects(:close_connection)
+      b.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error on shutdown of heartbeat sender")
+
       b.expects(:reader_loop).returns(l)
       l.expects(:kill)
       @pub.expects(:bunny?).returns(true)
@@ -643,16 +660,15 @@ module Beetle
     test "stop should shut down all bunnies" do
       @pub.servers = ["localhost:1111", "localhost:2222"]
       s = sequence("shutdown")
-      bunny1 = mock("bunny1")
-      bunny2 = mock("bunny2")
+
       @pub.expects(:set_current_server).with("localhost:1111").in_sequence(s)
       @pub.expects(:bunny?).returns(true).in_sequence(s)
-      @pub.expects(:bunny).returns(bunny1).in_sequence(s)
-      bunny1.expects(:stop).in_sequence(s)
+      @pub.expects(:stop_bunny_forcefully!).in_sequence(s)
+
       @pub.expects(:set_current_server).with("localhost:2222").in_sequence(s)
       @pub.expects(:bunny?).returns(true).in_sequence(s)
-      @pub.expects(:bunny).returns(bunny2).in_sequence(s)
-      bunny2.expects(:stop).in_sequence(s)
+      @pub.expects(:stop_bunny_forcefully!).in_sequence(s)
+
       @pub.stop
     end
   end

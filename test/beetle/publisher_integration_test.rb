@@ -127,6 +127,9 @@ class PublisherIntegrationTest < Minitest::Test
     end
   end
 
+  # TODO: verify that reset (between 2 heartbeats) is leading to a publishing error
+  # connect, publish success, tcp reset on next publish, no hearbeat send yet, publish should fail
+
   test "connect, timeout + empty response, publish succeeds again" do
     with_client("127.0.0.1:5674") do |client|
       # connect

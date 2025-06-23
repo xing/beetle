@@ -349,7 +349,6 @@ module Beetle
 
     def stop!(_exception=nil)
       return unless bunny?
-
       stop_bunny_forcefully!
     rescue Exception => e
       logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
@@ -369,7 +368,7 @@ module Beetle
     end
 
     def stop_bunny_forcefully!
-      logger.debug "Beetle: closing connection from publisher to #{server} forcefully"
+      logger.debug "Beetle: closing connection from publisher to #{@server} forcefully"
 
       # kill heartbeat sender if it exists
       begin
