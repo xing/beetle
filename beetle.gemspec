@@ -32,7 +32,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "activesupport",           ">= 2.3.4"
 
   s.add_development_dependency "activerecord",        ">= 6.1"
-  s.add_development_dependency "cucumber",            "~> 8.0.0"
+  s.add_development_dependency "cucumber",            "~> 10.0.0"
   s.add_development_dependency "daemon_controller",   "~> 1.2.0"
   s.add_development_dependency "daemons",             ">= 1.2.0"
   s.add_development_dependency "i18n"
