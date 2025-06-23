@@ -19,7 +19,7 @@ module Beetle
 
     def exceptions?
       @bunny_error_handlers.any? do |_, error_handler|
-        error_handler.exception?
+        error_handler&.exception?
       end
     end
 
@@ -234,7 +234,7 @@ module Beetle
 
       # The order of creating the error handler and the Bunny instance is important.
       # The error handler has exist and it has to be assigned before we start the bunny connection.
-      error_handler = PublisherSessionErrorHandler.new(logger, @server)
+      error_handler = PublisherSessionErrorHandler.new(logger, @server) 
       @bunny_error_handlers[@server] = error_handler
 
       b = Bunny.new(
@@ -347,16 +347,12 @@ module Beetle
       queue.bind(exchange(exchange_name), binding_options.dup)
     end
 
-    def stop!(exception=nil)
+    def stop!(_exception=nil)
       return unless bunny?
 
-      if exception
-        stop_bunny_forcefully!
-      else
-        stop_bunny_gracefully!
-      end
+      stop_bunny_forcefully!
     rescue Exception => e
-      logger.warn "Beetle: error closing down bunny: #{e}"
+      logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
@@ -372,25 +368,27 @@ module Beetle
       Beetle::Timer.timeout(timeout, &block)
     end
 
-    def stop_bunny_gracefully!
-      with_publishing_timeout do
-        logger.debug "Beetle: closing connection from publisher to #{server} gracefully"
-        channel.close if channel?
-        bunny.stop
-      end
-    end
-
     def stop_bunny_forcefully!
       logger.debug "Beetle: closing connection from publisher to #{server} forcefully"
 
       # kill heartbeat sender if it exists
-      bunny.__send__ :maybe_shutdown_heartbeat_sender rescue nil
+      begin
+        bunny.__send__ :maybe_shutdown_heartbeat_sender 
+      rescue StandardError => e
+        logger.warn "Beetle: error shutting down heartbeat sender: #{e}"
+      end
 
       # kill reader loop if it exists
-      reader_loop = bunny.__send__ :reader_loop
-      reader_loop.kill if reader_loop
+      begin
+        reader_loop = bunny.__send__ :reader_loop
+        reader_loop.kill if reader_loop
+      rescue StandardError => e
+        logger.warn "Beetle: error shutting down reader loop: #{e}"
+      end
 
       # now close the connection
+      # it's fine that we don't have a reader loop here anymore, since we don't expect
+      # an answer from the server
       with_publishing_timeout do
         bunny.__send__ :close_connection, false
       end
