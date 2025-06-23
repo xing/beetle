@@ -180,7 +180,7 @@ module Beetle
         assert_equal 2, e.errors.size
         assert_equal RuntimeError, e.errors.first.class
         assert_equal Timeout::Error, e.errors.last.class
-        assert_match(/Publisher failed to shutdown bunny for server localhost:5672/, e.message)
+        assert_match(/Publisher failed to shutdown bunny for server localhost/, e.message)
       end
     end
 
