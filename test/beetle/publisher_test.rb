@@ -298,7 +298,7 @@ module Beetle
       @pub.expects(:exchange).with("mama-exchange").returns(e).in_sequence(redundant)
       e.expects(:publish).raises(Bunny::ConnectionError, '').in_sequence(redundant)
 
-      assert_raises Beetle::NoMessageSent do
+      assert_raises(Beetle::NoMessageSent) do
         @pub.publish_with_redundancy("mama-exchange", "mama", @data, @opts)
       end
     end

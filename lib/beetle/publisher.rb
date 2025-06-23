@@ -402,6 +402,7 @@ module Beetle
         end
       rescue StandardError => e
         partial_failures << e
+        logger.warn "Beetle: error closing connection to server: #{e}"
       end
 
       return if partial_failures.empty?
