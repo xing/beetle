@@ -79,6 +79,7 @@ module Beetle
       handler = Handler.create(Foobar)
       
       assert_equal Beetle.config.logger, handler.logger
+      assert_equal Beetle.config.logger, Handler.logger
     end
 
     test "default implementation of error and process and failure and completed should not crash" do

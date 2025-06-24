@@ -111,5 +111,10 @@ module Beetle
       logger.flush if logger.respond_to?(:flush)
     end
 
+     # returns the configured Beetle logger
+    def self.logger
+      Beetle.config.logger
+    end
+
   end
 end
