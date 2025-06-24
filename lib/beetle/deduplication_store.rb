@@ -19,7 +19,7 @@ module Beetle
     end
 
     def logger
-       @logger ||= (config.logger || Beetle.config.logger)
+       @logger ||= (@config.logger || Beetle.config.logger)
     end
 
     def ping

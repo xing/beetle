@@ -15,11 +15,11 @@ module Beetle
       @queues = {}
     end
 
-    private
-
     def logger 
       @client.logger
     end
+
+    private
 
     def error(text)
       logger.error text
