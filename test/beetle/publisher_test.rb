@@ -155,7 +155,7 @@ module Beetle
       Bunny
         .expects(:new)
         .with do |actual|
-          actual[:session_error_handler].is_a?(Beetler::PublisherSessionErrorHandler)
+          actual[:session_error_handler].is_a?(Beetle::PublisherSessionErrorHandler)
         end
         .returns(bunny_mock)
 
