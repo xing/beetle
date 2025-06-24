@@ -2,12 +2,14 @@
 
 ## Version 6.0.0 (rc)
 
-* Use saner session error handler for bunny that raises exceptions when we are ready to handle them
-* Fix bug in logger that would prevent per client logger from being used and use global Beetle.config.logger instead
-* Disable bunnny's auto-recovery in publishers (the configuration option has been removed as well)
+* [BREAKING] Replace publishing_timeout with publisher_read_timeout, publisher_write_timeout and publisher_read_response_timeout 
+* [BREAKING] Use saner session error handler for bunny that raises exceptions when we are ready to handle them
+* [BUGFIX] Fix bug that would prevent per client logger from being used and use global Beetle.config.logger instead
+* [BREAKING] Disable bunnny's auto-recovery in publishers (the configuration option has been removed as well)
 * Publisher exposes information of whether the queues for a certain exchange have been bound 
 * Add more logging on publishing exceptions
-* Drop support of thread local channels as a source of memory leaks
+* [BREAKING] Drop support of thread local channels as a source of memory leaks
+* Introduce setting to configure lazy_queue setup during publishing
 
 ## Version 5.1.2.pre
 
