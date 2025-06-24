@@ -92,6 +92,79 @@ module Beetle
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
+    test "new bunnies should be created with timeouts configured" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+
+      config.publisher_connect_timeout = 30
+      config.publisher_read_timeout = 15
+      config.publisher_read_response_timeout = 10
+      config.publisher_write_timeout = 20
+
+      client = Client.new(config)
+      pub = Publisher.new(client)
+
+      bunny_mock = mock("dummy_bunny")
+      expected_bunny_options = {
+        connection_timeout: 30,
+        write_timeout: 20,
+        read_timeout: 15,
+        continuation_timeout: 10_000
+      }
+
+      Bunny
+        .expects(:new)
+        .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
+        .returns(bunny_mock)
+
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
+    end
+
+    test "new bunnies with hearbeat configuration" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+
+      config.publisher_heartbeat = 10
+
+      client = Client.new(config)
+      pub = Publisher.new(client)
+
+      bunny_mock = mock("dummy_bunny")
+      expected_bunny_options = {
+        heartbeat: 10
+      }
+
+      Bunny
+        .expects(:new)
+        .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
+        .returns(bunny_mock)
+
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
+    end
+
+    test "new bunnies with custom session error handler" do
+      config = Configuration.new
+      config.servers = 'localhost:5672'
+      client = Client.new(config)
+      pub = Publisher.new(client)
+
+      bunny_mock = mock("dummy_bunny")
+
+      Bunny
+        .expects(:new)
+        .with do |actual|
+          actual[:session_error_handler].is_a?(Beetle::PublisherSessionErrorHandler)
+        end
+        .returns(bunny_mock)
+
+      bunny_mock.expects(:start)
+      assert_equal bunny_mock, pub.send(:new_bunny)
+    end
+
+
+
     test "initially there should be no bunnies" do
       assert_equal({}, @pub.instance_variable_get("@bunnies"))
     end

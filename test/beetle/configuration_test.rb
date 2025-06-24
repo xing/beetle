@@ -1,6 +1,75 @@
 require File.expand_path(File.dirname(__FILE__) + '/../test_helper')
 
 module Beetle
+  class ConfigurationDefaultValues < Minitest::Test
+    def setup
+      @config = Configuration.new
+    end
+
+    test "publisher_heartbeat => :server" do
+      assert_equal :server, @config.publisher_heartbeat
+    end
+
+    test "publisher_heartbeat can be changed" do
+      @config.publisher_heartbeat = 10
+      assert_equal 10, @config.publisher_heartbeat
+    end
+
+    test "publisher_connect_timeout => 5" do
+      assert_equal 5, @config.publisher_connect_timeout
+    end
+
+    test "publisher_connect_timeout can be changed" do
+      @config.publisher_connect_timeout = 10
+      assert_equal 10, @config.publisher_connect_timeout
+    end
+
+    test "publisher_read_timeout => 5" do
+      assert_equal 5, @config.publisher_read_timeout
+    end
+
+    test "publisher_read_timeout can be changed" do
+      @config.publisher_read_timeout = 10
+      assert_equal 10, @config.publisher_read_timeout
+    end
+
+    test "publisher_write_timeout => 5" do
+      assert_equal 5, @config.publisher_write_timeout
+    end
+
+    test "publisher_write_timeout can be changed" do
+      @config.publisher_write_timeout = 10
+      assert_equal 10, @config.publisher_write_timeout
+    end
+
+    test "publisher_read_response_timeout => 5" do
+      assert_equal 5, @config.publisher_read_response_timeout
+    end
+
+    test "publisher_read_response_timeout can be changed" do
+      @config.publisher_read_response_timeout = 10
+      assert_equal 10, @config.publisher_read_response_timeout
+    end
+
+    test "publisher_confirms => false" do
+      refute @config.publisher_confirms
+    end
+
+    test "publisher_confirms can be changed" do
+      @config.publisher_confirms = true
+      assert @config.publisher_confirms
+    end
+
+    test "publisher_lazy_queue_setup => true" do
+      assert @config.publisher_lazy_queue_setup
+    end
+
+    test "publisher_lazy_queue_setup can be changed" do
+      @config.publisher_lazy_queue_setup = false
+      refute @config.publisher_lazy_queue_setup
+    end
+  end
+
   class ConfigurationTest < Minitest::Test
     test "should load it's settings from a config file if that file exists" do
       config    = Configuration.new
