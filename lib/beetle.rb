@@ -29,6 +29,27 @@ module Beetle
   class NoRedisMaster < Error; end
   # raised when no message could be sent by the publisher
   class NoMessageSent < Error; end
+
+  class PublisherConnectError < Error
+    attr_reader :server, :cause
+
+    def initialize(server, cause = nil)
+      @server = server
+      @cause = cause
+      super("Publisher failed to connect to server #{server}#{": #{cause.message}" if cause}")
+    end
+  end
+
+  class PublisherShutdownError < Error
+    attr_reader :errors, :server
+
+    def initialize(server, errors = [])
+      @errors = errors
+      @server = server
+      super("Publisher failed to shutdown bunny for server #{server}: #{errors.join(', ')}")
+    end
+  end
+
   # logged when an RPC call timed outdated
   class RPCTimedOut < Error; end
 

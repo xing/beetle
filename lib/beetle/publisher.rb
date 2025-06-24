@@ -1,5 +1,6 @@
+require_relative './publisher_session_error_handler'
+
 module Beetle
-  # Provides the publishing logic implementation.
   class Publisher < Base
     attr_reader :dead_servers
 
@@ -8,11 +9,18 @@ module Beetle
       @exchanges_with_bound_queues = {}
       @dead_servers = {}
       @bunnies = {}
+      @bunny_error_handlers = {}
       @channels = {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
       at_exit { stop }
+    end
+
+    def exceptions?
+      @bunny_error_handlers.any? do |_, error_handler|
+        error_handler&.exception?
+      end
     end
 
     def queues_for_exchange_declared?(exchange_name)
@@ -31,13 +39,6 @@ module Beetle
       @throttled ? 'throttled' : 'unthrottled'
     end
 
-    # List of exceptions potentially raised by bunny.
-    def bunny_exceptions
-      [
-        Bunny::Exception, Errno::EHOSTUNREACH, Errno::ECONNRESET, Errno::ETIMEDOUT, Timeout::Error
-      ]
-    end
-
     def publisher_confirms?
       @client.config.publisher_confirms
     end
@@ -49,6 +50,7 @@ module Beetle
         opts.delete(:queue)
         recycle_dead_servers unless @dead_servers.empty?
         throttle!
+
         if opts[:redundant]
           publish_with_redundancy(exchange_name, message_name, data.to_s, opts)
         else
@@ -65,6 +67,8 @@ module Beetle
 
       begin
         select_next_server if tries.even?
+        stop_on_bunny_error!
+
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
@@ -78,7 +82,7 @@ module Beetle
 
         logger.debug "Beetle: message sent!"
         published = 1
-      rescue *bunny_exceptions => e
+      rescue *recoverable_exceptions => e
         log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
         tries -= 1
@@ -113,14 +117,17 @@ module Beetle
         break if published.size == 2 || @servers.empty? || published == @servers
         tries = 0
         select_next_server
+
         begin
           next if published.include? @server
+          stop_on_bunny_error! # stop the connection to this server if it's faulty
+
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
-        rescue *bunny_exceptions => e
+        rescue *recoverable_exceptions => e
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
           if (tries += 1) == 1
@@ -185,6 +192,18 @@ module Beetle
 
     private
 
+    def recoverable_exceptions
+      @recoverable_exceptions ||= [
+        AMQ::Protocol::Error,
+        Bunny::Exception, 
+        Errno::EHOSTUNREACH, 
+        Errno::ECONNRESET, 
+        Errno::ETIMEDOUT, 
+        Timeout::Error,
+        Beetle::PublisherConnectError
+      ]
+    end
+
     def bunny
       @bunnies[@server] ||= new_bunny
     end
@@ -193,8 +212,31 @@ module Beetle
       !!@bunnies[@server]
     end
 
+    def bunny_error_handler
+      @bunny_error_handlers[@server]
+    end
+
+    def bunny_error_handler?
+      !!bunny_error_handler
+    end
+
+    def bunny_error?
+      bunny_error_handler? && bunny_error_handler.exception?
+    end
+
+    def stop_on_bunny_error!
+      bunny_error_handler&.raise_pending_exception! 
+    rescue StandardError => e
+      stop!(e)
+    end
+
     def new_bunny
       options = connection_options_for_server(@server)
+
+      # The order of creating the error handler and the Bunny instance is important.
+      # The error handler has exist and it has to be assigned before we start the bunny connection.
+      error_handler = PublisherSessionErrorHandler.new(logger, @server) 
+      @bunny_error_handlers[@server] = error_handler
 
       b = Bunny.new(
         :host                  => options[:host],
@@ -213,13 +255,27 @@ module Beetle
         :heartbeat             => @client.config.heartbeat,
 
         # make sure auto recovery is actually deactived
-        :automatically_recover => false, # normal network errors are not recovered
-        :recover_from_connection_close => false, # force close from server are not recovered 
-        :network_recovery_interval => 0, # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
-        :recovery_attempts => 0 # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        # normal network errors are not recovered
+        :automatically_recover => false, 
+        # force close from server are not recovered 
+        :recover_from_connection_close => false, 
+        # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :network_recovery_interval => 0,
+        # bunny is buggy and still has code paths that use this even when recovery is disabled, so we set it to 0
+        :recovery_attempts => 0,
+        # register our own error handler, because the default is Thread.current which is a super bad idea
+        # because it will raise exceptions originating in background threads (reader_loop, heartbeat_sender) in the main thread
+        :session_error_handler => error_handler
       )
-      b.start
+
+      b.start 
       b
+
+    # bunny.start may raise NoMethodError if the transport isn't functioning
+    # so we translate all errors here to a more meaningful error
+    rescue StandardError => e
+      @bunny_error_handlers[@server] = nil
+      raise Beetle::PublisherConnectError.new(@server, e)
     end
 
     def channel
@@ -233,7 +289,7 @@ module Beetle
     end
 
     def log_publishing_exception(exception:, tries:, server:, message_name:, exchange_name:)
-      logger.warn("Beetle: publishing exception server=#{@server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
+      logger.warn("Beetle: publishing exception server=#{server} tries=#{tries} message_name=#{message_name} exchange_name=#{exchange_name} exception=#{exception} backtrace=#{exception.backtrace[0..16].join("\n")}")
     end
 
     # retry dead servers after ignoring them for 10.seconds
@@ -293,28 +349,54 @@ module Beetle
       queue.bind(exchange(exchange_name), binding_options.dup)
     end
 
-    def stop!(exception=nil)
+    def stop!(exception = nil) #:nodoc:
       return unless bunny?
-      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
-      Beetle::Timer.timeout(timeout) do
-        logger.debug "Beetle: closing connection from publisher to #{server}"
-        if exception
-          bunny.__send__ :close_connection, false
-          reader_loop = bunny.__send__ :reader_loop
-          reader_loop.kill if reader_loop
-        else
-          channel.close if channel?
-          bunny.stop
-        end
-      end
+      stop_bunny_forcefully!(exception) 
     rescue Exception => e
-      logger.warn "Beetle: error closing down bunny: #{e}"
+      logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
       Beetle::reraise_expectation_errors!
     ensure
       @bunnies[@server] = nil
+      @bunny_error_handlers[@server] = nil
       @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
+    end
+
+    def stop_bunny_forcefully!(exception = nil) 
+      logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
+
+      partial_failures = []
+
+      # kill heartbeat sender if it exists
+      begin
+        bunny.__send__ :maybe_shutdown_heartbeat_sender 
+      rescue StandardError => e
+        partial_failures << e
+        logger.warn "Beetle: error shutting down heartbeat sender: #{e}"
+      end
+
+      # kill reader loop if it exists
+      begin
+        reader_loop = bunny.__send__ :reader_loop
+        reader_loop.kill if reader_loop
+      rescue StandardError => e
+        partial_failures << e
+        logger.warn "Beetle: error shutting down reader loop: #{e}"
+      end
+
+      # now close the connection
+      # it's fine that we don't have a reader loop here anymore, since we don't expect
+      # an answer from the server
+      begin
+        bunny.__send__ :close_connection, false
+      rescue StandardError => e
+        partial_failures << e
+        logger.warn "Beetle: error closing connection to server: #{e}"
+      end
+
+      return if partial_failures.empty?
+      raise PublisherShutdownError.new(@server, partial_failures) 
     end
 
     def refresh_throttling!
