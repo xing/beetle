@@ -17,10 +17,6 @@ module Beetle
       at_exit { stop }
     end
 
-    def logger
-      @client.config.logger || Beetle.config.logger
-    end
-
     def exceptions?
       @bunny_error_handlers.any? do |_, error_handler|
         error_handler&.exception?
