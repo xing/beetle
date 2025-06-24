@@ -7,7 +7,6 @@ module Beetle
   # should retry executing the message handler after a handler has crashed (or forcefully
   # aborted).
   class Message
-    include Logging
 
     # current message format version
     FORMAT_VERSION = 1
@@ -296,6 +295,10 @@ module Beetle
     end
 
     private
+
+    def logger
+       @logger ||= Beetle.config.logger
+    end
 
     def process_internal(handler)
       if @exception

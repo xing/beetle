@@ -11,12 +11,15 @@ module Beetle
   #
   # It also provides a method to garbage collect keys for expired messages.
   class DeduplicationStore
-    include Logging
 
     def initialize(config = Beetle.config)
       @config = config
       @current_master = nil
       @last_time_master_file_changed = nil
+    end
+
+    def logger
+       @logger ||= (config.logger || Beetle.config.logger)
     end
 
     def ping

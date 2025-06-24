@@ -3,7 +3,6 @@ require 'json'
 module Beetle
   # Abstract base class shared by Publisher and Subscriber
   class Base
-    include Logging
 
     attr_accessor :options, :servers, :server  #:nodoc:
 
@@ -17,6 +16,10 @@ module Beetle
     end
 
     private
+
+    def logger 
+      @client.logger
+    end
 
     def error(text)
       logger.error text
