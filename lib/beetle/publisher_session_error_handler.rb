@@ -40,20 +40,10 @@ module Beetle
     # Raise is called when a bunny component wants to signal an error.
     # It will mostly be called from a background thread of bunny (reader_loop, heartbeat_sender).
     #
-    # It will do the following:
-    # 1. Record the error arguments, so that they can be raised later
-    # 2. If thread termination is activated, it will terminate the thread that called this method, unless it is the session thread.
-    #
     # @param args [Array] the arguments to raise, usually an exception class and a message
     def raise(*args)
       source_thread = Thread.current # the thread that invoked this method
       @logger.error "Beetle: bunny session handler error. server=#{@server} raised_from=#{source_thread.inspect}."
-      record_and_terminate_thread!(*args)
-    end
-
-    private
-
-    def record_and_terminate_thread!(*args)
       @error_mutex.synchronize { @error_args ||= args }
     end
   end
