@@ -45,6 +45,7 @@ module Beetle
       source_thread = Thread.current # the thread that invoked this method
       @logger.error "Beetle: bunny session handler error. server=#{@server} raised_from=#{source_thread.inspect}."
       @error_mutex.synchronize { @error_args ||= args }
+      nil
     end
   end
 end
