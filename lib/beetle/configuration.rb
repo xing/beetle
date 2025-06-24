@@ -104,8 +104,12 @@ module Beetle
     # to 2047, which is the RabbitMQ default in 3.7.  We can't set this to 0 because of a bug
     # in bunny.
     attr_accessor :channel_max
-    # the heartbeat interval to set for connections in seconds (defaults to <tt>0</tt>)
+
+    # the publisher heartbeat interval to set for connections in seconds (defaults to <tt>:server</tt> which means use what the server suggests)
     attr_accessor :heartbeat
+    alias publisher_heartbeat heartbeat
+    alias publisher_heartbeat= heartbeat=
+
     # Lazy queues have the advantage of consuming a lot less memory on the broker. For backwards
     # compatibility, they are disabled by default.
     attr_accessor :lazy_queues_enabled
@@ -139,9 +143,14 @@ module Beetle
     # Returns the port on which the Rabbit API is hosted
     attr_accessor :api_port
 
-    # The socket timeout in seconds for message publishing (defaults to <tt>0</tt>).
-    # consider this a highly experimental feature for now.
-    attr_accessor :publishing_timeout
+    # The TCP read timeout in seconds for the publishing connection (defaults to <tt>5</tt>)
+    attr_accessor :publisher_read_timeout
+
+    # The TCP write timeout in seconds for the publishing connection (defaults to <tt>5</tt>)
+    attr_accessor :publisher_write_timeout
+
+    # The timeout for operations that expect a response from the server (defaults to <tt>5</tt>)
+    attr_accessor :publisher_read_response_timeout
 
     # the connect/disconnect timeout in seconds for the publishing connection
     # (defaults to <tt>5</tt>).
@@ -222,7 +231,7 @@ module Beetle
       self.frame_max = 131072
       self.channel_max = 2047
       self.prefetch_count = 1
-      self.heartbeat = :server # use the server's heartbeat setting
+      self.heartbeat = :server # use the server's heartbeat setting for publishers
 
       self.dead_lettering_enabled = false
       self.dead_lettering_msg_ttl = 1000   # 1 second
@@ -234,9 +243,6 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.publishing_timeout = 5 # seconds
-      self.publisher_connect_timeout = 5 # seconds
-
       self.subscriber_connect_timeout = 5 # seconds
       self.subscriber_reconnect_delay = 10 # seconds
       self.subscriber_heartbeat = 0
@@ -244,6 +250,11 @@ module Beetle
       self.tmpdir = "/tmp"
 
       self.log_file = STDOUT
+
+      self.publisher_connect_timeout = 5
+      self.publisher_read_timeout = 5
+      self.publisher_write_timeout = 5
+      self.publisher_read_response_timeout = 5
 
       self.publisher_confirms = false
       self.publisher_lazy_queue_setup = true

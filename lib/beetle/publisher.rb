@@ -248,9 +248,9 @@ module Beetle
         :logger                => @client.config.logger,
         :frame_max             => @client.config.frame_max,
         :channel_max           => @client.config.channel_max,
-        :read_timeout          => @client.config.publishing_timeout,
-        :write_timeout         => @client.config.publishing_timeout,
-        :continuation_timeout  => @client.config.publishing_timeout * 1000, # continuation timeout is in milliseconds while the other timeouts are in seconds :/
+        :read_timeout          => @client.config.publisher_read_timeout,
+        :write_timeout         => @client.config.publisher_write_timeout,
+        :continuation_timeout  => @client.config.publisher_read_response_timeout * 1000, # continuation timeout is in milliseconds while the other timeouts are in seconds :/
         :connection_timeout    => @client.config.publisher_connect_timeout,
         :heartbeat             => @client.config.heartbeat,
 
