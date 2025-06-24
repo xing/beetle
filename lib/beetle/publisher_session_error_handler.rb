@@ -6,14 +6,9 @@ module Beetle
 
     # @param logger [Logger] a logger to log errors to
     # @param server_name [String] the name of the server this error handler is bound to
-    # @param terminate_thread [Boolean] whether the thread that raised the error should be terminated. Defaults to true.
-    def initialize(logger, server_name, terminate_thread_on_raise: true)
-      # the thread which has a reference to the session and this error handler
-      @session_thread = Thread.current
-
+    def initialize(logger, server_name)
       @server = server_name
       @logger = logger
-      @terminate_thread_on_raise = terminate_thread_on_raise # shall threads be terminated when raise is invoked?
 
       @error_mutex = Mutex.new
       @error_args = nil
@@ -53,18 +48,13 @@ module Beetle
     def raise(*args)
       source_thread = Thread.current # the thread that invoked this method
       @logger.error "Beetle: bunny session handler error. server=#{@server} raised_from=#{source_thread.inspect}."
-      record_and_terminate_thread!(source_thread, *args)
+      record_and_terminate_thread!(*args)
     end
 
     private
 
-    def record_and_terminate_thread!(source_thread, *args)
+    def record_and_terminate_thread!(*args)
       @error_mutex.synchronize { @error_args ||= args }
-
-      return unless @terminate_thread_on_raise
-      return if source_thread == @session_thread
-
-      source_thread.kill
     end
   end
 end

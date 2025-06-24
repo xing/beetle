@@ -30,6 +30,16 @@ module Beetle
   # raised when no message could be sent by the publisher
   class NoMessageSent < Error; end
 
+  class PublisherConnectError < Error
+    attr_reader :server, :cause
+
+    def initialize(server, cause = nil)
+      @server = server
+      @cause = cause
+      super("Publisher failed to connect to server #{server}#{": #{cause.message}" if cause}")
+    end
+  end
+
   class PublisherShutdownError < Error
     attr_reader :errors, :server
 

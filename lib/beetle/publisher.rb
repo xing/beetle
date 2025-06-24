@@ -43,14 +43,15 @@ module Beetle
       @throttled ? 'throttled' : 'unthrottled'
     end
 
-    def bunny_exceptions
+    def recoverable_exceptions
       [
         AMQ::Protocol::Error,
         Bunny::Exception, 
         Errno::EHOSTUNREACH, 
         Errno::ECONNRESET, 
         Errno::ETIMEDOUT, 
-        Timeout::Error
+        Timeout::Error,
+        Beetle::PublisherConnectError
       ]
     end
 
@@ -97,7 +98,7 @@ module Beetle
 
         logger.debug "Beetle: message sent!"
         published = 1
-      rescue *bunny_exceptions => e
+      rescue *recoverable_exceptions => e
         log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
         tries -= 1
@@ -142,7 +143,7 @@ module Beetle
           exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
-        rescue *bunny_exceptions => e
+        rescue *recoverable_exceptions => e
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
           if (tries += 1) == 1
@@ -273,11 +274,12 @@ module Beetle
 
       b.start 
       b
-    rescue StandardError => e
-      # make sure we let no error handler linger around 
-      @bunny_error_handlers[@server] = nil
 
-      raise e
+    # bunny.start may raise NoMethodError if the transport isn't functioning
+    # so we translate all errors here to a more meaningful error
+    rescue StandardError => e
+      @bunny_error_handlers[@server] = nil
+      raise Beetle::PublisherConnectError.new(@server, e)
     end
 
     def channel
