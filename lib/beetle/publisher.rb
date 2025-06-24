@@ -43,18 +43,6 @@ module Beetle
       @throttled ? 'throttled' : 'unthrottled'
     end
 
-    def recoverable_exceptions
-      [
-        AMQ::Protocol::Error,
-        Bunny::Exception, 
-        Errno::EHOSTUNREACH, 
-        Errno::ECONNRESET, 
-        Errno::ETIMEDOUT, 
-        Timeout::Error,
-        Beetle::PublisherConnectError
-      ]
-    end
-
     def publisher_confirms?
       @client.config.publisher_confirms
     end
@@ -207,6 +195,18 @@ module Beetle
     end
 
     private
+
+    def recoverable_exceptions
+      @recoverable_exceptions ||= [
+        AMQ::Protocol::Error,
+        Bunny::Exception, 
+        Errno::EHOSTUNREACH, 
+        Errno::ECONNRESET, 
+        Errno::ETIMEDOUT, 
+        Timeout::Error,
+        Beetle::PublisherConnectError
+      ]
+    end
 
     def bunny
       @bunnies[@server] ||= new_bunny
