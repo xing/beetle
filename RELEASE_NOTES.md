@@ -1,6 +1,9 @@
 # Release Notes
 
-## Version 5.2.0 (rc)
+## Version 6.0.0 (rc)
+
+* Use saner session error handler for bunny that raises exceptions when we are ready to handler only
+* Fix bug in logger that would prevent per client logger from being used and use global Beetle.config.logger instead
 * Disable bunnny's auto-recovery in publishers (the configuration option has been removed as well)
 * Publisher exposes information of whether the queues for a certain exchange have been bound 
 * Add more logging on publishing exceptions
