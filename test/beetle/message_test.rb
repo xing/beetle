@@ -157,7 +157,7 @@ module Beetle
       @config.redis_server = Beetle.config.redis_server
       @store = DeduplicationStore.new(@config)
       @store.flushdb
-      @null_handler = Handler.create(lambda {|*args|})
+      @null_handler = Handler.create(lambda {|*args|}, logger)
     end
 
     test "should be able to extract msg_id from any key" do
@@ -264,7 +264,7 @@ module Beetle
     def setup
       @store = DeduplicationStore.new
       @store.flushdb
-      @null_handler = Handler.create(lambda {|*args|})
+      @null_handler = Handler.create(lambda {|*args|}, logger)
     end
 
     test "an expired message should be acked without calling the handler" do
@@ -274,7 +274,7 @@ module Beetle
       assert message.expired?
 
       processed = :no
-      message.process(Handler.create(lambda {|*args| processed = true}))
+      message.process(Handler.create(lambda {|*args| processed = true}, logger))
       assert_equal :no, processed
     end
 
@@ -287,7 +287,7 @@ module Beetle
       assert message.delayed?
 
       processed = :no
-      message.process(Handler.create(lambda {|*args| processed = true}))
+      message.process(Handler.create(lambda {|*args| processed = true}, logger))
       assert_equal :no, processed
     end
 
@@ -734,7 +734,7 @@ module Beetle
       errback = lambda{|*args|}
       exception = Exception.new
       action = lambda{|*args| raise exception}
-      handler = Handler.create(action, :errback => errback)
+      handler = Handler.create(action, logger, :errback => errback)
       handler.expects(:process_exception).with(exception).once
       handler.expects(:process_failure).never
       result = message.process(handler)
@@ -752,7 +752,7 @@ module Beetle
       failback = mock("failback")
       exception = Exception.new
       action = lambda{|*args| raise exception}
-      handler = Handler.create(action, :errback => errback, :failback => failback)
+      handler = Handler.create(action, logger, :errback => errback, :failback => failback)
       errback.expects(:call).once
       failback.expects(:call).once
       result = message.process(handler)
@@ -769,7 +769,7 @@ module Beetle
       failback = mock("failback")
       exception = Exception.new
       action = lambda{|*args| raise exception}
-      handler = Handler.create(action, :errback => errback, :failback => failback)
+      handler = Handler.create(action, logger, :errback => errback, :failback => failback)
       errback.expects(:call).once
       failback.expects(:call).once
       result = message.process(handler)
@@ -795,7 +795,7 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', logger, :timeout => 0.1, :attempts => 2, :store => @store)
       action = lambda{|*args| while true; end}
-      handler = Handler.create(action)
+      handler = Handler.create(action, logger)
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
     end
@@ -805,7 +805,7 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', logger, :timeout => 1.seconds, :attempts => 2, :store => @store)
       action = lambda{|*args| while true; end}
-      handler = Handler.create(action)
+      handler = Handler.create(action, logger)
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
     end
@@ -840,7 +840,7 @@ module Beetle
         # the timeout should stop the query before it finishes.
         ActiveRecord::Base.connection.execute("select sleep(6);")
       end
-      handler = Handler.create(action)
+      handler = Handler.create(action, logger)
       result = message.process(handler)
       assert_equal RC::ExceptionsLimitReached, result
 
@@ -851,7 +851,7 @@ module Beetle
       second_action = lambda do |*args|
         ActiveRecord::Base.connection.execute("select 1;")
       end
-      second_handler = Handler.create(second_action)
+      second_handler = Handler.create(second_action, logger)
       second_result = second_message.process(second_handler)
       assert_equal RC::OK, second_result
     end

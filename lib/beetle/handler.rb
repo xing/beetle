@@ -10,7 +10,9 @@ module Beetle
     # the Message instance which caused the handler to be created
     attr_reader :message
 
-    def self.create(handler, opts={}) #:nodoc:
+    attr_reader :logger
+
+    def self.create(handler, logger = Beetle.config.logger, opts={}) #:nodoc:
       if handler.is_a? Handler
         # a handler instance
         handler
@@ -19,16 +21,17 @@ module Beetle
         handler.new
       else
         # presumably something which responds to call
-        new(handler, opts)
+        new(handler, logger, opts)
       end
     end
 
     # optionally capture processor, error and failure callbacks
-    def initialize(processor=nil, opts={}) #:notnew:
+    def initialize(processor=nil, logger = Beetle.config.logger, opts={}) #:notnew:
       @processor = processor
       @error_callback = opts[:errback]
       @failure_callback = opts[:failback]
       @__handler_called__ = nil
+      @logger = logger
     end
 
     # called when a message should be processed. calls the initialized processor proc
@@ -106,15 +109,6 @@ module Beetle
     def completed
       logger.debug "Beetle: message processing completed"
       logger.flush if logger.respond_to?(:flush)
-    end
-
-    # returns the configured Beetle logger
-    def self.logger
-      Beetle.config.logger
-    end
-
-    def logger
-       @logger ||= Beetle.config.logger
     end
 
   end
