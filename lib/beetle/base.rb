@@ -3,7 +3,6 @@ require 'json'
 module Beetle
   # Abstract base class shared by Publisher and Subscriber
   class Base
-    include Logging
 
     attr_accessor :options, :servers, :server  #:nodoc:
 
@@ -14,6 +13,10 @@ module Beetle
       @server = @servers[rand @servers.size]
       @exchanges = {}
       @queues = {}
+    end
+
+    def logger 
+      @client.logger
     end
 
     private

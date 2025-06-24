@@ -237,6 +237,11 @@ module Beetle
   end
 
   class DeadLetteringCallBackExecutionTest < Minitest::Test
+    def logger
+      Logger.new(File::NULL)
+    end
+
+
     def setup
       @client = Client.new
       @queue = "somequeue"
@@ -246,7 +251,7 @@ module Beetle
       mq.expects(:closing?).returns(false)
       @sub.expects(:channel).with(@sub.server).returns(mq)
       @exception = Exception.new "murks"
-      @handler = Handler.create(lambda{|*args| raise @exception})
+      @handler = Handler.create(lambda{|*args| raise @exception}, logger)
       # handler method 'processing_completed' should be called under all circumstances
       @handler.expects(:processing_completed).once
       @callback = @sub.send(:create_subscription_callback, @queue, @queue, @handler, :exceptions => 1)
@@ -264,13 +269,18 @@ module Beetle
   end
 
   class CallBackExecutionTest < Minitest::Test
+    
+    def logger
+      Logger.new(File::NULL)
+    end
+
     def setup
       @client = Client.new
       @queue = "somequeue"
       @client.register_queue(@queue)
       @sub = @client.send(:subscriber)
       @exception = Exception.new "murks"
-      @handler = Handler.create(lambda{|*args| raise @exception})
+      @handler = Handler.create(lambda{|*args| raise @exception}, logger)
       @handler.instance_eval { def post_process; raise "shoot"; end }
       @callback = @sub.send(:create_subscription_callback, @queue, @queue, @handler, :exceptions => 1)
     end

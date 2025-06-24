@@ -177,8 +177,8 @@ module Beetle
         end
         begin
           message_options = opts.merge(:server => server, :store => @client.deduplication_store)
-          m = Message.new(amqp_queue_name, header, data, message_options)
-          processor = Handler.create(handler, opts)
+          m = Message.new(amqp_queue_name, header, data, logger, message_options)
+          processor = Handler.create(handler, logger, opts)
           result = m.process(processor)
           if result.reject?
             if @client.queues[queue_name][:dead_lettering]

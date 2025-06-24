@@ -220,7 +220,7 @@ module Beetle
 
     test "#reset should not propagate exceptions" do
       client = Client.new
-      client.expects(:config).raises(ArgumentError)
+      client.expects(:stop_publishing).raises(ArgumentError)
       client.reset
     end
 
@@ -383,10 +383,22 @@ module Beetle
     end
 
     test "should use the configured logger" do
-      client = Client.new
-      Beetle.config.expects(:logger)
-      client.logger
+      config = Beetle.config.clone
+      logger = stub("logger")
+      config.logger = logger
+      client = Client.new(config)
+
+      logger.expects(:info).with("test")
+      client.logger.info("test")
     end
+
+
+    test "should use the default logger if nothing else is configured" do
+      client = Client.new()
+      Beetle.config.logger.expects(:info).with("test")
+      client.logger.info("test")
+    end
+
 
     test "load should expand the glob argument and evaluate each file in the client instance" do
       client = Client.new

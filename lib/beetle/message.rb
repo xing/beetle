@@ -7,7 +7,6 @@ module Beetle
   # should retry executing the message handler after a handler has crashed (or forcefully
   # aborted).
   class Message
-    include Logging
 
     # current message format version
     FORMAT_VERSION = 1
@@ -62,10 +61,13 @@ module Beetle
     # value returned by handler execution
     attr_reader :handler_result
 
-    def initialize(queue, header, body, opts = {})
+    attr_reader :logger
+
+    def initialize(queue, header, body, logger, opts = {})
       @queue  = queue
       @header = header
       @data   = body
+      @logger = logger
       setup(opts)
       decode
     end

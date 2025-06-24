@@ -21,7 +21,6 @@ module Beetle
   # order, so that no message is lost if message producers are accidentally started before
   # the corresponding consumers.
   class Client
-    include Logging
 
     # the AMQP servers available for publishing
     attr_reader :servers
@@ -337,6 +336,10 @@ module Beetle
 
     def update_queue_properties!(message_payload, &block)
       @queue_properties.update_queue_properties!(message_payload, &block)
+    end
+
+    def logger 
+      @logger ||= (config.logger || Beetle.config.logger)
     end
 
     private
