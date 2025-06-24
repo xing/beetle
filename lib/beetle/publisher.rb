@@ -367,12 +367,6 @@ module Beetle
       @queues[@server] = {}
     end
 
-    def with_publishing_timeout(&block)
-      timeout = @client.config.publishing_timeout + @client.config.publisher_connect_timeout + 1
-
-      Beetle::Timer.timeout(timeout, &block)
-    end
-
     def stop_bunny_forcefully!(exception = nil) 
       logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
 
@@ -399,9 +393,7 @@ module Beetle
       # it's fine that we don't have a reader loop here anymore, since we don't expect
       # an answer from the server
       begin
-        with_publishing_timeout do
-          bunny.__send__ :close_connection, false
-        end
+        bunny.__send__ :close_connection, false
       rescue StandardError => e
         partial_failures << e
         logger.warn "Beetle: error closing connection to server: #{e}"
