@@ -149,7 +149,7 @@ module Beetle
     # The TCP write timeout in seconds for the publishing connection (defaults to <tt>5</tt>)
     attr_accessor :publisher_write_timeout
 
-    # The timeout for operations that expect a response from the server (defaults to <tt>5</tt>)
+    # The timeout in seconds for operations that expect a response from the server (defaults to <tt>5</tt>)
     attr_accessor :publisher_read_response_timeout
 
     # the connect/disconnect timeout in seconds for the publishing connection
