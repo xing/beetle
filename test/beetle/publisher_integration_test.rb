@@ -49,7 +49,7 @@ class PublisherIntegrationTest < Minitest::Test
 
         # connected(1 heartbeat sender)
         rabbit1.down do
-          wait_until { client.send(:publisher).exceptions? }
+          wait_until { client.publisher_exceptions? }
         end
 
         # bunny is now exception state, 1 hearbeat sender
@@ -58,7 +58,7 @@ class PublisherIntegrationTest < Minitest::Test
         end
 
         rabbit1.down do
-          wait_until { client.send(:publisher).exceptions? }
+          wait_until { client.publisher_exceptions? }
         end
 
         assert_nothing_raised do
@@ -79,7 +79,7 @@ class PublisherIntegrationTest < Minitest::Test
         # connected(1 heartbeat sender)
         rabbit1.down do
           rabbit2.down do
-            wait_until { client.send(:publisher).exceptions? }
+            wait_until { client.publisher_exceptions? }
           end
         end
 
@@ -90,7 +90,7 @@ class PublisherIntegrationTest < Minitest::Test
 
         rabbit1.down do
           rabbit2.down do
-            wait_until { client.send(:publisher).exceptions? }
+            wait_until { client.publisher_exceptions? }
           end
         end
 
@@ -190,10 +190,10 @@ class PublisherIntegrationTest < Minitest::Test
 
         rabbit1.down do
           assert_nothing_raised do
-            wait_until { client.send(:publisher).exceptions? }
+            wait_until { client.publisher_exceptions? }
           end
 
-          assert client.send(:publisher).exceptions?
+          assert client.publisher_exceptions?
 
           assert_raises(Beetle::NoMessageSent) do
             client.publish(msg, "test data")
@@ -225,10 +225,10 @@ class PublisherIntegrationTest < Minitest::Test
         end
 
         rabbit1.down do
-          wait_until { client.send(:publisher).exceptions? }
+          wait_until { client.publisher_exceptions? }
         end
 
-        assert client.send(:publisher).exceptions?, "Publisher should have detected the server down"
+        assert client.publisher_exceptions?, "Publisher should have detected the server down"
 
         # server should be up again and we recover
         assert_nothing_raised do
@@ -259,7 +259,7 @@ class PublisherIntegrationTest < Minitest::Test
           assert_equal 1, client.publish(msg, "test data")
         end
 
-        refute client.send(:publisher).exceptions?
+        assert client.publisher_healthy?
         # now publish with failure
         rabbit1.downstream(:timeout, timeout: 1).apply do
           sleep 0.3
