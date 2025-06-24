@@ -17,8 +17,7 @@ module Beetle
         @handler.raise(BackgroundError.new("Background error"))
       end
 
-      sleep 0.2
-      assert @handler.exception?, "Handler should have recorded an exception"
+      wait_until { @handler.exception? }
 
       assert_raises(BackgroundError) do
         @handler.raise_pending_exception!
@@ -34,11 +33,10 @@ module Beetle
         sleep 1
       end
 
-      sleep 0.2
       assert th.alive?, "Thread should be alive even after raising an error"
 
       assert_nothing_raised do
-        th.join(1) # wait for the thread to finish
+        th.join(0.5) # wait for the thread to finish
       end
     end
 
@@ -50,12 +48,11 @@ module Beetle
         sleep 1
       end
 
-      sleep 0.2
-      assert handler.exception?, "Handler should have recorded an exception"
+      wait_until { handler.exception? }
       assert th.alive?, "Thread should be alive even after raising an error"
 
       assert_nothing_raised do
-        th.join(1) # wait for the thread to finish
+        th.join(0.5) # wait for the thread to finish
       end
     end
 

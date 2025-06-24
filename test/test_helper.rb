@@ -63,6 +63,15 @@ def unique_name(prefix)
   "#{prefix}_#{SecureRandom.uuid}"
 end
 
+def wait_until(timeout = 1.0)
+  Timeout.timeout(timeout) do
+    loop do
+      return if yield
+      Thread.pass
+    end
+  end
+end
+
 if system('docker -v >/dev/null') && `docker inspect beetle-mysql -f '{{.State.Status}}'`.chomp == "running"
   ENV['MYSQL_PORT'] = '6612'
 end
