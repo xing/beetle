@@ -356,8 +356,8 @@ module Beetle
 
     def stop!(exception = nil) #:nodoc:
       return unless bunny?
-      bunny_stops[@server] ||= 0
-      bunny_stops[@server] += 1
+      @bunny_stops[@server] ||= 0
+      @bunny_stops[@server] += 1
       stop_bunny_forcefully!(exception) 
     rescue Exception => e
       logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
