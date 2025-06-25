@@ -10,12 +10,17 @@ module Beetle
       @dead_servers = {}
       @bunnies = {}
       @bunny_error_handlers = {}
+      @bunny_stops = {}
       @channels = {}
       @throttling_options = {}
       @next_throttle_refresh = Time.now
       @throttled = false
       at_exit { stop }
     end
+
+    def current_server_restarts
+       @bunny_stops[@server] || 0
+    end 
 
     def exceptions?
       @bunny_error_handlers.any? do |_, error_handler|
@@ -351,6 +356,8 @@ module Beetle
 
     def stop!(exception = nil) #:nodoc:
       return unless bunny?
+      bunny_stops[@server] ||= 0
+      bunny_stops[@server] += 1
       stop_bunny_forcefully!(exception) 
     rescue Exception => e
       logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
