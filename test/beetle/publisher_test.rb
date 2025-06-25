@@ -823,6 +823,18 @@ module Beetle
 
       @pub.stop
     end
+
+     test "stop! should should count restarts" do
+      @pub.servers = ["localhost:1111"]
+      @pub.send(:select_next_server)
+      @pub.expects(:bunny?).returns(true)
+      @pub.expects(:stop_bunny_forcefully!)
+      assert_equal 0 , @pub.current_server_restarts
+
+      @pub.send(:stop!)
+
+      assert_equal 1 , @pub.current_server_restarts
+    end
   end
 
   class PublisherPublishingWithConfirmTest < Minitest::Test
