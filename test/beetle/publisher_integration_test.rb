@@ -40,6 +40,61 @@ class PublisherIntegrationTest < Minitest::Test
     client.send(:publisher)&.stop
   end
 
+  # since we use some internal bunny apis, this test makes sure
+  # that they exist and still work across bunny updates
+  test "publisher#stop_bunny_forcefully! stops correctly when connected" do
+    with_client("127.0.0.1:5674") do |client, _logs|
+      # connect the bunny
+      assert_nothing_raised do
+        assert_equal 1, client.publish(:test_message, "test data")
+      end
+      publisher = client.send(:publisher)
+
+      assert publisher.send(:bunny?) # bunny is active
+      assert_nothing_raised do
+        publisher.send(:stop_bunny_forcefully!)
+      end
+    end
+  end
+
+  test "publisher#stop_bunny_forcefully! stops correctly when server is unreachable" do
+    with_client("127.0.0.1:5674") do |client, _logs|
+      # connect the bunny
+      assert_nothing_raised do
+        assert_equal 1, client.publish(:test_message, "test data")
+      end
+      publisher = client.send(:publisher)
+
+      assert publisher.send(:bunny?) # bunny is active
+
+      rabbit1.upstream(:timeout, timeout: 0).apply do
+        assert_nothing_raised do
+          publisher.send(:stop_bunny_forcefully!)
+        end
+      end
+    end
+  end
+
+  test "publisher#stop_bunny_forcefully! stops correctly when server is down" do
+    with_client("127.0.0.1:5674") do |client, _logs|
+      # connect the bunny
+      assert_nothing_raised do
+        assert_equal 1, client.publish(:test_message, "test data")
+      end
+      publisher = client.send(:publisher)
+
+      assert publisher.send(:bunny?) # bunny is active
+
+      rabbit1.down do
+        wait_until { client.publisher_exceptions? }
+
+        assert_nothing_raised do
+          publisher.send(:stop_bunny_forcefully!)
+        end
+      end
+    end
+  end
+
   [:test_message, :redundant_message].each do |msg|
     test "[#{msg}] recreating bunnies does not leave threads behind" do
       with_client("127.0.0.1:5674") do |client|
