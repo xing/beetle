@@ -274,4 +274,31 @@ class PublisherIntegrationTest < Minitest::Test
       end
     end
   end
+
+  test "publisher confirms work when message is sent" do
+    with_client("127.0.0.1:5674") do |client|
+      client.config.publisher_confirms = true
+
+      assert_nothing_raised do
+        assert_equal 1, client.publish(:test_message, "test data")
+      end
+    end
+  end
+
+  test "publisher confirms when server is unresponsive after publisher_read_response_timeout" do
+    with_client("127.0.0.1:5674") do |client, _logs|
+      client.config.publisher_confirms = true
+      client.config.publisher_read_response_timeout = 1
+
+      assert_nothing_raised do
+        assert_equal 1, client.publish(:test_message, "test data")
+      end
+
+      rabbit1.downstream(:timeout, timeout: 0).apply do
+        assert_raises(Beetle::NoMessageSent) do
+          client.publish(:test_message, "test data")
+        end
+      end
+    end
+  end
 end
