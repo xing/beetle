@@ -19,7 +19,7 @@ module Beetle
     end
 
     def current_server_restarts
-       @bunny_stops[@server] || 0
+      @bunny_stops[@server] || 0
     end 
 
     def exceptions?
@@ -273,7 +273,12 @@ module Beetle
         :session_error_handler => error_handler
       )
 
-      b.start 
+      # On AWS we can connect to an endpoint that terminates the TLS connection (an NLB)
+      # Which then might fail to connect to the RabbitMQ server, which leads to timeout after 10 seconds.
+      # Which we can not change on the socket level
+      Timeout.timeout(@client.config.publisher_connect_timeout) do
+        b.start 
+      end
       b
 
     # bunny.start may raise NoMethodError if the transport isn't functioning
