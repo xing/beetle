@@ -87,7 +87,7 @@ module Beetle
 
         logger.debug "Beetle: message sent!"
         published = 1
-      rescue *recoverable_exceptions => e
+      rescue StandardError => e 
         log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
         stop!(e)
         tries -= 1
@@ -132,7 +132,7 @@ module Beetle
           exchange(exchange_name).publish(data, opts.dup)
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
-        rescue *recoverable_exceptions => e
+        rescue StandardError => e 
           log_publishing_exception(exception: e, tries: tries, server: @server, message_name: message_name, exchange_name: exchange_name)
           stop!(e)
           if (tries += 1) == 1
@@ -196,18 +196,6 @@ module Beetle
     end
 
     private
-
-    def recoverable_exceptions
-      @recoverable_exceptions ||= [
-        AMQ::Protocol::Error,
-        Bunny::Exception, 
-        Errno::EHOSTUNREACH, 
-        Errno::ECONNRESET, 
-        Errno::ETIMEDOUT, 
-        Timeout::Error,
-        Beetle::PublisherConnectError
-      ]
-    end
 
     def bunny
       @bunnies[@server] ||= new_bunny
