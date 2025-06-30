@@ -387,7 +387,8 @@ module Beetle
     end
 
     def stop_bunny_forcefully!(exception = nil) #:nodoc:
-      do_stop_bunny_forcefully!(bunny, exception)
+      return unless bunny?
+      do_stop_bunny_forcefully!(bunny, exception) 
     end
 
     def do_stop_bunny_forcefully!(bunny, exception = nil) 
