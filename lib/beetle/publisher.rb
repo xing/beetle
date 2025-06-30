@@ -276,7 +276,7 @@ module Beetle
         end
       rescue Timeout::Error => e
         # we need to make sure we don't leave background threads around
-        do_stop_bunny_forcefully!(b, e)
+        do_stop_bunny_forcefully!(b, e) rescue nil # don't bother if the connection is already closed
       end
       b
 
