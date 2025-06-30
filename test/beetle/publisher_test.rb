@@ -222,12 +222,14 @@ module Beetle
       bunny.expects(:transport).returns(transport).in_sequence(shutdown)
       transport.expects(:close).in_sequence(shutdown)
 
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(bunny).at_least_once
       @pub.send(:stop_bunny_forcefully!, Exception.new)
     end
 
     test "stop_bunny_forcefully! fails on shutdown of heartbeat sender, but continues to cleanup " do
       b = assert_bunny_shutdown_sequence_with_error(:maybe_shutdown_heartbeat_sender)
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b).at_least_once
 
       assert_raises(Beetle::PublisherShutdownError) do
@@ -237,6 +239,7 @@ module Beetle
 
     test "stop_bunny_forcefully! fails on shutdown of reader_loop, but continues to cleanup " do
       b = assert_bunny_shutdown_sequence_with_error(:reader_loop)
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b).at_least_once
 
       assert_raises(Beetle::PublisherShutdownError) do
@@ -246,6 +249,7 @@ module Beetle
 
     test "stop_bunny_forcefully! fails on close connection, but continues to cleanup" do
       b = assert_bunny_shutdown_sequence_with_error(:close_connection)
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b).at_least_once
 
       assert_raises(Beetle::PublisherShutdownError) do
@@ -255,6 +259,7 @@ module Beetle
 
     test "stop_bunny_forcefully! fails on transport close" do
       b = assert_bunny_shutdown_sequence_with_error(:transport_close)
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b).at_least_once
 
       assert_raises(Beetle::PublisherShutdownError) do
@@ -275,6 +280,7 @@ module Beetle
       transport.expects(:close)
 
 
+      @pub.expects(:bunny?).returns(true)
       @pub.expects(:bunny).returns(b).at_least_once
 
       begin
