@@ -231,7 +231,7 @@ module Beetle
       error_handler = PublisherSessionErrorHandler.new(logger, @server) 
       @bunny_error_handlers[@server] = error_handler
 
-      b = Bunny.new(
+      session = Bunny.new(
         :host                  => options[:host],
         :port                  => options[:port],
         :username              => options[:user],
@@ -270,20 +270,14 @@ module Beetle
       #
       # This means that if the TLS negotiation takes longer than the connect timeout,
       # the connection will hang long (10 seconds in our observations).
-      begin
-        Timeout.timeout(@client.config.publisher_connect_timeout) do
-          b.start 
-        end
-      rescue Timeout::Error => e
-        # we need to make sure we don't leave background threads around
-        do_stop_bunny_forcefully!(b, e) rescue nil # don't bother if the connection is already closed
+      Timeout.timeout(@client.config.publisher_connect_timeout) do
+        session.start 
       end
-      b
-
-    # bunny.start may raise NoMethodError if the transport isn't functioning
-    # so we translate all errors here to a more meaningful error
+      session
     rescue StandardError => e
       @bunny_error_handlers[@server] = nil
+      do_stop_bunny_forcefully!(session, e) rescue nil if session # don't bother if the connection is already closed
+
       raise Beetle::PublisherConnectError.new(@server, e)
     end
 
