@@ -273,11 +273,22 @@ module Beetle
         :session_error_handler => error_handler
       )
 
-      # On AWS we can connect to an endpoint that terminates the TLS connection (an NLB)
-      # Which then might fail to connect to the RabbitMQ server, which leads to timeout after 10 seconds.
-      # Which we can not change on the socket level
-      Timeout.timeout(@client.config.publisher_connect_timeout) do
-        b.start 
+      # For TLS connections we have two phases
+      # 1. The socket connect 
+      # 2. The TLS negotiation
+      #
+      # While the socket connect timeout takes effect on the initial socket connection,
+      # it does not take effect on the TLS negotiation.
+      #
+      # This means that if the TLS negotiation takes longer than the connect timeout,
+      # the connection will hang long (10 seconds in our observations).
+      begin
+        Timeout.timeout(@client.config.publisher_connect_timeout) do
+          b.start 
+        end
+      rescue Timeout::Error => e
+        # we need to make sure we don't leave background threads around
+        do_stop_bunny_forcefully!(b, e)
       end
       b
 
@@ -375,7 +386,11 @@ module Beetle
       @queues[@server] = {}
     end
 
-    def stop_bunny_forcefully!(exception = nil) 
+    def stop_bunny_forcefully!(exception = nil) #:nodoc:
+      do_stop_bunny_forcefully!(bunny, exception)
+    end
+
+    def do_stop_bunny_forcefully!(bunny, exception = nil) 
       logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
 
       partial_failures = []
