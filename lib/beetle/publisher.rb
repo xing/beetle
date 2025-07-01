@@ -1,3 +1,4 @@
+require_relative './bunny_session'
 require_relative './publisher_session_error_handler'
 
 module Beetle
@@ -231,7 +232,7 @@ module Beetle
       error_handler = PublisherSessionErrorHandler.new(logger, @server) 
       @bunny_error_handlers[@server] = error_handler
 
-      b = Bunny.new(
+      session = ::Beetle::BunnySession.new(
         :host                  => options[:host],
         :port                  => options[:port],
         :username              => options[:user],
@@ -261,11 +262,8 @@ module Beetle
         :session_error_handler => error_handler
       )
 
-      b.start 
-      b
-
-    # bunny.start may raise NoMethodError if the transport isn't functioning
-    # so we translate all errors here to a more meaningful error
+      session.start_safely
+      session
     rescue StandardError => e
       @bunny_error_handlers[@server] = nil
       raise Beetle::PublisherConnectError.new(@server, e)
@@ -344,9 +342,10 @@ module Beetle
 
     def stop!(exception = nil) #:nodoc:
       return unless bunny?
+      logger.debug "Beetle: closing connection from publisher to #{@server} #{exception}"
       @bunny_stops[@server] ||= 0
       @bunny_stops[@server] += 1
-      stop_bunny_forcefully!(exception) 
+      bunny.stop_safely
     rescue Exception => e
       logger.error "Beetle: error closing down bunny. Publisher process might be in inconsistent state: #{e}"
       Beetle::reraise_expectation_errors!
@@ -356,49 +355,6 @@ module Beetle
       @channels[@server] = nil
       @exchanges[@server] = {}
       @queues[@server] = {}
-    end
-
-    def stop_bunny_forcefully!(exception = nil) 
-      logger.debug "Beetle: closing connection from publisher to #{@server} forcefully (exception: #{exception})"
-
-      partial_failures = []
-
-      # kill heartbeat sender if it exists
-      begin
-        bunny.__send__(:maybe_shutdown_heartbeat_sender)
-      rescue StandardError => e
-        partial_failures << e
-        logger.warn "Beetle: error shutting down heartbeat sender: #{e}"
-      end
-
-      # kill reader loop if it exists
-      begin
-        reader_loop = bunny.__send__(:reader_loop)
-        reader_loop.kill if reader_loop
-      rescue StandardError => e
-        partial_failures << e
-        logger.warn "Beetle: error shutting down reader loop: #{e}"
-      end
-
-      # now close the connection
-      # it's fine that we don't have a reader loop here anymore, since we don't expect
-      # an answer from the server
-      begin
-        bunny.__send__(:close_connection, false)
-      rescue StandardError => e
-        partial_failures << e
-        logger.warn "Beetle: error closing connection to server: #{e}"
-      end
-
-      begin
-        bunny.transport.close 
-      rescue StandardError => e
-        partial_failures << e
-        logger.warn "Beetle: error closing transport to server: #{e}"
-      end
-
-      return if partial_failures.empty?
-      raise PublisherShutdownError.new(@server, partial_failures) 
     end
 
     def refresh_throttling!
