@@ -33,9 +33,12 @@ module Beetle
     #
     # Bunny in principle does all of these steps on close, but onfortunately it will
     # stop cleaning up after the first error occurs in the sequence of things that need to be done.
+    # This has the potential to leave threads running, connections open, etc.
     # That's why we're doing it manually here.
     def stop_safely
       logger.debug "Beetle: closing connection from bunny session"
+
+      @status_mutex.synchronize { @status = :closing }
 
       stopped_threads = _stop_background_threads!
       stopped_network = _stop_network_connection!
