@@ -33,8 +33,8 @@ module Beetle
         :heartbeat => :server,
         :tls => false
       }
-      Bunny.expects(:new).with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v } }.returns(m)
-      m.expects(:start)
+      BunnySession.expects(:new).with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v } }.returns(m)
+      m.expects(:start_safely)
       assert_equal m, @pub.send(:new_bunny)
     end
 
@@ -61,11 +61,11 @@ module Beetle
         heartbeat: :server
       }
 
-      Bunny
+      BunnySession
         .expects(:new)
         .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
         .returns(bunny_mock)
-      bunny_mock.expects(:start)
+      bunny_mock.expects(:start_safely)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
@@ -84,11 +84,11 @@ module Beetle
         recovery_attempts: 0
       }
 
-      Bunny
+      BunnySession
         .expects(:new)
         .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
         .returns(bunny_mock)
-      bunny_mock.expects(:start)
+      bunny_mock.expects(:start_safely)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
@@ -112,12 +112,12 @@ module Beetle
         continuation_timeout: 10_000
       }
 
-      Bunny
+      BunnySession
         .expects(:new)
         .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
         .returns(bunny_mock)
 
-      bunny_mock.expects(:start)
+      bunny_mock.expects(:start_safely)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
@@ -135,12 +135,12 @@ module Beetle
         heartbeat: 10
       }
 
-      Bunny
+      BunnySession
         .expects(:new)
         .with { |actual| expected_bunny_options.all? { |k, v| actual[k] == v }  } # match our subset of options
         .returns(bunny_mock)
 
-      bunny_mock.expects(:start)
+      bunny_mock.expects(:start_safely)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
 
@@ -152,18 +152,16 @@ module Beetle
 
       bunny_mock = mock("dummy_bunny")
 
-      Bunny
+      BunnySession
         .expects(:new)
         .with do |actual|
           actual[:session_error_handler].is_a?(Beetle::PublisherSessionErrorHandler)
         end
         .returns(bunny_mock)
 
-      bunny_mock.expects(:start)
+      bunny_mock.expects(:start_safely)
       assert_equal bunny_mock, pub.send(:new_bunny)
     end
-
-
 
     test "initially there should be no bunnies" do
       assert_equal({}, @pub.instance_variable_get("@bunnies"))
@@ -173,130 +171,11 @@ module Beetle
       assert_equal({}, @pub.instance_variable_get("@dead_servers"))
     end
 
-    def assert_bunny_shutdown_sequence_with_error(fail_on)
-      bunny = mock("bunny")
-      reader_loop = mock("reader_loop")
-      transport = mock("transport")
-      shutdown = sequence('shutdown')
-
-      if fail_on == :maybe_shutdown_heartbeat_sender
-        bunny.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error shutdown heartbeat sender").in_sequence(shutdown)
-      else
-        bunny.expects(:maybe_shutdown_heartbeat_sender).returns(true).in_sequence(shutdown)
-      end
-
-      bunny.expects(:reader_loop).returns(reader_loop).in_sequence(shutdown)
-      if fail_on == :reader_loop
-        reader_loop.expects(:kill).raises(RuntimeError, "error on shutdown of reader_loop").in_sequence(shutdown)
-      else
-        reader_loop.expects(:kill).in_sequence(shutdown)
-      end
-
-      if fail_on == :close_connection
-        bunny.expects(:close_connection, false).raises(Timeout::Error, "error on close connection").in_sequence(shutdown)
-      else
-        bunny.expects(:close_connection, false).in_sequence(shutdown)
-      end
-
-      bunny.expects(:transport).returns(transport).in_sequence(shutdown)
-      if fail_on == :transport_close
-        transport.expects(:close).raises(RuntimeError, "error on transport close").in_sequence(shutdown)
-      else
-        transport.expects(:close).in_sequence(shutdown)
-      end
-
-      bunny
-    end
-
-
-    test "stop_bunny_forcefully! shuts down and cleans up" do
-      bunny = mock("bunny")
-      reader_loop = mock("reader_loop")
-      transport = mock("transport")
-      shutdown = sequence('shutdown')
-
-      bunny.expects(:maybe_shutdown_heartbeat_sender).returns(true).in_sequence(shutdown)
-      bunny.expects(:reader_loop).returns(reader_loop).in_sequence(shutdown)
-      reader_loop.expects(:kill).in_sequence(shutdown)
-      bunny.expects(:close_connection, false).in_sequence(shutdown)
-      bunny.expects(:transport).returns(transport).in_sequence(shutdown)
-      transport.expects(:close).in_sequence(shutdown)
-
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(bunny).at_least_once
-      @pub.send(:stop_bunny_forcefully!, Exception.new)
-    end
-
-    test "stop_bunny_forcefully! fails on shutdown of heartbeat sender, but continues to cleanup " do
-      b = assert_bunny_shutdown_sequence_with_error(:maybe_shutdown_heartbeat_sender)
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).at_least_once
-
-      assert_raises(Beetle::PublisherShutdownError) do
-        @pub.send(:stop_bunny_forcefully!, Exception.new)
-      end
-    end
-
-    test "stop_bunny_forcefully! fails on shutdown of reader_loop, but continues to cleanup " do
-      b = assert_bunny_shutdown_sequence_with_error(:reader_loop)
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).at_least_once
-
-      assert_raises(Beetle::PublisherShutdownError) do
-        @pub.send(:stop_bunny_forcefully!, Exception.new)
-      end
-    end
-
-    test "stop_bunny_forcefully! fails on close connection, but continues to cleanup" do
-      b = assert_bunny_shutdown_sequence_with_error(:close_connection)
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).at_least_once
-
-      assert_raises(Beetle::PublisherShutdownError) do
-        @pub.send(:stop_bunny_forcefully!, Exception.new)
-      end
-    end
-
-    test "stop_bunny_forcefully! fails on transport close" do
-      b = assert_bunny_shutdown_sequence_with_error(:transport_close)
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).at_least_once
-
-      assert_raises(Beetle::PublisherShutdownError) do
-        @pub.send(:stop_bunny_forcefully!, Exception.new)
-      end
-    end
-
-    test "stop_bunny_forcefully! raises partial shutdown error with collected errors" do
-      b = mock("bunny")
-      transport = mock("transport")
-      reader_loop = mock("reader_loop")
-
-      b.expects(:maybe_shutdown_heartbeat_sender).raises(RuntimeError, "error on shutdown of heartbeat sender")
-      b.expects(:reader_loop).returns(reader_loop)
-      reader_loop.expects(:kill)
-      b.expects(:close_connection, false).raises(Timeout::Error, "error on close connection")
-      b.expects(:transport).returns(transport)
-      transport.expects(:close)
-
-
-      @pub.expects(:bunny?).returns(true)
-      @pub.expects(:bunny).returns(b).at_least_once
-
-      begin
-        @pub.send(:stop_bunny_forcefully!, Exception.new)
-        assert false, "Expected PublisherShutdownError to be raised"
-      rescue Beetle::PublisherShutdownError => e
-        assert_equal 2, e.errors.size
-        assert_equal RuntimeError, e.errors.first.class
-        assert_equal Timeout::Error, e.errors.last.class
-        assert_match(/Publisher failed to shutdown bunny for server localhost/, e.message)
-      end
-    end
-
     test "stop! should shut down bunny and clean internal data structures" do
+      bunny = mock("bunny")
       @pub.expects(:bunny?).returns(true)
-      @pub.expects(:stop_bunny_forcefully!).with(nil).returns(true)
+      @pub.expects(:bunny).returns(bunny)
+      bunny.expects(:stop_safely).returns(true)
       @pub.send(:stop!)
       assert_equal({}, @pub.send(:exchanges))
       assert_equal({}, @pub.send(:queues))
@@ -816,25 +695,33 @@ module Beetle
     end
 
     test "stop should shut down all bunnies" do
+      bunny1 = mock("bunny")
+      bunny2 = mock("bunny")
       @pub.servers = ["localhost:1111", "localhost:2222"]
       s = sequence("shutdown")
 
       @pub.expects(:set_current_server).with("localhost:1111").in_sequence(s)
       @pub.expects(:bunny?).returns(true).in_sequence(s)
-      @pub.expects(:stop_bunny_forcefully!).in_sequence(s)
+      @pub.expects(:bunny).returns(bunny1).in_sequence(s)
+      bunny1.expects(:stop_safely).in_sequence(s)
 
       @pub.expects(:set_current_server).with("localhost:2222").in_sequence(s)
       @pub.expects(:bunny?).returns(true).in_sequence(s)
-      @pub.expects(:stop_bunny_forcefully!).in_sequence(s)
+      @pub.expects(:bunny).returns(bunny2).in_sequence(s)
+      bunny2.expects(:stop_safely).in_sequence(s)
 
       @pub.stop
     end
 
      test "stop! should should count restarts" do
+      bunny = mock("bunny")
       @pub.servers = ["localhost:1111"]
       @pub.send(:select_next_server)
       @pub.expects(:bunny?).returns(true)
-      @pub.expects(:stop_bunny_forcefully!)
+      @pub.expects(:bunny).returns(bunny)
+
+      bunny.expects(:stop_safely)
+
       assert_equal 0 , @pub.current_server_restarts
 
       @pub.send(:stop!)

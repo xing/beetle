@@ -42,7 +42,7 @@ class PublisherIntegrationTest < Minitest::Test
 
   # since we use some internal bunny apis, this test makes sure
   # that they exist and still work across bunny updates
-  test "publisher#stop_bunny_forcefully! stops correctly when connected" do
+  test "publisher#stop! stops correctly when connected" do
     with_client("127.0.0.1:5674") do |client, _logs|
       # connect the bunny
       assert_nothing_raised do
@@ -52,12 +52,12 @@ class PublisherIntegrationTest < Minitest::Test
 
       assert publisher.send(:bunny?) # bunny is active
       assert_nothing_raised do
-        publisher.send(:stop_bunny_forcefully!)
+        publisher.send(:stop!)
       end
     end
   end
 
-  test "publisher#stop_bunny_forcefully! stops correctly when server is unreachable" do
+  test "publisher#stop! stops correctly when server is unreachable" do
     with_client("127.0.0.1:5674") do |client, _logs|
       # connect the bunny
       assert_nothing_raised do
@@ -69,13 +69,13 @@ class PublisherIntegrationTest < Minitest::Test
 
       rabbit1.upstream(:timeout, timeout: 0).apply do
         assert_nothing_raised do
-          publisher.send(:stop_bunny_forcefully!)
+          publisher.send(:stop!)
         end
       end
     end
   end
 
-  test "publisher#stop_bunny_forcefully! stops correctly when server is down" do
+  test "publisher#stop! stops correctly when server is down" do
     with_client("127.0.0.1:5674") do |client, _logs|
       # connect the bunny
       assert_nothing_raised do
@@ -89,7 +89,7 @@ class PublisherIntegrationTest < Minitest::Test
         wait_until { client.publisher_exceptions? }
 
         assert_nothing_raised do
-          publisher.send(:stop_bunny_forcefully!)
+          publisher.send(:stop!)
         end
       end
     end
@@ -260,7 +260,7 @@ class PublisherIntegrationTest < Minitest::Test
         end
 
         assert_match(/Beetle: message sent!/, logs.string)
-        assert_match(/Beetle: closing connection from publisher to 127.0.0.1:5674 forcefully/, logs.string)
+        assert_match(/Beetle: closing connection from publisher to 127.0.0.1:5674/, logs.string)
         assert_match(/Beetle: message could not be delivered/, logs.string)
 
         refute client.send(:publisher).send(:bunny?) # no bunny active
