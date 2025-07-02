@@ -261,9 +261,10 @@ module Beetle
     end
 
     def on_tcp_connection_loss(connection, settings)
-      # reconnect in 10 seconds, without enforcement
       logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. reconnecting."
-      connection.reconnect(false, 10)
+      EM.add_timer(@client.config.subscriber_reconnect_delay) do
+        connection.reconnect(true, 0)
+      end
     end
 
     def connect_server(settings)
