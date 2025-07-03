@@ -241,7 +241,6 @@ module Beetle
       Logger.new(File::NULL)
     end
 
-
     def setup
       @client = Client.new
       @queue = "somequeue"
@@ -269,7 +268,7 @@ module Beetle
   end
 
   class CallBackExecutionTest < Minitest::Test
-    
+
     def logger
       Logger.new(File::NULL)
     end
@@ -455,13 +454,15 @@ module Beetle
     test "possible authentication failure causes subscriber to exit" do
       cb = @sub.send(:on_possible_authentication_failure)
       @sub.expects(:stop!)
-      @sub.logger.expects(:error).with("Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down!")
+      @sub.logger.expects(:error).with("Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down! pid=#{Process.pid} user= ")
       cb.call({:host => "mickey", :port => 42})
     end
 
     test "tcp connection loss handler tries to reconnect" do
       connection = mock("connection")
-      connection.expects(:reconnect).with(false, 10)
+      connection.expects(:reconnect).with(true, 0)
+
+      EM.expects(:add_timer).with(10).yields
       @sub.logger.expects(:warn).with("Beetle: lost connection: mickey:42. reconnecting.")
       @sub.send(:on_tcp_connection_loss, connection, {:host => "mickey", :port => 42})
     end
@@ -476,6 +477,7 @@ module Beetle
     test "successfull connection to broker" do
       connection = mock("connection")
       connection.expects(:on_tcp_connection_loss)
+      connection.expects(:heartbeat_interval).returns(60)
       @sub.expects(:open_channel_and_subscribe).with(connection, @settings)
       AMQP.expects(:connect).with(@settings).yields(connection)
       @sub.send(:connect_server, @settings)
@@ -489,6 +491,8 @@ module Beetle
 
       connection = mock("connection")
 
+
+      connection.expects(:heartbeat_interval).returns(60)
       connection.expects(:on_tcp_connection_loss)
       connection.expects(:next_channel_id).returns(1)
       connection.expects(:auto_recovering?).returns(true)
