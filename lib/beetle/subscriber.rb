@@ -255,9 +255,13 @@ module Beetle
 
     def on_possible_authentication_failure
       Proc.new do |settings|
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down!"
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down! pid=#{Process.pid} user=#{user_from_settings(settings)} "
         stop!
       end
+    end
+
+    def user_from_settings(settings)
+      settings[:user]
     end
 
     def on_tcp_connection_loss(connection, settings)
@@ -271,6 +275,7 @@ module Beetle
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
       AMQP.connect(settings) do |connection|
+        logger.info "Beetle: connected to rabbit #{server}. Heartbeat interval configured: #{@client.config.subscriber_heartbeat}, actual: #{connection.heartbeat_interval} seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
         @connections[server] = connection
         open_channel_and_subscribe(connection, settings)
