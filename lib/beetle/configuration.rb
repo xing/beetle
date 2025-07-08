@@ -246,7 +246,7 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.subscriber_connect_timeout = 15 # seconds
+      self.subscriber_connect_timeout = 20 # seconds
       self.subscriber_reconnect_delay = 10 # seconds
       self.subscriber_reconnect_on_authentication_failure = false
       self.subscriber_heartbeat = 0
