@@ -1,6 +1,7 @@
 require 'amqp'
 
 module Beetle
+  # Our subclass of AMQP::Session which fixes a bug in the ruby AMQP gem
   class AMQPSession < AMQP::Session
     # we have to fix a bug in ruby AMQP which mistakes the heartbeat timeout for the heartbeat interval
     def heartbeat_interval
