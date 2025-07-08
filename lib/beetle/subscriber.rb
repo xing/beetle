@@ -269,7 +269,7 @@ module Beetle
         server = server_from_settings(settings)
         auhthentication_failures = @authentication_failures[server] || 0
 
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. shutting down! pid=#{Process.pid} user=#{user_from_settings(settings)} auhtentication_failures=#{auhthentication_failures}."
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} auhtentication_failures=#{auhthentication_failures}."
 
         if reconnect_on_authentication_failure? && auhthentication_failures < @client.config.subscriber_max_authentication_failures
           EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
@@ -303,7 +303,7 @@ module Beetle
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
       AMQPSession.connect(settings) do |connection|
-        logger.info "Beetle: connected to rabbit #{server}. Heartbeat interval configured: #{@client.config.subscriber_heartbeat}, actual: #{connection.heartbeat_interval} seconds."
+        logger.info "Beetle: connected to rabbit #{server}. Heartbeat timeout: #{@client.config.subscriber_heartbeat}, interval: #{connection.heartbeat_interval} in seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
         connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
 

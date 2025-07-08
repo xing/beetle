@@ -163,8 +163,11 @@ module Beetle
     # the delay in seconds between reconnects on connection loss (defaults to <tt>10</tt>)
     attr_accessor :subscriber_reconnect_delay
 
-    # # whether to reconnect on authentication failure (defaults to <tt>false</tt>)
+    # whether to reconnect on authentication failure (defaults to <tt>false</tt>)
     attr_accessor :subscriber_reconnect_on_authentication_failure
+
+    # the maximum number of authentication failures before giving up and stopping the reactor
+    attr_accessor :subscriber_max_authentication_failures
 
     # the heartbeats to use for the subscriber connection (defaults to <tt>0</tt>)
     attr_accessor :subscriber_heartbeat
