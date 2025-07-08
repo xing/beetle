@@ -1,7 +1,16 @@
 require 'amqp'
 
 module Beetle
-  # Manages subscriptions and message processing on the receiver side of things.
+  class AMQPSession < AMQP::Session
+    # we have to fix a bug in ruby AMQP which mistakes the heartbeat timeout for the heartbeat interval
+    def heartbeat_interval
+      return 0 if @heartbeat_interval.nil? || @heartbeat_interval <= 0
+
+      [(@heartbeat_interval / 2) - 1, 1].max
+    end
+
+  end
+
   class Subscriber < Base
 
     attr_accessor :tracing
@@ -15,6 +24,7 @@ module Beetle
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
+      @authentication_failures = {}
       @channels = {}
       @subscriptions = {}
       @listened_queues = []
@@ -255,9 +265,21 @@ module Beetle
 
     def on_possible_authentication_failure
       Proc.new do |settings|
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down! pid=#{Process.pid} user=#{user_from_settings(settings)} "
-        stop!
+        server = server_from_settings(settings)
+        auhthentication_failures = @authentication_failures[server] || 0
+
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. shutting down! pid=#{Process.pid} user=#{user_from_settings(settings)} auhtentication_failures=#{auhthentication_failures}."
+
+        if reconnect_on_authentication_failure? && auhthentication_failures < @client.config.subscriber_max_authentication_failures
+          EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
+        else
+          stop!
+        end
       end
+    end
+
+    def reconnect_on_authentication_failure?
+      @client.config.subscriber_reconnect_on_authentication_failure
     end
 
     def user_from_settings(settings)
@@ -266,18 +288,27 @@ module Beetle
 
     def on_tcp_connection_loss(connection, settings)
       logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. reconnecting."
+
       EM.add_timer(@client.config.subscriber_reconnect_delay) do
         connection.reconnect(true, 0)
       end
     end
 
+    def on_skipped_heartbeats(settings)
+      logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
+    end
+
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
-      AMQP.connect(settings) do |connection|
+      AMQPSession.connect(settings) do |connection|
         logger.info "Beetle: connected to rabbit #{server}. Heartbeat interval configured: #{@client.config.subscriber_heartbeat}, actual: #{connection.heartbeat_interval} seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
+        connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
+
         @connections[server] = connection
+        @authentication_failures[server] = 0
+
         open_channel_and_subscribe(connection, settings)
       end
     rescue EventMachine::ConnectionError => e
