@@ -163,6 +163,9 @@ module Beetle
     # the delay in seconds between reconnects on connection loss (defaults to <tt>10</tt>)
     attr_accessor :subscriber_reconnect_delay
 
+    # # whether to reconnect on authentication failure (defaults to <tt>false</tt>)
+    attr_accessor :subscriber_reconnect_on_authentication_failure
+
     # the heartbeats to use for the subscriber connection (defaults to <tt>0</tt>)
     attr_accessor :subscriber_heartbeat
 
@@ -243,8 +246,9 @@ module Beetle
 
       self.update_queue_properties_synchronously = false
 
-      self.subscriber_connect_timeout = 5 # seconds
+      self.subscriber_connect_timeout = 15 # seconds
       self.subscriber_reconnect_delay = 10 # seconds
+      self.subscriber_reconnect_on_authentication_failure = false
       self.subscriber_heartbeat = 0
 
       self.tmpdir = "/tmp"
