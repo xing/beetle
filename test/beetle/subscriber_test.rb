@@ -469,7 +469,7 @@ module Beetle
       connection.expects(:reconnect).with(true, 0)
 
       EM.expects(:add_timer).with(10).yields
-      @sub.logger.expects(:warn).with("Beetle: lost connection: mickey:42. reconnecting.")
+      @sub.logger.expects(:warn).with("Beetle: lost connection: mickey:42. Reconnecting in 10 seconds.")
       @sub.send(:on_tcp_connection_loss, connection, {:host => "mickey", :port => 42})
     end
 
