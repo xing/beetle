@@ -1,7 +1,7 @@
 require 'amqp'
+require_relative 'amqp_session'
 
 module Beetle
-  # Manages subscriptions and message processing on the receiver side of things.
   class Subscriber < Base
 
     attr_accessor :tracing
@@ -15,6 +15,7 @@ module Beetle
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
+      @start_consumer_barrier = :closed
       @channels = {}
       @subscriptions = {}
       @listened_queues = []
@@ -38,6 +39,19 @@ module Beetle
         each_server_sorted_randomly do
           connect_server connection_settings
         end
+
+        connection_time_slice = @client.subscriber_connect_timeout + 2
+
+        EM.add_timer(connection_time_slice) do
+          bind_queues_for_connected_consumers
+        end
+
+        EM.add_timer(connection_time_slice + 1) do
+          @start_consumer_barrier = :open
+
+          start_connected_consumers
+        end
+
         yield if block_given?
       end
     end
@@ -255,24 +269,43 @@ module Beetle
 
     def on_possible_authentication_failure
       Proc.new do |settings|
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down!"
+        server = server_from_settings(settings)
+
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} "
         stop!
       end
     end
 
+    def user_from_settings(settings)
+      settings[:user]
+    end
+
     def on_tcp_connection_loss(connection, settings)
-      # reconnect in 10 seconds, without enforcement
-      logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. reconnecting."
-      connection.reconnect(false, 10)
+      logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. Reconnecting in #{@client.config.subscriber_reconnect_delay} seconds."
+
+      EM.add_timer(@client.config.subscriber_reconnect_delay) do
+        connection.reconnect(true, 0)
+      end
+    end
+
+    def on_skipped_heartbeats(settings)
+      logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
-      AMQP.connect(settings) do |connection|
+
+      AMQPSession.connect(settings) do |connection|
+        logger.info "Beetle: connected to rabbit #{server}. Heartbeat timeout: #{@client.config.subscriber_heartbeat}, interval: #{connection.heartbeat_interval} in seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
+        connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
+
         @connections[server] = connection
-        open_channel_and_subscribe(connection, settings)
+        open_channel(connection, settings)
+
+        # start consumer immediately if the barrier is open
+        start_consumer(connection, settings) if @start_consumer_barrier == :open
       end
     rescue EventMachine::ConnectionError => e
       # something serious went wrong, for example DNS lookup failure
@@ -281,17 +314,41 @@ module Beetle
       settings[:on_tcp_connection_failure].call(settings)
     end
 
-    def open_channel_and_subscribe(connection, settings)
-      server = server_from_settings settings
+    def start_connected_consumers
+      @connections.each do |server_name, connection|
+        start_consumer(server_name) if connection.open?
+      end
+    end
+
+    def bind_queues_for_connected_consumers
+      @connections.each do |server_name, connection|
+        establish_queue_bindings(server_name) if connection.open?
+      end
+    end
+
+    def open_channel(connection, server_name)
       AMQP::Channel.new(connection) do |channel|
         channel.prefetch(@client.config.prefetch_count)
         channel.auto_recovery = true
-        set_current_server server
-        @channels[server] = channel
-        create_exchanges(@exchanges_for_queues)
-        bind_queues(@listened_queues)
-        subscribe_queues(@listened_queues)
+        @channels[server_name] = channel
       end
+    end
+
+    def start_consumer(server_name)
+      logger.info "Beetle: starting consumer for server #{server_name}"
+
+      set_current_server(server_name)
+      subscribe_queues(@listened_queues)
+    end
+
+    def establish_queue_bindings(server_name)
+      set_current_server(server_name)
+
+      logger.info "Beetle: declaring exchanges and queues for server #{server}"
+      create_exchanges(@exchanges_for_queues)
+
+      logger.info "Beetle: declaring queues for server #{server}"
+      bind_queues(@listened_queues)
     end
   end
 end
