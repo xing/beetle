@@ -42,6 +42,7 @@ module Beetle
       config = Configuration.new
       config.servers = 'localhost:5672'
       config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
+      config.connection_name = "my_app_name"
       client = Client.new(config)
       pub = Publisher.new(client)
 
@@ -58,7 +59,8 @@ module Beetle
         continuation_timeout: 5_000,
         connection_timeout: 5,
         channel_max: 2047,
-        heartbeat: :server
+        heartbeat: :server,
+        connection_name: "my_app_name"
       }
 
       Bunny
