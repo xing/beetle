@@ -25,7 +25,6 @@ module Beetle
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
-      @authentication_failures = {}
       @channels = {}
       @subscriptions = {}
       @listened_queues = []
@@ -267,20 +266,10 @@ module Beetle
     def on_possible_authentication_failure
       Proc.new do |settings|
         server = server_from_settings(settings)
-        auhthentication_failures = @authentication_failures[server] || 0
 
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} auhtentication_failures=#{auhthentication_failures}."
-
-        if reconnect_on_authentication_failure? && auhthentication_failures < @client.config.subscriber_max_authentication_failures
-          EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
-        else
-          stop!
-        end
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} "
+        stop!
       end
-    end
-
-    def reconnect_on_authentication_failure?
-      @client.config.subscriber_reconnect_on_authentication_failure
     end
 
     def user_from_settings(settings)
@@ -308,7 +297,6 @@ module Beetle
         connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
 
         @connections[server] = connection
-        @authentication_failures[server] = 0
 
         open_channel_and_subscribe(connection, settings)
       end
