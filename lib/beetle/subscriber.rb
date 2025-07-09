@@ -1,17 +1,7 @@
 require 'amqp'
+require_relative 'amqp_session'
 
 module Beetle
-  # Our subclass of AMQP::Session which fixes a bug in the ruby AMQP gem
-  class AMQPSession < AMQP::Session
-    # we have to fix a bug in ruby AMQP which mistakes the heartbeat timeout for the heartbeat interval
-    def heartbeat_interval
-      return 0 if @heartbeat_interval.nil? || @heartbeat_interval <= 0
-
-      [(@heartbeat_interval / 2) - 1, 1].max
-    end
-
-  end
-
   class Subscriber < Base
 
     attr_accessor :tracing
@@ -291,6 +281,7 @@ module Beetle
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
+      binding.irb
       AMQPSession.connect(settings) do |connection|
         logger.info "Beetle: connected to rabbit #{server}. Heartbeat timeout: #{@client.config.subscriber_heartbeat}, interval: #{connection.heartbeat_interval} in seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
