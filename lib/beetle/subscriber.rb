@@ -281,7 +281,7 @@ module Beetle
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
-      binding.irb
+
       AMQPSession.connect(settings) do |connection|
         logger.info "Beetle: connected to rabbit #{server}. Heartbeat timeout: #{@client.config.subscriber_heartbeat}, interval: #{connection.heartbeat_interval} in seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
