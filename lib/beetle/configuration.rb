@@ -187,6 +187,9 @@ module Beetle
     # this means that on first publish to an exchange we declare all the queues that are bound to it
     attr_accessor :publisher_lazy_queue_setup
 
+    # meta data for the connection, used to identify the application that holds the connection in the RabbitMQ management UI
+    attr_accessor :connection_name
+
     # returns the configured amqp brokers
     def brokers
       {
