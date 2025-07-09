@@ -216,7 +216,7 @@ module Beetle
 
     test "accessing a given exchange should create it using the config. further access should return the created exchange" do
       @client.register_exchange("some_exchange", "type" => "topic", "durable" => true)
-      m = mock("AMQP")
+      m = mock("AMQPSession")
       m.expects(:topic).with("some_exchange", :durable => true).returns(42)
       @sub.expects(:channel).returns(m)
       ex = @sub.send(:exchange, "some_exchange")
@@ -447,16 +447,20 @@ module Beetle
       cb = @sub.send(:on_tcp_connection_failure)
       EM::Timer.expects(:new).with(10).yields
       @sub.expects(:connect_server).with(@settings)
-      @sub.logger.expects(:warn).with("Beetle: connection failed: mickey:42. Timeout: 5 seconds. Delay before retry: 10 seconds.")
+      @sub.logger.expects(:warn).with do |msg|
+        assert_match(/^Beetle: connection failed: mickey:42\. Timeout: 20 seconds\. Delay before retry: 10 seconds\.$/, msg)
+      end
       cb.call(@settings)
     end
 
     test "possible authentication failure causes subscriber to exit" do
       cb = @sub.send(:on_possible_authentication_failure)
       @sub.expects(:stop!)
+
       @sub.logger.expects(:error).with do |msg|
-        assert_match(/Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down! pid=\d+ user= /, msg)
+        assert_match(/Beetle: possible authentication failure, or server overloaded: mickey:42. Shutting down./, msg)
       end
+
       cb.call({:host => "mickey", :port => 42})
     end
 
@@ -470,8 +474,7 @@ module Beetle
     end
 
     test "event machine connection error" do
-      connection = mock("connection")
-      AMQP.expects(:connect).raises(EventMachine::ConnectionError)
+      AMQPSession.expects(:connect).raises(EventMachine::ConnectionError)
       @settings[:on_tcp_connection_failure].expects(:call).with(@settings)
       @sub.send(:connect_server, @settings)
     end
@@ -480,8 +483,10 @@ module Beetle
       connection = mock("connection")
       connection.expects(:on_tcp_connection_loss)
       connection.expects(:heartbeat_interval).returns(60)
+      connection.expects(:on_skipped_heartbeats)
+
       @sub.expects(:open_channel_and_subscribe).with(connection, @settings)
-      AMQP.expects(:connect).with(@settings).yields(connection)
+      AMQPSession.expects(:connect).with(@settings).yields(connection)
       @sub.send(:connect_server, @settings)
       assert_equal connection, @sub.instance_variable_get("@connections")["mickey:42"]
     end
@@ -501,12 +506,13 @@ module Beetle
       connection.expects(:open?).returns(true)
       connection.expects(:channel_max)
       connection.expects(:on_connection)
+      connection.expects(:on_skipped_heartbeats)
 
 
       EM.expects(:run).yields
       EM.expects(:reactor_running?).returns(true)
 
-      AMQP.expects(:connect).once.with(has_entries(host: "mickey", port: 42, user: "john", pass: "doe", ssl: false)).yields(connection)
+      AMQPSession.expects(:connect).once.with(has_entries(host: "mickey", port: 42, user: "john", pass: "doe", ssl: false)).yields(connection)
 
       @sub.listen_queues(["a_queue"])
     end
