@@ -245,8 +245,6 @@ module Beetle
 
       self.subscriber_connect_timeout = 20 # seconds
       self.subscriber_reconnect_delay = 10 # seconds
-      self.subscriber_reconnect_on_authentication_failure = false
-      self.subscriber_max_authentication_failures = 3
       self.subscriber_heartbeat = 0
 
       self.tmpdir = "/tmp"

@@ -454,7 +454,9 @@ module Beetle
     test "possible authentication failure causes subscriber to exit" do
       cb = @sub.send(:on_possible_authentication_failure)
       @sub.expects(:stop!)
-      @sub.logger.expects(:error).with("Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down! pid=#{Process.pid} user= ")
+      @sub.logger.expects(:error).with do |msg|
+        assert_match(/Beetle: possible authentication failure, or server overloaded: mickey:42. shutting down! pid=\d+ user= /, msg)
+      end
       cb.call({:host => "mickey", :port => 42})
     end
 
