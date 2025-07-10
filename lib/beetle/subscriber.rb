@@ -1,7 +1,7 @@
 require 'amqp'
+require_relative 'amqp_session'
 
 module Beetle
-  # Manages subscriptions and message processing on the receiver side of things.
   class Subscriber < Base
 
     attr_accessor :tracing
@@ -255,23 +255,40 @@ module Beetle
 
     def on_possible_authentication_failure
       Proc.new do |settings|
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server_from_settings(settings)}. shutting down!"
+        server = server_from_settings(settings)
+
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} "
         stop!
       end
     end
 
+    def user_from_settings(settings)
+      settings[:user]
+    end
+
     def on_tcp_connection_loss(connection, settings)
-      # reconnect in 10 seconds, without enforcement
-      logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. reconnecting."
-      connection.reconnect(false, 10)
+      logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. Reconnecting in #{@client.config.subscriber_reconnect_delay} seconds."
+
+      EM.add_timer(@client.config.subscriber_reconnect_delay) do
+        connection.reconnect(true, 0)
+      end
+    end
+
+    def on_skipped_heartbeats(settings)
+      logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
-      AMQP.connect(settings) do |connection|
+
+      AMQPSession.connect(settings) do |connection|
+        logger.info "Beetle: connected to rabbit #{server}. Heartbeat timeout: #{@client.config.subscriber_heartbeat}, interval: #{connection.heartbeat_interval} in seconds."
         connection.on_tcp_connection_loss(&method(:on_tcp_connection_loss))
+        connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
+
         @connections[server] = connection
+
         open_channel_and_subscribe(connection, settings)
       end
     rescue EventMachine::ConnectionError => e
