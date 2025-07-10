@@ -259,7 +259,8 @@ module Beetle
         :recovery_attempts => 0,
         # register our own error handler, because the default is Thread.current which is a super bad idea
         # because it will raise exceptions originating in background threads (reader_loop, heartbeat_sender) in the main thread
-        :session_error_handler => error_handler
+        :session_error_handler => error_handler,
+        :connection_name => @client.config.connection_name
       )
 
       session.start_safely
