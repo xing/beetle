@@ -274,7 +274,7 @@ module Beetle
       end
     end
 
-    def on_skipped_heartbeats(settings)
+    def on_skipped_heartbeats(_connection, settings)
       logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
