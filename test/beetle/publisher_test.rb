@@ -39,6 +39,7 @@ module Beetle
     end
 
     test "new bunnies should be created using custom connection options and they should be started" do
+      SecureRandom.stubs(:hex).with(3).returns("abc123")
       config = Configuration.new
       config.servers = 'localhost:5672'
       config.server_connection_options["localhost:5672"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
@@ -60,7 +61,7 @@ module Beetle
         connection_timeout: 5,
         channel_max: 2047,
         heartbeat: :server,
-        connection_name: "my_app_name"
+        connection_name: "my_app_name-#{Process.pid}-abc123"
       }
 
       Bunny

@@ -432,18 +432,19 @@ module Beetle
       @config.servers = "mickey:42"
       @config.connection_name = "test_connection"
       @config.server_connection_options["mickey:42"] = { user: "john", pass: "doe", vhost: "test", ssl: false }
-
+      SecureRandom.stubs(:hex).with(3).returns("abc123")
       @client = Client.new(@config)
       @sub = @client.send(:subscriber)
       @sub.send(:set_current_server, "mickey:42")
       @settings = @sub.send(:connection_settings)
     end
 
+
     test "connection settings should use current host, port, specify connection failure callback and connection name" do
       assert_equal "mickey", @settings[:host]
       assert_equal 42, @settings[:port]
       assert @settings.has_key?(:on_tcp_connection_failure)
-      assert_equal "test_connection", @settings[:client_properties][:connection_name]
+      assert_equal "test_connection-#{Process.pid}-abc123", @settings[:client_properties][:connection_name]
     end
 
     test "tcp connection failure should try to connect again after 10 seconds" do

@@ -188,7 +188,7 @@ module Beetle
     attr_accessor :publisher_lazy_queue_setup
 
     # meta data for the connection, used to identify the application that holds the connection in the RabbitMQ management UI
-    attr_accessor :connection_name
+    attr_writer :connection_name
 
     # returns the configured amqp brokers
     def brokers
@@ -196,6 +196,10 @@ module Beetle
         'servers' => servers,
         'additional_subscription_servers' => additional_subscription_servers
       }
+    end
+
+    def connection_name
+      "#{@connection_name}-#{Process.pid}-#{SecureRandom.hex(3)}"
     end
 
     def initialize # :nodoc:
