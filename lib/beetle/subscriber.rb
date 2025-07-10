@@ -15,7 +15,6 @@ module Beetle
       @servers.concat @client.additional_subscription_servers
       @handlers = {}
       @connections = {}
-      @start_consumer_barrier = :closed
       @channels = {}
       @subscriptions = {}
       @listened_queues = []
@@ -35,21 +34,15 @@ module Beetle
       @listened_queues = queues
       @exchanges_for_queues = exchanges_for_queues(queues)
 
+      listen_queues_immediately
+    end
+
+    def listen_queues_phased; end
+
+    def listen_queues_immediately
       EM.run do
         each_server_sorted_randomly do
-          connect_server connection_settings
-        end
-
-        connection_time_slice = @client.subscriber_connect_timeout + 2
-
-        EM.add_timer(connection_time_slice) do
-          bind_queues_for_connected_consumers
-        end
-
-        EM.add_timer(connection_time_slice + 1) do
-          @start_consumer_barrier = :open
-
-          start_connected_consumers
+          connect_server_immediately connection_settings
         end
 
         yield if block_given?
@@ -292,7 +285,7 @@ module Beetle
       logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
-    def connect_server(settings)
+    def connect_server_immediately(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
 
@@ -302,10 +295,11 @@ module Beetle
         connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
 
         @connections[server] = connection
-        open_channel(connection, settings)
 
-        # start consumer immediately if the barrier is open
-        start_consumer(connection, settings) if @start_consumer_barrier == :open
+        open_channel(connection, server) do |_channel|
+          establish_queue_bindings(server)
+          start_consumer(server)
+        end
       end
     rescue EventMachine::ConnectionError => e
       # something serious went wrong, for example DNS lookup failure
@@ -315,14 +309,14 @@ module Beetle
     end
 
     def start_connected_consumers
-      @connections.each do |server_name, connection|
-        start_consumer(server_name) if connection.open?
+      @connections.each do |server_name, _connection|
+        start_consumer(server_name)
       end
     end
 
     def bind_queues_for_connected_consumers
-      @connections.each do |server_name, connection|
-        establish_queue_bindings(server_name) if connection.open?
+      @connections.each do |server_name, _connection|
+        establish_queue_bindings(server_name)
       end
     end
 
@@ -331,13 +325,15 @@ module Beetle
         channel.prefetch(@client.config.prefetch_count)
         channel.auto_recovery = true
         @channels[server_name] = channel
+
+        yield(channel) if block_given?
       end
     end
 
     def start_consumer(server_name)
-      logger.info "Beetle: starting consumer for server #{server_name}"
-
       set_current_server(server_name)
+
+      logger.info "Beetle: starting consumer for server #{server_name}"
       subscribe_queues(@listened_queues)
     end
 
