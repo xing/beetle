@@ -1,9 +1,9 @@
 require 'amqp'
 require_relative 'amqp_session'
+require_relative 'await_latch'
 
 module Beetle
   class Subscriber < Base
-
     attr_accessor :tracing
     def tracing?
       @tracing
@@ -35,9 +35,39 @@ module Beetle
       @exchanges_for_queues = exchanges_for_queues(queues)
 
       listen_queues_immediately
+      #listen_queues_phased
     end
 
-    def listen_queues_phased; end
+    def listen_queues_phased
+      # a phased version of listen_queues, which first connects to all servers, then sets up the exchanges and queues, and finally starts the consumers
+      EM.run do
+        connect_latch = AwaitLatch.new(servers.size, timeout: 5)
+
+        each_server_sorted_randomly do
+          connect_server(connection_settings) do |server, _connection|
+            connect_latch.succeed_one(server)
+          end
+        end
+
+        connect_latch.callback do |servers|
+          # we have all connections established that we could establish
+          bind_latch = AwaitLatch.new(servers.size, timeout: 5)
+
+          servers.each do |server_name|
+            establish_queue_bindings(server_name)
+            bind_latch.succeed_one(server_name)
+          rescue Exception => e
+            bind_latch.fail_one(e)
+          end
+
+          bind_latch.callback do |servers|
+            servers.each do |server_name|
+              start_consumer(server_name)
+            end
+          end
+        end
+      end
+    end
 
     def listen_queues_immediately
       EM.run do
@@ -135,7 +165,10 @@ module Beetle
     end
 
     def subscribe_queues(queues)
-      queues.each { |name| subscribe(name) if @handlers.include?(name) }
+      queues.each do |name|
+        puts "Subscribing queue: #{name}"
+        subscribe(name) if @handlers.include?(name)
+      end
     end
 
     def channel(server=@server)
@@ -281,11 +314,20 @@ module Beetle
       end
     end
 
-    def on_skipped_heartbeats(settings)
+    def on_skipped_heartbeats(_connection, settings)
       logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
     def connect_server_immediately(settings)
+      connect_server(settings) do |connection, server_name|
+        open_channel(connection, server_name) do |_channel|
+          establish_queue_bindings(server_name)
+          start_consumer(server_name)
+        end
+      end
+    end
+
+    def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
 
@@ -295,11 +337,7 @@ module Beetle
         connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
 
         @connections[server] = connection
-
-        open_channel(connection, server) do |_channel|
-          establish_queue_bindings(server)
-          start_consumer(server)
-        end
+        yield(connection, server) if block_given?
       end
     rescue EventMachine::ConnectionError => e
       # something serious went wrong, for example DNS lookup failure
@@ -340,10 +378,10 @@ module Beetle
     def establish_queue_bindings(server_name)
       set_current_server(server_name)
 
-      logger.info "Beetle: declaring exchanges and queues for server #{server}"
+      logger.info "Beetle: declaring exchanges and queues for server #{server_name}"
       create_exchanges(@exchanges_for_queues)
 
-      logger.info "Beetle: declaring queues for server #{server}"
+      logger.info "Beetle: declaring queues for server #{server_name}"
       bind_queues(@listened_queues)
     end
   end

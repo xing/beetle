@@ -3,13 +3,13 @@
 require 'eventmachine'
 
 module Beetle
-  include EM::Deferrable
-
   class AwaitLatch
-    def initialize(expected_count, timeout = nil)
-      @expected_count = expected_count
+    include EM::Deferrable
+
+    def initialize(expected_count, timeout: nil)
+      @expected = expected_count
       @timeout = timeout
-      @completed_count = 0
+      @completed = 0
       @results = []
 
       return unless timeout
@@ -36,7 +36,7 @@ module Beetle
     end
 
     def completed?
-      @completed_count >= @expected_count
+      @completed >= @expected
     end
   end
 end
