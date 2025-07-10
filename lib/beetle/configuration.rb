@@ -199,6 +199,7 @@ module Beetle
     end
 
     def connection_name
+      return "undefined" unless @connection_name
       "#{@connection_name}-#{Process.pid}-#{SecureRandom.hex(3)}"
     end
 
