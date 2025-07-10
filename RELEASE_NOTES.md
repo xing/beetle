@@ -10,6 +10,7 @@
 * Add more logging on publishing exceptions
 * [BREAKING] Drop support of thread local channels as a source of memory leaks
 * Introduce setting to configure lazy_queue setup during publishing
+* Allow configure connection name to improve traceability and diagnostics 
 
 ## Version 5.1.2.pre
 
