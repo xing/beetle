@@ -16,6 +16,8 @@ module Beetle
       #
       # This means that if the TLS negotiation takes longer than the connect timeout,
       # the connection will hang long (10 seconds in our observations).
+      #
+      # We add a small buffer to the connect timeout to avoid a race with the socket timeout.
       Timeout.timeout(transport.connect_timeout + 0.2) do
         start
       end
