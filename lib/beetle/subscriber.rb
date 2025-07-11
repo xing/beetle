@@ -1,9 +1,9 @@
 require 'amqp'
 require_relative 'amqp_session'
+require_relative 'await_latch'
 
 module Beetle
   class Subscriber < Base
-
     attr_accessor :tracing
     def tracing?
       @tracing
@@ -34,10 +34,55 @@ module Beetle
       @listened_queues = queues
       @exchanges_for_queues = exchanges_for_queues(queues)
 
+      #listen_queues_immediately
+      listen_queues_phased
+    end
+
+    def listen_queues_phased
+      # a phased version of listen_queues, which first connects to all servers, then sets up the exchanges and queues, and finally starts the consumers
+      EM.run do
+        connect_latch = AwaitLatch.new(servers.size, timeout: 5)
+
+        each_server_sorted_randomly do
+          connect_server(connection_settings) do |connection, server|
+            open_channel(connection, server) do |_channel|
+              connect_latch.succeed_one(server)
+            end
+          rescue StandardError => e
+            logger.error "Beetle: error while connecting to server #{server}: #{e.class}(#{e})"
+
+            connect_latch.fail_one(e)
+          end
+        end
+
+        connect_latch.callback do |servers|
+          # we have all connections established that we could establish
+          bind_latch = AwaitLatch.new(servers.size, timeout: 5)
+
+          servers.each do |server_name|
+            establish_queue_bindings(server_name)
+            bind_latch.succeed_one(server_name)
+          rescue StandardError => e
+            logger.error "Beetle: error while establishing queue bindings for server #{server_name}: #{e.class}(#{e})"
+
+            bind_latch.fail_one(e)
+          end
+
+          bind_latch.callback do |servers|
+            servers.each do |server_name|
+              start_consumer(server_name)
+            end
+          end
+        end
+      end
+    end
+
+    def listen_queues_immediately
       EM.run do
         each_server_sorted_randomly do
-          connect_server connection_settings
+          connect_server_immediately connection_settings
         end
+
         yield if block_given?
       end
     end
@@ -128,7 +173,9 @@ module Beetle
     end
 
     def subscribe_queues(queues)
-      queues.each { |name| subscribe(name) if @handlers.include?(name) }
+      queues.each do |name|
+        subscribe(name) if @handlers.include?(name)
+      end
     end
 
     def channel(server=@server)
@@ -252,7 +299,7 @@ module Beetle
     def on_tcp_connection_failure
       Proc.new do |settings|
         logger.warn "Beetle: connection failed: #{server_from_settings(settings)}. Timeout: #{@client.config.subscriber_connect_timeout} seconds. Delay before retry: #{@client.config.subscriber_reconnect_delay} seconds."
-        EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
+        EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server_immediately(settings) }
       end
     end
 
@@ -281,6 +328,15 @@ module Beetle
       logger.warn "Beetle: skipped heartbeats detected for server #{server_from_settings(settings)}."
     end
 
+    def connect_server_immediately(settings)
+      connect_server(settings) do |connection, server_name|
+        open_channel(connection, server_name) do |_channel|
+          establish_queue_bindings(server_name)
+          start_consumer(server_name)
+        end
+      end
+    end
+
     def connect_server(settings)
       server = server_from_settings settings
       logger.info "Beetle: connecting to rabbit #{server}"
@@ -291,8 +347,7 @@ module Beetle
         connection.on_skipped_heartbeats(&method(:on_skipped_heartbeats))
 
         @connections[server] = connection
-
-        open_channel_and_subscribe(connection, settings)
+        yield(connection, server) if block_given?
       end
     rescue EventMachine::ConnectionError => e
       # something serious went wrong, for example DNS lookup failure
@@ -301,17 +356,43 @@ module Beetle
       settings[:on_tcp_connection_failure].call(settings)
     end
 
-    def open_channel_and_subscribe(connection, settings)
-      server = server_from_settings settings
+    def start_connected_consumers
+      @connections.each do |server_name, _connection|
+        start_consumer(server_name)
+      end
+    end
+
+    def bind_queues_for_connected_consumers
+      @connections.each do |server_name, _connection|
+        establish_queue_bindings(server_name)
+      end
+    end
+
+    def open_channel(connection, server_name)
       AMQP::Channel.new(connection) do |channel|
         channel.prefetch(@client.config.prefetch_count)
         channel.auto_recovery = true
-        set_current_server server
-        @channels[server] = channel
-        create_exchanges(@exchanges_for_queues)
-        bind_queues(@listened_queues)
-        subscribe_queues(@listened_queues)
+        @channels[server_name] = channel
+
+        yield(channel) if block_given?
       end
+    end
+
+    def start_consumer(server_name)
+      set_current_server(server_name)
+
+      logger.info "Beetle: starting consumer for server #{server_name}"
+      subscribe_queues(@listened_queues)
+    end
+
+    def establish_queue_bindings(server_name)
+      set_current_server(server_name)
+
+      logger.info "Beetle: declaring exchanges and queues for server #{server_name}"
+      create_exchanges(@exchanges_for_queues)
+
+      logger.info "Beetle: declaring queues for server #{server_name}"
+      bind_queues(@listened_queues)
     end
   end
 end
