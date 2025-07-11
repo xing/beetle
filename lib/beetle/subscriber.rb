@@ -174,7 +174,6 @@ module Beetle
 
     def subscribe_queues(queues)
       queues.each do |name|
-        puts "Subscribing queue: #{name}"
         subscribe(name) if @handlers.include?(name)
       end
     end
