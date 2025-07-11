@@ -4,7 +4,7 @@ module Beetle
     class ShutdownError < StandardError; end
 
     def start_safely
-      Timeout.timeout(transport.connect_timeout) do
+      Timeout.timeout(transport.connect_timeout + 0.2) do
         start
       end
     rescue StandardError => e
