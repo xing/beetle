@@ -283,6 +283,9 @@ module Beetle
         :heartbeat => @client.config.subscriber_heartbeat,
         :on_tcp_connection_failure => on_tcp_connection_failure,
         :on_possible_authentication_failure => on_possible_authentication_failure,
+        client_properties: {
+          connection_name: @client.config.connection_name
+        }
       }
     end
 
