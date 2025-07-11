@@ -34,8 +34,8 @@ module Beetle
       @listened_queues = queues
       @exchanges_for_queues = exchanges_for_queues(queues)
 
-      listen_queues_immediately
-      #listen_queues_phased
+      #listen_queues_immediately
+      listen_queues_phased
     end
 
     def listen_queues_phased
@@ -44,19 +44,28 @@ module Beetle
         connect_latch = AwaitLatch.new(servers.size, timeout: 5)
 
         each_server_sorted_randomly do
-          connect_server(connection_settings) do |server, _connection|
-            connect_latch.succeed_one(server)
+          connect_server(connection_settings) do |connection, server|
+            open_channel(connection, server) do |_channel|
+              connect_latch.succeed_one(server)
+            end
+          rescue StandardError => e
+            logger.error "Beetle: error while connecting to server #{server}: #{e.class}(#{e})"
+
+            connect_latch.fail_one(e)
           end
         end
 
         connect_latch.callback do |servers|
           # we have all connections established that we could establish
           bind_latch = AwaitLatch.new(servers.size, timeout: 5)
+          puts @channels.inspect
 
           servers.each do |server_name|
             establish_queue_bindings(server_name)
             bind_latch.succeed_one(server_name)
-          rescue Exception => e
+          rescue StandardError => e
+            logger.error "Beetle: error while establishing queue bindings for server #{server_name}: #{e.class}(#{e})"
+
             bind_latch.fail_one(e)
           end
 
