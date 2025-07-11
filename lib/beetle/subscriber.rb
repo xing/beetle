@@ -58,7 +58,6 @@ module Beetle
         connect_latch.callback do |servers|
           # we have all connections established that we could establish
           bind_latch = AwaitLatch.new(servers.size, timeout: 5)
-          puts @channels.inspect
 
           servers.each do |server_name|
             establish_queue_bindings(server_name)
@@ -301,7 +300,7 @@ module Beetle
     def on_tcp_connection_failure
       Proc.new do |settings|
         logger.warn "Beetle: connection failed: #{server_from_settings(settings)}. Timeout: #{@client.config.subscriber_connect_timeout} seconds. Delay before retry: #{@client.config.subscriber_reconnect_delay} seconds."
-        EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server(settings) }
+        EM::Timer.new(@client.config.subscriber_reconnect_delay) { connect_server_immediately(settings) }
       end
     end
 
