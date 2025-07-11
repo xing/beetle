@@ -4,20 +4,7 @@ module Beetle
     class ShutdownError < StandardError; end
 
     def start_safely
-      if uses_tls?
-        # For TLS connections we have two phases
-        # 1. The socket connect
-        # 2. The TLS negotiation
-        #
-        # While the socket connect timeout takes effect on the initial socket connection,
-        # it does not take effect on the TLS negotiation.
-        #
-        # This means that if the TLS negotiation takes longer than the connect timeout,
-        # the connection will hang long (10 seconds in our observations).
-        Timeout.timeout(transport.connect_timeout) do
-          start
-        end
-      else
+      Timeout.timeout(transport.connect_timeout) do
         start
       end
     rescue StandardError => e
