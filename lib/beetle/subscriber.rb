@@ -231,13 +231,15 @@ module Beetle
 
     def connection_settings
       options = connection_options_for_server(@server)
+      ssl_options = options[:ssl] && { ssl_version: :TLSv1_2, verify_peer: false }
+
       {
         :host => options[:host],
         :port => options[:port],
         :user => options[:user],
         :pass => options[:pass],
         :vhost => options[:vhost],
-        :ssl   => options[:ssl],
+        :ssl   => ssl_options,
         :logging => false,
         :timeout => @client.config.subscriber_connect_timeout,
         :heartbeat => @client.config.subscriber_heartbeat,
