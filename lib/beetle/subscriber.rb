@@ -259,8 +259,8 @@ module Beetle
     def on_possible_authentication_failure
       Proc.new do |settings|
         server = server_from_settings(settings)
-
-        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low.  pid=#{Process.pid} user=#{user_from_settings(settings)} "
+        
+        logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low. pid=#{Process.pid} user=#{user_from_settings(settings)} "
         stop!
       end
     end
@@ -272,9 +272,7 @@ module Beetle
     def on_tcp_connection_loss(connection, settings)
       logger.warn "Beetle: lost connection: #{server_from_settings(settings)}. Reconnecting in #{@client.config.subscriber_reconnect_delay} seconds."
 
-      EM.add_timer(@client.config.subscriber_reconnect_delay) do
-        connection.reconnect(true, 0)
-      end
+      connection.reconnect(false, @client.config.subscriber_reconnect_delay)
     end
 
     def on_skipped_heartbeats(_connection, settings)
