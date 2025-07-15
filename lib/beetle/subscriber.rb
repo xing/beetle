@@ -259,7 +259,7 @@ module Beetle
     def on_possible_authentication_failure
       Proc.new do |settings|
         server = server_from_settings(settings)
-
+        
         logger.error "Beetle: possible authentication failure, or server overloaded: #{server}. Shutting down. This could also mean that the subscriber_connect_timeout is too low. pid=#{Process.pid} user=#{user_from_settings(settings)} "
         stop!
       end
