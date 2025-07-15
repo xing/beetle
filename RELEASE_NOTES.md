@@ -2,7 +2,8 @@
 
 ## Version 6.0.0 (rc)
 
-* [BREAKING] Replace publishing_timeout with publisher_read_timeout, publisher_write_timeout and publisher_read_response_timeout 
+* Disabled TLS warnings that would pop up with higher log levels, but don't effect us since we don't use client certificates
+* [BREAKING] Replace publishing_timeout with publisher_read_timeout, publisher_write_timeout and publisher_read_response_timeout
 * [BREAKING] Use saner session error handler for bunny that raises exceptions when we are ready to handle them
 * [BUGFIX] Fix bug that would prevent per client logger from being used and use global Beetle.config.logger instead
 * [BREAKING] Disable bunnny's auto-recovery in publishers (the configuration option has been removed as well)
