@@ -79,8 +79,10 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
         current_exchange = exchange(exchange_name)
-        stop_on_bunny_error! # exchange declaration might have tainted the connection
 
+        # exchange declaration might have tainted the connection
+        # we reraise because the channel might no longer be valid and we have to recreate everything
+        reraise_bunny_error!
         current_exchange.publish(data, opts.dup)
 
         if publisher_confirms? && !current_exchange.wait_for_confirms
@@ -134,7 +136,9 @@ module Beetle
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           current_exchange = exchange(exchange_name)
 
-          stop_on_bunny_error! # exchange declaration might have tainted the connection
+          # exchange declaration might have tainted the connection
+          # we reraise because the channel might no longer be valid and we have to recreate everything
+          reraise_bunny_error!
           current_exchange.publish(data, opts.dup)
 
           published << @server
@@ -224,9 +228,14 @@ module Beetle
       bunny_error_handler? && bunny_error_handler.exception?
     end
 
+    def reraise_bunny_error!
+      bunny_error_handler&.raise_pending_exception!
+    end
+
     def stop_on_bunny_error!
-      bunny_error_handler&.raise_pending_exception! 
+      reraise_bunny_error! 
     rescue StandardError => e
+      logger.warn "Beetle: stopping bunny connection to #{@server} because of error detected in bunny session. Connection will be re-established later."
       stop!(e)
     end
 
@@ -323,6 +332,7 @@ module Beetle
 
     def create_exchange!(name, opts)
       logger.debug("Beetle: creating exchange #{name} with opts: #{opts.inspect}")
+
       channel.exchange(name, opts.dup)
     end
 

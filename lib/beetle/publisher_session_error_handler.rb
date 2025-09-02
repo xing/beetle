@@ -43,7 +43,7 @@ module Beetle
     # @param args [Array] the arguments to raise, usually an exception class and a message
     def raise(*args)
       source_thread = Thread.current # the thread that invoked this method
-      @logger.error "Beetle: bunny session handler error. server=#{@server} raised_from=#{source_thread.inspect}."
+      @logger.warn "Beetle: bunny session handler error. server=#{@server} raised_from=#{source_thread.inspect}."
       @error_mutex.synchronize { @error_args ||= args }
       nil
     end
