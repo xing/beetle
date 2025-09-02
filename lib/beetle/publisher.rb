@@ -73,12 +73,14 @@ module Beetle
 
       begin
         select_next_server if tries.even?
-        stop_on_bunny_error!
+        stop_on_bunny_error! # raise any errors that happened in the mean time
 
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
         current_exchange = exchange(exchange_name)
+        stop_on_bunny_error! # exchange declaration might have tainted the connection
+
         current_exchange.publish(data, opts.dup)
 
         if publisher_confirms? && !current_exchange.wait_for_confirms
@@ -130,7 +132,11 @@ module Beetle
 
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
-          exchange(exchange_name).publish(data, opts.dup)
+          current_exchange = exchange(exchange_name)
+
+          stop_on_bunny_error! # exchange declaration might have tainted the connection
+          current_exchange.publish(data, opts.dup)
+
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue StandardError => e 
@@ -316,6 +322,7 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
+      logger.debug("Beetle: creating exchange #{name} with opts: #{opts.inspect}")
       channel.exchange(name, opts.dup)
     end
 
