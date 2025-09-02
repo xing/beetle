@@ -88,7 +88,7 @@ class Redis #:nodoc:
     module SaneShutdown
       def shutdown
         super
-      rescue RedisClient::CannotConnectError
+      rescue RedisClient::CannotConnectError, Redis::ConnectionError
         nil
       end
     end
