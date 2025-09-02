@@ -716,7 +716,7 @@ module Beetle
       @pub.stop
     end
 
-     test "stop! should should count restarts" do
+    test "stop! counts restarts" do
       bunny = mock("bunny")
       @pub.servers = ["localhost:1111"]
       @pub.send(:select_next_server)
@@ -761,7 +761,7 @@ module Beetle
       assert_equal 1, @pub.publish("mama", @data, @opts)
     end
 
-    test "should raise an exception when confirms return false" do
+    test "should not raise an exception when confirms return false" do
       confirms_sequence = sequence("confirms")
       @pub.servers = ["someserver"]
       @pub.server = "someserver"
