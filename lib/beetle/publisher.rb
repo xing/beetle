@@ -80,10 +80,8 @@ module Beetle
 
         current_exchange = exchange(exchange_name)
 
-        # exchange declaration might have tainted the connection
-        # we reraise because the channel might no longer be valid and we have to recreate everything
-        reraise_bunny_error!
         current_exchange.publish(data, opts.dup)
+        reraise_bunny_error! # reraise any errors that happened during publishing
 
         if publisher_confirms? && !current_exchange.wait_for_confirms
           logger.warn "Beetle: failed to confirm publishing message #{message_name}"
@@ -136,10 +134,8 @@ module Beetle
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           current_exchange = exchange(exchange_name)
 
-          # exchange declaration might have tainted the connection
-          # we reraise because the channel might no longer be valid and we have to recreate everything
-          reraise_bunny_error!
           current_exchange.publish(data, opts.dup)
+          reraise_bunny_error! # reraise any errors that happened during publishing
 
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
