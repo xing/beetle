@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 6.0.1
+
+* Surface errors synchronously after publishing to adress edge cases where errors would not be noticed without publisher confirms
+
 ## Version 6.0.0
 
 * Disabled TLS warnings that would pop up with higher log levels, but don't effect us since we don't use client certificates
