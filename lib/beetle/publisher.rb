@@ -79,6 +79,7 @@ module Beetle
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
         current_exchange = exchange(exchange_name)
+        reraise_bunny_error! # reraise any errors that happened during exchange creation
 
         current_exchange.publish(data, opts.dup)
         reraise_bunny_error! # reraise any errors that happened during publishing
@@ -133,6 +134,7 @@ module Beetle
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
           current_exchange = exchange(exchange_name)
+          reraise_bunny_error! # reraise any errors that happened during exchange creation
 
           current_exchange.publish(data, opts.dup)
           reraise_bunny_error! # reraise any errors that happened during publishing
