@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 6.1.0
+
+* Drop dependency to hiredis
+* Add dependency to redis >= 5 and hiredis-client >= 0.25
+
 ## Version 6.0.1
 
 * Surface errors synchronously after publishing to adress edge cases where errors would not be noticed without publisher confirms
