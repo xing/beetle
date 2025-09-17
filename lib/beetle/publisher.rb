@@ -73,13 +73,16 @@ module Beetle
 
       begin
         select_next_server if tries.even?
-        stop_on_bunny_error!
+        stop_on_bunny_error! # raise any errors that happened in the mean time
 
         bind_queues_for_exchange(exchange_name)
         logger.debug "Beetle: trying to send message #{message_name}: #{data} with option #{opts}"
 
         current_exchange = exchange(exchange_name)
+        reraise_bunny_error! # reraise any errors that happened during exchange creation
+
         current_exchange.publish(data, opts.dup)
+        reraise_bunny_error! # reraise any errors that happened during publishing
 
         if publisher_confirms? && !current_exchange.wait_for_confirms
           logger.warn "Beetle: failed to confirm publishing message #{message_name}"
@@ -130,7 +133,12 @@ module Beetle
 
           bind_queues_for_exchange(exchange_name)
           logger.debug "Beetle: trying to send #{message_name}: #{data} with options #{opts}"
-          exchange(exchange_name).publish(data, opts.dup)
+          current_exchange = exchange(exchange_name)
+          reraise_bunny_error! # reraise any errors that happened during exchange creation
+
+          current_exchange.publish(data, opts.dup)
+          reraise_bunny_error! # reraise any errors that happened during publishing
+
           published << @server
           logger.debug "Beetle: message sent (#{published})!"
         rescue StandardError => e 
@@ -218,9 +226,14 @@ module Beetle
       bunny_error_handler? && bunny_error_handler.exception?
     end
 
+    def reraise_bunny_error!
+      bunny_error_handler&.raise_pending_exception!
+    end
+
     def stop_on_bunny_error!
-      bunny_error_handler&.raise_pending_exception! 
+      reraise_bunny_error! 
     rescue StandardError => e
+      logger.warn "Beetle: stopping bunny connection to #{@server} because of error detected in bunny session. Connection will be re-established later."
       stop!(e)
     end
 
@@ -316,6 +329,8 @@ module Beetle
     end
 
     def create_exchange!(name, opts)
+      logger.debug("Beetle: creating exchange #{name} with opts: #{opts.inspect}")
+
       channel.exchange(name, opts.dup)
     end
 
