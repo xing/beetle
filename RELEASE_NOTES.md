@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 6.1.0
+## Version 6.1.0 (RC)
 
 * Drop dependency to hiredis
 * Add dependency to redis >= 5 and hiredis-client >= 0.25
