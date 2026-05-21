@@ -21,8 +21,6 @@ module Beetle
     TIMEOUT_GRACE_PERIOD = 10.seconds
     # how many times we should try to run a handler before giving up
     DEFAULT_HANDLER_EXECUTION_ATTEMPTS = 1
-    # how many seconds we should wait before retrying handler execution
-    DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY = 10.seconds
     # how many exceptions should be tolerated before giving up
     DEFAULT_EXCEPTION_LIMIT = 0
 
@@ -46,10 +44,6 @@ module Beetle
     attr_reader :expires_at
     # how many seconds the handler is allowed to execute
     attr_reader :timeout
-    # how long to wait before retrying the message handler
-    attr_reader :delay
-    # maximum wait time for message handler retries (uses exponential backoff)
-    attr_reader :max_delay
     # how many times we should try to run the handler
     attr_reader :attempts_limit
     # how many exceptions we should tolerate before giving up
@@ -75,14 +69,11 @@ module Beetle
     def setup(opts) #:nodoc:
       @server           = opts[:server]
       @timeout          = opts[:timeout]    || DEFAULT_HANDLER_TIMEOUT.to_i
-      @delay            = (opts[:delay]     || DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY).ceil
       @attempts_limit   = opts[:attempts]   || DEFAULT_HANDLER_EXECUTION_ATTEMPTS
       @exceptions_limit = opts[:exceptions] || DEFAULT_EXCEPTION_LIMIT
       @attempts_limit   = @exceptions_limit + 1 if @attempts_limit <= @exceptions_limit
       @retry_on         = opts[:retry_on] || nil
       @store            = opts[:store]
-      max_delay         = opts[:max_delay] || @delay
-      @max_delay        = max_delay.ceil if max_delay >= 2*@delay
     end
 
     # extracts various values from the AMQP header properties
@@ -190,16 +181,6 @@ module Beetle
       @store.mset(msg_id, :status => "completed", :timeout => 0)
     end
 
-    # whether we should wait before running the handler
-    def delayed?(t = nil)
-      (t ||= @store.get(msg_id, :delay)) && t.to_i > now
-    end
-
-    # store delay value in the deduplication store
-    def set_delay!
-      @store.set(msg_id, :delay, now + next_delay(attempts))
-    end
-
     # how many times we already tried running the handler
     def attempts
       @store.get(msg_id, :attempts).to_i
@@ -269,8 +250,8 @@ module Beetle
       cnt.to_i
     end
 
-    def fetch_status_delay_timeout_attempts_exceptions
-      @store.mget(msg_id, [:status, :delay, :timeout, :attempts, :exceptions])
+    def fetch_status_timeout_attempts_exceptions
+      @store.mget(msg_id, [:status, :timeout, :attempts, :exceptions])
     end
 
     # process this message and do not allow any exception to escape to the caller
@@ -320,13 +301,10 @@ module Beetle
       elsif !key_exists?
         run_handler!(handler)
       else
-        status, delay, timeout, attempts, exceptions = fetch_status_delay_timeout_attempts_exceptions
+        status, timeout, attempts, exceptions = fetch_status_timeout_attempts_exceptions
         if status == "completed"
           ack!
           RC::OK
-        elsif delay && delayed?(delay)
-          logger.warn "Beetle: ignored delayed message (#{msg_id})!"
-          RC::Delayed
         elsif !(timeout && timed_out?(timeout))
           RC::HandlerNotYetTimedOut
         elsif attempts && attempts_limit_reached?(attempts)
@@ -394,7 +372,6 @@ module Beetle
       else
         delete_mutex!
         timed_out!
-        set_delay!
         result
       end
     end
@@ -415,12 +392,5 @@ module Beetle
       end
     end
 
-    def next_delay(n)
-      if max_delay
-        [delay * (2**n), max_delay].min
-      else
-        delay
-      end
-    end
   end
 end

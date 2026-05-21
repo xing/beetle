@@ -4,9 +4,7 @@ module Beetle
   # * how often a message has already been seen by some consumer
   # * whether a message has been processed successfully
   # * how many attempts have been made to execute a message handler for a given message
-  # * how long we should wait before trying to execute the message handler after a failure
   # * how many exceptions have been raised during previous execution attempts
-  # * how long we should wait before trying to perform the next execution attempt
   # * whether some other process is already trying to execute the message handler
   #
   # It also provides a method to garbage collect keys for expired messages.
@@ -39,7 +37,7 @@ module Beetle
 
     # list of key suffixes to use for storing values in Redis. 'status'
     # always needs to be the first element of the array.
-    KEY_SUFFIXES = [:status, :ack_count, :timeout, :delay, :attempts, :exceptions, :mutex, :expires]
+    KEY_SUFFIXES = [:status, :ack_count, :timeout, :attempts, :exceptions, :mutex, :expires]
 
     # build a Redis key out of a message id and a given suffix
     def key(msg_id, suffix)

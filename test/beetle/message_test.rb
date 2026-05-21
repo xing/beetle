@@ -236,7 +236,7 @@ module Beetle
       assert_equal 0, @store.redis.exists(*keys)
     end
 
-    test "successful processing of a redundant message once should insert all but the delay key and the exception count key into the database" do
+    test "successful processing of a redundant message once should insert all but the exception count key into the database" do
       header = header_with_params({:redundant => true})
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', logger, :store => @store)
@@ -251,7 +251,6 @@ module Beetle
       assert @store.exists(message.msg_id, :attempts)
       assert @store.exists(message.msg_id, :timeout)
       assert @store.exists(message.msg_id, :ack_count)
-      assert !@store.exists(message.msg_id, :delay)
       assert !@store.exists(message.msg_id, :exceptions)
     end
   end
@@ -272,19 +271,6 @@ module Beetle
       header.expects(:ack)
       message = Message.new("somequeue", header, 'foo', logger, :store => @store)
       assert message.expired?
-
-      processed = :no
-      message.process(Handler.create(lambda {|*args| processed = true}, logger))
-      assert_equal :no, processed
-    end
-
-    test "a delayed message should not be acked and the handler should not be called" do
-      header = header_with_params()
-      header.expects(:ack).never
-      message = Message.new("somequeue", header, 'foo', logger, :attempts => 2, :store => @store)
-      message.set_delay!
-      assert !message.key_exists?
-      assert message.delayed?
 
       processed = :no
       message.process(Handler.create(lambda {|*args| processed = true}, logger))
@@ -447,7 +433,7 @@ module Beetle
 
     test "a message should not be acked if the handler crashes and the exception limit has not been reached" do
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', logger, :delay => 42, :timeout => 10.seconds, :exceptions => 1, :store => @store)
+      message = Message.new("somequeue", header, 'foo', logger, :timeout => 10.seconds, :exceptions => 1, :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !message.timed_out?
@@ -460,13 +446,13 @@ module Beetle
       assert !message.completed?
       assert_equal "1", @store.get(message.msg_id, :exceptions)
       assert_equal "0", @store.get(message.msg_id, :timeout)
-      assert_equal "52", @store.get(message.msg_id, :delay)
+      assert !@store.exists(message.msg_id, :mutex)
     end
 
     test "a message should delete the mutex before resetting the timer if attempts and exception limits haven't been reached" do
       Message.stubs(:now).returns(9)
       header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', logger, :delay => 42, :timeout => 10.seconds, :exceptions => 1, :store => @store)
+      message = Message.new("somequeue", header, 'foo', logger, :timeout => 10.seconds, :exceptions => 1, :store => @store)
       assert !message.attempts_limit_reached?
       assert !message.exceptions_limit_reached?
       assert !@store.get(message.msg_id, :mutex)
@@ -592,28 +578,11 @@ module Beetle
       assert_equal RC::OK, message.__send__(:process_internal, proc)
     end
 
-    test "an incomplete, delayed existing message should be processed later" do
-      header = header_with_params({})
-      message = Message.new("somequeue", header, 'foo', logger, :delay => 10.seconds, :attempts => 2, :store => @store)
-      assert !message.key_exists?
-      assert !message.completed?
-      message.set_delay!
-      assert message.delayed?
-
-      proc = mock("proc")
-      header.expects(:ack).never
-      proc.expects(:call).never
-      assert_equal RC::Delayed, message.__send__(:process_internal, proc)
-      assert message.delayed?
-      assert !message.completed?
-    end
-
     test "an incomplete, undelayed, not yet timed out, existing message should be processed later" do
       header = header_with_params({})
       message = Message.new("somequeue", header, 'foo', logger, :timeout => 10.seconds, :attempts => 2, :store => @store)
       assert !message.key_exists?
       assert !message.completed?
-      assert !message.delayed?
       message.set_timeout!
       assert !message.timed_out?
 
@@ -621,7 +590,6 @@ module Beetle
       header.expects(:ack).never
       proc.expects(:call).never
       assert_equal RC::HandlerNotYetTimedOut, message.__send__(:process_internal, proc)
-      assert !message.delayed?
       assert !message.completed?
       assert !message.timed_out?
     end
@@ -632,7 +600,6 @@ module Beetle
       message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
-      assert !message.delayed?
       message.timed_out!
       assert message.timed_out?
 
@@ -652,7 +619,6 @@ module Beetle
       message.increment_execution_attempts!
       assert !message.key_exists?
       assert !message.completed?
-      assert !message.delayed?
       message.timed_out!
       assert message.timed_out?
       assert !message.attempts_limit_reached?
@@ -670,7 +636,6 @@ module Beetle
       message = Message.new("somequeue", header, 'foo', logger, :store => @store)
       assert !message.key_exists?
       assert !message.completed?
-      assert !message.delayed?
       message.timed_out!
       assert message.timed_out?
       assert !message.attempts_limit_reached?
@@ -690,7 +655,6 @@ module Beetle
       message = Message.new("somequeue", header, 'foo', logger, :store => @store)
       assert !message.key_exists?
       assert !message.completed?
-      assert !message.delayed?
       message.timed_out!
       assert message.timed_out?
       assert !message.attempts_limit_reached?

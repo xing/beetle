@@ -19,61 +19,6 @@ module Beetle
       assert_equal "completed", @store.get(message.msg_id, :status)
     end
 
-    test "set_delay! should store the current time plus the delay offset in the database" do
-      message = Message.new("somequeue", header_with_params, 'foo', logger, :delay => 2, :store => @store)
-      message.expects(:now).returns(9)
-      message.set_delay!
-      assert_equal "11", @store.get(message.msg_id, :delay)
-      message.expects(:now).returns(12)
-      assert !message.delayed?
-      message.expects(:now).returns(10)
-      assert message.delayed?
-    end
-
-    test "set_delay! should store the current time plus the exponential delay offset in the database" do
-      message = Message.new("somequeue", header_with_params, 'foo', logger, :delay => 3, :max_delay => 30, :store => @store)
-      message.stubs(:now).returns(1)
-
-      [4, 7, 13, 25].each do |exp_delay|
-        message.set_delay!
-        assert_equal exp_delay, @store.get(message.msg_id, :delay).to_i
-        message.increment_execution_attempts!
-      end
-    end
-
-    test "set_delay! should store the current time plus the exponential delay offset in the database up to given max value" do
-      message = Message.new("somequeue", header_with_params, 'foo', logger, :delay => 3, :max_delay => 10, :store => @store)
-      message.stubs(:now).returns(1)
-
-      [4, 7, 11, 11].each do |exp_delay|
-        message.set_delay!
-        assert_equal exp_delay, @store.get(message.msg_id, :delay).to_i
-        message.increment_execution_attempts!
-      end
-    end
-
-    test "set_delay! should store the current time plus the linear delay offset in the database" do
-      delay = 32
-      message = Message.new("somequeue", header_with_params, 'foo', logger, :delay => delay, :store => @store)
-      [3, 5, 6].each do |now_offset|
-        message.stubs(:now).returns(now_offset)
-        message.set_delay!
-        assert_equal @store.get(message.msg_id, :delay).to_i, now_offset + delay
-        message.increment_execution_attempts!
-      end
-    end
-
-    test "set_delay! should use the default delay if the delay hasn't been set on the message instance" do
-      message = Message.new("somequeue", header_with_params, 'foo', logger, :store => @store)
-      message.expects(:now).returns(0)
-      message.set_delay!
-      assert_equal "#{Message::DEFAULT_HANDLER_EXECUTION_ATTEMPTS_DELAY}", @store.get(message.msg_id, :delay)
-      message.expects(:now).returns(message.delay)
-      assert !message.delayed?
-      message.expects(:now).returns(0)
-      assert message.delayed?
-    end
-
     test "set_timeout! should store the current time plus the number of timeout seconds in the database" do
       message = Message.new("somequeue", header_with_params, 'foo', logger, :timeout => 1, :store => @store)
       message.expects(:now).returns(1)
